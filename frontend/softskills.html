@@ -22,31 +22,38 @@
     }
     .cards {
       display: grid;
-      grid-template-columns: repeat(auto-fill, minmax(300px, 1fr));
-      gap: 20px;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 15px;
       margin-top: 30px;
     }
     .card {
       background-color: white;
-      padding: 20px;
-      border-radius: 15px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+      padding: 10px;
+      border-radius: 10px;
+      box-shadow: 0 0 5px rgba(0,0,0,0.1);
       cursor: pointer;
-      transition: transform 0.2s;
+      transition: transform 0.2s, background-color 0.3s;
       display: flex;
-      flex-direction: column;
       justify-content: center;
       align-items: center;
-      height: 180px;
+      height: 100px;
     }
     .card:hover {
-      transform: translateY(-5px);
+      transform: scale(1.03);
       background-color: #f9f3d2;
     }
     .card-title {
-      font-size: 20px;
+      font-size: 16px;
       color: #0b474b;
       text-align: center;
+    }
+    @media (max-width: 768px) {
+      .cards {
+        grid-template-columns: repeat(2, 1fr);
+      }
+      .card {
+        height: 120px;
+      }
     }
   </style>
 </head>
