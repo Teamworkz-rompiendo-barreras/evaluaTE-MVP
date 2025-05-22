@@ -1,77 +1,85 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-    <meta charset="UTF-8" />
-    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-    <title>EvalúaTE</title>
-    <style>
-        body {
-            font-family: Arial, sans-serif;
-            background-color: #f0f0f0;
-            padding: 20px;
-        }
-        .form-container {
-            background-color: white;
-            padding: 20px;
-            margin-bottom: 30px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        .soft-skills {
-            background-color: white;
-            padding: 20px;
-            border-radius: 8px;
-            box-shadow: 0 0 10px rgba(0, 0, 0, 0.1);
-        }
-        h1, h2 {
-            color: #0B474B;
-        }
-        button {
-            padding: 10px 15px;
-            background-color: #E6CB62;
-            color: #0B474B;
-            border: none;
-            border-radius: 5px;
-            cursor: pointer;
-            margin: 5px;
-        }
-        button:hover {
-            background-color: #d6b848;
-        }
-    </style>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EvalúaTE</title>
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0;
+      padding: 0;
+      background-color: #f5f5f5;
+    }
+    .form-container, .softskills-container, .cta-container {
+      background-color: white;
+      padding: 20px;
+      margin: 20px;
+      border-radius: 10px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      color: #0b474b;
+    }
+    label {
+      display: block;
+      margin-top: 10px;
+      font-weight: bold;
+    }
+    input[type="text"], select, input[type="file"] {
+      width: 100%;
+      padding: 8px;
+      margin-top: 5px;
+      border-radius: 5px;
+      border: 1px solid #ccc;
+    }
+    button {
+      margin-top: 15px;
+      background-color: #e6cb62;
+      border: none;
+      padding: 10px 20px;
+      border-radius: 5px;
+      cursor: pointer;
+    }
+    button:hover {
+      background-color: #c9b256;
+    }
+    .cta-button {
+      display: flex;
+      justify-content: center;
+    }
+  </style>
 </head>
 <body>
+  <div class="form-container">
+    <h1>EvalúaTE</h1>
+    <form id="cvForm" enctype="multipart/form-data">
+      <label for="nombre">Nombre completo</label>
+      <input type="text" name="nombre" required />
 
-    <div class="form-container">
-        <h1>EvalúaTE</h1>
-        <form id="cvForm" enctype="multipart/form-data">
-            <label for="nombre">Nombre completo</label>
-            <input type="text" name="nombre" required /><br /><br />
+      <label for="discapacidad">¿Tienes certificado de discapacidad?</label>
+      <select name="discapacidad" required>
+        <option value="">Selecciona una opción</option>
+        <option value="sí">Sí</option>
+        <option value="no">No</option>
+      </select>
 
-            <label for="cv">Sube tu CV (PDF)</label>
-            <input type="file" name="cv" accept="application/pdf" required /><br /><br />
+      <label for="preferencia">¿Qué tipo de trabajo te gustaría hacer?</label>
+      <input type="text" name="preferencia" placeholder="Ej. Reparto, administración..." required />
 
-            <button type="submit">Enviar CV</button>
-        </form>
+      <label for="cv">Sube tu CV (PDF)</label>
+      <input type="file" name="cv" accept="application/pdf" required />
+
+      <button type="submit">Enviar CV</button>
+    </form>
+  </div>
+
+  <div class="cta-container">
+    <h2>Evaluación de Soft Skills</h2>
+    <p>Accede al apartado de evaluación para completar las pruebas de habilidades blandas.</p>
+    <div class="cta-button">
+      <button onclick="location.href='softskills.html'">Ir a Evaluación de Soft Skills</button>
     </div>
-
-    <div class="soft-skills">
-        <h2>Evaluación de Soft Skills</h2>
-        <p>Haz clic en cada habilidad para realizar la prueba correspondiente:</p>
-        <div>
-            <button onclick="window.location.href='minijuegos/toma-decisiones.html'">Toma de decisiones</button>
-            <button disabled>Resolución de problemas</button>
-            <button disabled>Comunicación</button>
-            <button disabled>Adaptabilidad</button>
-            <button disabled>Gestión del tiempo</button>
-            <button disabled>Trabajo en equipo</button>
-            <button disabled>Creatividad</button>
-            <button disabled>Pensamiento crítico</button>
-            <button disabled>Inteligencia emocional</button>
-            <button disabled>Liderazgo</button>
-        </div>
-    </div>
-
+  </div>
 </body>
 </html>
-
