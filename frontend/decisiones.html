@@ -1,0 +1,58 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>EvaluaTE - Decisiones Laborales</title>
+  <style>
+    body { font-family: Arial, sans-serif; padding: 20px; background: #f4f4f4; }
+    .card { background: white; padding: 20px; border-radius: 10px; box-shadow: 0 2px 6px rgba(0,0,0,0.1); max-width: 600px; margin: auto; }
+    .hidden { display: none; }
+    .option-btn { display: block; margin: 10px 0; padding: 10px; border: none; background: #0B474B; color: white; border-radius: 5px; cursor: pointer; }
+    .option-btn:hover { background: #096062; }
+  </style>
+</head>
+<body>
+  <div class="card" id="game">
+    <div id="stage-intro">
+      <h2>Situación:</h2>
+      <p>Tu compañera de trabajo ha cometido un error leve que ha pasado desapercibido. El jefe te pregunta si todo está yendo bien.</p>
+      <button class="option-btn" onclick="selectOption('A')">A) Le explicas lo que ha pasado al jefe.</button>
+      <button class="option-btn" onclick="selectOption('B')">B) Hablas primero con tu compañera para ver si lo soluciona.</button>
+      <button class="option-btn" onclick="selectOption('C')">C) No haces nada, no es asunto tuyo.</button>
+    </div>
+
+    <div id="stage-feedback" class="hidden">
+      <h2>Resultado de tu decisión:</h2>
+      <p id="feedback-text"></p>
+      <button class="option-btn" onclick="endGame()">Finalizar</button>
+    </div>
+
+    <div id="stage-end" class="hidden">
+      <h2>¡Gracias!</h2>
+      <p>Tu elección ha quedado registrada. Pronto recibirás un informe personalizado.</p>
+    </div>
+  </div>
+
+  <script>
+    function selectOption(option) {
+      document.getElementById('stage-intro').classList.add('hidden');
+      document.getElementById('stage-feedback').classList.remove('hidden');
+
+      const feedback = {
+        A: "Esta decisión muestra honestidad, pero podría afectar la confianza con tu compañera si no hablas con ella antes.",
+        B: "Demuestra empática, trabajo en equipo y resolución de conflictos. Una buena elección.",
+        C: "Evitar el problema puede hacer que empeore. Falta de iniciativa y responsabilidad."
+      };
+      document.getElementById('feedback-text').innerText = feedback[option];
+
+      // Aquí guardaríamos la decisión en localStorage o enviarla a backend
+    }
+
+    function endGame() {
+      document.getElementById('stage-feedback').classList.add('hidden');
+      document.getElementById('stage-end').classList.remove('hidden');
+    }
+  </script>
+</body>
+</html>
