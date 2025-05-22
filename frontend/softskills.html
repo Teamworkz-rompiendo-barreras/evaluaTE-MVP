@@ -6,7 +6,7 @@
   <title>Evaluación de Soft Skills</title>
   <style>
     body {
-      font-family: Arial, sans-serif;
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
       padding: 0;
       background-color: #f5f5f5;
@@ -19,40 +19,48 @@
     h1 {
       text-align: center;
       color: #0b474b;
+      font-size: 2.5em;
+    }
+    .subtitle {
+      text-align: center;
+      font-size: 1.2em;
+      margin-top: 10px;
+      color: #555;
     }
     .cards {
       display: grid;
-      grid-template-columns: repeat(5, 1fr);
-      gap: 15px;
+      grid-template-columns: repeat(2, 1fr);
+      gap: 30px;
       margin-top: 30px;
     }
     .card {
       background-color: white;
-      padding: 10px;
-      border-radius: 10px;
-      box-shadow: 0 0 5px rgba(0,0,0,0.1);
+      padding: 30px 20px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0, 0, 0, 0.1);
       cursor: pointer;
       transition: transform 0.2s, background-color 0.3s;
       display: flex;
       justify-content: center;
       align-items: center;
-      height: 100px;
+      height: 200px;
+      text-decoration: none;
     }
     .card:hover {
-      transform: scale(1.03);
+      transform: translateY(-5px);
       background-color: #f9f3d2;
     }
     .card-title {
-      font-size: 16px;
+      font-size: 20px;
       color: #0b474b;
       text-align: center;
     }
     @media (max-width: 768px) {
       .cards {
-        grid-template-columns: repeat(2, 1fr);
+        grid-template-columns: 1fr;
       }
       .card {
-        height: 120px;
+        height: 150px;
       }
     }
   </style>
@@ -60,8 +68,9 @@
 <body>
   <div class="skills-container">
     <h1>Selecciona una habilidad para evaluarte</h1>
+    <p class="subtitle">Haz clic en una tarjeta para comenzar la evaluación de esa competencia</p>
     <div class="cards">
-      <div class="card"><div class="card-title">Toma de decisiones</div></div>
+      <a href="minijuegos/decisiones.html" class="card"><div class="card-title">Toma de decisiones</div></a>
       <div class="card"><div class="card-title">Resolución de problemas</div></div>
       <div class="card"><div class="card-title">Comunicación</div></div>
       <div class="card"><div class="card-title">Adaptabilidad</div></div>
