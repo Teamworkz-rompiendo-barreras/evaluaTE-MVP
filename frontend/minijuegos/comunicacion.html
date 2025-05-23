@@ -88,12 +88,12 @@
     </div>
   </div>
 
-  // Evitar repetición del juego de comunicación
-const currentSkill = 'minijuego_comunicacion_score';
-if (localStorage.getItem(currentSkill)) {
-  alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-  window.location.href = '../softskills.html';
-}
+ // Bloqueo si ya existe puntuación
+    const currentSkill = 'minijuego_comunicacion_score';
+    if (localStorage.getItem(currentSkill)) {
+      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+      window.location.href = '../softskills.html';
+    }
 
   <script>
     let score = 0;
