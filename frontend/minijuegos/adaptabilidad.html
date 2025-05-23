@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Minijuego - Adaptabilidad</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #fff;
+      color: #222;
+    }
+    .container {
+      max-width: 750px;
+      margin: auto;
+    }
+    h1, h2 {
+      text-align: center;
+      color: #0b474b;
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+      color: #555;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .options button {
+      background-color: #e6cb62;
+      border: none;
+      padding: 12px 24px;
+      margin: 10px 10px 0 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .options button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Minijuego de Adaptabilidad</h1>
+    <p class="subtitle">Enfrenta cambios inesperados en tu entorno laboral y demuestra tu capacidad de adaptación.</p>
+
+    <div class="section" id="nivel1">
+      <h2>Nivel 1: Cambio de herramienta</h2>
+      <p>Tu empresa ha decidido sustituir la herramienta de gestión de proyectos que usabas por una nueva que no conoces. ¿Qué haces?</p>
+      <div class="options">
+        <button onclick="respondeNivel1('explorar')">Exploras la herramienta por tu cuenta</button>
+        <button onclick="respondeNivel1('esperar')">Esperas a recibir formación</button>
+        <button onclick="respondeNivel1('rechazar')">Te quejas y pides mantener la antigua</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel2">
+      <h2>Nivel 2: Cambio de equipo</h2>
+      <p>Has sido reasignado a un nuevo equipo con personas que no conoces. ¿Cómo te enfrentas a esta situación?</p>
+      <div class="options">
+        <button onclick="respondeNivel2('presentarte')">Te presentas y propones una reunión informal</button>
+        <button onclick="respondeNivel2('esperar')">Esperas a que te integren</button>
+        <button onclick="respondeNivel2('recluirte')">Haces tu trabajo sin interactuar demasiado</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel3">
+      <h2>Nivel 3: Cambio de horario</h2>
+      <p>Tu horario cambia a jornada partida, afectando tu rutina habitual. ¿Cómo reaccionas?</p>
+      <div class="options">
+        <button onclick="respondeNivel3('ajustar')">Buscas una nueva rutina y te adaptas</button>
+        <button onclick="respondeNivel3('resistir')">Intentas negociar una excepción</button>
+        <button onclick="respondeNivel3('ignorar')">Ignoras el cambio hasta que te lo exijan</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="resultado">
+      <h2>Gracias por completar el minijuego</h2>
+      <p>Tu progreso ha sido registrado.</p>
+      <button onclick="location.href='../softskills.html'">Volver</button>
+    </div>
+  </div>
+
+  <script>
+    const currentSkill = 'minijuego_adaptabilidad_score';
+    if (localStorage.getItem(currentSkill)) {
+      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+      window.location.href = '../softskills.html';
+    }
+
+    let score = 0;
+
+    function respondeNivel1(respuesta) {
+      if (respuesta === 'explorar') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    function respondeNivel2(respuesta) {
+      if (respuesta === 'presentarte') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    function respondeNivel3(respuesta) {
+      if (respuesta === 'ajustar') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      localStorage.setItem(currentSkill, score);
+    }
+  </script>
+</body>
+</html>
