@@ -48,36 +48,36 @@
 </head>
 <body>
   <div class="container">
-    <h1>El Malentendido del Mensaje</h1>
-    <p class="subtitle">Pon a prueba tu capacidad para transmitir y recibir información de forma clara.</p>
+    <h1>El Reto de la Comunicación Clara</h1>
+    <p class="subtitle">Descubre cómo te comunicas en situaciones clave y cómo impacta en tu entorno.</p>
 
     <div class="section" id="nivel1">
-      <h2>Nivel 1: Comunicación escrita</h2>
-      <p>Recibes un correo ambiguo de una persona de tu equipo. ¿Qué haces?</p>
+      <h2>Nivel 1: Explicación de una idea</h2>
+      <p>Necesitas presentar una nueva propuesta al equipo. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="chooseStep1('aclarar')">Le escribes para aclarar el mensaje</button>
-        <button onclick="chooseStep1('asumir')">Asumes lo que quiso decir</button>
-        <button onclick="chooseStep1('ignorar')">Ignoras el mensaje</button>
+        <button onclick="chooseStep1('claro')">Explicas con claridad y ejemplos</button>
+        <button onclick="chooseStep1('breve')">Vas directo al grano sin contexto</button>
+        <button onclick="chooseStep1('tecnico')">Usas lenguaje técnico complejo</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel2">
-      <h2>Nivel 2: Reunión virtual</h2>
-      <p>Notas que una persona del equipo no está entendiendo lo que explicas. ¿Qué haces?</p>
+      <h2>Nivel 2: Mensaje difícil</h2>
+      <p>Debes comunicar un cambio que no será bien recibido. ¿Cómo lo haces?</p>
       <div class="options">
-        <button onclick="chooseStep2('parafrasear')">Parafraseas tu explicación</button>
-        <button onclick="chooseStep2('seguir')">Sigues sin cambiar nada</button>
-        <button onclick="chooseStep2('culpar')">Culpas a la persona por no entender</button>
+        <button onclick="chooseStep2('empatia')">Con empatía y apertura a preguntas</button>
+        <button onclick="chooseStep2('directo')">Informas sin rodeos ni contexto</button>
+        <button onclick="chooseStep2('escrito')">Enviando un correo escueto</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel3">
-      <h2>Nivel 3: Feedback</h2>
-      <p>Alguien de tu equipo te da una crítica constructiva. ¿Cómo respondes?</p>
+      <h2>Nivel 3: Retroalimentación</h2>
+      <p>Un compañero no cumplió con su parte. ¿Cómo se lo comunicas?</p>
       <div class="options">
-        <button onclick="chooseStep3('agradecer')">Agradeces el feedback</button>
-        <button onclick="chooseStep3('defenderte')">Te justificas rápidamente</button>
-        <button onclick="chooseStep3('ignorar')">Lo ignoras</button>
+        <button onclick="chooseStep3('constructiva')">Retroalimentación constructiva</button>
+        <button onclick="chooseStep3('culpa')">Le echas la culpa directamente</button>
+        <button onclick="chooseStep3('evitar')">Evitas hablar del tema</button>
       </div>
     </div>
 
@@ -88,30 +88,30 @@
     </div>
   </div>
 
- // Bloqueo si ya existe puntuación
+  <script>
+    // Bloqueo si ya existe puntuación
     const currentSkill = 'minijuego_comunicacion_score';
     if (localStorage.getItem(currentSkill)) {
       alert('Ya has completado esta prueba. No puedes volver a realizarla.');
       window.location.href = '../softskills.html';
     }
 
-  <script>
     let score = 0;
 
     function chooseStep1(option) {
-      if (option === 'aclarar') score++;
+      if (option === 'claro') score++;
       document.getElementById('nivel1').classList.add('hidden');
       document.getElementById('nivel2').classList.remove('hidden');
     }
 
     function chooseStep2(option) {
-      if (option === 'parafrasear') score++;
+      if (option === 'empatia') score++;
       document.getElementById('nivel2').classList.add('hidden');
       document.getElementById('nivel3').classList.remove('hidden');
     }
 
     function chooseStep3(option) {
-      if (option === 'agradecer') score++;
+      if (option === 'constructiva') score++;
       document.getElementById('nivel3').classList.add('hidden');
       document.getElementById('resultado').classList.remove('hidden');
 
