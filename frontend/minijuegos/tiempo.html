@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minijuego - Gestión del tiempo</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #fff;
+      color: #222;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #0b474b;
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.2em;
+      color: #555;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .options button {
+      background-color: #e6cb62;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px 10px 0 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .options button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Desafío de Gestión del Tiempo</h1>
+    <p class="subtitle">Prioriza, organiza y gestiona tu tiempo frente a múltiples tareas y plazos.</p>
+
+    <div class="section" id="nivel1">
+      <h2>Nivel 1: Planificación semanal</h2>
+      <p>Se te asignan tres tareas: una urgente, una importante y una rutinaria. ¿Cómo organizas tu semana?</p>
+      <div class="options">
+        <button onclick="choosePlan('urgente_primero')">Urgente primero</button>
+        <button onclick="choosePlan('importante_primero')">Importante primero</button>
+        <button onclick="choosePlan('todo_a_la_vez')">Todo a la vez</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel2">
+      <h2>Nivel 2: Reuniones inesperadas</h2>
+      <p>Una reunión urgente interrumpe tu jornada. ¿Cómo respondes?</p>
+      <div class="options">
+        <button onclick="chooseMeeting('asistir')">Asistes y reorganizas tu agenda</button>
+        <button onclick="chooseMeeting('delegar')">Delegas la reunión</button>
+        <button onclick="chooseMeeting('ignorar')">La ignoras</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel3">
+      <h2>Nivel 3: Entrega múltiple</h2>
+      <p>Dos tareas deben entregarse al final del día y necesitas ayuda. ¿Qué haces?</p>
+      <div class="options">
+        <button onclick="chooseHelp('pedir')">Pides ayuda y delegas</button>
+        <button onclick="chooseHelp('priorizar')">Priorizas la más crítica</button>
+        <button onclick="chooseHelp('hacer_todo')">Intentas hacer todo tú</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="resultado">
+      <h2>Gracias por completar el minijuego</h2>
+      <p>Tu progreso ha sido registrado.</p>
+      <button onclick="location.href='../softskills.html'">Volver</button>
+    </div>
+  </div>
+
+  <script>
+    const currentSkill = 'minijuego_tiempo_score';
+    if (localStorage.getItem(currentSkill)) {
+      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+      window.location.href = '../softskills.html';
+    }
+
+    let score = 0;
+
+    function choosePlan(option) {
+      if (option === 'importante_primero') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    function chooseMeeting(option) {
+      if (option === 'asistir') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    function chooseHelp(option) {
+      if (option === 'pedir' || option === 'priorizar') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      localStorage.setItem(currentSkill, score);
+    }
+  </script>
+</body>
+</html>
