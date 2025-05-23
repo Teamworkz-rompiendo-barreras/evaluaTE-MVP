@@ -1,0 +1,115 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minijuego - Comunicación</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #fff;
+      color: #222;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #0b474b;
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.2em;
+      color: #555;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .options button {
+      background-color: #e6cb62;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px 10px 0 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .options button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>El Malentendido del Mensaje</h1>
+    <p class="subtitle">Pon a prueba tu capacidad para transmitir y recibir información de forma clara.</p>
+
+    <div class="section" id="nivel1">
+      <h2>Nivel 1: Comunicación escrita</h2>
+      <p>Recibes un correo ambiguo de una persona de tu equipo. ¿Qué haces?</p>
+      <div class="options">
+        <button onclick="chooseStep1('aclarar')">Le escribes para aclarar el mensaje</button>
+        <button onclick="chooseStep1('asumir')">Asumes lo que quiso decir</button>
+        <button onclick="chooseStep1('ignorar')">Ignoras el mensaje</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel2">
+      <h2>Nivel 2: Reunión virtual</h2>
+      <p>Notas que una persona del equipo no está entendiendo lo que explicas. ¿Qué haces?</p>
+      <div class="options">
+        <button onclick="chooseStep2('parafrasear')">Parafraseas tu explicación</button>
+        <button onclick="chooseStep2('seguir')">Sigues sin cambiar nada</button>
+        <button onclick="chooseStep2('culpar')">Culpas a la persona por no entender</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel3">
+      <h2>Nivel 3: Feedback</h2>
+      <p>Alguien de tu equipo te da una crítica constructiva. ¿Cómo respondes?</p>
+      <div class="options">
+        <button onclick="chooseStep3('agradecer')">Agradeces el feedback</button>
+        <button onclick="chooseStep3('defenderte')">Te justificas rápidamente</button>
+        <button onclick="chooseStep3('ignorar')">Lo ignoras</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="resultado">
+      <h2>Gracias por completar el minijuego</h2>
+      <p>Tu progreso ha sido registrado.</p>
+      <button onclick="location.href='../softskills.html'">Volver</button>
+    </div>
+  </div>
+
+  <script>
+    let score = 0;
+
+    function chooseStep1(option) {
+      if (option === 'aclarar') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    function chooseStep2(option) {
+      if (option === 'parafrasear') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    function chooseStep3(option) {
+      if (option === 'agradecer') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+
+      localStorage.setItem('minijuego_comunicacion_score', score);
+    }
+  </script>
+</body>
+</html>
