@@ -44,52 +44,46 @@
     .hidden {
       display: none;
     }
-    #result {
-      font-weight: bold;
-      background-color: #f9f9f9;
-      padding: 20px;
-      border-radius: 10px;
-      border: 1px solid #ccc;
-    }
   </style>
 </head>
 <body>
   <div class="container">
-    <h1>El Caso del Archivo Perdido</h1>
-    <p class="subtitle">Demuestra tu capacidad de análisis. Toma decisiones basadas en las pistas.</p>
+    <h1>El Dilema del Equipo de Proyecto</h1>
+    <p class="subtitle">Explora cómo tus decisiones afectan al grupo y revelan tu estilo de liderazgo y cooperación.</p>
 
     <div class="section" id="nivel1">
-      <h2>Nivel 1: Filtrado lógico</h2>
-      <p>Uno de los documentos más importantes del archivo digital ha desaparecido. Has recibido estos mensajes:</p>
+      <h2>Nivel 1: Distribución de Tareas</h2>
+      <p>Tu equipo tiene que entregar un proyecto en tres días. ¿Cómo decides repartir las tareas?</p>
       <div class="options">
-        <button onclick="chooseMessage(true)">Mensaje con información relevante</button>
-        <button onclick="chooseMessage(false)">Mensaje con información irrelevante</button>
+        <button onclick="chooseTask('equitativa')">Reparto equitativo</button>
+        <button onclick="chooseTask('según habilidades')">Según habilidades</button>
+        <button onclick="chooseTask('yo hago más')">Asumir la mayor parte</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel2">
-      <h2>Nivel 2: Deducción</h2>
-      <p>¿Quién parece haber movido o eliminado el documento?</p>
+      <h2>Nivel 2: Conflicto de Opiniones</h2>
+      <p>Un compañero insiste en una solución técnica con la que no estás de acuerdo. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="choosePerson('Persona 1')">Persona 1</button>
-        <button onclick="choosePerson('Persona 2')">Persona 2</button>
-        <button onclick="choosePerson('Persona 3')">Persona 3</button>
+        <button onclick="chooseConflict('escuchar')">Escuchar y proponer alternativa</button>
+        <button onclick="chooseConflict('imponerse')">Imponer tu idea</button>
+        <button onclick="chooseConflict('ceder')">Ceder para evitar conflicto</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel3">
-      <h2>Nivel 3: Acción</h2>
-      <p>Restaura una copia del documento desde el sistema de respaldo.</p>
+      <h2>Nivel 3: Entrega Final</h2>
+      <p>El proyecto está listo, pero alguien olvidó revisar los últimos detalles. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="chooseDate('Fecha 1')">Fecha 1</button>
-        <button onclick="chooseDate('Fecha 2')">Fecha 2</button>
-        <button onclick="chooseDate('Fecha 3')">Fecha 3</button>
+        <button onclick="chooseFinal('revisar')">Revisas tú mismo</button>
+        <button onclick="chooseFinal('delegar')">Delegas la revisión</button>
+        <button onclick="chooseFinal('ignorar')">Ignoras el error</button>
       </div>
     </div>
 
     <div class="section hidden" id="resultado">
-      <h2>Resultado</h2>
-      <div id="result"></div>
+      <h2>Gracias por completar el minijuego</h2>
+      <p>Tu progreso ha sido registrado.</p>
       <button onclick="location.href='../softskills.html'">Volver</button>
     </div>
   </div>
@@ -97,32 +91,25 @@
   <script>
     let score = 0;
 
-    function chooseMessage(correct) {
-      if (correct) score++;
+    function chooseTask(option) {
+      if (option === 'según habilidades') score++;
       document.getElementById('nivel1').classList.add('hidden');
       document.getElementById('nivel2').classList.remove('hidden');
     }
 
-    function choosePerson(choice) {
-      if (choice === 'Persona 2') score++;
+    function chooseConflict(option) {
+      if (option === 'escuchar') score++;
       document.getElementById('nivel2').classList.add('hidden');
       document.getElementById('nivel3').classList.remove('hidden');
     }
 
-    function chooseDate(date) {
-      if (date === 'Fecha 3') score++;
+    function chooseFinal(option) {
+      if (option === 'revisar') score++;
       document.getElementById('nivel3').classList.add('hidden');
       document.getElementById('resultado').classList.remove('hidden');
 
-      let resultText = '';
-      if (score === 3) {
-        resultText = '<strong>Excelente:</strong> Mostraste un razonamiento lógico impecable en cada decisión.';
-      } else if (score === 2) {
-        resultText = '<strong>Muy bien:</strong> Tomaste decisiones lógicas, aunque una podría mejorar.';
-      } else {
-        resultText = '<strong>Área de mejora:</strong> Reflexiona sobre cómo usar mejor la información disponible.';
-      }
-      document.getElementById('result').innerHTML = resultText;
+      // Guardar puntuación en localStorage para evaluación global posterior
+      localStorage.setItem('minijuego_decisiones_score', score);
     }
   </script>
 </body>
