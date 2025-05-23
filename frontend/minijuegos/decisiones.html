@@ -89,6 +89,15 @@
   </div>
 
   <script>
+
+      <script>
+    // Bloqueo si ya existe puntuación
+    const currentSkill = 'minijuego_decisiones_score';
+    if (localStorage.getItem(currentSkill)) {
+      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+      window.location.href = '../softskills.html';
+    }
+
     let score = 0;
 
     function chooseTask(option) {
