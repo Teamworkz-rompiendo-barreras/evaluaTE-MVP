@@ -1,0 +1,124 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minijuego - Liderazgo</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #f0f0f0;
+      color: #222;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+      background: white;
+      padding: 30px;
+      border-radius: 12px;
+      box-shadow: 0 4px 10px rgba(0,0,0,0.1);
+    }
+    h1 {
+      text-align: center;
+      color: #0b474b;
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+      color: #555;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .options button {
+      background-color: #e6cb62;
+      border: none;
+      padding: 12px 20px;
+      margin: 10px 5px 0 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .options button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Reto de Liderazgo</h1>
+    <p class="subtitle">Resuelve situaciones como líder de equipo. ¿Cómo inspiras, tomas decisiones y gestionas conflictos?</p>
+
+    <div class="section" id="nivel1">
+      <h2>Nivel 1: Crisis en el Proyecto</h2>
+      <p>El equipo ha recibido una mala evaluación en la mitad del proyecto. ¿Cómo reaccionas?</p>
+      <div class="options">
+        <button onclick="chooseCrisis('reunión')">Convocas una reunión constructiva</button>
+        <button onclick="chooseCrisis('reprender')">Reprendes al equipo</button>
+        <button onclick="chooseCrisis('ignorar')">Sigues adelante sin cambios</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel2">
+      <h2>Nivel 2: Conflicto Interno</h2>
+      <p>Dos personas de tu equipo discuten en una reunión. ¿Qué haces?</p>
+      <div class="options">
+        <button onclick="chooseConflict('mediar')">Mediar con neutralidad</button>
+        <button onclick="chooseConflict('autoridad')">Impones tu decisión</button>
+        <button onclick="chooseConflict('dejar pasar')">Esperas a que se resuelva solo</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel3">
+      <h2>Nivel 3: Reconocimiento</h2>
+      <p>El equipo logra un gran éxito. ¿Qué haces como líder?</p>
+      <div class="options">
+        <button onclick="chooseRecognition('dar credito')">Das el crédito al equipo</button>
+        <button onclick="chooseRecognition('quedarte merito')">Te atribuyes el mérito</button>
+        <button onclick="chooseRecognition('seguir trabajando')">Minimizas y sigues trabajando</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="resultado">
+      <h2>¡Bien hecho!</h2>
+      <p>Has completado el minijuego. Tu estilo de liderazgo ha quedado registrado.</p>
+      <button onclick="location.href='../softskills.html'">Volver</button>
+    </div>
+  </div>
+
+  <script>
+    const currentSkill = 'minijuego_liderazgo_score';
+    if (localStorage.getItem(currentSkill)) {
+      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+      window.location.href = '../softskills.html';
+    }
+
+    let score = 0;
+
+    function chooseCrisis(option) {
+      if (option === 'reunión') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    function chooseConflict(option) {
+      if (option === 'mediar') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    function chooseRecognition(option) {
+      if (option === 'dar credito') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      localStorage.setItem(currentSkill, score);
+    }
+  </script>
+</body>
+</html>
