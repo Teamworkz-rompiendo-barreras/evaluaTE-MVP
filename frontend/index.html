@@ -81,5 +81,47 @@
       <button onclick="location.href='softskills.html'">Ir a Evaluación de Soft Skills</button>
     </div>
   </div>
+  <div id="bloque-envio" style="text-align: center; margin-top: 40px;">
+  <button id="botonEnviarTodo" disabled style="opacity: 0.5; cursor: not-allowed; background-color: #e6cb62; color: #0b474b; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem;">
+    Enviar todo y ver resultados
+  </button>
+</div>
 </body>
+<script>
+  function verificarProgresoCompleto() {
+    const juegos = [
+      'minijuego_decisiones_score',
+      'minijuego_resolucion_score',
+      'minijuego_comunicacion_score',
+      'minijuego_adaptabilidad_score',
+      'minijuego_tiempo_score',
+      'minijuego_equipo_score',
+      'minijuego_creatividad_score',
+      'minijuego_liderazgo_score',
+      'minijuego_pensamiento_score',
+      'minijuego_emocional_score'
+    ];
+
+    const todosJuegosListos = juegos.every(k => localStorage.getItem(k));
+    const formOk = localStorage.getItem('formulario_nombre') &&
+                   localStorage.getItem('formulario_email') &&
+                   localStorage.getItem('formulario_disponibilidad') &&
+                   localStorage.getItem('formulario_cv_pdf') &&
+                   localStorage.getItem('formulario_discapacidad') &&
+                   localStorage.getItem('formulario_preferencias');
+
+    const boton = document.getElementById('botonEnviarTodo');
+    if (todosJuegosListos && formOk) {
+      boton.disabled = false;
+      boton.style.opacity = 1;
+      boton.style.cursor = 'pointer';
+    }
+  }
+
+  document.addEventListener('DOMContentLoaded', verificarProgresoCompleto);
+
+  document.getElementById('botonEnviarTodo')?.addEventListener('click', () => {
+    window.location.href = 'resultados.html';
+  });
+</script>
 </html>
