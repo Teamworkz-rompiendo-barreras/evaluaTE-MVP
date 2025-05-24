@@ -3,78 +3,64 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Evaluación de Soft Skills</title>
+  <title>Evaluación de Habilidades</title>
   <style>
     body {
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
       margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
+      padding: 20px;
+      background-color: #f4f4f4;
+      color: #333;
     }
-    .skills-container {
-  max-width: 1000px;
-  margin: 0 auto;
-  padding: 40px 20px;
-  text-align: center;
-}
-
-.cards {
-  display: flex;
-  flex-wrap: wrap;
-  justify-content: center;
-  gap: 20px;
-}
-
-.card {
-  background-color: #ffffff;
-  border-radius: 8px;
-  box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
-  width: 18%;
-  min-width: 140px;
-  aspect-ratio: 1 / 1;
-  display: flex;
-  justify-content: center;
-  align-items: center;
-  padding: 10px;
-  cursor: pointer;
-  transition: transform 0.2s ease;
-}
-
-.card:hover {
-  transform: scale(1.05);
-}
-
-.card-title {
-  color: #0b474b;
-  font-weight: bold;
+    h1 {
+      text-align: center;
+      color: #0b474b;
     }
-    @media (max-width: 768px) {
-      .cards {
-        grid-template-columns: 1fr;
-      }
-      .card {
-        height: 150px;
-      }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.1em;
+    }
+    .cards {
+      display: grid;
+      grid-template-columns: repeat(5, 1fr);
+      gap: 20px;
+      padding: 20px;
+      justify-items: center;
+    }
+    .card {
+      width: 160px;
+      height: 160px;
+      background-color: #fff;
+      border-radius: 10px;
+      box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-weight: bold;
+      text-align: center;
+      cursor: pointer;
+      transition: transform 0.2s ease-in-out;
+    }
+    .card:hover {
+      transform: scale(1.05);
     }
   </style>
 </head>
 <body>
-  <div class="skills-container">
   <h1>Selecciona una habilidad para evaluarte</h1>
   <p class="subtitle">Haz clic en una tarjeta para comenzar la evaluación de esa competencia</p>
   <div class="cards">
-    <a href="minijuegos/decisiones.html" class="card"><div class="card-title">Toma de decisiones</div></a>
-    <a href="minijuegos/resolucion.html" class="card"><div class="card-title">Resolución de problemas</div></a>
-    <a href="minijuegos/comunicacion.html" class="card"><div class="card-title">Comunicación</div></a>
-    <a href="minijuegos/adaptabilidad.html" class="card"><div class="card-title">Adaptabilidad</div></a>
-    <a href="minijuegos/gestiontiempo.html" class="card"><div class="card-title">Gestión del tiempo</div></a>
-    <a href="minijuegos/equipo.html" class="card"><div class="card-title">Trabajo en equipo</div></a>
-    <a href="minijuegos/creatividad.html" class="card"><div class="card-title">Creatividad</div></a>
-    <a href="minijuegos/pensamiento.html" class="card"><div class="card-title">Pensamiento crítico</div></a>
-    <a href="minijuegos/emocional.html" class="card"><div class="card-title">Inteligencia emocional</div></a>
-    <a href="minijuegos/liderazgo.html" class="card"><div class="card-title">Liderazgo</div></a>
+    <a href="minijuegos/decisiones.html" class="card">Toma de decisiones</a>
+    <a href="minijuegos/resolucion.html" class="card">Resolución de problemas</a>
+    <a href="minijuegos/comunicacion.html" class="card">Comunicación</a>
+    <a href="minijuegos/adaptabilidad.html" class="card">Adaptabilidad</a>
+    <a href="minijuegos/gestion.html" class="card">Gestión del tiempo</a>
+    <a href="minijuegos/equipo.html" class="card">Trabajo en equipo</a>
+    <a href="minijuegos/creatividad.html" class="card">Creatividad</a>
+    <a href="minijuegos/pensamiento.html" class="card">Pensamiento crítico</a>
+    <a href="minijuegos/emocional.html" class="card">Inteligencia emocional</a>
+    <a href="minijuegos/liderazgo.html" class="card">Liderazgo</a>
   </div>
-</div>
-
 </body>
 </html>
