@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minijuego - Creatividad</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #fff;
+      color: #222;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #0b474b;
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.2em;
+      color: #555;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .options button {
+      background-color: #e6cb62;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px 10px 0 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .options button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>El Reto de la Caja Cerrada</h1>
+    <p class="subtitle">Demuestra tu ingenio para encontrar soluciones inesperadas y originales.</p>
+
+    <div class="section" id="nivel1">
+      <h2>Nivel 1: Interpretación libre</h2>
+      <p>¿Qué crees que hay dentro de la caja misteriosa?</p>
+      <div class="options">
+        <button onclick="chooseNivel1('esfera')">Una esfera luminosa que cambia de color con la voz</button>
+        <button onclick="chooseNivel1('artefacto')">Un artefacto que proyecta ideas en la pared</button>
+        <button onclick="chooseNivel1('cubo')">Un cubo que graba pensamientos cuando lo tocas</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel2">
+      <h2>Nivel 2: Aplicación inesperada</h2>
+      <p>¿Para qué lo usarías en una presentación del equipo?</p>
+      <div class="options">
+        <button onclick="chooseNivel2('interactivo')">Como herramienta interactiva con el público</button>
+        <button onclick="chooseNivel2('metafora')">Como metáfora visual del proceso creativo</button>
+        <button onclick="chooseNivel2('juego')">Para gamificar la presentación con un reto sorpresa</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel3">
+      <h2>Nivel 3: Improvisación rápida</h2>
+      <p>Descubres que el objeto no funciona. ¿Qué haces?</p>
+      <div class="options">
+        <button onclick="chooseNivel3('historia')">Improvisas una historia creativa sobre su funcionamiento</button>
+        <button onclick="chooseNivel3('dinamica')">Rediriges al público con una dinámica alternativa</button>
+        <button onclick="chooseNivel3('disculpa')">Pides disculpas y explicas lo que debería haber pasado</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="resultado">
+      <h2>Gracias por completar el minijuego</h2>
+      <p>Tu creatividad ha quedado registrada. ¡Gran trabajo!</p>
+      <button onclick="location.href='../softskills.html'">Volver</button>
+    </div>
+  </div>
+
+  <script>
+    const currentSkill = 'minijuego_creatividad_score';
+    if (localStorage.getItem(currentSkill)) {
+      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+      window.location.href = '../softskills.html';
+    }
+
+    let score = 0;
+
+    function chooseNivel1(option) {
+      if (option === 'cubo') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    function chooseNivel2(option) {
+      if (option === 'metafora') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    function chooseNivel3(option) {
+      if (option === 'historia') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      localStorage.setItem(currentSkill, score);
+    }
+  </script>
+</body>
+</html>
