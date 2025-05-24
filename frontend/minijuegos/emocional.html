@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Minijuego - Inteligencia Emocional</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0ebE5;
+      color: #0b474b;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 750px;
+      margin: auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    button {
+      background-color: #e6cb62;
+      color: #0b474b;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Minijuego: Inteligencia Emocional</h1>
+    <p style="text-align:center">Responde a las siguientes situaciones y muestra cómo gestionas tus emociones y las de los demás.</p>
+
+    <div id="q1">
+      <h2>1. Tu compañero está visiblemente frustrado porque su parte del proyecto salió mal. ¿Qué haces?</h2>
+      <div class="options">
+        <button onclick="next('q1', 'escucha')">Le escuchas y le ofreces ayuda sin juzgar</button>
+        <button onclick="next('q1', 'ignora')">Ignoras la situación</button>
+        <button onclick="next('q1', 'critica')">Le criticas por no hacer su parte correctamente</button>
+      </div>
+    </div>
+
+    <div id="q2" class="hidden">
+      <h2>2. Recibes un correo con críticas duras hacia tu trabajo. ¿Cómo respondes?</h2>
+      <div class="options">
+        <button onclick="next('q2', 'agradece')">Agradeces el feedback y preguntas cómo mejorar</button>
+        <button onclick="next('q2', 'responde')">Respondes de forma impulsiva</button>
+        <button onclick="next('q2', 'ignoras')">Ignoras el mensaje</button>
+      </div>
+    </div>
+
+    <div id="q3" class="hidden">
+      <h2>3. Un compañero está muy contento por una buena noticia personal. ¿Cómo reaccionas?</h2>
+      <div class="options">
+        <button onclick="next('q3', 'celebra')">Celebras su logro con entusiasmo</button>
+        <button onclick="next('q3', 'indiferente')">Te muestras indiferente</button>
+        <button onclick="next('q3', 'molesto')">Te molesta que le vaya bien</button>
+      </div>
+    </div>
+
+    <div id="final" class="hidden">
+      <h2>¡Minijuego completado!</h2>
+      <p>Tu progreso ha sido registrado.</p>
+      <button onclick="location.href='../softskills.html'">Volver a Soft Skills</button>
+    </div>
+  </div>
+
+  <script>
+    const currentSkill = 'minijuego_emocional_score';
+    if (localStorage.getItem(currentSkill)) {
+      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+      window.location.href = '../softskills.html';
+    }
+
+    let score = 0;
+
+    function next(current, choice) {
+      if (
+        (current === 'q1' && choice === 'escucha') ||
+        (current === 'q2' && choice === 'agradece') ||
+        (current === 'q3' && choice === 'celebra')
+      ) {
+        score++;
+      }
+
+      document.getElementById(current).classList.add('hidden');
+
+      if (current === 'q1') {
+        document.getElementById('q2').classList.remove('hidden');
+      } else if (current === 'q2') {
+        document.getElementById('q3').classList.remove('hidden');
+      } else if (current === 'q3') {
+        localStorage.setItem(currentSkill, score);
+        document.getElementById('final').classList.remove('hidden');
+      }
+    }
+  </script>
+</body>
+</html>
