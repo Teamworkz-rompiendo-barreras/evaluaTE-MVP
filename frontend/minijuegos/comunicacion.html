@@ -5,46 +5,47 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Minijuego - Comunicación</title>
   <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      margin: 0;
-      padding: 20px;
-      background-color: #fff;
-      color: #222;
-    }
-    .container {
-      max-width: 700px;
-      margin: auto;
-    }
-    h1 {
-      text-align: center;
-      color: #0b474b;
-    }
-    .subtitle {
-      text-align: center;
-      margin-bottom: 30px;
-      font-size: 1.2em;
-      color: #555;
-    }
-    .section {
-      margin-bottom: 30px;
-    }
-    .options button {
-      background-color: #e6cb62;
-      border: none;
-      padding: 10px 20px;
-      margin: 10px 10px 0 0;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-    }
-    .options button:hover {
-      background-color: #d1b748;
-    }
-    .hidden {
-      display: none;
-    }
-  </style>
+  body {
+    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+    background-color: #f0ebE5;
+    color: #0b474b;
+    margin: 0;
+    padding: 20px;
+  }
+  .container {
+    max-width: 750px;
+    margin: auto;
+    padding: 20px;
+    background: white;
+    border-radius: 12px;
+    box-shadow: 0 0 10px rgba(0,0,0,0.1);
+  }
+  h1, h2 {
+    text-align: center;
+  }
+  .options {
+    display: flex;
+    flex-direction: column;
+    gap: 10px;
+    margin-top: 15px;
+  }
+  button {
+    background-color: #e6cb62;
+    color: #0b474b;
+    border: none;
+    padding: 12px;
+    border-radius: 8px;
+    cursor: pointer;
+    transition: background-color 0.3s;
+    font-size: 1rem;
+  }
+  button:hover {
+    background-color: #d1b748;
+  }
+  .hidden {
+    display: none;
+  }
+</style>
 </head>
 <body>
   <div class="container">
