@@ -1,0 +1,120 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Minijuego - Pensamiento Crítico</title>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      margin: 0;
+      padding: 20px;
+      background-color: #fff;
+      color: #222;
+    }
+    .container {
+      max-width: 700px;
+      margin: auto;
+    }
+    h1 {
+      text-align: center;
+      color: #0b474b;
+    }
+    .subtitle {
+      text-align: center;
+      margin-bottom: 30px;
+      font-size: 1.2em;
+      color: #555;
+    }
+    .section {
+      margin-bottom: 30px;
+    }
+    .options button {
+      background-color: #e6cb62;
+      border: none;
+      padding: 10px 20px;
+      margin: 10px 10px 0 0;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+    }
+    .options button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
+</head>
+<body>
+  <div class="container">
+    <h1>Analiza la Evidencia</h1>
+    <p class="subtitle">Pon a prueba tu capacidad para evaluar información y tomar decisiones lógicas.</p>
+
+    <div class="section" id="nivel1">
+      <h2>Nivel 1: Un informe contradictorio</h2>
+      <p>Recibes un informe con datos contradictorios sobre el rendimiento de un equipo. ¿Qué haces primero?</p>
+      <div class="options">
+        <button onclick="chooseStep1('consultar')">Consultar las fuentes originales</button>
+        <button onclick="chooseStep1('asumir')">Asumir que hay un error y descartarlo</button>
+        <button onclick="chooseStep1('ignorar')">Ignorar la contradicción</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel2">
+      <h2>Nivel 2: Decisión basada en datos</h2>
+      <p>Dos propuestas tienen argumentos válidos. Una se basa en evidencia reciente y la otra en experiencia pasada. ¿Cuál priorizas?</p>
+      <div class="options">
+        <button onclick="chooseStep2('evidencia')">Basada en evidencia reciente</button>
+        <button onclick="chooseStep2('experiencia')">Basada en experiencia pasada</button>
+        <button onclick="chooseStep2('ninguna')">Elegir una tercera opción</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="nivel3">
+      <h2>Nivel 3: Pensamiento analítico</h2>
+      <p>Encuentras una opinión popular que contradice los datos que tienes. ¿Cómo respondes?</p>
+      <div class="options">
+        <button onclick="chooseStep3('argumentar')">Argumentas con datos</button>
+        <button onclick="chooseStep3('seguir')">Te alineas con la opinión popular</button>
+        <button onclick="chooseStep3('posponer')">Pospones la decisión</button>
+      </div>
+    </div>
+
+    <div class="section hidden" id="resultado">
+      <h2>Gracias por completar el minijuego</h2>
+      <p>Tu progreso ha sido registrado.</p>
+      <button onclick="location.href='../softskills.html'">Volver</button>
+    </div>
+  </div>
+
+  <script>
+    const currentSkill = 'minijuego_pensamiento_score';
+    if (localStorage.getItem(currentSkill)) {
+      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+      window.location.href = '../softskills.html';
+    }
+
+    let score = 0;
+
+    function chooseStep1(option) {
+      if (option === 'consultar') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    function chooseStep2(option) {
+      if (option === 'evidencia') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    function chooseStep3(option) {
+      if (option === 'argumentar') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      localStorage.setItem(currentSkill, score);
+    }
+  </script>
+</body>
+</html>
