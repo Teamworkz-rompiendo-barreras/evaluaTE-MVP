@@ -1,4 +1,4 @@
-<Project Sdk="Microsoft.NET.Sdk.Functions">
+<Project Sdk="Microsoft.NET.Sdk">
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
