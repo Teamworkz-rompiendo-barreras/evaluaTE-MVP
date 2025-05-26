@@ -3,122 +3,139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Minijuego - Gestión del tiempo</title>
+  <title>Minijuego - Gestión del Tiempo</title>
   <style>
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0ebE5;
-    color: #0b474b;
-    margin: 0;
-    padding: 20px;
-  }
-  .container {
-    max-width: 750px;
-    margin: auto;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  }
-  h1, h2 {
-    text-align: center;
-  }
-  .options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 15px;
-  }
-  button {
-    background-color: #e6cb62;
-    color: #0b474b;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    font-size: 1rem;
-  }
-  button:hover {
-    background-color: #d1b748;
-  }
-  .hidden {
-    display: none;
-  }
-</style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0ebE5;
+      color: #0b474b;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 750px;
+      margin: auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    button {
+      background-color: #e6cb62;
+      color: #0b474b;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h1>Gestión del Tiempo</h1>
-    <p class="subtitle">Prioriza, organiza y gestiona tu tiempo frente a múltiples tareas y plazos.</p>
+    <p class="subtitle">Pon a prueba tu capacidad para organizar tu tiempo y priorizar tareas en el trabajo.</p>
 
     <div class="section" id="nivel1">
-      <h2>Nivel 1: Planificación semanal</h2>
-      <p>Se te asignan tres tareas: una urgente, una importante y una rutinaria. ¿Cómo organizas tu semana?</p>
+      <h2>Nivel 1: Prioridades inesperadas</h2>
+      <p>Recibes una nueva tarea urgente justo cuando estabas terminando otra importante. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="choosePlan('urgente_primero')">Urgente primero</button>
-        <button onclick="choosePlan('importante_primero')">Importante primero</button>
-        <button onclick="choosePlan('todo_a_la_vez')">Todo a la vez</button>
+        <button onclick="respondeNivel1('evalua')">Evalúas la urgencia real y ajustas tu plan</button>
+        <button onclick="respondeNivel1('multitarea')">Intentas hacer ambas cosas a la vez</button>
+        <button onclick="respondeNivel1('original')">Sigues con la tarea inicial y pospones la nueva</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel2">
-      <h2>Nivel 2: Reuniones inesperadas</h2>
-      <p>Una reunión urgente interrumpe tu jornada. ¿Cómo respondes?</p>
+      <h2>Nivel 2: Interrupciones constantes</h2>
+      <p>Recibes muchas interrupciones mientras trabajas. ¿Cómo las gestionas?</p>
       <div class="options">
-        <button onclick="chooseMeeting('asistir')">Asistes y reorganizas tu agenda</button>
-        <button onclick="chooseMeeting('delegar')">Delegas la reunión</button>
-        <button onclick="chooseMeeting('ignorar')">La ignoras</button>
+        <button onclick="respondeNivel2('bloqueas')">Bloqueas tiempo específico para tareas importantes</button>
+        <button onclick="respondeNivel2('atiendes')">Atienes todas las interrupciones de inmediato</button>
+        <button onclick="respondeNivel2('ignoras')">Ignoras a quienes te interrumpen</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel3">
-      <h2>Nivel 3: Entrega múltiple</h2>
-      <p>Dos tareas deben entregarse al final del día y necesitas ayuda. ¿Qué haces?</p>
+      <h2>Nivel 3: Plazos ajustados</h2>
+      <p>Te das cuenta de que no podrás terminar todo a tiempo. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="chooseHelp('pedir')">Pides ayuda y delegas</button>
-        <button onclick="chooseHelp('priorizar')">Priorizas la más crítica</button>
-        <button onclick="chooseHelp('hacer_todo')">Intentas hacer todo tú</button>
+        <button onclick="respondeNivel3('comunicas')">Comunicas a tu equipo o jefatura y pides ayuda o renegocias</button>
+        <button onclick="respondeNivel3('sigues')">Sigues trabajando sin decir nada</button>
+        <button onclick="respondeNivel3('recortas')">Recortas calidad para terminar más rápido</button>
       </div>
     </div>
 
     <div class="section hidden" id="resultado">
-      <h2>Gracias por completar el minijuego</h2>
+      <h2>¡Minijuego completado!</h2>
       <p>Tu progreso ha sido registrado.</p>
       <button onclick="location.href='../softskills.html'">Volver</button>
     </div>
   </div>
 
   <script>
-    // Cambia este ID por el del minijuego correspondiente
-const skillId = 'NOMBRE_DEL_MINIJUEGO'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
+    const skillId = 'tiempo';
 
-// Chequeo si ya completó este minijuego
-try {
-  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  if (pruebasCompletadas[skillId]) {
-    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-    window.location.href = '../softskills.html';
-  }
-} catch (e) {
-  // Si hay algún problema con el localStorage, no bloquea el acceso
-}
+    // Chequeo si ya completó este minijuego
+    try {
+      const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      if (pruebasCompletadas[skillId]) {
+        alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+        window.location.href = '../softskills.html';
+      }
+    } catch (e) {}
 
-// Al finalizar la prueba:
-function registrarMinijuegoCompletado(scoreVariable) {
-  // Guarda la puntuación específica del minijuego si la tienes
-  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+    let score = 0;
 
-  // Marca la prueba como completada
-  let pruebasCompletadas = {};
-  try {
-    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  } catch {
-    pruebasCompletadas = {};
-  }
-  pruebasCompletadas[skillId] = true;
-  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
-}
+    // Nivel 1: La mejor es "evalua"
+    function respondeNivel1(respuesta) {
+      if (respuesta === 'evalua') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    // Nivel 2: La mejor es "bloqueas"
+    function respondeNivel2(respuesta) {
+      if (respuesta === 'bloqueas') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    // Nivel 3: La mejor es "comunicas"
+    function respondeNivel3(respuesta) {
+      if (respuesta === 'comunicas') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      registrarMinijuegoCompletado(score);
+    }
+
+    function registrarMinijuegoCompletado(scoreVariable) {
+      localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+      let pruebasCompletadas = {};
+      try {
+        pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      } catch {
+        pruebasCompletadas = {};
+      }
+      pruebasCompletadas[skillId] = true;
+      localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+    }
   </script>
 </body>
 </html>
