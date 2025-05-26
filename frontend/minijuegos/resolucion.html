@@ -90,8 +90,7 @@
   </div>
 
   <script>
-   // Cambia este ID por el del minijuego correspondiente
-const skillId = 'NOMBRE_DEL_MINIJUEGO'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
+const skillId = 'resolucion';
 
 // Chequeo si ya completó este minijuego
 try {
@@ -100,16 +99,33 @@ try {
     alert('Ya has completado esta prueba. No puedes volver a realizarla.');
     window.location.href = '../softskills.html';
   }
-} catch (e) {
-  // Si hay algún problema con el localStorage, no bloquea el acceso
+} catch (e) {}
+
+// Ejemplo de score
+let score = 0;
+
+// Ejemplo de función para nivel 1 (modifica según tu minijuego)
+function respondeNivel1(respuesta) {
+  if (respuesta === 'correcto') score++;
+  document.getElementById('nivel1').classList.add('hidden');
+  document.getElementById('nivel2').classList.remove('hidden');
 }
 
-// Al finalizar la prueba:
-function registrarMinijuegoCompletado(scoreVariable) {
-  // Guarda la puntuación específica del minijuego si la tienes
-  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+function respondeNivel2(respuesta) {
+  if (respuesta === 'correcto') score++;
+  document.getElementById('nivel2').classList.add('hidden');
+  document.getElementById('nivel3').classList.remove('hidden');
+}
 
-  // Marca la prueba como completada
+function respondeNivel3(respuesta) {
+  if (respuesta === 'correcto') score++;
+  document.getElementById('nivel3').classList.add('hidden');
+  document.getElementById('resultado').classList.remove('hidden');
+  registrarMinijuegoCompletado(score);
+}
+
+function registrarMinijuegoCompletado(scoreVariable) {
+  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
   let pruebasCompletadas = {};
   try {
     pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
@@ -119,6 +135,6 @@ function registrarMinijuegoCompletado(scoreVariable) {
   pruebasCompletadas[skillId] = true;
   localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
 }
-  </script>
+</script>
 </body>
 </html>
