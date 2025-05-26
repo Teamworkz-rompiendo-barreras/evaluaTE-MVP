@@ -56,9 +56,9 @@
       <h2>Nivel 1: Retraso en la Cadena</h2>
       <p>Una parte clave del proceso de producción se ha detenido. ¿Qué haces primero?</p>
       <div class="options">
-        <button onclick="chooseStep1('investigar')">Investigas la causa</button>
-        <button onclick="chooseStep1('esperar')">Esperas a que se resuelva solo</button>
-        <button onclick="chooseStep1('reemplazar')">Reemplazas al operario afectado</button>
+        <button onclick="respondeNivel1('investigar')">Investigas la causa</button>
+        <button onclick="respondeNivel1('esperar')">Esperas a que se resuelva solo</button>
+        <button onclick="respondeNivel1('reemplazar')">Reemplazas al operario afectado</button>
       </div>
     </div>
 
@@ -66,9 +66,9 @@
       <h2>Nivel 2: Propuesta de Mejora</h2>
       <p>El equipo propone dos formas de optimizar el proceso. ¿Cuál eliges?</p>
       <div class="options">
-        <button onclick="chooseStep2('analizar')">Analizas pros y contras de ambas</button>
-        <button onclick="chooseStep2('voto')">Lo decides por votación rápida</button>
-        <button onclick="chooseStep2('favorito')">Eliges tu favorita sin más</button>
+        <button onclick="respondeNivel2('analizar')">Analizas pros y contras de ambas</button>
+        <button onclick="respondeNivel2('voto')">Lo decides por votación rápida</button>
+        <button onclick="respondeNivel2('favorito')">Eliges tu favorita sin más</button>
       </div>
     </div>
 
@@ -76,9 +76,9 @@
       <h2>Nivel 3: Resultado Inesperado</h2>
       <p>El cambio implementado ha tenido consecuencias negativas. ¿Cómo actúas?</p>
       <div class="options">
-        <button onclick="chooseStep3('revisar')">Revisas y corriges</button>
-        <button onclick="chooseStep3('culpar')">Buscas al responsable</button>
-        <button onclick="chooseStep3('ignorar')">Ignoras y sigues adelante</button>
+        <button onclick="respondeNivel3('revisar')">Revisas y corriges</button>
+        <button onclick="respondeNivel3('culpar')">Buscas al responsable</button>
+        <button onclick="respondeNivel3('ignorar')">Ignoras y sigues adelante</button>
       </div>
     </div>
 
@@ -90,51 +90,49 @@
   </div>
 
   <script>
-const skillId = 'resolucion';
+    const skillId = 'resolucion';
 
-// Chequeo si ya completó este minijuego
-try {
-  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  if (pruebasCompletadas[skillId]) {
-    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-    window.location.href = '../softskills.html';
-  }
-} catch (e) {}
+    // Chequeo si ya completó este minijuego
+    try {
+      const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      if (pruebasCompletadas[skillId]) {
+        alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+        window.location.href = '../softskills.html';
+      }
+    } catch (e) {}
 
-// Ejemplo de score
-let score = 0;
+    let score = 0;
 
-// Ejemplo de función para nivel 1 (modifica según tu minijuego)
-function respondeNivel1(respuesta) {
-  if (respuesta === 'correcto') score++;
-  document.getElementById('nivel1').classList.add('hidden');
-  document.getElementById('nivel2').classList.remove('hidden');
-}
+    function respondeNivel1(respuesta) {
+      if (respuesta === 'investigar') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
 
-function respondeNivel2(respuesta) {
-  if (respuesta === 'correcto') score++;
-  document.getElementById('nivel2').classList.add('hidden');
-  document.getElementById('nivel3').classList.remove('hidden');
-}
+    function respondeNivel2(respuesta) {
+      if (respuesta === 'analizar') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
 
-function respondeNivel3(respuesta) {
-  if (respuesta === 'correcto') score++;
-  document.getElementById('nivel3').classList.add('hidden');
-  document.getElementById('resultado').classList.remove('hidden');
-  registrarMinijuegoCompletado(score);
-}
+    function respondeNivel3(respuesta) {
+      if (respuesta === 'revisar') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      registrarMinijuegoCompletado(score);
+    }
 
-function registrarMinijuegoCompletado(scoreVariable) {
-  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
-  let pruebasCompletadas = {};
-  try {
-    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  } catch {
-    pruebasCompletadas = {};
-  }
-  pruebasCompletadas[skillId] = true;
-  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
-}
-</script>
+    function registrarMinijuegoCompletado(scoreVariable) {
+      localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+      let pruebasCompletadas = {};
+      try {
+        pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      } catch {
+        pruebasCompletadas = {};
+      }
+      pruebasCompletadas[skillId] = true;
+      localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+    }
+  </script>
 </body>
 </html>
