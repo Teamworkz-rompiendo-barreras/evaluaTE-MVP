@@ -2,7 +2,7 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Minijuego - Inteligencia Emocional</title>
   <style>
     body {
@@ -50,72 +50,92 @@
 <body>
   <div class="container">
     <h1>Inteligencia Emocional</h1>
-    <p style="text-align:center">Responde a las siguientes situaciones y muestra cómo gestionas tus emociones y las de los demás.</p>
+    <p class="subtitle">Pon a prueba tu habilidad para reconocer, comprender y gestionar tus emociones y las de los demás.</p>
 
-    <div id="q1">
-      <h2>Nivel 1. Tu compañero está visiblemente frustrado porque su parte del proyecto salió mal. ¿Qué haces?</h2>
+    <div class="section" id="nivel1">
+      <h2>Nivel 1: Reconociendo emociones</h2>
+      <p>Un compañero parece estar más callado y retraído de lo habitual. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="next('q1', 'escucha')">Le escuchas y le ofreces ayuda sin juzgar</button>
-        <button onclick="next('q1', 'ignora')">Ignoras la situación</button>
-        <button onclick="next('q1', 'critica')">Le criticas por no hacer su parte correctamente</button>
+        <button onclick="respondeNivel1('acercarse')">Te acercas y preguntas cómo está</button>
+        <button onclick="respondeNivel1('ignorar')">Lo ignoras, cada quien con sus cosas</button>
+        <button onclick="respondeNivel1('juzgar')">Piensas que es poco profesional</button>
       </div>
     </div>
 
-    <div id="q2" class="hidden">
-      <h2>Nivel 2. Recibes un correo con críticas duras hacia tu trabajo. ¿Cómo respondes?</h2>
+    <div class="section hidden" id="nivel2">
+      <h2>Nivel 2: Gestión del estrés</h2>
+      <p>El plazo de entrega se ha adelantado y el equipo está estresado. ¿Cómo actúas?</p>
       <div class="options">
-        <button onclick="next('q2', 'agradece')">Agradeces el feedback y preguntas cómo mejorar</button>
-        <button onclick="next('q2', 'responde')">Respondes de forma impulsiva</button>
-        <button onclick="next('q2', 'ignoras')">Ignoras el mensaje</button>
+        <button onclick="respondeNivel2('dialogar')">Dialogas, propones organizar y priorizar juntos</button>
+        <button onclick="respondeNivel2('presionar')">Presionas más para cumplir</button>
+        <button onclick="respondeNivel2('desentender')">Te desentiendes, ya se apañarán</button>
       </div>
     </div>
 
-    <div id="q3" class="hidden">
-      <h2>Nivel 3. Un compañero está muy contento por una buena noticia personal. ¿Cómo reaccionas?</h2>
+    <div class="section hidden" id="nivel3">
+      <h2>Nivel 3: Conflicto interpersonal</h2>
+      <p>Hay un desacuerdo importante entre dos personas del equipo. ¿Cómo intervienes?</p>
       <div class="options">
-        <button onclick="next('q3', 'celebra')">Celebras su logro con entusiasmo</button>
-        <button onclick="next('q3', 'indiferente')">Te muestras indiferente</button>
-        <button onclick="next('q3', 'molesto')">Te molesta que le vaya bien</button>
+        <button onclick="respondeNivel3('mediador')">Actúas como mediador y escuchas ambas partes</button>
+        <button onclick="respondeNivel3('tomar_lado')">Tomas partido por una de las personas</button>
+        <button onclick="respondeNivel3('evitar')">Evitas implicarte en el conflicto</button>
       </div>
     </div>
 
-    <div id="final" class="hidden">
+    <div class="section hidden" id="resultado">
       <h2>¡Minijuego completado!</h2>
       <p>Tu progreso ha sido registrado.</p>
-      <button onclick="location.href='../softskills.html'">Volver a Soft Skills</button>
+      <button onclick="location.href='../softskills.html'">Volver</button>
     </div>
   </div>
 
   <script>
-   // Cambia este ID por el del minijuego correspondiente
-const skillId = 'NOMBRE_DEL_MINIJUEGO'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
+    const skillId = 'emocional';
 
-// Chequeo si ya completó este minijuego
-try {
-  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  if (pruebasCompletadas[skillId]) {
-    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-    window.location.href = '../softskills.html';
-  }
-} catch (e) {
-  // Si hay algún problema con el localStorage, no bloquea el acceso
-}
+    // Chequeo si ya completó este minijuego
+    try {
+      const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      if (pruebasCompletadas[skillId]) {
+        alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+        window.location.href = '../softskills.html';
+      }
+    } catch (e) {}
 
-// Al finalizar la prueba:
-function registrarMinijuegoCompletado(scoreVariable) {
-  // Guarda la puntuación específica del minijuego si la tienes
-  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+    let score = 0;
 
-  // Marca la prueba como completada
-  let pruebasCompletadas = {};
-  try {
-    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  } catch {
-    pruebasCompletadas = {};
-  }
-  pruebasCompletadas[skillId] = true;
-  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
-}
+    // Nivel 1: Respuesta correcta es "acercarse"
+    function respondeNivel1(respuesta) {
+      if (respuesta === 'acercarse') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    // Nivel 2: Respuesta correcta es "dialogar"
+    function respondeNivel2(respuesta) {
+      if (respuesta === 'dialogar') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    // Nivel 3: Respuesta correcta es "mediador"
+    function respondeNivel3(respuesta) {
+      if (respuesta === 'mediador') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      registrarMinijuegoCompletado(score);
+    }
+
+    function registrarMinijuegoCompletado(scoreVariable) {
+      localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+      let pruebasCompletadas = {};
+      try {
+        pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      } catch {
+        pruebasCompletadas = {};
+      }
+      pruebasCompletadas[skillId] = true;
+      localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+    }
   </script>
 </body>
 </html>
