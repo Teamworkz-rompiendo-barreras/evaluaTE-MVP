@@ -1,59 +1,35 @@
-using Microsoft.Azure.Functions.Worker;
-using Microsoft.Azure.Functions.Worker.Http;
-using Microsoft.Extensions.Logging;
-using Azure.Storage.Blobs;
 using System.IO;
-using System.Net;
 using System.Threading.Tasks;
+using Microsoft.AspNetCore.Http;
+using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.WebJobs;
+using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Extensions.Logging;
 
-public class UploadCVFunction
+public static class UploadCV
 {
-    private readonly ILogger _logger;
-
-    public UploadCVFunction(ILoggerFactory loggerFactory)
+    [FunctionName("UploadCV")]
+    public static async Task<IActionResult> Run(
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
+        ILogger log)
     {
-        _logger = loggerFactory.CreateLogger<UploadCVFunction>();
-    }
+        log.LogInformation("Procesando la subida de un CV...");
 
-    [Function("UploadCV")]
-    public async Task<HttpResponseData> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req,
-        FunctionContext executionContext)
-    {
-        _logger.LogInformation("UploadCVFunction triggered");
+        var form = await req.ReadFormAsync();
+        var file = form.Files["file"];
 
-        var boundary = MultipartRequestHelper.GetBoundary(req.Headers.GetValues("Content-Type").First(), 4096);
-        var reader = new MultipartReader(boundary, await req.BodyReader.AsStream().ConfigureAwait(false));
-        var section = await reader.ReadNextSectionAsync();
+        if (file == null || file.Length == 0)
+            return new BadRequestObjectResult("No se adjuntó ningún archivo.");
 
-        while (section != null)
+        var filePath = Path.Combine(Path.GetTempPath(), file.FileName);
+
+        using (var stream = new FileStream(filePath, FileMode.Create))
         {
-            var hasContentDispositionHeader = 
-                ContentDispositionHeaderValue.TryParse(section.ContentDisposition, out var contentDisposition);
-
-            if (hasContentDispositionHeader && contentDisposition.DispositionType.Equals("form-data") && 
-                !string.IsNullOrEmpty(contentDisposition.FileName.Value))
-            {
-                var fileName = contentDisposition.FileName.Value;
-                var stream = section.Body;
-
-                // Aquí cambia tu connection string y container name
-                string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
-                var blobClient = new BlobContainerClient(connectionString, "cv-container");
-                await blobClient.CreateIfNotExistsAsync();
-                var blob = blobClient.GetBlobClient(fileName);
-                await blob.UploadAsync(stream, overwrite: true);
-
-                var response = req.CreateResponse(HttpStatusCode.OK);
-                await response.WriteStringAsync("CV subido correctamente.");
-                return response;
-            }
-
-            section = await reader.ReadNextSectionAsync();
+            await file.CopyToAsync(stream);
         }
 
-        var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
-        await badResponse.WriteStringAsync("No se ha recibido un archivo válido.");
-        return badResponse;
+        log.LogInformation($"Archivo {file.FileName} guardado en {filePath}");
+        return new OkObjectResult($"Archivo {file.FileName} recibido correctamente.");
     }
 }
+
