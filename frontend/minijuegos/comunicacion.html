@@ -90,34 +90,51 @@
   </div>
 
   <script>
-    // Bloqueo si ya existe puntuación
-    const currentSkill = 'minijuego_comunicacion_score';
-    if (localStorage.getItem(currentSkill)) {
+  // ID único para este minijuego
+  const skillId = 'comunicacion';
+
+  // Chequeo si ya completó este minijuego
+  try {
+    const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+    if (pruebasCompletadas[skillId]) {
       alert('Ya has completado esta prueba. No puedes volver a realizarla.');
       window.location.href = '../softskills.html';
     }
+  } catch (e) {
+    // Si hay algún problema con el localStorage, no bloquea el acceso
+  }
 
-    let score = 0;
+  let score = 0;
 
-    function chooseStep1(option) {
-      if (option === 'claro') score++;
-      document.getElementById('nivel1').classList.add('hidden');
-      document.getElementById('nivel2').classList.remove('hidden');
+  function chooseStep1(option) {
+    if (option === 'claro') score++;
+    document.getElementById('nivel1').classList.add('hidden');
+    document.getElementById('nivel2').classList.remove('hidden');
+  }
+
+  function chooseStep2(option) {
+    if (option === 'empatia') score++;
+    document.getElementById('nivel2').classList.add('hidden');
+    document.getElementById('nivel3').classList.remove('hidden');
+  }
+
+  function chooseStep3(option) {
+    if (option === 'constructiva') score++;
+    document.getElementById('nivel3').classList.add('hidden');
+    document.getElementById('resultado').classList.remove('hidden');
+    // Guardamos la puntuación específica
+    localStorage.setItem('minijuego_comunicacion_score', score);
+
+    // Guardamos que este minijuego ya está completado (para pintar botón y bloquear)
+    let pruebasCompletadas = {};
+    try {
+      pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+    } catch {
+      pruebasCompletadas = {};
     }
-
-    function chooseStep2(option) {
-      if (option === 'empatia') score++;
-      document.getElementById('nivel2').classList.add('hidden');
-      document.getElementById('nivel3').classList.remove('hidden');
-    }
-
-    function chooseStep3(option) {
-      if (option === 'constructiva') score++;
-      document.getElementById('nivel3').classList.add('hidden');
-      document.getElementById('resultado').classList.remove('hidden');
-
-      localStorage.setItem('minijuego_comunicacion_score', score);
-    }
-  </script>
+    pruebasCompletadas[skillId] = true;
+    localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+  }
+</script>
 </body>
 </html>
