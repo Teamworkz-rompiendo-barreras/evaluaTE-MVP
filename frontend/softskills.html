@@ -41,9 +41,29 @@
       text-align: center;
       cursor: pointer;
       transition: transform 0.2s ease-in-out;
+      text-decoration: none;
+      color: #0b474b;
     }
     .card:hover {
       transform: scale(1.05);
+      background: #e6cb62;
+    }
+    .volver-btn {
+      display: block;
+      margin: 40px auto 0 auto;
+      padding: 12px 32px;
+      font-size: 1.1em;
+      border-radius: 8px;
+      background: #e6cb62;
+      color: #0b474b;
+      border: none;
+      cursor: pointer;
+      font-weight: bold;
+      transition: background 0.2s;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.05);
+    }
+    .volver-btn:hover {
+      background: #d1b748;
     }
   </style>
 </head>
@@ -62,5 +82,10 @@
     <a href="minijuegos/emocional.html" class="card">Inteligencia emocional</a>
     <a href="minijuegos/liderazgo.html" class="card">Liderazgo</a>
   </div>
+  
+  <button class="volver-btn" onclick="window.location.href='index.html'">
+    ⬅️ Volver a inicio
+  </button>
 </body>
 </html>
+
