@@ -87,34 +87,35 @@
   </div>
 
   <script>
-    const currentSkill = 'minijuego_emocional_score';
-    if (localStorage.getItem(currentSkill)) {
-      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-      window.location.href = '../softskills.html';
-    }
+    // Cambia este ID por el del minijuego correspondiente
+const skillId = 'emocional'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
 
-    let score = 0;
+// Chequeo si ya completó este minijuego
+try {
+  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+  if (pruebasCompletadas[skillId]) {
+    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+    window.location.href = '../softskills.html';
+  }
+} catch (e) {
+  // Si hay algún problema con el localStorage, no bloquea el acceso
+}
 
-    function next(current, choice) {
-      if (
-        (current === 'q1' && choice === 'escucha') ||
-        (current === 'q2' && choice === 'agradece') ||
-        (current === 'q3' && choice === 'celebra')
-      ) {
-        score++;
-      }
+// Al finalizar la prueba:
+function registrarMinijuegoCompletado(scoreVariable) {
+  // Guarda la puntuación específica del minijuego si la tienes
+  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
 
-      document.getElementById(current).classList.add('hidden');
-
-      if (current === 'q1') {
-        document.getElementById('q2').classList.remove('hidden');
-      } else if (current === 'q2') {
-        document.getElementById('q3').classList.remove('hidden');
-      } else if (current === 'q3') {
-        localStorage.setItem(currentSkill, score);
-        document.getElementById('final').classList.remove('hidden');
-      }
-    }
+  // Marca la prueba como completada
+  let pruebasCompletadas = {};
+  try {
+    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+  } catch {
+    pruebasCompletadas = {};
+  }
+  pruebasCompletadas[skillId] = true;
+  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+}
   </script>
 </body>
 </html>
