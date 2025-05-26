@@ -90,35 +90,35 @@
   </div>
 
   <script>
-    // Bloqueo si ya existe puntuación
-    const currentSkill = 'minijuego_resolucion_score' ;
-    if (localStorage.getItem(currentSkill)) {
-     alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-     window.location.rhef = '../softskills.html';
-    }
-    
-    let score = 0;
+   // Cambia este ID por el del minijuego correspondiente
+const skillId = 'NOMBRE_DEL_MINIJUEGO'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
 
-    function chooseStep1(option) {
-      if (option === 'investigar') score++;
-      document.getElementById('nivel1').classList.add('hidden');
-      document.getElementById('nivel2').classList.remove('hidden');
-    }
+// Chequeo si ya completó este minijuego
+try {
+  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+  if (pruebasCompletadas[skillId]) {
+    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+    window.location.href = '../softskills.html';
+  }
+} catch (e) {
+  // Si hay algún problema con el localStorage, no bloquea el acceso
+}
 
-    function chooseStep2(option) {
-      if (option === 'analizar') score++;
-      document.getElementById('nivel2').classList.add('hidden');
-      document.getElementById('nivel3').classList.remove('hidden');
-    }
+// Al finalizar la prueba:
+function registrarMinijuegoCompletado(scoreVariable) {
+  // Guarda la puntuación específica del minijuego si la tienes
+  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
 
-    function chooseStep3(option) {
-      if (option === 'revisar') score++;
-      document.getElementById('nivel3').classList.add('hidden');
-      document.getElementById('resultado').classList.remove('hidden');
-
-      // Guardar puntuación en localStorage para evaluación global posterior
-      localStorage.setItem(currentSkill, score);
-    }
+  // Marca la prueba como completada
+  let pruebasCompletadas = {};
+  try {
+    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+  } catch {
+    pruebasCompletadas = {};
+  }
+  pruebasCompletadas[skillId] = true;
+  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+}
   </script>
 </body>
 </html>
