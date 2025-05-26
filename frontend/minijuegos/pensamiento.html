@@ -50,75 +50,92 @@
 <body>
   <div class="container">
     <h1>Pensamiento Crítico</h1>
-    <p class="subtitle">Pon a prueba tu capacidad para evaluar información y tomar decisiones lógicas.</p>
+    <p class="subtitle">Evalúa tu capacidad para analizar información, cuestionar suposiciones y tomar decisiones fundamentadas.</p>
 
     <div class="section" id="nivel1">
-      <h2>Nivel 1: Un informe contradictorio</h2>
-      <p>Recibes un informe con datos contradictorios sobre el rendimiento de un equipo. ¿Qué haces primero?</p>
+      <h2>Nivel 1: Rumor en la oficina</h2>
+      <p>Un compañero te cuenta un rumor preocupante sobre un cambio importante. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="chooseStep1('consultar')">Consultar las fuentes originales</button>
-        <button onclick="chooseStep1('asumir')">Asumir que hay un error y descartarlo</button>
-        <button onclick="chooseStep1('ignorar')">Ignorar la contradicción</button>
+        <button onclick="respondeNivel1('verificar')">Verificas la información antes de actuar</button>
+        <button onclick="respondeNivel1('difundes')">Lo difundes sin comprobarlo</button>
+        <button onclick="respondeNivel1('ignoras')">Lo ignoras totalmente</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel2">
-      <h2>Nivel 2: Decisión basada en datos</h2>
-      <p>Dos propuestas tienen argumentos válidos. Una se basa en evidencia reciente y la otra en experiencia pasada. ¿Cuál priorizas?</p>
+      <h2>Nivel 2: Oferta sospechosa</h2>
+      <p>Recibes una oferta demasiado buena para ser verdad por email. ¿Cómo reaccionas?</p>
       <div class="options">
-        <button onclick="chooseStep2('evidencia')">Basada en evidencia reciente</button>
-        <button onclick="chooseStep2('experiencia')">Basada en experiencia pasada</button>
-        <button onclick="chooseStep2('ninguna')">Elegir una tercera opción</button>
+        <button onclick="respondeNivel2('investigar')">Investigas la fuente y los detalles</button>
+        <button onclick="respondeNivel2('aceptas')">La aceptas sin dudar</button>
+        <button onclick="respondeNivel2('eliminar')">La eliminas sin pensarlo</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel3">
-      <h2>Nivel 3: Pensamiento analítico</h2>
-      <p>Encuentras una opinión popular que contradice los datos que tienes. ¿Cómo respondes?</p>
+      <h2>Nivel 3: Análisis de resultados</h2>
+      <p>Te presentan resultados positivos de un proyecto, pero hay algo que no cuadra. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="chooseStep3('argumentar')">Argumentas con datos</button>
-        <button onclick="chooseStep3('seguir')">Te alineas con la opinión popular</button>
-        <button onclick="chooseStep3('posponer')">Pospones la decisión</button>
+        <button onclick="respondeNivel3('preguntas')">Formulas preguntas y pides datos</button>
+        <button onclick="respondeNivel3('aceptas')">Aceptas los resultados sin cuestionar</button>
+        <button onclick="respondeNivel3('minimizas')">Minimizas tus dudas y sigues adelante</button>
       </div>
     </div>
 
     <div class="section hidden" id="resultado">
       <h2>¡Minijuego completado!</h2>
       <p>Tu progreso ha sido registrado.</p>
-      <button onclick="location.href='../softskills.html'">Volver a Soft Skills</button>
+      <button onclick="location.href='../softskills.html'">Volver</button>
     </div>
   </div>
 
   <script>
-   // Cambia este ID por el del minijuego correspondiente
-const skillId = 'pensamiento'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
+    const skillId = 'pensamiento';
 
-// Chequeo si ya completó este minijuego
-try {
-  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  if (pruebasCompletadas[skillId]) {
-    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-    window.location.href = '../softskills.html';
-  }
-} catch (e) {
-  // Si hay algún problema con el localStorage, no bloquea el acceso
-}
+    // Chequeo si ya completó este minijuego
+    try {
+      const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      if (pruebasCompletadas[skillId]) {
+        alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+        window.location.href = '../softskills.html';
+      }
+    } catch (e) {}
 
-// Al finalizar la prueba:
-function registrarMinijuegoCompletado(scoreVariable) {
-  // Guarda la puntuación específica del minijuego si la tienes
-  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+    let score = 0;
 
-  // Marca la prueba como completada
-  let pruebasCompletadas = {};
-  try {
-    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  } catch {
-    pruebasCompletadas = {};
-  }
-  pruebasCompletadas[skillId] = true;
-  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
-}
+    // Nivel 1: Respuesta correcta es "verificar"
+    function respondeNivel1(respuesta) {
+      if (respuesta === 'verificar') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    // Nivel 2: Respuesta correcta es "investigar"
+    function respondeNivel2(respuesta) {
+      if (respuesta === 'investigar') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    // Nivel 3: Respuesta correcta es "preguntas"
+    function respondeNivel3(respuesta) {
+      if (respuesta === 'preguntas') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      registrarMinijuegoCompletado(score);
+    }
+
+    function registrarMinijuegoCompletado(scoreVariable) {
+      localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+      let pruebasCompletadas = {};
+      try {
+        pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      } catch {
+        pruebasCompletadas = {};
+      }
+      pruebasCompletadas[skillId] = true;
+      localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+    }
   </script>
 </body>
 </html>
