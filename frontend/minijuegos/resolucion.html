@@ -121,7 +121,6 @@
       document.getElementById('resultado').classList.remove('hidden');
       registrarMinijuegoCompletado(score);
     }
-
     function registrarMinijuegoCompletado(scoreVariable) {
       localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
       let pruebasCompletadas = {};
