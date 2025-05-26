@@ -40,13 +40,19 @@
       font-weight: bold;
       text-align: center;
       cursor: pointer;
-      transition: transform 0.2s ease-in-out;
+      transition: transform 0.2s, background 0.2s;
       text-decoration: none;
       color: #0b474b;
+      border: 2px solid transparent;
     }
     .card:hover {
       transform: scale(1.05);
       background: #e6cb62;
+    }
+    .card.completed {
+      background: #d0edd5;
+      color: #0b474b;
+      border-color: #2eb872;
     }
     .volver-btn {
       display: block;
@@ -70,22 +76,51 @@
 <body>
   <h1>Selecciona una habilidad para evaluarte</h1>
   <p class="subtitle">Haz clic en una tarjeta para comenzar la evaluación de esa competencia</p>
-  <div class="cards">
-    <a href="minijuegos/decisiones.html" class="card">Toma de decisiones</a>
-    <a href="minijuegos/resolucion.html" class="card">Resolución de problemas</a>
-    <a href="minijuegos/comunicacion.html" class="card">Comunicación</a>
-    <a href="minijuegos/adaptabilidad.html" class="card">Adaptabilidad</a>
-    <a href="minijuegos/tiempo.html" class="card">Gestión del tiempo</a>
-    <a href="minijuegos/equipo.html" class="card">Trabajo en equipo</a>
-    <a href="minijuegos/creatividad.html" class="card">Creatividad</a>
-    <a href="minijuegos/pensamiento.html" class="card">Pensamiento crítico</a>
-    <a href="minijuegos/emocional.html" class="card">Inteligencia emocional</a>
-    <a href="minijuegos/liderazgo.html" class="card">Liderazgo</a>
+  <div class="cards" id="cards-container">
+    <!-- Los botones se generan dinámicamente -->
   </div>
-  
   <button class="volver-btn" onclick="window.location.href='index.html'">
     ⬅️ Volver a inicio
   </button>
-</body>
-</html>
 
+  <script>
+    // Lista de habilidades y sus rutas
+    const skills = [
+      { id: "decisiones", nombre: "Toma de decisiones", ruta: "minijuegos/decisiones.html" },
+      { id: "resolucion", nombre: "Resolución de problemas", ruta: "minijuegos/resolucion.html" },
+      { id: "comunicacion", nombre: "Comunicación", ruta: "minijuegos/comunicacion.html" },
+      { id: "adaptabilidad", nombre: "Adaptabilidad", ruta: "minijuegos/adaptabilidad.html" },
+      { id: "tiempo", nombre: "Gestión del tiempo", ruta: "minijuegos/tiempo.html" },
+      { id: "equipo", nombre: "Trabajo en equipo", ruta: "minijuegos/equipo.html" },
+      { id: "creatividad", nombre: "Creatividad", ruta: "minijuegos/creatividad.html" },
+      { id: "pensamiento", nombre: "Pensamiento crítico", ruta: "minijuegos/pensamiento.html" },
+      { id: "emocional", nombre: "Inteligencia emocional", ruta: "minijuegos/emocional.html" },
+      { id: "liderazgo", nombre: "Liderazgo", ruta: "minijuegos/liderazgo.html" }
+    ];
+
+    // Lee de localStorage qué pruebas están completadas
+    function getCompletadas() {
+      try {
+        return JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      } catch {
+        return {};
+      }
+    }
+
+    // Renderiza las tarjetas
+    function renderCards() {
+      const container = document.getElementById("cards-container");
+      const completadas = getCompletadas();
+      skills.forEach(skill => {
+        const link = document.createElement("a");
+        link.href = skill.ruta;
+        link.className = "card" + (completadas[skill.id] ? " completed" : "");
+        link.innerText = skill.nombre;
+        container.appendChild(link);
+      });
+    }
+
+    renderCards();
+  </script>
+</body>
+</html
