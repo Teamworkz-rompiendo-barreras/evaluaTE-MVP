@@ -4,121 +4,138 @@
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Minijuego - Creatividad</title>
- <style>
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0ebE5;
-    color: #0b474b;
-    margin: 0;
-    padding: 20px;
-  }
-  .container {
-    max-width: 750px;
-    margin: auto;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  }
-  h1, h2 {
-    text-align: center;
-  }
-  .options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 15px;
-  }
-  button {
-    background-color: #e6cb62;
-    color: #0b474b;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    font-size: 1rem;
-  }
-  button:hover {
-    background-color: #d1b748;
-  }
-  .hidden {
-    display: none;
-  }
-</style>
+  <style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0ebE5;
+      color: #0b474b;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 750px;
+      margin: auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    button {
+      background-color: #e6cb62;
+      color: #0b474b;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
     <h1>Creatividad</h1>
-    <p class="subtitle">Demuestra tu ingenio para encontrar soluciones inesperadas y originales.</p>
+    <p class="subtitle">Pon a prueba tu capacidad para generar ideas originales y soluciones innovadoras en el trabajo.</p>
 
     <div class="section" id="nivel1">
-      <h2>Nivel 1: Interpretación libre</h2>
-      <p>¿Qué crees que hay dentro de la caja misteriosa?</p>
+      <h2>Nivel 1: Nueva campaña</h2>
+      <p>El equipo necesita una idea original para una nueva campaña de comunicación. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="chooseNivel1('esfera')">Una esfera luminosa que cambia de color con la voz</button>
-        <button onclick="chooseNivel1('artefacto')">Un artefacto que proyecta ideas en la pared</button>
-        <button onclick="chooseNivel1('cubo')">Un cubo que graba pensamientos cuando lo tocas</button>
+        <button onclick="respondeNivel1('lluvia')">Propones una lluvia de ideas y anotas cualquier propuesta</button>
+        <button onclick="respondeNivel1('solo')">Intentas encontrar la mejor idea por tu cuenta</button>
+        <button onclick="respondeNivel1('copias')">Propones copiar algo que ya funcionó en el pasado</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel2">
-      <h2>Nivel 2: Aplicación inesperada</h2>
-      <p>¿Para qué lo usarías en una presentación del equipo?</p>
+      <h2>Nivel 2: Obstáculo inesperado</h2>
+      <p>El proyecto se enfrenta a un obstáculo inesperado. ¿Cómo reaccionas?</p>
       <div class="options">
-        <button onclick="chooseNivel2('interactivo')">Como herramienta interactiva con el público</button>
-        <button onclick="chooseNivel2('metafora')">Como metáfora visual del proceso creativo</button>
-        <button onclick="chooseNivel2('juego')">Para gamificar la presentación con un reto sorpresa</button>
+        <button onclick="respondeNivel2('perspectiva')">Buscas distintas perspectivas y alternativas</button>
+        <button onclick="respondeNivel2('ignoras')">Ignoras el problema y sigues igual</button>
+        <button onclick="respondeNivel2('culpas')">Culpas a alguien del equipo</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel3">
-      <h2>Nivel 3: Improvisación rápida</h2>
-      <p>Descubres que el objeto no funciona. ¿Qué haces?</p>
+      <h2>Nivel 3: Solución innovadora</h2>
+      <p>Propones una solución poco convencional y el equipo duda. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="chooseNivel3('historia')">Improvisas una historia creativa sobre su funcionamiento</button>
-        <button onclick="chooseNivel3('dinamica')">Rediriges al público con una dinámica alternativa</button>
-        <button onclick="chooseNivel3('disculpa')">Pides disculpas y explicas lo que debería haber pasado</button>
+        <button onclick="respondeNivel3('argumentas')">Argumentas con ejemplos y ventajas para convencerles</button>
+        <button onclick="respondeNivel3('desistes')">Desistes y optas por la opción más tradicional</button>
+        <button onclick="respondeNivel3('insistes')">Insistes sin dar explicaciones</button>
       </div>
     </div>
 
     <div class="section hidden" id="resultado">
-      <h2>Gracias por completar el minijuego</h2>
-      <p>Tu creatividad ha quedado registrada. ¡Gran trabajo!</p>
+      <h2>¡Minijuego completado!</h2>
+      <p>Tu progreso ha sido registrado.</p>
       <button onclick="location.href='../softskills.html'">Volver</button>
     </div>
   </div>
 
   <script>
- // Cambia este ID por el del minijuego correspondiente
-const skillId = 'creatividad'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
+    const skillId = 'creatividad';
 
-// Chequeo si ya completó este minijuego
-try {
-  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  if (pruebasCompletadas[skillId]) {
-    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-    window.location.href = '../softskills.html';
-  }
-} catch (e) {
-  // Si hay algún problema con el localStorage, no bloquea el acceso
-}
+    // Chequeo si ya completó este minijuego
+    try {
+      const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      if (pruebasCompletadas[skillId]) {
+        alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+        window.location.href = '../softskills.html';
+      }
+    } catch (e) {}
 
-// Al finalizar la prueba:
-function registrarMinijuegoCompletado(scoreVariable) {
-  // Guarda la puntuación específica del minijuego si la tienes
-  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+    let score = 0;
 
-  // Marca la prueba como completada
-  let pruebasCompletadas = {};
-  try {
-    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  } catch {
-    pruebasCompletadas = {};
-  }
-  pruebasCompletadas[skillId] = true;
-  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
-}
+    // Nivel 1: La mejor es "lluvia"
+    function respondeNivel1(respuesta) {
+      if (respuesta === 'lluvia') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    // Nivel 2: La mejor es "perspectiva"
+    function respondeNivel2(respuesta) {
+      if (respuesta === 'perspectiva') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    // Nivel 3: La mejor es "argumentas"
+    function respondeNivel3(respuesta) {
+      if (respuesta === 'argumentas') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      registrarMinijuegoCompletado(score);
+    }
+
+    function registrarMinijuegoCompletado(scoreVariable) {
+      localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+      let pruebasCompletadas = {};
+      try {
+        pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      } catch {
+        pruebasCompletadas = {};
+      }
+      pruebasCompletadas[skillId] = true;
+      localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+    }
   </script>
 </body>
 </html>
