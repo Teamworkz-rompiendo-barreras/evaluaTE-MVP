@@ -3,122 +3,139 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Minijuego - Trabajo en equipo</title>
+  <title>Minijuego - Trabajo en Equipo</title>
   <style>
-  body {
-    font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-    background-color: #f0ebE5;
-    color: #0b474b;
-    margin: 0;
-    padding: 20px;
-  }
-  .container {
-    max-width: 750px;
-    margin: auto;
-    padding: 20px;
-    background: white;
-    border-radius: 12px;
-    box-shadow: 0 0 10px rgba(0,0,0,0.1);
-  }
-  h1, h2 {
-    text-align: center;
-  }
-  .options {
-    display: flex;
-    flex-direction: column;
-    gap: 10px;
-    margin-top: 15px;
-  }
-  button {
-    background-color: #e6cb62;
-    color: #0b474b;
-    border: none;
-    padding: 12px;
-    border-radius: 8px;
-    cursor: pointer;
-    transition: background-color 0.3s;
-    font-size: 1rem;
-  }
-  button:hover {
-    background-color: #d1b748;
-  }
-  .hidden {
-    display: none;
-  }
-</style>
+    body {
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+      background-color: #f0ebE5;
+      color: #0b474b;
+      margin: 0;
+      padding: 20px;
+    }
+    .container {
+      max-width: 750px;
+      margin: auto;
+      padding: 20px;
+      background: white;
+      border-radius: 12px;
+      box-shadow: 0 0 10px rgba(0,0,0,0.1);
+    }
+    h1, h2 {
+      text-align: center;
+    }
+    .options {
+      display: flex;
+      flex-direction: column;
+      gap: 10px;
+      margin-top: 15px;
+    }
+    button {
+      background-color: #e6cb62;
+      color: #0b474b;
+      border: none;
+      padding: 12px;
+      border-radius: 8px;
+      cursor: pointer;
+      transition: background-color 0.3s;
+      font-size: 1rem;
+    }
+    button:hover {
+      background-color: #d1b748;
+    }
+    .hidden {
+      display: none;
+    }
+  </style>
 </head>
 <body>
   <div class="container">
-    <h1>Trabajo en equipo</h1>
-    <p class="subtitle">Tu forma de colaborar dice mucho sobre ti. ¡Ponte en situación y toma decisiones!</p>
+    <h1>Trabajo en Equipo</h1>
+    <p class="subtitle">Pon a prueba tu capacidad para colaborar y aportar al grupo en diferentes situaciones.</p>
 
     <div class="section" id="nivel1">
-      <h2>Nivel 1: Nuevo integrante</h2>
-      <p>Llega una nueva persona al equipo y parece perdida. ¿Qué haces?</p>
+      <h2>Nivel 1: Proyecto conjunto</h2>
+      <p>El equipo tiene que presentar un informe y hay poco tiempo. ¿Cómo actúas?</p>
       <div class="options">
-        <button onclick="chooseLevel1('ayudar')">Te ofreces a ayudarle a integrarse</button>
-        <button onclick="chooseLevel1('esperar')">Esperas a que alguien más lo haga</button>
-        <button onclick="chooseLevel1('ignorar')">No haces nada, cada quien se adapta solo</button>
+        <button onclick="respondeNivel1('repartir')">Propones repartir tareas según habilidades</button>
+        <button onclick="respondeNivel1('hacerlo_todo')">Intentas hacer tú todo lo posible</button>
+        <button onclick="respondeNivel1('esperar')">Esperas a que los demás decidan qué hacer</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel2">
-      <h2>Nivel 2: Propuesta impopular</h2>
-      <p>Una compañera propone una idea que no convence al grupo. ¿Cómo reaccionas?</p>
+      <h2>Nivel 2: Desacuerdo en el grupo</h2>
+      <p>Surge una discusión entre dos compañeros por cómo enfocar el trabajo. ¿Qué haces?</p>
       <div class="options">
-        <button onclick="chooseLevel2('escuchar')">La escuchas y tratas de entender su propuesta</button>
-        <button onclick="chooseLevel2('criticar')">La criticas directamente</button>
-        <button onclick="chooseLevel2('ignorar')">Ignoras su idea y sigues con lo tuyo</button>
+        <button onclick="respondeNivel2('mediar')">Propones una mediación para llegar a un acuerdo</button>
+        <button onclick="respondeNivel2('ignorar')">Ignoras el problema, ya se resolverá</button>
+        <button onclick="respondeNivel2('apoyar_uno')">Tomas partido por uno de los compañeros</button>
       </div>
     </div>
 
     <div class="section hidden" id="nivel3">
-      <h2>Nivel 3: Objetivo común</h2>
-      <p>Hay retrasos y el equipo necesita horas extra para terminar el proyecto. ¿Qué haces?</p>
+      <h2>Nivel 3: Éxito del equipo</h2>
+      <p>El resultado final del proyecto es un éxito. ¿Cómo lo reconoces?</p>
       <div class="options">
-        <button onclick="chooseLevel3('colaborar')">Te ofreces para quedarte y ayudar</button>
-        <button onclick="chooseLevel3('escabullir')">Dices que ya tienes otros planes</button>
-        <button onclick="chooseLevel3('delegar')">Dices que otro lo haga porque tú ya hiciste tu parte</button>
+        <button onclick="respondeNivel3('felicitar')">Felicitas y agradeces al grupo por el esfuerzo conjunto</button>
+        <button onclick="respondeNivel3('adjudicar')">Te adjudicas el mérito</button>
+        <button onclick="respondeNivel3('restar_importancia')">Dices que ha sido suerte y no tiene mérito</button>
       </div>
     </div>
 
     <div class="section hidden" id="resultado">
-      <h2>Gracias por completar el minijuego</h2>
+      <h2>¡Minijuego completado!</h2>
       <p>Tu progreso ha sido registrado.</p>
       <button onclick="location.href='../softskills.html'">Volver</button>
     </div>
   </div>
 
   <script>
-    // Cambia este ID por el del minijuego correspondiente
-const skillId = 'equipo'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
+    const skillId = 'equipo';
 
-// Chequeo si ya completó este minijuego
-try {
-  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  if (pruebasCompletadas[skillId]) {
-    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-    window.location.href = '../softskills.html';
-  }
-} catch (e) {
-  // Si hay algún problema con el localStorage, no bloquea el acceso
-}
+    // Chequeo si ya completó este minijuego
+    try {
+      const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      if (pruebasCompletadas[skillId]) {
+        alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+        window.location.href = '../softskills.html';
+      }
+    } catch (e) {}
 
-// Al finalizar la prueba:
-function registrarMinijuegoCompletado(scoreVariable) {
-  // Guarda la puntuación específica del minijuego si la tienes
-  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+    let score = 0;
 
-  // Marca la prueba como completada
-  let pruebasCompletadas = {};
-  try {
-    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-  } catch {
-    pruebasCompletadas = {};
-  }
-  pruebasCompletadas[skillId] = true;
-  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
-}
+    // Nivel 1: Respuesta correcta es "repartir"
+    function respondeNivel1(respuesta) {
+      if (respuesta === 'repartir') score++;
+      document.getElementById('nivel1').classList.add('hidden');
+      document.getElementById('nivel2').classList.remove('hidden');
+    }
+
+    // Nivel 2: Respuesta correcta es "mediar"
+    function respondeNivel2(respuesta) {
+      if (respuesta === 'mediar') score++;
+      document.getElementById('nivel2').classList.add('hidden');
+      document.getElementById('nivel3').classList.remove('hidden');
+    }
+
+    // Nivel 3: Respuesta correcta es "felicitar"
+    function respondeNivel3(respuesta) {
+      if (respuesta === 'felicitar') score++;
+      document.getElementById('nivel3').classList.add('hidden');
+      document.getElementById('resultado').classList.remove('hidden');
+      registrarMinijuegoCompletado(score);
+    }
+
+    function registrarMinijuegoCompletado(scoreVariable) {
+      localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
+      let pruebasCompletadas = {};
+      try {
+        pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+      } catch {
+        pruebasCompletadas = {};
+      }
+      pruebasCompletadas[skillId] = true;
+      localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+    }
   </script>
 </body>
 </html>
