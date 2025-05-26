@@ -90,32 +90,35 @@
   </div>
 
   <script>
-    const currentSkill = 'minijuego_liderazgo_score';
-    if (localStorage.getItem(currentSkill)) {
-      alert('Ya has completado esta prueba. No puedes volver a realizarla.');
-      window.location.href = '../softskills.html';
-    }
+    // Cambia este ID por el del minijuego correspondiente
+const skillId = 'NOMBRE_DEL_MINIJUEGO'; // Ejemplo: 'resolucion', 'adaptabilidad', etc.
 
-    let score = 0;
+// Chequeo si ya completó este minijuego
+try {
+  const pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+  if (pruebasCompletadas[skillId]) {
+    alert('Ya has completado esta prueba. No puedes volver a realizarla.');
+    window.location.href = '../softskills.html';
+  }
+} catch (e) {
+  // Si hay algún problema con el localStorage, no bloquea el acceso
+}
 
-    function chooseCrisis(option) {
-      if (option === 'reunión') score++;
-      document.getElementById('nivel1').classList.add('hidden');
-      document.getElementById('nivel2').classList.remove('hidden');
-    }
+// Al finalizar la prueba:
+function registrarMinijuegoCompletado(scoreVariable) {
+  // Guarda la puntuación específica del minijuego si la tienes
+  localStorage.setItem('minijuego_' + skillId + '_score', scoreVariable);
 
-    function chooseConflict(option) {
-      if (option === 'mediar') score++;
-      document.getElementById('nivel2').classList.add('hidden');
-      document.getElementById('nivel3').classList.remove('hidden');
-    }
-
-    function chooseRecognition(option) {
-      if (option === 'dar credito') score++;
-      document.getElementById('nivel3').classList.add('hidden');
-      document.getElementById('resultado').classList.remove('hidden');
-      localStorage.setItem(currentSkill, score);
-    }
+  // Marca la prueba como completada
+  let pruebasCompletadas = {};
+  try {
+    pruebasCompletadas = JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
+  } catch {
+    pruebasCompletadas = {};
+  }
+  pruebasCompletadas[skillId] = true;
+  localStorage.setItem("pruebasCompletadas", JSON.stringify(pruebasCompletadas));
+}
   </script>
 </body>
 </html>
