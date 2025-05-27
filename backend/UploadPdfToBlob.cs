@@ -1,3 +1,4 @@
+using System;
 using System.IO;
 using System.Threading.Tasks;
 using Microsoft.AspNetCore.Mvc;
@@ -14,7 +15,6 @@ public static class UploadPdfToBlob
         [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
         ILogger log)
     {
-        // 1. Comprueba que hay un archivo adjunto
         var form = await req.ReadFormAsync();
         var file = form.Files["file"];
         if (file == null || file.Length == 0)
@@ -22,14 +22,18 @@ public static class UploadPdfToBlob
             return new BadRequestObjectResult("No se ha enviado ningún archivo.");
         }
 
-        // 2. Nombre del blob (puedes personalizarlo, aquí uso el nombre original)
-        string blobName = file.FileName;
+        // Validar que es PDF
+        if (!file.FileName.EndsWith(".pdf", StringComparison.OrdinalIgnoreCase) || file.ContentType != "application/pdf")
+        {
+            return new BadRequestObjectResult("Solo se permiten archivos PDF.");
+        }
 
-        // 3. Obtén la cadena de conexión del settings
+        // Nombre único para evitar sobrescribir archivos
+        string blobName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
+
+        // Usa AzureWebJobsStorage o BlobConnectionString según tu configuración
         string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
-
-        // 4. Crea el cliente Blob y sube el archivo
-        var blobClient = new BlobContainerClient(connectionString, "cvs"); // Usa el nombre de tu contenedor aquí
+        var blobClient = new BlobContainerClient(connectionString, "cvs");
         await blobClient.CreateIfNotExistsAsync();
         var blob = blobClient.GetBlobClient(blobName);
 
@@ -38,6 +42,9 @@ public static class UploadPdfToBlob
             await blob.UploadAsync(stream, overwrite: true);
         }
 
-        return new OkObjectResult($"Archivo '{blobName}' subido correctamente a Blob Storage.");
+        return new OkObjectResult(new {
+            message = $"Archivo '{blobName}' subido correctamente a Blob Storage.",
+            url = blob.Uri.ToString()
+        });
     }
 }
