@@ -7,6 +7,8 @@ using Microsoft.Azure.WebJobs.Extensions.Http;
 using Microsoft.AspNetCore.Http;
 using Microsoft.Extensions.Logging;
 using Azure.Storage.Blobs;
+using UglyToad.PdfPig;
+using UglyToad.PdfPig.Content;
 
 public static class UploadPdfToBlob
 {
@@ -30,21 +32,36 @@ public static class UploadPdfToBlob
 
         // Nombre único para evitar sobrescribir archivos
         string blobName = $"{Path.GetFileNameWithoutExtension(file.FileName)}_{DateTime.UtcNow.Ticks}{Path.GetExtension(file.FileName)}";
-
-        // Usa AzureWebJobsStorage o BlobConnectionString según tu configuración
         string connectionString = Environment.GetEnvironmentVariable("AzureWebJobsStorage");
         var blobClient = new BlobContainerClient(connectionString, "cvs");
         await blobClient.CreateIfNotExistsAsync();
         var blob = blobClient.GetBlobClient(blobName);
 
+        // Guardar el archivo en Blob Storage
         using (var stream = file.OpenReadStream())
         {
             await blob.UploadAsync(stream, overwrite: true);
         }
 
+        // Extraer texto del PDF (usando una copia del archivo, ya que el stream anterior ya se usó)
+        string extractedText = "";
+        using (var pdfStream = file.OpenReadStream())
+        using (PdfDocument pdf = PdfDocument.Open(pdfStream))
+        {
+            foreach (Page page in pdf.GetPages())
+            {
+                extractedText += page.Text + "\n";
+            }
+        }
+
+        // Solo devolvemos los primeros 1000 caracteres para evitar respuestas demasiado grandes
+        string previewText = extractedText.Length > 1000 ? extractedText.Substring(0, 1000) + "..." : extractedText;
+
         return new OkObjectResult(new {
             message = $"Archivo '{blobName}' subido correctamente a Blob Storage.",
-            url = blob.Uri.ToString()
+            url = blob.Uri.ToString(),
+            preview = previewText
         });
     }
 }
+
