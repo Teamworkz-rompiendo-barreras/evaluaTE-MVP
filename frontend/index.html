@@ -5,213 +5,214 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>EvalúaTE</title>
   <style>
-    :root {
-      --color-amarillo: #e6cb62;
-      --color-verde: #0b474b;
-      --color-beige: #f0ebe5;
-    }
     body {
-      font-family: Arial, Helvetica, sans-serif;
+      font-family: Arial, sans-serif;
       margin: 0;
       padding: 0;
-      background-color: var(--color-beige);
-      color: var(--color-verde);
+      background-color: #f5f5f5;
     }
-    .form-container, .softskills-container, .cta-container {
-      background-color: white;
-      padding: 2rem;
-      margin: 2rem auto 1rem auto;
-      border-radius: 16px;
-      box-shadow: 0 4px 16px rgba(11,71,75,0.07), 0 1.5px 5px rgba(230,203,98,0.12);
+    .main-wrapper {
       max-width: 600px;
-      width: 95%;
+      margin: 40px auto 0 auto;
     }
-    h1, h2 {
-      color: var(--color-verde);
-      margin-bottom: 0.7em;
+    .form-container {
+      background-color: white;
+      padding: 28px 32px 20px 32px;
+      border-radius: 16px;
+      box-shadow: 0 4px 24px 0 rgba(11,71,75,0.07);
+      margin-bottom: 18px;
+    }
+    .form-container h1 {
+      margin-top: 0;
+      color: #0b474b;
+      font-size: 2rem;
+      letter-spacing: -1px;
     }
     label {
       display: block;
-      margin-top: 1.2em;
-      font-weight: bold;
-      color: #222;
+      margin-top: 14px;
+      margin-bottom: 3px;
+      font-weight: 600;
+      color: #184347;
     }
-    input[type="text"],
-    input[type="email"],
-    input[type="tel"],
-    select,
-    input[type="file"] {
+    input[type="text"], input[type="email"], input[type="tel"], select, input[type="file"] {
       width: 100%;
-      padding: 10px;
-      margin-top: 0.3em;
-      border-radius: 7px;
+      padding: 10px 8px;
+      border-radius: 8px;
       border: 1px solid #b6b6b6;
       font-size: 1rem;
-      background-color: #faf9f5;
-      transition: border 0.2s;
+      margin-bottom: 2px;
+      background: #f9f9f7;
     }
-    input:focus, select:focus {
-      outline: 2px solid var(--color-verde);
-      border-color: var(--color-amarillo);
+    input[type="file"] {
+      padding: 6px 0;
     }
-    .campo-obligatorio {
-      color: #c03a2b;
-      margin-left: 0.5em;
-      font-size: 1em;
-    }
-    .fila-doble {
+    .inline-inputs {
       display: flex;
-      gap: 16px;
+      gap: 12px;
     }
-    .fila-doble > div {
+    .inline-inputs > div {
       flex: 1;
     }
-    button {
-      margin-top: 2em;
-      background-color: var(--color-amarillo);
-      color: var(--color-verde);
-      font-weight: bold;
+    .info-extra {
+      color: #666;
+      font-size: 0.97em;
+      margin-bottom: 0;
+      margin-top: 0;
+    }
+    button, .softskills-link {
+      background-color: #e6cb62;
       border: none;
-      padding: 12px 26px;
-      border-radius: 8px;
+      color: #0b474b;
+      padding: 11px 24px;
       font-size: 1rem;
+      border-radius: 8px;
+      font-weight: bold;
       cursor: pointer;
-      box-shadow: 0 1px 3px rgba(11,71,75,0.06);
-      transition: background 0.2s, color 0.2s, opacity 0.3s;
+      margin-top: 16px;
+      transition: background .15s;
+      box-shadow: 0 2px 8px 0 rgba(11,71,75,0.06);
+      text-align: center;
+      display: inline-block;
     }
-    button:disabled {
-      background: #ece7c1;
-      color: #b2a04b;
-      cursor: not-allowed;
-      opacity: 0.7;
+    button:hover, .softskills-link:hover {
+      background-color: #d6bc5a;
     }
-    .cta-button {
+    .softskills-section {
+      margin-top: 10px;
+      display: flex;
+      align-items: center;
+      justify-content: space-between;
+      padding: 16px 22px;
+      background: #fcfaf4;
+      border-radius: 12px;
+      box-shadow: 0 2px 8px 0 rgba(11,71,75,0.04);
+      gap: 12px;
+    }
+    .softskills-section p {
+      margin: 0;
+      color: #184347;
+      font-size: 1.09rem;
+      font-weight: 500;
+      flex: 1;
+    }
+    .enviar-todo-ctn {
       display: flex;
       justify-content: center;
-      margin-top: 1.2em;
+      margin-top: 38px;
+      margin-bottom: 32px;
+    }
+    #botonEnviarTodo:disabled {
+      opacity: 0.45;
+      cursor: not-allowed;
+      background: #e6cb62;
+      color: #0b474b;
     }
     @media (max-width: 600px) {
-      .form-container, .softskills-container, .cta-container {
-        padding: 1em;
-        margin: 1em 0.4em;
-      }
-      .fila-doble { flex-direction: column; gap: 0; }
-    }
-    /* Mejorar visualmente los select */
-    select {
-      background-image: url("data:image/svg+xml;utf8,<svg fill='gray' height='24' viewBox='0 0 24 24' width='24' xmlns='http://www.w3.org/2000/svg'><path d='M7 10l5 5 5-5z'/></svg>");
-      background-repeat: no-repeat;
-      background-position-x: 99%;
-      background-position-y: 50%;
-      appearance: none;
-      -webkit-appearance: none;
-      -moz-appearance: none;
+      .main-wrapper { padding: 0 2vw; }
+      .form-container { padding: 18px 7vw 14px 7vw; }
+      .softskills-section { flex-direction: column; align-items: flex-start; gap: 7px;}
+      .enviar-todo-ctn { margin-top: 24px; margin-bottom: 14px;}
     }
   </style>
 </head>
 <body>
-  <div class="form-container" aria-labelledby="main-title">
-    <h1 id="main-title">EvalúaTE</h1>
+<div class="main-wrapper">
+  <div class="form-container">
+    <h1>EvalúaTE</h1>
     <form id="cvForm" enctype="multipart/form-data" autocomplete="off">
-      <div class="fila-doble">
+      <div class="inline-inputs">
         <div>
-          <label for="nombre">Nombre <span class="campo-obligatorio">*</span></label>
-          <input type="text" id="nombre" name="nombre" required autocomplete="given-name"/>
+          <label for="nombre">Nombre</label>
+          <input type="text" name="nombre" id="nombre" autocomplete="given-name" required />
         </div>
         <div>
-          <label for="apellidos">Apellidos <span class="campo-obligatorio">*</span></label>
-          <input type="text" id="apellidos" name="apellidos" required autocomplete="family-name"/>
+          <label for="apellidos">Apellidos</label>
+          <input type="text" name="apellidos" id="apellidos" autocomplete="family-name" required />
         </div>
       </div>
-      <div class="fila-doble">
+      <div class="inline-inputs">
         <div>
           <label for="email">Correo electrónico</label>
-          <input type="email" id="email" name="email" autocomplete="email"/>
+          <input type="email" name="email" id="email" autocomplete="email" />
         </div>
         <div>
-          <label for="whatsapp">WhatsApp</label>
-          <input type="tel" id="whatsapp" name="whatsapp" autocomplete="tel"/>
+          <label for="whatsapp">Whatsapp</label>
+          <input type="tel" name="whatsapp" id="whatsapp" pattern="^[0-9\+\s\-]{7,}$" />
         </div>
       </div>
+      <p class="info-extra">* Rellena al menos el correo electrónico o el whatsapp.</p>
 
-      <fieldset style="margin-top:1.8em; border: 0; padding: 0;">
-        <legend style="font-size:1.05em; font-weight:bold; color:#444; margin-bottom:0.7em;">Preferencias laborales</legend>
-        <label for="tipo-puesto">Tipo de puesto <span class="campo-obligatorio">*</span></label>
-        <input type="text" id="tipo-puesto" name="tipo-puesto" required placeholder="Ej. Administrativo, Reparto, etc."/>
-
-        <label for="tipo-trabajo">Modalidad <span class="campo-obligatorio">*</span></label>
-        <select id="tipo-trabajo" name="tipo-trabajo" required>
-          <option value="">Selecciona una opción</option>
-          <option value="remoto">Remoto</option>
-          <option value="presencial">Presencial</option>
-          <option value="hibrido">Híbrido</option>
-        </select>
-
-        <label for="jornada">Jornada <span class="campo-obligatorio">*</span></label>
-        <select id="jornada" name="jornada" required>
-          <option value="">Selecciona una opción</option>
-          <option value="completa">Completa</option>
-          <option value="media">Media</option>
-          <option value="parcial">Parcial</option>
-        </select>
-
-        <label for="disponibilidad">Disponibilidad horaria <span class="campo-obligatorio">*</span></label>
-        <input type="text" id="disponibilidad" name="disponibilidad" required placeholder="Ej. Mañanas, tardes, fines de semana..."/>
-
-        <label for="traslado">¿Te trasladarías a otra ciudad?</label>
-        <select id="traslado" name="traslado">
-          <option value="">Selecciona una opción</option>
-          <option value="sí">Sí</option>
-          <option value="no">No</option>
-          <option value="depende">Depende</option>
-        </select>
-      </fieldset>
-
-      <label for="discapacidad" style="margin-top:1.8em;">¿Tienes certificado de discapacidad? <span class="campo-obligatorio">*</span></label>
-      <select id="discapacidad" name="discapacidad" required>
+      <label for="discapacidad">¿Tienes certificado de discapacidad?</label>
+      <select name="discapacidad" id="discapacidad" required>
         <option value="">Selecciona una opción</option>
         <option value="sí">Sí</option>
         <option value="no">No</option>
       </select>
 
-      <label for="cv" style="margin-top:1.2em;">Sube tu CV (PDF) <span class="campo-obligatorio">*</span></label>
-      <input type="file" id="cv" name="cv" accept="application/pdf" required />
+      <label for="tipo_puesto">¿Qué tipo de trabajo te gustaría hacer?</label>
+      <input type="text" name="tipo_puesto" id="tipo_puesto" placeholder="Ej. Reparto, administración..." required />
+
+      <label for="tipo_entorno">¿Tipo de entorno?</label>
+      <select name="tipo_entorno" id="tipo_entorno" required>
+        <option value="">Selecciona...</option>
+        <option value="presencial">Presencial</option>
+        <option value="remoto">Remoto</option>
+        <option value="híbrido">Híbrido</option>
+      </select>
+
+      <label for="jornada">¿Qué jornada prefieres?</label>
+      <select name="jornada" id="jornada" required>
+        <option value="">Selecciona...</option>
+        <option value="completa">Completa</option>
+        <option value="parcial">Parcial</option>
+        <option value="indiferente">Indiferente</option>
+      </select>
+
+      <label for="disponibilidad">Disponibilidad (horaria, inmediata, otras...)</label>
+      <input type="text" name="disponibilidad" id="disponibilidad" placeholder="Ej. Mañanas, turnos, incorporación inmediata..." required />
+
+      <label for="traslado">¿Disponibilidad para cambiar de residencia?</label>
+      <select name="traslado" id="traslado" required>
+        <option value="">Selecciona...</option>
+        <option value="sí">Sí</option>
+        <option value="no">No</option>
+        <option value="indiferente">Indiferente</option>
+      </select>
+
+      <label for="cv">Sube tu CV (PDF)</label>
+      <input type="file" name="cv" id="cv" accept="application/pdf" required />
 
       <button type="submit">Enviar CV</button>
     </form>
-  </div>
 
-  <div class="cta-container" aria-labelledby="softskills-title">
-    <h2 id="softskills-title">Evaluación de Soft Skills</h2>
-    <p>Accede al apartado de evaluación para completar las pruebas de habilidades blandas.</p>
-    <div class="cta-button">
-      <button type="button" onclick="location.href='softskills.html'">Ir a Evaluación de Soft Skills</button>
+    <!-- Nueva sección soft skills integrada y compacta -->
+    <div class="softskills-section" style="margin-top: 24px;">
+      <p>Accede al apartado de evaluación para completar las pruebas de habilidades blandas.</p>
+      <a href="softskills.html" class="softskills-link">Ir a Evaluación de Soft Skills</a>
     </div>
   </div>
 
-  <div id="bloque-envio" style="text-align: center; margin-top: 40px;">
-    <button id="botonEnviarTodo" disabled style="opacity: 0.5; cursor: not-allowed; background-color: #e6cb62; color: #0b474b; border: none; padding: 12px 24px; border-radius: 8px; font-size: 1rem;">
+  <!-- Botón para enviar todo y ver resultados, bien separado y centrado -->
+  <div class="enviar-todo-ctn">
+    <button id="botonEnviarTodo" disabled>
       Enviar todo y ver resultados
     </button>
   </div>
+</div>
 
 <script>
-  function guardarDatosFormulario() {
-    // Guardar campos del formulario en localStorage
-    localStorage.setItem('formulario_nombre', document.getElementById('nombre').value.trim());
-    localStorage.setItem('formulario_apellidos', document.getElementById('apellidos').value.trim());
-    localStorage.setItem('formulario_email', document.getElementById('email').value.trim());
-    localStorage.setItem('formulario_whatsapp', document.getElementById('whatsapp').value.trim());
-    localStorage.setItem('formulario_tipo_puesto', document.getElementById('tipo-puesto').value.trim());
-    localStorage.setItem('formulario_tipo_trabajo', document.getElementById('tipo-trabajo').value);
-    localStorage.setItem('formulario_jornada', document.getElementById('jornada').value);
-    localStorage.setItem('formulario_disponibilidad', document.getElementById('disponibilidad').value.trim());
-    localStorage.setItem('formulario_traslado', document.getElementById('traslado').value);
-    localStorage.setItem('formulario_discapacidad', document.getElementById('discapacidad').value);
-    // El archivo no se puede guardar, así que sólo nombre del archivo
-    localStorage.setItem('formulario_cv_pdf', document.getElementById('cv').files[0]?.name ?? '');
-  }
+  // Requisito: al menos email o whatsapp
+  document.getElementById('cvForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value.trim();
+    const whatsapp = document.getElementById('whatsapp').value.trim();
+    if (!email && !whatsapp) {
+      alert('Debes indicar al menos un email o un whatsapp de contacto.');
+      e.preventDefault();
+    }
+  });
 
+  // Verifica minijuegos + formulario + CV subido
   function verificarProgresoCompleto() {
     const juegos = [
       'minijuego_decisiones_score',
@@ -226,19 +227,20 @@
       'minijuego_emocional_score'
     ];
 
+    // Aquí debes guardar en localStorage los valores del formulario tras enviar el CV
+    // y los scores de los minijuegos desde cada minijuego
+
     const todosJuegosListos = juegos.every(k => localStorage.getItem(k));
-    // Se requiere al menos uno de email o whatsapp
-    const emailOK = localStorage.getItem('formulario_email');
-    const whatsappOK = localStorage.getItem('formulario_whatsapp');
-    const formOk = localStorage.getItem('formulario_nombre') &&
-                   localStorage.getItem('formulario_apellidos') &&
-                   (emailOK || whatsappOK) &&
-                   localStorage.getItem('formulario_tipo_puesto') &&
-                   localStorage.getItem('formulario_tipo_trabajo') &&
-                   localStorage.getItem('formulario_jornada') &&
-                   localStorage.getItem('formulario_disponibilidad') &&
-                   localStorage.getItem('formulario_discapacidad') &&
-                   localStorage.getItem('formulario_cv_pdf');
+    // Revisa que los campos obligatorios existan (ajusta keys según cómo los guardes)
+    const formOk = localStorage.getItem('formulario_nombre')
+      && (localStorage.getItem('formulario_email') || localStorage.getItem('formulario_whatsapp'))
+      && localStorage.getItem('formulario_cv_pdf')
+      && localStorage.getItem('formulario_tipo_puesto')
+      && localStorage.getItem('formulario_tipo_entorno')
+      && localStorage.getItem('formulario_jornada')
+      && localStorage.getItem('formulario_disponibilidad')
+      && localStorage.getItem('formulario_traslado')
+      && localStorage.getItem('formulario_discapacidad');
 
     const boton = document.getElementById('botonEnviarTodo');
     if (todosJuegosListos && formOk) {
@@ -247,38 +249,15 @@
       boton.style.cursor = 'pointer';
     } else {
       boton.disabled = true;
-      boton.style.opacity = 0.5;
+      boton.style.opacity = 0.45;
       boton.style.cursor = 'not-allowed';
     }
   }
 
   document.addEventListener('DOMContentLoaded', verificarProgresoCompleto);
 
-  // Guardar datos en localStorage al enviar el formulario
-  document.getElementById('cvForm').addEventListener('submit', function(e) {
-    e.preventDefault();
-    // Al menos email o whatsapp
-    const email = document.getElementById('email').value.trim();
-    const whatsapp = document.getElementById('whatsapp').value.trim();
-    if (!email && !whatsapp) {
-      alert('Debes rellenar al menos el correo electrónico o el WhatsApp.');
-      return;
-    }
-    guardarDatosFormulario();
-    verificarProgresoCompleto();
-    alert('Datos del formulario guardados. Puedes avanzar a la evaluación de soft skills.');
-  });
-
   document.getElementById('botonEnviarTodo')?.addEventListener('click', () => {
     window.location.href = 'resultados.html';
-  });
-
-  // Permitir que al cambiar cualquier campo se revise si puede habilitar el botón
-  document.querySelectorAll('#cvForm input, #cvForm select').forEach(el => {
-    el.addEventListener('change', () => {
-      guardarDatosFormulario();
-      verificarProgresoCompleto();
-    });
   });
 </script>
 </body>
