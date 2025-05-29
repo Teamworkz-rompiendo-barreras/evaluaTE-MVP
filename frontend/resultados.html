@@ -1,88 +1,18 @@
 <!DOCTYPE html>
+<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Resumen de Resultados</title>
-  <style>
-    body {
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
-      background-color: #f0ebE5;
-      color: #0b474b;
-      margin: 0;
-      padding: 20px;
-    }
-    .container {
-      max-width: 800px;
-      margin: auto;
-      padding: 20px;
-      background: white;
-      border-radius: 12px;
-      box-shadow: 0 0 10px rgba(0,0,0,0.1);
-    }
-    h1, h2 {
-      text-align: center;
-    }
-    .skill-score {
-      display: flex;
-      justify-content: space-between;
-      border-bottom: 1px solid #ccc;
-      padding: 10px 0;
-    }
-    .summary-button {
-      background-color: #e6cb62;
-      color: #0b474b;
-      border: none;
-      padding: 12px;
-      border-radius: 8px;
-      cursor: pointer;
-      transition: background-color 0.3s;
-      font-size: 1rem;
-      margin-top: 20px;
-      width: 100%;
-    }
-    .summary-button:hover {
-      background-color: #d1b748;
-    }
-  </style>
+  <meta charset="UTF-8">
+  <title>Informe de Empleabilidad</title>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
 </head>
 <body>
-  <div class="container">
-    <h1>Resumen de Resultados</h1>
-    <p>Aquí tienes una previsualización de tu perfil de empleabilidad.</p>
-
-    <div id="scores">
-      <!-- Las puntuaciones se rellenan dinámicamente -->
-    </div>
-
-    <button class="summary-button" onclick="generarInforme()">Generar Informe de Empleabilidad</button>
+  <div id="informe-container">
+    <!-- El informe se generará aquí -->
   </div>
+  <button id="generar-informe">Generar Informe</button>
+  <button id="descargar-pdf">Descargar PDF</button>
 
-  <script>
-    const skills = [
-      'decisiones', 'resolucion', 'comunicacion', 'adaptabilidad',
-      'gestion', 'trabajo', 'creatividad', 'liderazgo',
-      'pensamiento', 'emocional'
-    ];
-
-    function cargarResultados() {
-      const container = document.getElementById('scores');
-      skills.forEach(skill => {
-        const key = `minijuego_${skill}_score`;
-        const valor = localStorage.getItem(key);
-        const div = document.createElement('div');
-        div.className = 'skill-score';
-        div.innerHTML = `<span>${skill.charAt(0).toUpperCase() + skill.slice(1)}:</span><span>${valor ?? 'No completado'}</span>`;
-        container.appendChild(div);
-      });
-    }
-
-    function generarInforme() {
-      // Redireccionar al endpoint de generación de informe (por ejemplo, en backend Azure Function)
-      window.location.href = "/api/generarInforme";
-    }
-
-    cargarResultados();
-  </script>
+  <script src="informe.js"></script>
 </body>
 </html>
