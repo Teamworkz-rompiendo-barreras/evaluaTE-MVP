@@ -1,18 +1,23 @@
 <!DOCTYPE html>
-<!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
   <title>Informe de Empleabilidad</title>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
-  <div id="informe-container">
-    <!-- El informe se generará aquí -->
-  </div>
-  <button id="generar-informe">Generar Informe</button>
-  <button id="descargar-pdf">Descargar PDF</button>
-
+  <header>
+    <h1>Informe de Empleabilidad</h1>
+  </header>
+  <main>
+    <section id="informe-container">
+      <!-- El informe se generará aquí -->
+    </section>
+    <div class="botones">
+      <button id="generar-informe">Generar Informe</button>
+      <button id="descargar-pdf">Descargar PDF</button>
+    </div>
+  </main>
   <script src="informe.js"></script>
 </body>
 </html>
