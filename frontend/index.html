@@ -79,7 +79,7 @@
       background-color: #d6bc5a;
     }
     .softskills-section {
-      margin-top: 10px;
+      margin-top: 24px;
       display: flex;
       align-items: center;
       justify-content: space-between;
@@ -107,6 +107,28 @@
       cursor: not-allowed;
       background: #e6cb62;
       color: #0b474b;
+    }
+    .mensaje-envio {
+      max-width: 600px;
+      margin: 24px auto 0 auto;
+      background: #f9f9f7;
+      border-radius: 10px;
+      padding: 24px 18px;
+      text-align: center;
+      font-size: 1.08rem;
+      color: #0b474b;
+      box-shadow: 0 2px 12px 0 rgba(11,71,75,0.07);
+      display: none;
+    }
+    .mensaje-envio.exito {
+      background: #e9fad9;
+      color: #215d22;
+      border: 1.5px solid #badc98;
+    }
+    .mensaje-envio.error {
+      background: #fdeaea;
+      color: #892010;
+      border: 1.5px solid #f7b5b5;
     }
     @media (max-width: 600px) {
       .main-wrapper { padding: 0 2vw; }
@@ -153,7 +175,7 @@
       <label for="tipo_puesto">¿Qué tipo de trabajo te gustaría hacer?</label>
       <input type="text" name="tipo_puesto" id="tipo_puesto" placeholder="Ej. Reparto, administración..." required />
 
-      <label for="tipo_entorno">¿Tipo de entorno?</label>
+      <label for="tipo_entorno">¿Tipo?</label>
       <select name="tipo_entorno" id="tipo_entorno" required>
         <option value="">Selecciona...</option>
         <option value="presencial">Presencial</option>
@@ -186,33 +208,60 @@
       <button type="submit">Enviar CV</button>
     </form>
 
-    <!-- Nueva sección soft skills integrada y compacta -->
     <div class="softskills-section" style="margin-top: 24px;">
       <p>Accede al apartado de evaluación para completar las pruebas de habilidades blandas.</p>
       <a href="softskills.html" class="softskills-link">Ir a Evaluación de Soft Skills</a>
     </div>
   </div>
 
-  <!-- Botón para enviar todo y ver resultados, bien separado y centrado -->
   <div class="enviar-todo-ctn">
     <button id="botonEnviarTodo" disabled>
       Enviar todo y ver resultados
     </button>
   </div>
+  <div class="mensaje-envio" id="mensajeEnvio"></div>
 </div>
 
 <script>
-  // Requisito: al menos email o whatsapp
-  document.getElementById('cvForm').addEventListener('submit', function(e) {
-    const email = document.getElementById('email').value.trim();
-    const whatsapp = document.getElementById('whatsapp').value.trim();
-    if (!email && !whatsapp) {
-      alert('Debes indicar al menos un email o un whatsapp de contacto.');
-      e.preventDefault();
+  // Guardar campos automáticamente en localStorage
+  function saveFieldToStorage(id, storageKey) {
+    const input = document.getElementById(id);
+    if (!input) return;
+    const handler = () => {
+      let value = input.value;
+      // Para archivo, guarda sólo el nombre (o podrías guardar la URL cuando lo subas realmente)
+      if (input.type === 'file') {
+        value = input.files && input.files[0] ? input.files[0].name : "";
+      }
+      localStorage.setItem(storageKey, value);
+    };
+    input.addEventListener('input', handler);
+    if (input.type === 'file') input.addEventListener('change', handler);
+    // Al cargar, rellena el valor si existe
+    const stored = localStorage.getItem(storageKey);
+    if (stored) {
+      if (input.type === 'file') {
+        // No se puede restaurar file por seguridad navegador, omite
+      } else {
+        input.value = stored;
+      }
     }
-  });
+  }
 
-  // Verifica minijuegos + formulario + CV subido
+  // Asocia todos los campos
+  saveFieldToStorage('nombre', 'formulario_nombre');
+  saveFieldToStorage('apellidos', 'formulario_apellidos');
+  saveFieldToStorage('email', 'formulario_email');
+  saveFieldToStorage('whatsapp', 'formulario_whatsapp');
+  saveFieldToStorage('discapacidad', 'formulario_discapacidad');
+  saveFieldToStorage('tipo_puesto', 'formulario_tipo_puesto');
+  saveFieldToStorage('tipo_entorno', 'formulario_tipo_entorno');
+  saveFieldToStorage('jornada', 'formulario_jornada');
+  saveFieldToStorage('disponibilidad', 'formulario_disponibilidad');
+  saveFieldToStorage('traslado', 'formulario_traslado');
+  saveFieldToStorage('cv', 'formulario_cv_pdf');
+
+  // Verificar progreso
   function verificarProgresoCompleto() {
     const juegos = [
       'minijuego_decisiones_score',
@@ -226,13 +275,9 @@
       'minijuego_pensamiento_score',
       'minijuego_emocional_score'
     ];
-
-    // Aquí debes guardar en localStorage los valores del formulario tras enviar el CV
-    // y los scores de los minijuegos desde cada minijuego
-
     const todosJuegosListos = juegos.every(k => localStorage.getItem(k));
-    // Revisa que los campos obligatorios existan (ajusta keys según cómo los guardes)
     const formOk = localStorage.getItem('formulario_nombre')
+      && localStorage.getItem('formulario_apellidos')
       && (localStorage.getItem('formulario_email') || localStorage.getItem('formulario_whatsapp'))
       && localStorage.getItem('formulario_cv_pdf')
       && localStorage.getItem('formulario_tipo_puesto')
@@ -241,7 +286,6 @@
       && localStorage.getItem('formulario_disponibilidad')
       && localStorage.getItem('formulario_traslado')
       && localStorage.getItem('formulario_discapacidad');
-
     const boton = document.getElementById('botonEnviarTodo');
     if (todosJuegosListos && formOk) {
       boton.disabled = false;
@@ -254,11 +298,71 @@
     }
   }
 
+  // Cada campo, cada cambio: verifica progreso
+  document.querySelectorAll('input, select').forEach(e => {
+    e.addEventListener('change', verificarProgresoCompleto);
+    e.addEventListener('input', verificarProgresoCompleto);
+  });
+  // También al cargar
   document.addEventListener('DOMContentLoaded', verificarProgresoCompleto);
 
-  document.getElementById('botonEnviarTodo')?.addEventListener('click', () => {
-    window.location.href = 'resultados.html';
+  // Al enviar el CV: guarda todos los campos rellenados en localStorage (por si no se ha hecho antes)
+  document.getElementById('cvForm').addEventListener('submit', function(e) {
+    const email = document.getElementById('email').value.trim();
+    const whatsapp = document.getElementById('whatsapp').value.trim();
+    if (!email && !whatsapp) {
+      alert('Debes indicar al menos un email o un whatsapp de contacto.');
+      e.preventDefault();
+      return false;
+    }
+    // Se guardan todos los campos una vez más (ya se guardan, pero por seguridad)
+    document.querySelectorAll('#cvForm input, #cvForm select').forEach(inp => {
+      if (inp.type === 'file') {
+        if (inp.files && inp.files[0]) {
+          localStorage.setItem('formulario_cv_pdf', inp.files[0].name);
+        }
+      } else {
+        localStorage.setItem('formulario_' + inp.name, inp.value);
+      }
+    });
+    verificarProgresoCompleto();
+    // No evitar el submit, deja que suba el archivo si tienes backend.
   });
+
+  // Enviar todo: diálogo de confirmación
+  document.getElementById('botonEnviarTodo')?.addEventListener('click', (ev) => {
+    ev.preventDefault();
+    if (!window.confirm('¿Estás seguro/a de que quieres enviar todos los datos y ver los resultados? Podrás volver atrás si quieres corregir algo antes de enviar.')) {
+      return;
+    }
+    // Aquí puedes enviar los datos al backend. Simulamos resultado:
+    enviarDatosFinales();
+  });
+
+  // Mensaje final tras intento de envío
+  function mostrarMensajeEnvio(ok) {
+    const msj = document.getElementById('mensajeEnvio');
+    msj.style.display = 'block';
+    if (ok) {
+      msj.textContent = "¡Tus datos han sido enviados correctamente! Puedes revisar tu informe cuando lo desees.";
+      msj.className = "mensaje-envio exito";
+    } else {
+      msj.textContent = "No se han podido enviar los datos por un problema temporal. Puedes intentarlo más tarde pulsando de nuevo en Enviar.";
+      msj.className = "mensaje-envio error";
+    }
+    // Oculta el botón para evitar dobles envíos si es éxito
+    if (ok) document.getElementById('botonEnviarTodo').style.display = 'none';
+  }
+
+  // Simulación de envío real (aquí pondrás la llamada real al backend)
+  function enviarDatosFinales() {
+    // Simulación: éxito o error aleatorio
+    const exito = Math.random() > 0.1; // 90% de éxito simulado
+    setTimeout(() => {
+      mostrarMensajeEnvio(exito);
+    }, 900);
+  }
 </script>
 </body>
 </html>
+
