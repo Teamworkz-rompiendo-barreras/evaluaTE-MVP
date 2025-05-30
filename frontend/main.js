@@ -54,6 +54,9 @@ async function enviarDatosAlBackend(datosFormulario) {
 
 // Muestra el informe en pantalla
 function mostrarInforme(textoInforme) {
+    function mostrarInforme(info) {
+    console.log("INFORME RECIBIDO EN FRONTEND:", info);
+}
   const resultadoDiv = document.getElementById('resultadoInforme');
   if (resultadoDiv) {
     resultadoDiv.innerText = textoInforme;
