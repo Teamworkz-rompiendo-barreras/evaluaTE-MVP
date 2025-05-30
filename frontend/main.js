@@ -1,42 +1,4 @@
-// main.js
-
-async function enviarDatosAlBackend(datosFormulario) {
-  const respuesta = await fetch('http://localhost:8000/api/generar-informe', {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json'
-    },
-    body: JSON.stringify(datosFormulario)
-  });
-
-  if (respuesta.ok) {
-    const data = await respuesta.json();
-    mostrarInforme(data.informe); // Aquí mostramos el informe
-  } else {
-    alert('Error al generar el informe.');
-  }
-}
-
-// Muestra el informe en pantalla
-function mostrarInforme(textoInforme) {
-  document.getElementById('resultadoInforme').innerText = textoInforme;
-}
-
-// Asigna el evento al botón "Enviar todo y ver resultados"
-document.addEventListener('DOMContentLoaded', function() {
-  const botonEnviar = document.getElementById('botonEnviarTodo');
-  if (botonEnviar) {
-    botonEnviar.addEventListener('click', function(event) {
-      event.preventDefault();
-
-      // Recoge los datos de localStorage y crea el objeto con los datos del formulario y minijuegos
-      const datosFormulario = recogerDatosFormulario();
-
-      // Enviar los datos al backend para generar el informe
-      enviarDatosAlBackend(datosFormulario);
-    });
-  }
-});
+// main.js 
 
 // Función que recoge los datos de localStorage
 function recogerDatosFormulario() {
@@ -65,3 +27,53 @@ function recogerDatosFormulario() {
     // Si quieres añadir más campos, agrégalos aquí.
   };
 }
+
+// Función para enviar datos al backend y mostrar el informe
+async function enviarDatosAlBackend(datosFormulario) {
+  try {
+    const respuesta = await fetch('http://localhost:8000/api/generar-informe', {
+      method: 'POST',
+      headers: {
+        'Content-Type': 'application/json'
+      },
+      body: JSON.stringify(datosFormulario)
+    });
+
+    if (respuesta.ok) {
+      const data = await respuesta.json();
+      mostrarInforme(data.informe); // Aquí mostramos el informe
+      // Si quieres redirigir a otra página tras recibir el informe, descomenta la línea siguiente:
+      // window.location.href = 'resultados.html';
+    } else {
+      alert('Error al generar el informe.');
+    }
+  } catch (error) {
+    alert('No se pudo conectar con el servidor backend.');
+  }
+}
+
+// Muestra el informe en pantalla
+function mostrarInforme(textoInforme) {
+  const resultadoDiv = document.getElementById('resultadoInforme');
+  if (resultadoDiv) {
+    resultadoDiv.innerText = textoInforme;
+  } else {
+    alert('No se encontró el área para mostrar el informe.');
+  }
+}
+
+// Asigna el evento al botón "Enviar todo y ver resultados"
+document.addEventListener('DOMContentLoaded', function() {
+  const botonEnviar = document.getElementById('botonEnviarTodo');
+  if (botonEnviar) {
+    botonEnviar.addEventListener('click', function(event) {
+      event.preventDefault();
+
+      // Recoge los datos de localStorage y crea el objeto con los datos del formulario y minijuegos
+      const datosFormulario = recogerDatosFormulario();
+
+      // Enviar los datos al backend para generar el informe
+      enviarDatosAlBackend(datosFormulario);
+    });
+  }
+});
