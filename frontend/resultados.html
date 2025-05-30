@@ -53,15 +53,16 @@
       <button id="descargar-pdf">Descargar informe en PDF</button>
     </div>
   </div>
+
   <script src="main.js"></script>
   <script>
     // Rellena la fecha del informe automáticamente
     document.getElementById('informe-fecha').innerText =
       new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Esta función debe llamarse con el objeto resultado que recibes del backend
+    // Esta función recibe el objeto resultado del backend y pinta los datos
     function mostrarInforme(info) {
-      // Frase introductoria personalizada (puedes ajustar el texto como quieras)
+      // Puedes personalizar este texto
       document.getElementById('informe-intro').innerText =
         `Informe personalizado de empleabilidad. Basado en tus datos, preferencias y resultados de autoevaluación.`;
 
@@ -86,14 +87,13 @@
         mejoras.map(m => `<li>${m}</li>`).join('');
     }
 
-    // Para que main.js pueda usar mostrarInforme
+    // Permite usar mostrarInforme desde main.js
     window.mostrarInforme = mostrarInforme;
 
-    // Botón PDF: descarga solo el bloque del informe, con formato
+    // PDF
     document.getElementById('descargar-pdf').addEventListener('click', () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'pt', 'a4');
-      // Captura solo el contenido visual del informe
       const informe = document.getElementById('informe-wrapper');
       doc.html(informe, {
         callback: function (doc) {
