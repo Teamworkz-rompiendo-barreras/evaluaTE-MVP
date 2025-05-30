@@ -41,9 +41,8 @@ async function enviarDatosAlBackend(datosFormulario) {
 
     if (respuesta.ok) {
       const data = await respuesta.json();
-      mostrarInforme(data.informe); // Aquí mostramos el informe
-      // Si quieres redirigir a otra página tras recibir el informe, descomenta la línea siguiente:
-      // window.location.href = 'resultados.html';
+      console.log("RESPUESTA JSON DEL BACKEND:", data);
+      mostrarInforme(data.informe); 
     } else {
       alert('Error al generar el informe.');
     }
