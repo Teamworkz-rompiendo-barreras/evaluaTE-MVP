@@ -20,8 +20,18 @@ async def generar_informe_endpoint(request: Request):
     return {"informe": informe}
 
 def generar_informe(datos):
-    # Aquí iría tu lógica con OpenAI
-    return f"Este es el informe para: {datos['nombre']} {datos['apellidos']} (aquí iría el informe real)"
+    # Estructura compatible con el frontend
+    return {
+        "nombre": datos.get("nombre", ""),
+        "apellidos": datos.get("apellidos", ""),
+        "email": datos.get("email", ""),
+        "whatsapp": datos.get("whatsapp", ""),
+        "resumen": f"Este es un informe de ejemplo para {datos.get('nombre', '')}. Aquí irá el resumen real.",
+        "fortalezas": ["Comunicación", "Resolución de problemas"],
+        "areas_mejora": ["Gestión del tiempo"],
+        "orientacion": "Se recomienda buscar trabajos en equipo de atención al público.",
+        "conclusion": "¡Enhorabuena por tus avances!"
+    }
 
 # Para pruebas locales
 if __name__ == "__main__":
