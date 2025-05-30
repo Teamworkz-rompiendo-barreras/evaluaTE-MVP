@@ -1,4 +1,4 @@
-// main.js 
+// main.js
 
 // Función que recoge los datos de localStorage
 function recogerDatosFormulario() {
@@ -28,7 +28,7 @@ function recogerDatosFormulario() {
   };
 }
 
-// Función para enviar datos al backend y mostrar el informe
+// Función para enviar datos al backend y mostrar el informe bonito
 async function enviarDatosAlBackend(datosFormulario) {
   try {
     const respuesta = await fetch('http://localhost:8000/api/generar-informe', {
@@ -42,25 +42,17 @@ async function enviarDatosAlBackend(datosFormulario) {
     if (respuesta.ok) {
       const data = await respuesta.json();
       console.log("RESPUESTA JSON DEL BACKEND:", data);
-      mostrarInforme(data.informe); 
+      // Usa la función global que tienes definida en resultados.html
+      if (window.mostrarInforme) {
+        window.mostrarInforme(data.informe);
+      } else {
+        alert("No se encuentra la función mostrarInforme en la página.");
+      }
     } else {
       alert('Error al generar el informe.');
     }
   } catch (error) {
     alert('No se pudo conectar con el servidor backend.');
-  }
-}
-
-// Muestra el informe en pantalla
-function mostrarInforme(textoInforme) {
-    function mostrarInforme(info) {
-    console.log("INFORME RECIBIDO EN FRONTEND:", info);
-}
-  const resultadoDiv = document.getElementById('resultadoInforme');
-  if (resultadoDiv) {
-    resultadoDiv.innerText = textoInforme;
-  } else {
-    alert('No se encontró el área para mostrar el informe.');
   }
 }
 
@@ -70,11 +62,7 @@ document.addEventListener('DOMContentLoaded', function() {
   if (botonEnviar) {
     botonEnviar.addEventListener('click', function(event) {
       event.preventDefault();
-
-      // Recoge los datos de localStorage y crea el objeto con los datos del formulario y minijuegos
       const datosFormulario = recogerDatosFormulario();
-
-      // Enviar los datos al backend para generar el informe
       enviarDatosAlBackend(datosFormulario);
     });
   }
