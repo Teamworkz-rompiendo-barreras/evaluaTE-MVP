@@ -3,6 +3,8 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 
+from db import database, informes  # Importa tu conexión y la tabla
+
 app = FastAPI()
 
 # Habilita CORS para tu frontend (localhost, etc.)
@@ -20,10 +22,33 @@ class DatosInforme(BaseModel):
     email: str
     whatsapp: str
 
+@app.on_event("startup")
+async def startup():
+    await database.connect()
+
+@app.on_event("shutdown")
+async def shutdown():
+    await database.disconnect()
+
 @app.post("/api/generar-informe")
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()  # Convierte el modelo en un diccionario
     informe = generar_informe(datos_dict)
+
+    # Guardar en la base de datos
+    query = informes.insert().values(
+        nombre=informe["nombre"],
+        apellidos=informe["apellidos"],
+        email=informe["email"],
+        whatsapp=informe["whatsapp"],
+        resumen=informe["resumen"],
+        fortalezas=", ".join(informe["fortalezas"]),  # Convierte lista a string
+        areas_mejora=", ".join(informe["areas_mejora"]),
+        orientacion=informe["orientacion"],
+        conclusion=informe["conclusion"]
+    )
+    await database.execute(query)
+
     return {"informe": informe}
 
 def generar_informe(datos):
