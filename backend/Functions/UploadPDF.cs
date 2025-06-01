@@ -1,38 +1,34 @@
 using System.IO;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
-using Microsoft.AspNetCore.Mvc;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using System.Net;
 
 public static class UploadPDF
 {
-    [FunctionName("UploadPDF")]
-    public static async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
-        ILogger log)
+    [Function("UploadPDF")]
+    public static async Task<HttpResponseData> Run(
+        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestData req,
+        FunctionContext executionContext)
     {
-        // Verificamos que haya archivos en la petición
-        if (!req.HasFormContentType || req.Form.Files.Count == 0)
-            return new BadRequestObjectResult("No se ha recibido ningún archivo.");
+        var logger = executionContext.GetLogger("UploadPDF");
+        logger.LogInformation("Procesando subida de PDF...");
 
-        var file = req.Form.Files[0];
+        // Lee todo el body a memoria (NO recomendado para archivos grandes)
+        using var ms = new MemoryStream();
+        await req.Body.CopyToAsync(ms);
+        var pdfBytes = ms.ToArray();
 
-        if (file.Length == 0 || Path.GetExtension(file.FileName).ToLower() != ".pdf")
-            return new BadRequestObjectResult("Solo se permiten archivos PDF.");
+        // Aquí deberías procesar pdfBytes, guardarlos, analizarlos, etc.
+        // Si quieres guardar el archivo en disco (solo para pruebas locales)
+        var filePath = Path.Combine(Path.GetTempPath(), $"upload_{System.Guid.NewGuid()}.pdf");
+        await File.WriteAllBytesAsync(filePath, pdfBytes);
 
-        // Guardar el archivo en disco (cambia la ruta según tu entorno)
-        var outputPath = Path.Combine("C:\\AzureFunctionsUploads", file.FileName);
-        Directory.CreateDirectory("C:\\AzureFunctionsUploads"); // Asegura que la carpeta exista
+        logger.LogInformation($"Archivo PDF guardado temporalmente en {filePath}");
 
-        using (var stream = new FileStream(outputPath, FileMode.Create))
-        {
-            await file.CopyToAsync(stream);
-        }
-
-        log.LogInformation($"Archivo {file.FileName} subido correctamente.");
-
-        return new OkObjectResult($"Archivo {file.FileName} subido correctamente.");
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        await response.WriteStringAsync($"Archivo PDF recibido ({pdfBytes.Length} bytes)");
+        return response;
     }
 }
