@@ -1,35 +1,57 @@
 using System.IO;
+using System.Net;
 using System.Threading.Tasks;
-using Microsoft.AspNetCore.Http;
-using Microsoft.AspNetCore.Mvc;
-using Microsoft.Azure.WebJobs;
-using Microsoft.Azure.WebJobs.Extensions.Http;
+using Microsoft.Azure.Functions.Worker;
+using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
+using HttpMultipartParser;
 
-public static class UploadCV
+public class UploadCVFunction
 {
-    [FunctionName("UploadCV")]
-    public static async Task<IActionResult> Run(
-        [HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequest req,
-        ILogger log)
+    private readonly ILogger _logger;
+
+    public UploadCVFunction(ILoggerFactory loggerFactory)
     {
-        log.LogInformation("Procesando la subida de un CV...");
+        _logger = loggerFactory.CreateLogger<UploadCVFunction>();
+    }
 
-        var form = await req.ReadFormAsync();
-        var file = form.Files["file"];
+    [Function("UploadCV")]
+    public async Task<HttpResponseData> Run(
+        [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+    {
+        _logger.LogInformation("Procesando la subida de un CV...");
 
-        if (file == null || file.Length == 0)
-            return new BadRequestObjectResult("No se adjuntó ningún archivo.");
-
-        var filePath = Path.Combine(Path.GetTempPath(), file.FileName);
-
-        using (var stream = new FileStream(filePath, FileMode.Create))
+        // Asegúrate de que el content-type sea multipart/form-data
+        var contentType = req.Headers.GetValues("content-type").FirstOrDefault();
+        if (string.IsNullOrEmpty(contentType) || !contentType.Contains("multipart/form-data"))
         {
-            await file.CopyToAsync(stream);
+            var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+            await badResponse.WriteStringAsync("Content-Type debe ser multipart/form-data");
+            return badResponse;
         }
 
-        log.LogInformation($"Archivo {file.FileName} guardado en {filePath}");
-        return new OkObjectResult($"Archivo {file.FileName} recibido correctamente.");
+        // Parsear el body como multipart
+        var parser = await MultipartFormDataParser.ParseAsync(req.Body);
+        var file = parser.Files.FirstOrDefault();
+
+        if (file == null)
+        {
+            var badResponse = req.CreateResponse(HttpStatusCode.BadRequest);
+            await badResponse.WriteStringAsync("No se ha adjuntado ningún archivo PDF.");
+            return badResponse;
+        }
+
+        // Guardar el archivo (por ejemplo en disco temporal)
+        var filePath = Path.Combine(Path.GetTempPath(), file.FileName);
+        using (var fileStream = File.Create(filePath))
+        {
+            await file.Data.CopyToAsync(fileStream);
+        }
+
+        _logger.LogInformation($"Archivo {file.FileName} guardado correctamente en {filePath}");
+
+        var response = req.CreateResponse(HttpStatusCode.OK);
+        await response.WriteStringAsync($"Archivo {file.FileName} recibido correctamente.");
+        return response;
     }
 }
-
