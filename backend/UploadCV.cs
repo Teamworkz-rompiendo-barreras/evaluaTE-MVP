@@ -1,27 +1,33 @@
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using System.IO;
 using System.Net;
 using System.Threading.Tasks;
 
-public class UploadCV
+namespace TuNamespace // Cambia por el tuyo si quieres
 {
-    private readonly ILogger _logger;
-
-    public UploadCV(ILoggerFactory loggerFactory)
+    public class UploadCV
     {
-        _logger = loggerFactory.CreateLogger<UploadCV>();
-    }
+        private readonly ILogger<UploadCV> _logger;
 
-    [Function("UploadCV")]
-    public async Task<HttpResponseData> Run([HttpTrigger(AuthorizationLevel.Function, "post", Route = null)] HttpRequestData req)
-    {
-        var response = req.CreateResponse(HttpStatusCode.OK);
-        var reader = new StreamReader(req.Body);
-        var text = await reader.ReadToEndAsync();
+        public UploadCV(ILoggerFactory loggerFactory)
+        {
+            _logger = loggerFactory.CreateLogger<UploadCV>();
+        }
 
-        await response.WriteStringAsync($"CV recibido. Texto simulado: {text.Substring(0, System.Math.Min(100, text.Length))}...");
-        return response;
+        [Function("UploadCV")]
+        public async Task<HttpResponseData> Run(
+            [HttpTrigger(AuthorizationLevel.Function, "post")] HttpRequestData req)
+        {
+            _logger.LogInformation("Procesando subida de CV");
+
+            // Lee el cuerpo directamente como string
+            string body = await req.ReadAsStringAsync();
+
+            var response = req.CreateResponse(HttpStatusCode.OK);
+            await response.WriteStringAsync($"CV recibido. Texto simulado: {(body.Length > 100 ? body.Substring(0, 100) + "..." : body)}");
+
+            return response;
+        }
     }
 }
