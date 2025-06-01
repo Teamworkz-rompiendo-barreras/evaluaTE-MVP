@@ -1,6 +1,5 @@
 // main.js
 
-// Función que recoge los datos de localStorage
 function recogerDatosFormulario() {
   return {
     nombre: localStorage.getItem('formulario_nombre') || '',
@@ -13,7 +12,6 @@ function recogerDatosFormulario() {
     jornada: localStorage.getItem('formulario_jornada') || '',
     disponibilidad: localStorage.getItem('formulario_disponibilidad') || '',
     traslado: localStorage.getItem('formulario_traslado') || '',
-    // Resultados minijuegos
     minijuego_decisiones_score: localStorage.getItem('minijuego_decisiones_score') || '',
     minijuego_resolucion_score: localStorage.getItem('minijuego_resolucion_score') || '',
     minijuego_comunicacion_score: localStorage.getItem('minijuego_comunicacion_score') || '',
@@ -24,25 +22,19 @@ function recogerDatosFormulario() {
     minijuego_liderazgo_score: localStorage.getItem('minijuego_liderazgo_score') || '',
     minijuego_pensamiento_score: localStorage.getItem('minijuego_pensamiento_score') || '',
     minijuego_emocional_score: localStorage.getItem('minijuego_emocional_score') || ''
-    // Si quieres añadir más campos, agrégalos aquí.
   };
 }
 
-// Función para enviar datos al backend y mostrar el informe bonito
 async function enviarDatosAlBackend(datosFormulario) {
   try {
     const respuesta = await fetch('http://localhost:8000/api/generar-informe', {
       method: 'POST',
-      headers: {
-        'Content-Type': 'application/json'
-      },
+      headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datosFormulario)
     });
 
     if (respuesta.ok) {
       const data = await respuesta.json();
-      console.log("RESPUESTA JSON DEL BACKEND:", data);
-      // Usa la función global que tienes definida en resultados.html
       if (window.mostrarInforme) {
         window.mostrarInforme(data.informe);
       } else {
@@ -56,7 +48,6 @@ async function enviarDatosAlBackend(datosFormulario) {
   }
 }
 
-// Asigna el evento al botón "Enviar todo y ver resultados"
 document.addEventListener('DOMContentLoaded', function() {
   const botonEnviar = document.getElementById('botonEnviarTodo');
   if (botonEnviar) {
@@ -65,5 +56,9 @@ document.addEventListener('DOMContentLoaded', function() {
       const datosFormulario = recogerDatosFormulario();
       enviarDatosAlBackend(datosFormulario);
     });
+  } else {
+    // Si NO hay botón, genera el informe automáticamente (caso informe.html)
+    const datosFormulario = recogerDatosFormulario();
+    enviarDatosAlBackend(datosFormulario);
   }
 });
