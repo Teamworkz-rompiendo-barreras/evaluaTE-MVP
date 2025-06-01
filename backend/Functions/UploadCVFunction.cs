@@ -1,10 +1,9 @@
 using System.IO;
-using System.Net;
+using System.Linq; 
 using System.Threading.Tasks;
 using Microsoft.Azure.Functions.Worker;
 using Microsoft.Azure.Functions.Worker.Http;
 using Microsoft.Extensions.Logging;
-using HttpMultipartParser;
 
 public class UploadCVFunction
 {
