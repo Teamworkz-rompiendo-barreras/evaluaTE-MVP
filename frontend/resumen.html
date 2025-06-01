@@ -87,7 +87,7 @@
       <tbody id="resultados-tbody"></tbody>
     </table>
     <div id="aviso" class="pending" style="text-align:center; margin-bottom:15px;"></div>
-    <button id="enviarBtn" disabled>Enviar todo y ver mi perfil</button>
+    <button id="enviarBtn" disabled>Enviar todo y ver mi informe</button>
 
     <div id="resumen-final" class="resumen-final" style="display:none;">
       <h2>Previsualización de tu perfil</h2>
@@ -140,14 +140,13 @@
       aviso.textContent = `Te falta completar ${pendientes} prueba(s). Completa todas para enviar tu perfil.`;
       enviarBtn.disabled = true;
     } else {
-      aviso.textContent = "¡Todas las pruebas completadas! Puedes enviar y ver tu perfil.";
+      aviso.textContent = "¡Todas las pruebas completadas! Puedes enviar y ver tu informe.";
       enviarBtn.disabled = false;
     }
 
-    // Simula el envío y muestra el resumen de perfil
+    // Previsualización sencilla y redirección al informe real
     enviarBtn.addEventListener('click', () => {
-      // Aquí iría la llamada real a backend/Azure Function con los datos
-      // Ejemplo de previsualización sencilla:
+      // Previsualización
       const perfilInfo = document.getElementById('perfil-info');
       let html = "<ul>";
       resultados.forEach(r => {
@@ -157,7 +156,13 @@
       perfilInfo.innerHTML = html;
       document.getElementById('resumen-final').style.display = 'block';
       window.scrollTo({ top: document.body.scrollHeight, behavior: 'smooth' });
+
+      // Redirige a la página de informe real tras 1,5 segundos
+      setTimeout(() => {
+        window.location.href = "resultados.html"; // Cambia a "informe.html" si así se llama tu informe final
+      }, 1500);
     });
   </script>
 </body>
 </html>
+
