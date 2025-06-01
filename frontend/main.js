@@ -25,40 +25,28 @@ function recogerDatosFormulario() {
   };
 }
 
-async function enviarDatosAlBackend(datosFormulario) {
+async function generarInforme() {
+  const datos = recogerDatosFormulario();
   try {
     const respuesta = await fetch('http://localhost:8000/api/generar-informe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
-      body: JSON.stringify(datosFormulario)
+      body: JSON.stringify(datos)
     });
-
     if (respuesta.ok) {
       const data = await respuesta.json();
+      // Asegúrate de que el backend responde con { informe: {...} }
       if (window.mostrarInforme) {
         window.mostrarInforme(data.informe);
-      } else {
-        alert("No se encuentra la función mostrarInforme en la página.");
       }
     } else {
-      alert('Error al generar el informe.');
+      alert('Error al generar el informe');
     }
-  } catch (error) {
-    alert('No se pudo conectar con el servidor backend.');
+  } catch (err) {
+    alert('No se pudo conectar al backend');
   }
 }
 
-document.addEventListener('DOMContentLoaded', function() {
-  const botonEnviar = document.getElementById('botonEnviarTodo');
-  if (botonEnviar) {
-    botonEnviar.addEventListener('click', function(event) {
-      event.preventDefault();
-      const datosFormulario = recogerDatosFormulario();
-      enviarDatosAlBackend(datosFormulario);
-    });
-  } else {
-    // Si NO hay botón, genera el informe automáticamente (caso informe.html)
-    const datosFormulario = recogerDatosFormulario();
-    enviarDatosAlBackend(datosFormulario);
-  }
-});
+// Ejecutar automáticamente al cargar la página resultados.html
+document.addEventListener('DOMContentLoaded', generarInforme);
+
