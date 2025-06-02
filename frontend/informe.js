@@ -1,5 +1,4 @@
 async function generarInformeEmpleabilidad() {
-  // 1. Recoge los datos del formulario (localStorage)
   const nombre = localStorage.getItem('formulario_nombre') || '';
   const apellidos = localStorage.getItem('formulario_apellidos') || '';
   const email = localStorage.getItem('formulario_email') || '';
@@ -7,14 +6,18 @@ async function generarInformeEmpleabilidad() {
   const cv_filename = localStorage.getItem('formulario_cv_pdf') || '';
 
   if (!cv_filename) {
-    alert("No se ha detectado un CV cargado. Por favor vuelve a seleccionarlo.");
+    alert("No se ha detectado un CV. Por favor vuelve a seleccionarlo.");
     return;
   }
 
-  // 2. Prepara el JSON a enviar al backend
-  const datos = { nombre, apellidos, email, whatsapp, cv_filename };
+  const datos = {
+    nombre,
+    apellidos,
+    email,
+    whatsapp,
+    cv_filename
+  };
 
-  // 3. Llama al backend FastAPI
   try {
     const response = await fetch('http://localhost:8000/api/generar-informe', {
       method: 'POST',
@@ -24,11 +27,9 @@ async function generarInformeEmpleabilidad() {
 
     if (!response.ok) throw new Error('Error al generar el informe');
 
-    // 4. El backend devuelve el informe (como JSON)
     const data = await response.json();
     const informe = data.informe;
 
-    // 5. Muestra el informe en pantalla
     document.getElementById('informe-container').innerHTML = `
       <h2>Informe de Empleabilidad</h2>
       <p><strong>Nombre:</strong> ${informe.nombre}</p>
@@ -49,7 +50,7 @@ async function generarInformeEmpleabilidad() {
       </div>
     `;
 
-    // 6. Activar descarga en PDF
+    // Activar botón para descarga en PDF
     document.getElementById("descargar-pdf").addEventListener("click", function () {
       const element = document.getElementById("informe-container");
       const opt = {
@@ -63,8 +64,7 @@ async function generarInformeEmpleabilidad() {
     });
 
   } catch (error) {
-    document.getElementById('informe-container').innerHTML =
-      `<p style="color:red;">${error.message}</p>`;
+    console.error("Error al generar informe:", error);
+    document.getElementById('informe-container').innerHTML = `<p style="color:red;">${error.message}</p>`;
   }
 }
-
