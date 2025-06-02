@@ -4,9 +4,15 @@ async function generarInformeEmpleabilidad() {
   const apellidos = localStorage.getItem('formulario_apellidos') || '';
   const email = localStorage.getItem('formulario_email') || '';
   const whatsapp = localStorage.getItem('formulario_whatsapp') || '';
+  const cv_filename = localStorage.getItem('formulario_cv_pdf') || '';
+
+  if (!cv_filename) {
+    alert("No se ha detectado un CV cargado. Por favor vuelve a seleccionarlo.");
+    return;
+  }
 
   // 2. Prepara el JSON a enviar al backend
-  const datos = { nombre, apellidos, email, whatsapp };
+  const datos = { nombre, apellidos, email, whatsapp, cv_filename };
 
   // 3. Llama al backend FastAPI
   try {
@@ -26,7 +32,6 @@ async function generarInformeEmpleabilidad() {
     document.getElementById('informe-container').innerHTML = `
       <h2>Informe de Empleabilidad</h2>
       <p><strong>Nombre:</strong> ${informe.nombre}</p>
-      <p><strong>Apellidos:</strong> ${informe.apellidos}</p>
       <p><strong>Email:</strong> ${informe.email}</p>
       <p><strong>WhatsApp:</strong> ${informe.whatsapp}</p>
       <h3>Resumen</h3>
@@ -44,7 +49,7 @@ async function generarInformeEmpleabilidad() {
       </div>
     `;
 
-    // 6. Añadir funcionalidad para descargar en PDF
+    // 6. Activar descarga en PDF
     document.getElementById("descargar-pdf").addEventListener("click", function () {
       const element = document.getElementById("informe-container");
       const opt = {
@@ -58,6 +63,8 @@ async function generarInformeEmpleabilidad() {
     });
 
   } catch (error) {
-    document.getElementById('informe-container').innerHTML = `<p style="color:red;">${error.message}</p>`;
+    document.getElementById('informe-container').innerHTML =
+      `<p style="color:red;">${error.message}</p>`;
   }
 }
+
