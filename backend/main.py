@@ -52,50 +52,46 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-# Endpoint principal que recibe los datos y genera el informe
+# Nuevo endpoint con generación estructurada del informe
 @app.post("/api/generar-informe")
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()
 
-    # Construir perfil para enviar a Azure OpenAI
-    perfil = f"""
-    Nombre: {datos_dict.get('nombre', '')} {datos_dict.get('apellidos', '')}
-    Email: {datos_dict.get('email', '')}
-    WhatsApp: {datos_dict.get('whatsapp', '')}
-    (Aquí podrás añadir resultados del CV y minijuegos)
-    """
+    # Ruta simulada al CV subido (ajusta con la real)
+    datos_dict["ruta_cv"] = "cv_muestra.pdf"  # ⚠️ Cambiar por la ruta real del archivo si es dinámica
 
-    texto_generado = generar_informe_ia(perfil)
+    # Simulación de resultados de minijuegos
+    datos_dict["resultados_minijuegos"] = "Comunicación alta, liderazgo medio, resolución de problemas alta."
 
-    # Por ahora usamos todo el texto como resumen y el resto como plantilla vacía
-    informe = {
+    # Generar informe profesional usando IA
+    informe = generar_informe_ia(datos_dict)
+
+    # Guardar informe en la base de datos
+    query = informes.insert().values(
+        nombre=datos_dict.get("nombre", ""),
+        apellidos=datos_dict.get("apellidos", ""),
+        email=datos_dict.get("email", ""),
+        whatsapp=datos_dict.get("whatsapp", ""),
+        resumen=informe.get("resumen", ""),
+        fortalezas=", ".join(informe.get("fortalezas", [])),
+        areas_mejora=", ".join(informe.get("areas_mejora", [])),
+        orientacion=informe.get("orientacion", ""),
+        conclusion=informe.get("conclusion", "")
+    )
+    await database.execute(query)
+
+    # Enviar al frontend solo los campos relevantes
+    return JSONResponse(content={"informe": {
         "nombre": datos_dict.get("nombre", ""),
         "apellidos": datos_dict.get("apellidos", ""),
         "email": datos_dict.get("email", ""),
         "whatsapp": datos_dict.get("whatsapp", ""),
-        "resumen": texto_generado,
-        "fortalezas": [],
-        "areas_mejora": [],
-        "orientacion": "",
-        "conclusion": ""
-    }
-
-    # Guardar informe en base de datos
-    query = informes.insert().values(
-        nombre=informe["nombre"],
-        apellidos=informe["apellidos"],
-        email=informe["email"],
-        whatsapp=informe["whatsapp"],
-        resumen=informe["resumen"],
-        fortalezas=", ".join(informe["fortalezas"]),
-        areas_mejora=", ".join(informe["areas_mejora"]),
-        orientacion=informe["orientacion"],
-        conclusion=informe["conclusion"],
-    )
-    await database.execute(query)
-
-    # Enviar el informe al frontend
-    return JSONResponse(content={"informe": informe})
+        "resumen": informe.get("resumen", ""),
+        "fortalezas": informe.get("fortalezas", []),
+        "areas_mejora": informe.get("areas_mejora", []),
+        "orientacion": informe.get("orientacion", ""),
+        "conclusion": informe.get("conclusion", "")
+    }})
 
 # Ejecutar localmente
 if __name__ == "__main__":
