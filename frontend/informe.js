@@ -8,7 +8,7 @@ async function generarInformeEmpleabilidad() {
   // 2. Prepara el JSON a enviar al backend
   const datos = { nombre, apellidos, email, whatsapp };
 
-  // 3. Llama al backend FastAPI (ajusta la URL si usas otro puerto)
+  // 3. Llama al backend FastAPI
   try {
     const response = await fetch('http://localhost:8000/api/generar-informe', {
       method: 'POST',
@@ -39,7 +39,24 @@ async function generarInformeEmpleabilidad() {
       <p>${informe.orientacion}</p>
       <h3>Conclusión</h3>
       <p>${informe.conclusion}</p>
+      <div style="margin-top: 20px;">
+        <button id="descargar-pdf">Descargar informe en PDF</button>
+      </div>
     `;
+
+    // 6. Añadir funcionalidad para descargar en PDF
+    document.getElementById("descargar-pdf").addEventListener("click", function () {
+      const element = document.getElementById("informe-container");
+      const opt = {
+        margin: 0.5,
+        filename: 'Informe_Empleabilidad.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2 },
+        jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
+      };
+      html2pdf().from(element).set(opt).save();
+    });
+
   } catch (error) {
     document.getElementById('informe-container').innerHTML = `<p style="color:red;">${error.message}</p>`;
   }
