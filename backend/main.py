@@ -1,14 +1,16 @@
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
-
-from db import database  # <--- Importa tu base de datos aquí
 import sqlalchemy
+
+from db import database
+from generate_report import generar_informe as generar_informe_ia
 
 app = FastAPI()
 
-# Habilita CORS
+# Habilita CORS para permitir llamadas desde el frontend
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -16,14 +18,14 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# MODELO DE ENTRADA
+# Modelo de datos que espera el endpoint
 class DatosInforme(BaseModel):
     nombre: str
     apellidos: str
     email: str
     whatsapp: str
 
-# --- NUEVO: tabla informes ---
+# Definición de la tabla "informes"
 metadata = sqlalchemy.MetaData()
 
 informes = sqlalchemy.Table(
@@ -41,7 +43,7 @@ informes = sqlalchemy.Table(
     sqlalchemy.Column("conclusion", sqlalchemy.Text),
 )
 
-# --- NUEVO: conectar/desconectar ---
+# Conectar a la base de datos al iniciar la app
 @app.on_event("startup")
 async def startup():
     await database.connect()
@@ -50,12 +52,35 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
+# Endpoint principal que recibe los datos y genera el informe
 @app.post("/api/generar-informe")
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()
-    informe = generar_informe(datos_dict)
 
-    # --- NUEVO: Guardar en la base de datos ---
+    # Construir perfil para enviar a Azure OpenAI
+    perfil = f"""
+    Nombre: {datos_dict.get('nombre', '')} {datos_dict.get('apellidos', '')}
+    Email: {datos_dict.get('email', '')}
+    WhatsApp: {datos_dict.get('whatsapp', '')}
+    (Aquí podrás añadir resultados del CV y minijuegos)
+    """
+
+    texto_generado = generar_informe_ia(perfil)
+
+    # Por ahora usamos todo el texto como resumen y el resto como plantilla vacía
+    informe = {
+        "nombre": datos_dict.get("nombre", ""),
+        "apellidos": datos_dict.get("apellidos", ""),
+        "email": datos_dict.get("email", ""),
+        "whatsapp": datos_dict.get("whatsapp", ""),
+        "resumen": texto_generado,
+        "fortalezas": [],
+        "areas_mejora": [],
+        "orientacion": "",
+        "conclusion": ""
+    }
+
+    # Guardar informe en base de datos
     query = informes.insert().values(
         nombre=informe["nombre"],
         apellidos=informe["apellidos"],
@@ -69,21 +94,9 @@ async def generar_informe_endpoint(datos: DatosInforme):
     )
     await database.execute(query)
 
-    return {"informe": informe}
+    # Enviar el informe al frontend
+    return JSONResponse(content={"informe": informe})
 
-def generar_informe(datos):
-    # Estructura compatible con el frontend
-    return {
-        "nombre": datos.get("nombre", ""),
-        "apellidos": datos.get("apellidos", ""),
-        "email": datos.get("email", ""),
-        "whatsapp": datos.get("whatsapp", ""),
-        "resumen": f"Este es un informe de ejemplo para {datos.get('nombre', '')}. Aquí irá el resumen real.",
-        "fortalezas": ["Comunicación", "Resolución de problemas"],
-        "areas_mejora": ["Gestión del tiempo"],
-        "orientacion": "Se recomienda buscar trabajos en equipo de atención al público.",
-        "conclusion": "¡Enhorabuena por tus avances!"
-    }
-
+# Ejecutar localmente
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
