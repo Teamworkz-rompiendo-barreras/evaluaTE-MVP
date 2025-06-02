@@ -2,6 +2,7 @@
   <PropertyGroup>
     <TargetFramework>net6.0</TargetFramework>
     <AzureFunctionsVersion>v4</AzureFunctionsVersion>
+    <SelfContained>false</SelfContained>
   </PropertyGroup>
   <ItemGroup>
     <PackageReference Include="HttpMultipartParser" Version="9.0.0" />
