@@ -1,10 +1,14 @@
+import os
+from dotenv import load_dotenv
 from sqlalchemy import create_engine, MetaData, Table, Column, Integer, String, Text, TIMESTAMP
 from sqlalchemy.sql import func
 from databases import Database
 
-# Cambia estos datos por los tuyos
-DATABASE_URL = "postgresql://esteadmin:EvaluaTE2025@evaludate-db.postgres.database.azure.com:5432/postgres"
+# Cargar variables del entorno
+load_dotenv()
+DATABASE_URL = os.getenv("DATABASE_URL")
 
+# Conexión a la base de datos
 database = Database(DATABASE_URL)
 metadata = MetaData()
 
@@ -25,4 +29,5 @@ informes = Table(
     Column("fecha", TIMESTAMP, server_default=func.now()),
 )
 
+# Motor para uso con SQLAlchemy si se necesitara
 engine = create_engine(DATABASE_URL)
