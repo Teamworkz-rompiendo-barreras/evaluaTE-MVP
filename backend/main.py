@@ -1,9 +1,10 @@
-from fastapi import FastAPI
+from fastapi import FastAPI, UploadFile, File
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 import sqlalchemy
+import shutil
 
 from db import database
 from generate_report import generar_informe as generar_informe_ia
@@ -52,21 +53,29 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-# Nuevo endpoint con generación estructurada del informe
+# NUEVO: Endpoint para subir el CV y guardarlo localmente
+@app.post("/api/subir-cv")
+async def subir_cv(file: UploadFile = File(...)):
+    ruta_destino = f"uploads/{file.filename}"
+    with open(ruta_destino, "wb") as buffer:
+        shutil.copyfileobj(file.file, buffer)
+    return {"ruta_cv": ruta_destino}
+
+# Endpoint que recibe los datos del formulario y genera el informe
 @app.post("/api/generar-informe")
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()
 
-    # Ruta simulada al CV subido (ajusta con la real)
-    datos_dict["ruta_cv"] = "cv_muestra.pdf"  # ⚠️ Cambiar por la ruta real del archivo si es dinámica
+    # Ruta al CV: más adelante, deberías conectar con lo que devuelve /api/subir-cv
+    datos_dict["ruta_cv"] = "uploads/cv_muestra.pdf"  # Sustituir por ruta real recibida desde el frontend
 
-    # Simulación de resultados de minijuegos
+    # Resultados de minijuegos (por ahora simulados)
     datos_dict["resultados_minijuegos"] = "Comunicación alta, liderazgo medio, resolución de problemas alta."
 
-    # Generar informe profesional usando IA
+    # Generar informe estructurado con IA
     informe = generar_informe_ia(datos_dict)
 
-    # Guardar informe en la base de datos
+    # Guardar en base de datos
     query = informes.insert().values(
         nombre=datos_dict.get("nombre", ""),
         apellidos=datos_dict.get("apellidos", ""),
@@ -80,7 +89,7 @@ async def generar_informe_endpoint(datos: DatosInforme):
     )
     await database.execute(query)
 
-    # Enviar al frontend solo los campos relevantes
+    # Devolver informe al frontend
     return JSONResponse(content={"informe": {
         "nombre": datos_dict.get("nombre", ""),
         "apellidos": datos_dict.get("apellidos", ""),
