@@ -40,7 +40,7 @@ class DatosInforme(BaseModel):
     minijuego_liderazgo_score: str = ""
     minijuego_pensamiento_score: str = ""
     minijuego_emocional_score: str = ""
-    cv_filename: str  # ✅ Campo que estaba faltando
+    cv_filename: str
 
 # Tabla informes
 metadata = sqlalchemy.MetaData()
@@ -71,24 +71,40 @@ async def shutdown():
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()
 
-    # Construir perfil completo con CV y datos
     perfil = f"""
-    Nombre: {datos_dict.get('nombre', '')} {datos_dict.get('apellidos', '')}
-    Email: {datos_dict.get('email', '')}
-    WhatsApp: {datos_dict.get('whatsapp', '')}
-    Nombre del archivo de CV: {datos_dict.get('cv_filename', '')}
-    (Aquí irían también los resultados de los minijuegos, si los tienes)
+    Nombre: {datos_dict.get('nombre')} {datos_dict.get('apellidos')}
+    Email: {datos_dict.get('email')}
+    WhatsApp: {datos_dict.get('whatsapp')}
+    Certificado de discapacidad: {datos_dict.get('discapacidad')}
+    Modalidad de trabajo: {datos_dict.get('tipo')}
+    Puesto deseado: {datos_dict.get('puesto')}
+    Tipo de jornada: {datos_dict.get('jornada')}
+    Disponibilidad: {datos_dict.get('disponibilidad')}
+    Dispuesto/a a trasladarse: {datos_dict.get('traslado')}
+    CV: {datos_dict.get('cv_filename')}
+
+    Resultados minijuegos:
+    - Toma de decisiones: {datos_dict.get('minijuego_decisiones_score')}
+    - Resolución de problemas: {datos_dict.get('minijuego_resolucion_score')}
+    - Comunicación: {datos_dict.get('minijuego_comunicacion_score')}
+    - Adaptabilidad: {datos_dict.get('minijuego_adaptabilidad_score')}
+    - Gestión del tiempo: {datos_dict.get('minijuego_tiempo_score')}
+    - Trabajo en equipo: {datos_dict.get('minijuego_equipo_score')}
+    - Creatividad: {datos_dict.get('minijuego_creatividad_score')}
+    - Liderazgo: {datos_dict.get('minijuego_liderazgo_score')}
+    - Pensamiento crítico: {datos_dict.get('minijuego_pensamiento_score')}
+    - Inteligencia emocional: {datos_dict.get('minijuego_emocional_score')}
     """
 
     texto_generado = generar_informe_ia(perfil)
 
     informe = {
-        "nombre": datos_dict.get("nombre", ""),
-        "apellidos": datos_dict.get("apellidos", ""),
-        "email": datos_dict.get("email", ""),
-        "whatsapp": datos_dict.get("whatsapp", ""),
+        "nombre": datos_dict["nombre"],
+        "apellidos": datos_dict["apellidos"],
+        "email": datos_dict["email"],
+        "whatsapp": datos_dict["whatsapp"],
         "resumen": texto_generado,
-        "fortalezas": [],
+        "fortalezas": [],  # Se actualizarán cuando la IA los genere directamente
         "areas_mejora": [],
         "orientacion": "",
         "conclusion": ""
