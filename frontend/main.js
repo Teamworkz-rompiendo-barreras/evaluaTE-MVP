@@ -21,43 +21,32 @@ function recogerDatosFormulario() {
     minijuego_creatividad_score: localStorage.getItem('minijuego_creatividad_score') || '',
     minijuego_liderazgo_score: localStorage.getItem('minijuego_liderazgo_score') || '',
     minijuego_pensamiento_score: localStorage.getItem('minijuego_pensamiento_score') || '',
-    minijuego_emocional_score: localStorage.getItem('minijuego_emocional_score') || ''
+    minijuego_emocional_score: localStorage.getItem('minijuego_emocional_score') || '',
+    cv_filename: localStorage.getItem('cv_filename') || ''
   };
 }
 
 async function generarInforme() {
   const datos = recogerDatosFormulario();
+
   try {
     const respuesta = await fetch('http://localhost:8000/api/generar-informe', {
       method: 'POST',
       headers: { 'Content-Type': 'application/json' },
       body: JSON.stringify(datos)
     });
+
     if (respuesta.ok) {
       const data = await respuesta.json();
       if (window.mostrarInforme) {
         window.mostrarInforme(data.informe);
       }
     } else {
-      alert('Error al generar el informe');
+      alert('⚠️ Error al generar el informe');
     }
   } catch (err) {
-    alert('No se pudo conectar al backend');
+    alert('❌ No se pudo conectar con el servidor. Verifica que el backend esté activo.');
   }
 }
 
 document.addEventListener('DOMContentLoaded', generarInforme);
-
-// Botón para descargar el informe como PDF
-document.getElementById("descargar-pdf").addEventListener("click", function () {
-  const element = document.getElementById("informe-container");
-  const opt = {
-    margin: 0.5,
-    filename: 'Informe_Empleabilidad.pdf',
-    image: { type: 'jpeg', quality: 0.98 },
-    html2canvas: { scale: 2 },
-    jsPDF: { unit: 'in', format: 'a4', orientation: 'portrait' }
-  };
-
-  html2pdf().from(element).set(opt).save();
-});
