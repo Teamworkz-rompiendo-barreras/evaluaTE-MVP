@@ -1,18 +1,16 @@
-from fastapi import FastAPI, UploadFile, File
+from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 import sqlalchemy
-import shutil
-import os
 
 from db import database
 from generate_report import generar_informe as generar_informe_ia
 
 app = FastAPI()
 
-# CORS para permitir llamadas del frontend
+# Habilita CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
@@ -20,17 +18,16 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
-# Modelo de entrada
+# MODELO DE DATOS
 class DatosInforme(BaseModel):
     nombre: str
     apellidos: str
     email: str
     whatsapp: str
-    cv_filename: str  # <-- Nuevo campo: nombre del archivo PDF del CV
+    cv_filename: str  # ✅ Campo que estaba faltando
 
-# Estructura de la base de datos
+# Tabla informes
 metadata = sqlalchemy.MetaData()
-
 informes = sqlalchemy.Table(
     "informes",
     metadata,
@@ -54,62 +51,47 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-# Endpoint para subir el CV
-@app.post("/api/subir-cv")
-async def subir_cv(file: UploadFile = File(...)):
-    ruta_destino = f"uploads/{file.filename}"
-    os.makedirs("uploads", exist_ok=True)
-    with open(ruta_destino, "wb") as buffer:
-        shutil.copyfileobj(file.file, buffer)
-    return {"ruta_cv": ruta_destino, "filename": file.filename}
-
-# Endpoint para generar el informe de empleabilidad
 @app.post("/api/generar-informe")
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()
 
-    ruta_cv = f"uploads/{datos_dict.get('cv_filename', '')}"
-    resultados = "Comunicación alta, resolución media, liderazgo bajo"  # Simulado por ahora
+    # Construir perfil completo con CV y datos
+    perfil = f"""
+    Nombre: {datos_dict.get('nombre', '')} {datos_dict.get('apellidos', '')}
+    Email: {datos_dict.get('email', '')}
+    WhatsApp: {datos_dict.get('whatsapp', '')}
+    Nombre del archivo de CV: {datos_dict.get('cv_filename', '')}
+    (Aquí irían también los resultados de los minijuegos, si los tienes)
+    """
 
-    # Construimos el diccionario completo
-    datos_completos = {
+    texto_generado = generar_informe_ia(perfil)
+
+    informe = {
         "nombre": datos_dict.get("nombre", ""),
         "apellidos": datos_dict.get("apellidos", ""),
         "email": datos_dict.get("email", ""),
         "whatsapp": datos_dict.get("whatsapp", ""),
-        "ruta_cv": ruta_cv,
-        "resultados_minijuegos": resultados
+        "resumen": texto_generado,
+        "fortalezas": [],
+        "areas_mejora": [],
+        "orientacion": "",
+        "conclusion": ""
     }
 
-    informe = generar_informe_ia(datos_completos)
-
-    # Guardamos el informe
     query = informes.insert().values(
-        nombre=datos_completos["nombre"],
-        apellidos=datos_completos["apellidos"],
-        email=datos_completos["email"],
-        whatsapp=datos_completos["whatsapp"],
-        resumen=informe.get("resumen", ""),
-        fortalezas=", ".join(informe.get("fortalezas", [])),
-        areas_mejora=", ".join(informe.get("areas_mejora", [])),
-        orientacion=informe.get("orientacion", ""),
-        conclusion=informe.get("conclusion", "")
+        nombre=informe["nombre"],
+        apellidos=informe["apellidos"],
+        email=informe["email"],
+        whatsapp=informe["whatsapp"],
+        resumen=informe["resumen"],
+        fortalezas=", ".join(informe["fortalezas"]),
+        areas_mejora=", ".join(informe["areas_mejora"]),
+        orientacion=informe["orientacion"],
+        conclusion=informe["conclusion"],
     )
     await database.execute(query)
 
-    return JSONResponse(content={"informe": {
-        "nombre": datos_completos["nombre"],
-        "apellidos": datos_completos["apellidos"],
-        "email": datos_completos["email"],
-        "whatsapp": datos_completos["whatsapp"],
-        "resumen": informe.get("resumen", ""),
-        "fortalezas": informe.get("fortalezas", []),
-        "areas_mejora": informe.get("areas_mejora", []),
-        "orientacion": informe.get("orientacion", ""),
-        "conclusion": informe.get("conclusion", "")
-    }})
+    return JSONResponse(content={"informe": informe})
 
-# Ejecutar localmente
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
-
