@@ -24,6 +24,22 @@ class DatosInforme(BaseModel):
     apellidos: str
     email: str
     whatsapp: str
+    discapacidad: str = ""
+    tipo: str = ""
+    puesto: str = ""
+    jornada: str = ""
+    disponibilidad: str = ""
+    traslado: str = ""
+    minijuego_decisiones_score: str = ""
+    minijuego_resolucion_score: str = ""
+    minijuego_comunicacion_score: str = ""
+    minijuego_adaptabilidad_score: str = ""
+    minijuego_tiempo_score: str = ""
+    minijuego_equipo_score: str = ""
+    minijuego_creatividad_score: str = ""
+    minijuego_liderazgo_score: str = ""
+    minijuego_pensamiento_score: str = ""
+    minijuego_emocional_score: str = ""
     cv_filename: str  # ✅ Campo que estaba faltando
 
 # Tabla informes
