@@ -1,74 +1,77 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8">
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Informe de Empleabilidad</title>
-  <link rel="stylesheet" href="estilos-inicio.css">
+  <link rel="stylesheet" href="estilos.css" />
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
-  <div class="main-wrapper" id="informe-wrapper" style="max-width: 650px;">
-    <div style="display: flex; justify-content: space-between; align-items: center;">
-      <img src="Logo_teamworkz.png" alt="Teamworkz Logo" style="height: 50px;">
-      <div style="font-size: 0.9em; color: #697477; text-align: right;">
-        <span id="informe-fecha"></span>
-      </div>
+  <div class="contenedor" id="informe-wrapper">
+    <div class="encabezado-informe">
+      <img src="logo_teamworkz.png" alt="Logo Teamworkz" class="logo-informe" />
+      <span id="informe-fecha" class="fecha-informe"></span>
     </div>
 
-    <h1 style="margin-bottom: 0.4em;">Informe de Empleabilidad</h1>
-    <div style="color: #697477; margin-bottom: 16px;" id="informe-intro"></div>
+    <h1 class="titulo-informe">Informe de Empleabilidad</h1>
+    <p class="subtitulo-informe" id="informe-intro">
+      Este informe está basado en tu información personal, resultados de autoevaluación y tus preferencias laborales.
+    </p>
 
-    <div class="datos-básicos" style="margin-bottom: 24px;">
-      <strong>Nombre:</strong> <span id="informe-nombre"></span><br>
-      <strong>Email:</strong> <span id="informe-email"></span><br>
-      <strong>WhatsApp:</strong> <span id="informe-whatsapp"></span><br>
-      <strong>Tipo de jornada:</strong> <span id="informe-jornada"></span><br>
-      <strong>Disponibilidad:</strong> <span id="informe-disponibilidad"></span><br>
-      <strong>Certificado de discapacidad:</strong> <span id="informe-discapacidad"></span><br>
-      <strong>Modalidad de trabajo:</strong> <span id="informe-tipo"></span><br>
-      <strong>Puesto deseado:</strong> <span id="informe-puesto"></span><br>
+    <div class="seccion-informe">
+      <h2><i class="fas fa-id-card"></i> Datos personales</h2>
+      <p><strong>Nombre:</strong> <span id="informe-nombre"></span></p>
+      <p><strong>Email:</strong> <span id="informe-email"></span></p>
+      <p><strong>WhatsApp:</strong> <span id="informe-whatsapp"></span></p>
+      <p><strong>Tipo de jornada:</strong> <span id="informe-jornada"></span></p>
+      <p><strong>Disponibilidad:</strong> <span id="informe-disponibilidad"></span></p>
+      <p><strong>Certificado de discapacidad:</strong> <span id="informe-discapacidad"></span></p>
+      <p><strong>Modalidad de trabajo:</strong> <span id="informe-tipo"></span></p>
+      <p><strong>Puesto deseado:</strong> <span id="informe-puesto"></span></p>
     </div>
 
-    <div class="bloque-section" id="informe-resumen" style="margin-bottom: 20px;"></div>
-
-    <div class="bloque-section" style="margin-bottom: 20px;">
-      <h2 style="color:#0b474b;font-size:1.18rem;">Fortalezas detectadas</h2>
-      <ul id="informe-fortalezas" style="margin-left: 1.1em; margin-bottom: 0;"></ul>
+    <div class="seccion-informe" id="informe-resumen">
+      <h2><i class="fas fa-chart-line"></i> Resumen</h2>
     </div>
 
-    <div class="bloque-section" style="margin-bottom: 20px;">
-      <h2 style="color:#0b474b;font-size:1.18rem;">Oportunidades de mejora</h2>
-      <ul id="informe-mejoras" style="margin-left: 1.1em; margin-bottom: 0;"></ul>
+    <div class="seccion-informe">
+      <h2><i class="fas fa-thumbs-up"></i> Fortalezas detectadas</h2>
+      <ul id="informe-fortalezas" class="lista-informe"></ul>
     </div>
 
-    <div class="bloque-section" style="margin-bottom: 20px;">
-      <h2 style="color:#0b474b;font-size:1.18rem;">Orientación laboral personalizada</h2>
+    <div class="seccion-informe">
+      <h2><i class="fas fa-lightbulb"></i> Oportunidades de mejora</h2>
+      <ul id="informe-mejoras" class="lista-informe"></ul>
+    </div>
+
+    <div class="seccion-informe">
+      <h2><i class="fas fa-compass"></i> Orientación laboral personalizada</h2>
       <div id="informe-orientacion"></div>
     </div>
 
-    <div class="bloque-section" style="margin-bottom: 24px;">
-      <strong>Conclusión:</strong>
-      <div id="informe-conclusion" style="margin-top: 6px;"></div>
+    <div class="seccion-informe">
+      <h2><i class="fas fa-check-circle"></i> Conclusión</h2>
+      <div id="informe-conclusion"></div>
     </div>
 
-    <div style="border-top:1px solid #eee; margin-top: 18px; padding-top: 8px; font-size: 0.88em; color:#697477;">
-      Informe generado automáticamente por Teamworkz. Uso exclusivo de la persona candidata y/o la entidad que le acompaña.
+    <div class="pie-informe">
+      <p>🧠 Informe generado automáticamente por Teamworkz.</p>
+      <p>📥 Uso exclusivo de la persona candidata y/o la entidad que le acompaña.</p>
     </div>
-    <div style="text-align: center; margin-top: 30px;">
-      <button id="descargar-pdf">Descargar informe en PDF</button>
+
+    <div class="centrado">
+      <button id="descargar-pdf" class="boton-principal"><i class="fas fa-download"></i> Descargar informe en PDF</button>
     </div>
   </div>
 
-  <script src="main.js"></script>
   <script>
     document.getElementById('informe-fecha').innerText =
       new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
     function mostrarInforme(info) {
-      document.getElementById('informe-intro').innerText =
-        `Informe personalizado de empleabilidad. Basado en tus datos, preferencias y resultados de autoevaluación.`;
-
-      document.getElementById('informe-nombre').innerText = (info.nombre || '') + ' ' + (info.apellidos || '');
+      document.getElementById('informe-nombre').innerText = `${info.nombre || ''} ${info.apellidos || ''}`;
       document.getElementById('informe-email').innerText = info.email || '';
       document.getElementById('informe-whatsapp').innerText = info.whatsapp || '';
       document.getElementById('informe-jornada').innerText = info.jornada || '';
@@ -76,20 +79,15 @@
       document.getElementById('informe-discapacidad').innerText = info.discapacidad || '';
       document.getElementById('informe-tipo').innerText = info.tipo || '';
       document.getElementById('informe-puesto').innerText = info.puesto || '';
-
-      document.getElementById('informe-resumen').innerHTML = info.resumen || '';
+      document.getElementById('informe-resumen').innerHTML += info.resumen || '';
       document.getElementById('informe-orientacion').innerHTML = info.orientacion || '';
       document.getElementById('informe-conclusion').innerHTML = info.conclusion || '';
 
-      let fortalezas = info.fortalezas || [];
-      if (typeof fortalezas === 'string') fortalezas = [fortalezas];
-      document.getElementById('informe-fortalezas').innerHTML =
-        fortalezas.map(f => `<li>${f}</li>`).join('');
+      const fortalezas = Array.isArray(info.fortalezas) ? info.fortalezas : [info.fortalezas];
+      const mejoras = Array.isArray(info.areas_mejora || info.mejoras) ? (info.areas_mejora || info.mejoras) : [(info.areas_mejora || info.mejoras)];
 
-      let mejoras = info.areas_mejora || info.mejoras || [];
-      if (typeof mejoras === 'string') mejoras = [mejoras];
-      document.getElementById('informe-mejoras').innerHTML =
-        mejoras.map(m => `<li>${m}</li>`).join('');
+      document.getElementById('informe-fortalezas').innerHTML = fortalezas.map(f => `<li>${f}</li>`).join('');
+      document.getElementById('informe-mejoras').innerHTML = mejoras.map(m => `<li>${m}</li>`).join('');
     }
 
     window.mostrarInforme = mostrarInforme;
