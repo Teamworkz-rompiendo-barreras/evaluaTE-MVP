@@ -1,0 +1,43 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Subir CV</title>
+  <link rel="stylesheet" href="estilos.css" />
+</head>
+<body>
+  <div class="contenedor centrado">
+    <h1 class="titulo">Sube tu CV</h1>
+    <p class="texto-aclaracion">Elige tu currículum en PDF para completar tu evaluación.</p>
+
+    <label class="boton-subir">
+      Seleccionar archivo
+      <input type="file" id="input-cv" accept=".pdf" style="display: none" />
+    </label>
+
+    <p id="nombre-archivo" class="texto-archivo"></p>
+
+    <button id="boton-continuar" class="boton-principal" disabled>Continuar</button>
+  </div>
+
+  <script>
+    const inputCV = document.getElementById("input-cv");
+    const nombreArchivo = document.getElementById("nombre-archivo");
+    const botonContinuar = document.getElementById("boton-continuar");
+
+    inputCV.addEventListener("change", () => {
+      const archivo = inputCV.files[0];
+      if (archivo) {
+        nombreArchivo.innerText = `Has seleccionado: ${archivo.name}`;
+        localStorage.setItem("formulario_cv_pdf", archivo.name);
+        botonContinuar.disabled = false;
+      }
+    });
+
+    botonContinuar.addEventListener("click", () => {
+      window.location.href = "resultados.html";
+    });
+  </script>
+</body>
+</html>
