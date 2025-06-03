@@ -1,59 +1,23 @@
 <!DOCTYPE html>
 <html lang="es">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Evaluación de Habilidades</title>
-  <link rel="stylesheet" href="estilos-softskills.css">
+  <meta charset="UTF-8">
+  <title>Evaluación de habilidades blandas</title>
+  <link rel="stylesheet" href="estilos.css">
 </head>
 <body>
-  <h1>Selecciona una habilidad para evaluarte</h1>
-  <p class="subtitle">Haz clic en una tarjeta para comenzar la evaluación de esa competencia</p>
-  <div class="cards" id="cards-container">
-    <!-- Los botones se generan dinámicamente -->
+  <div class="container">
+    <h1>Autoevaluación de habilidades blandas</h1>
+    <div id="evaluacion-softskills">
+      <div class="pregunta" id="pregunta-texto"></div>
+      <div class="opciones" id="opciones-contenedor"></div>
+      <div class="indicador" id="contador"></div>
+      <div class="progress-bar">
+        <div class="progress-bar-inner" id="barra-progreso"></div>
+      </div>
+    </div>
   </div>
-  <button class="volver-btn" onclick="window.location.href='index.html'">
-    ⬅️ Volver a inicio
-  </button>
 
-  <script>
-    // Lista de habilidades y sus rutas
-    const skills = [
-      { id: "decisiones", nombre: "Toma de decisiones", ruta: "minijuegos/decisiones.html" },
-      { id: "resolucion", nombre: "Resolución de problemas", ruta: "minijuegos/resolucion.html" },
-      { id: "comunicacion", nombre: "Comunicación", ruta: "minijuegos/comunicacion.html" },
-      { id: "adaptabilidad", nombre: "Adaptabilidad", ruta: "minijuegos/adaptabilidad.html" },
-      { id: "tiempo", nombre: "Gestión del tiempo", ruta: "minijuegos/tiempo.html" },
-      { id: "equipo", nombre: "Trabajo en equipo", ruta: "minijuegos/equipo.html" },
-      { id: "creatividad", nombre: "Creatividad", ruta: "minijuegos/creatividad.html" },
-      { id: "pensamiento", nombre: "Pensamiento crítico", ruta: "minijuegos/pensamiento.html" },
-      { id: "emocional", nombre: "Inteligencia emocional", ruta: "minijuegos/emocional.html" },
-      { id: "liderazgo", nombre: "Liderazgo", ruta: "minijuegos/liderazgo.html" }
-    ];
-
-    // Lee de localStorage qué pruebas están completadas
-    function getCompletadas() {
-      try {
-        return JSON.parse(localStorage.getItem("pruebasCompletadas")) || {};
-      } catch {
-        return {};
-      }
-    }
-
-    // Renderiza las tarjetas
-    function renderCards() {
-      const container = document.getElementById("cards-container");
-      const completadas = getCompletadas();
-      skills.forEach(skill => {
-        const link = document.createElement("a");
-        link.href = skill.ruta;
-        link.className = "card" + (completadas[skill.id] ? " completed" : "");
-        link.innerText = skill.nombre;
-        container.appendChild(link);
-      });
-    }
-
-    renderCards();
-  </script>
+  <script src="softskills.js"></script>
 </body>
-</html
+</html>
