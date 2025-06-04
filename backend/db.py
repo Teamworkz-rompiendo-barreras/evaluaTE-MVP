@@ -1,17 +1,19 @@
+# backend/db.py
+
 import os
+from dotenv import load_dotenv
 import databases
 import sqlalchemy
 
-# ⚠️ Asegúrate de que estos datos coinciden con los de tu instalación de PostgreSQL
-#    Se lee primero de la variable de entorno DATABASE_URL, y si no existe,
-#    se usa un valor por defecto (local).
-DATABASE_URL = os.getenv(
-    "DATABASE_URL",
-    "postgresql+asyncpg://postgres:EvaluaTE2025@localhost:5432/evaludate-db"
-)
+# ---------------------------------------------------
+# CARGAR VARIABLES DE ENTORNO
+# ---------------------------------------------------
+load_dotenv()
 
-# Creamos el objeto Database que usará asyncpg internamente
+# Este es tu DATABASE_URL (ya con “+asyncpg” si vas a usar asyncpg)
+# Por ejemplo: 
+# postgresql+asyncpg://usuario:clave@<tu-host>.postgres.database.azure.com:5432/<tu-db>
+DATABASE_URL = os.getenv("DATABASE_URL")
+
 database = databases.Database(DATABASE_URL)
-
-# Metadata para SQLAlchemy (si en el futuro quieres crear tablas desde aquí)
 metadata = sqlalchemy.MetaData()
