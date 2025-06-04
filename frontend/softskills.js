@@ -1,7 +1,9 @@
-// Lista de habilidades y sus preguntas
+// softskills.js
+
+// Lista de habilidades y sus preguntas, con clave para localStorage
 const preguntas = [
   {
-    habilidad: "toma_decisiones",
+    habilidad: "decisiones",
     texto: "Cuando hay que tomar una decisión importante en el trabajo, yo...",
     opciones: [
       { texto: "Pido ayuda y analizo las opciones antes de decidir.", valor: 3 },
@@ -10,7 +12,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "resolucion_problemas",
+    habilidad: "resolucion",
     texto: "Si aparece un problema inesperado, yo...",
     opciones: [
       { texto: "Busco soluciones y pruebo alternativas.", valor: 3 },
@@ -37,7 +39,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "gestion_tiempo",
+    habilidad: "tiempo",
     texto: "En cuanto al uso del tiempo durante la jornada...",
     opciones: [
       { texto: "Organizo mi tiempo y cumplo con los plazos.", valor: 3 },
@@ -46,7 +48,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "trabajo_equipo",
+    habilidad: "equipo",
     texto: "Cuando trabajo con otras personas...",
     opciones: [
       { texto: "Colaboro, doy ideas y respeto las opiniones.", valor: 3 },
@@ -73,7 +75,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "pensamiento_critico",
+    habilidad: "pensamiento",
     texto: "Cuando recibo una nueva información...",
     opciones: [
       { texto: "La analizo y contrasto antes de aceptarla.", valor: 3 },
@@ -82,7 +84,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "gestion_emocional",
+    habilidad: "emocional",
     texto: "Cuando tengo un mal día en el trabajo...",
     opciones: [
       { texto: "Intento calmarme y sigo con mis tareas.", valor: 3 },
@@ -106,12 +108,13 @@ function mostrarPregunta() {
   preguntaTexto.innerText = actual.texto;
 
   opcionesContenedor.innerHTML = "";
-  actual.opciones.forEach((opcion, idx) => {
+  actual.opciones.forEach((opcion) => {
     const boton = document.createElement("button");
     boton.innerText = opcion.texto;
     boton.className = "opcion";
     boton.addEventListener("click", () => {
-      respuestas[`minijuego_${actual.habilidad}_score`] = opcion.valor;
+      // Guardar bajo la clave que espera main.js
+      respuestas[`minijuego_${actual.habilidad}_score`] = opcion.valor.toString();
       siguientePregunta();
     });
     opcionesContenedor.appendChild(boton);
