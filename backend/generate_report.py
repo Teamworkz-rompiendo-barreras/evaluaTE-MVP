@@ -1,9 +1,8 @@
 import os
 from openai import AzureOpenAI
 from dotenv import load_dotenv
-import fitz  # PyMuPDF
 
-# Cargar variables de entorno del .env
+# Cargar variables de entorno
 load_dotenv()
 
 API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
@@ -17,83 +16,57 @@ client = AzureOpenAI(
     azure_endpoint=ENDPOINT
 )
 
-def leer_texto_cv(ruta_pdf: str) -> str:
-    """Extrae el texto plano de un archivo PDF"""
-    if not os.path.exists(ruta_pdf):
-        return "CV no disponible o no encontrado."
-    
-    texto = ""
-    try:
-        with fitz.open(ruta_pdf) as doc:
-            for pagina in doc:
-                texto += pagina.get_text()
-    except Exception as e:
-        texto = f"Error al leer el CV: {e}"
-    
-    return texto.strip()
-
-def generar_informe(datos: dict) -> dict:
-    """Genera un informe completo y estructurado basado en los datos del formulario + CV + minijuegos"""
-
-    nombre = f"{datos.get('nombre', '')} {datos.get('apellidos', '')}".strip()
-    email = datos.get("email", "")
-    whatsapp = datos.get("whatsapp", "")
-    ruta_cv = datos.get("ruta_cv", "")
-    resultados = datos.get("resultados_minijuegos", "")
-
-    texto_cv = leer_texto_cv(ruta_cv)
-
+def generar_informe(perfil):
     prompt = f"""
-Eres un orientador laboral experto en psicología, empleo y neurodiversidad. A partir del perfil de una persona neurodivergente o con discapacidad intelectual, redacta un informe profesional de empleabilidad estructurado en las siguientes secciones:
+Eres un orientador laboral experto en empleabilidad, neurodiversidad y discapacidad intelectual.
+Tu tarea es analizar el perfil que te damos a continuación y generar un INFORME PROFESIONAL DE EMPLEABILIDAD, estructurado y redactado en lenguaje claro, directo, accesible y humano.
 
-1. Resumen del perfil (nombre, contacto, perfil general y potencial profesional).
-2. Fortalezas detectadas (extraídas del CV y resultados de autoevaluación).
-3. Áreas de mejora con recomendaciones personalizadas.
-4. Orientación laboral personalizada según su perfil y preferencias.
-5. Conclusión motivadora y positiva.
+El informe debe incluir las siguientes SECCIONES diferenciadas:
+1. RESUMEN PERSONAL (1 párrafo breve con descripción de perfil, experiencia, intereses y disponibilidad)
+2. FORTALEZAS (una lista de entre 3 y 5 fortalezas detectadas, relacionadas con habilidades y actitudes laborales)
+3. OPORTUNIDADES DE MEJORA (entre 2 y 4, con sugerencias breves para avanzar)
+4. ORIENTACIÓN LABORAL PERSONALIZADA (con 2-3 propuestas concretas de empleos compatibles con su perfil y entorno)
+5. CONCLUSIÓN POSITIVA (mensaje final motivador que refuerce su potencial y próxima acción recomendada)
 
-Utiliza un lenguaje claro, profesional y empático. No repitas literalmente los datos. Presenta cada apartado por separado. No utilices markdown ni símbolos extraños. 
+El lenguaje debe ser:
+- Respetuoso y claro, sin tecnicismos.
+- Redactado para una persona con posibles dificultades cognitivas o de comprensión.
+- Con frases breves, tono alentador y estilo profesional.
 
-Datos disponibles:
-- Nombre completo: {nombre}
-- Email: {email}
-- WhatsApp: {whatsapp}
-- Resultados de autoevaluación (minijuegos): {resultados}
-- Contenido del CV: {texto_cv}
+Este es el perfil a analizar:
+
+{perfil}
 """
 
     respuesta = client.chat.completions.create(
         model=DEPLOYMENT,
         messages=[
-            {"role": "system", "content": "Eres un psicólogo experto en empleabilidad y orientación laboral neurodivergente."},
+            {"role": "system", "content": "Eres un psicólogo laboral experto en orientación, neurodiversidad y accesibilidad cognitiva."},
             {"role": "user", "content": prompt}
         ],
-        max_tokens=1800,
-        temperature=0.7
+        max_tokens=1800
     )
 
-    texto = respuesta.choices[0].message.content.strip()
+    return respuesta.choices[0].message.content
 
-    # Por ahora devolvemos todo como un bloque en "resumen"
-    # En la siguiente versión podemos aplicar NLP para separar las secciones automáticamente
-    return {
-        "resumen": texto,
-        "fortalezas": [],
-        "areas_mejora": [],
-        "orientacion": "",
-        "conclusion": ""
-    }
 
-# Ejemplo de prueba manual
+# Prueba local
 if __name__ == "__main__":
-    ejemplo = {
-        "nombre": "Ester",
-        "apellidos": "Pérez Ribada",
-        "email": "ester@ejemplo.com",
-        "whatsapp": "666666666",
-        "ruta_cv": "uploads/ester_cv.pdf",
-        "resultados_minijuegos": "Comunicación alta, resolución media, liderazgo bajo"
-    }
+    perfil_prueba = """
+    Nombre: María Pérez
+    Email: maria.perez@email.com
+    WhatsApp: 600123123
+    Jornada: Parcial
+    Modalidad: Remoto
+    Puesto deseado: Auxiliar administrativa
+    CV: 5 años de experiencia como recepcionista y apoyo en tareas administrativas. Formación en FP de Gestión Administrativa. Buenas habilidades interpersonales y manejo de herramientas ofimáticas.
+    Resultados de soft skills:
+    Comunicación: alta
+    Trabajo en equipo: media
+    Gestión del tiempo: baja
+    Resolución de problemas: alta
+    Adaptabilidad: media
+    """
 
-    informe = generar_informe(ejemplo)
-    print(informe["resumen"])
+    resultado = generar_informe(perfil_prueba)
+    print(resultado)
