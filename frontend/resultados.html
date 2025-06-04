@@ -34,6 +34,7 @@
 
     <div class="seccion-informe" id="informe-resumen">
       <h2><i class="fas fa-chart-line"></i> Resumen</h2>
+      <!-- El contenido de resumen irá aquí -->
     </div>
 
     <div class="seccion-informe">
@@ -62,16 +63,25 @@
     </div>
 
     <div class="centrado">
-      <button id="descargar-pdf" class="boton-principal"><i class="fas fa-download"></i> Descargar informe en PDF</button>
+      <button id="descargar-pdf" class="boton-principal">
+        <i class="fas fa-download"></i> Descargar informe en PDF
+      </button>
     </div>
   </div>
 
   <script>
+    // Mostrar la fecha actual
     document.getElementById('informe-fecha').innerText =
-      new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+      new Date().toLocaleDateString('es-ES', {
+        year: 'numeric',
+        month: 'long',
+        day: 'numeric'
+      });
 
+    // Función para rellenar el informe con la información recibida
     function mostrarInforme(info) {
-      document.getElementById('informe-nombre').innerText = `${info.nombre || ''} ${info.apellidos || ''}`;
+      document.getElementById('informe-nombre').innerText =
+        `${info.nombre || ''} ${info.apellidos || ''}`;
       document.getElementById('informe-email').innerText = info.email || '';
       document.getElementById('informe-whatsapp').innerText = info.whatsapp || '';
       document.getElementById('informe-jornada').innerText = info.jornada || '';
@@ -79,19 +89,42 @@
       document.getElementById('informe-discapacidad').innerText = info.discapacidad || '';
       document.getElementById('informe-tipo').innerText = info.tipo || '';
       document.getElementById('informe-puesto').innerText = info.puesto || '';
-      document.getElementById('informe-resumen').innerHTML += info.resumen || '';
-      document.getElementById('informe-orientacion').innerHTML = info.orientacion || '';
-      document.getElementById('informe-conclusion').innerHTML = info.conclusion || '';
 
-      const fortalezas = Array.isArray(info.fortalezas) ? info.fortalezas : [info.fortalezas];
-      const mejoras = Array.isArray(info.areas_mejora || info.mejoras) ? (info.areas_mejora || info.mejoras) : [(info.areas_mejora || info.mejoras)];
+      // Agregar contenido del resumen
+      const resumenContenedor = document.getElementById('informe-resumen');
+      const parrafoResumen = document.createElement('p');
+      parrafoResumen.innerText = info.resumen || '';
+      resumenContenedor.appendChild(parrafoResumen);
 
-      document.getElementById('informe-fortalezas').innerHTML = fortalezas.map(f => `<li>${f}</li>`).join('');
-      document.getElementById('informe-mejoras').innerHTML = mejoras.map(m => `<li>${m}</li>`).join('');
+      // Fortalezas
+      const fortalezas = Array.isArray(info.fortalezas)
+        ? info.fortalezas
+        : info.fortalezas
+        ? [info.fortalezas]
+        : [];
+      document.getElementById('informe-fortalezas').innerHTML =
+        fortalezas.map(f => `<li>${f}</li>`).join('');
+
+      // Mejoras
+      const mejorasArray = Array.isArray(info.areas_mejora || info.mejoras)
+        ? info.areas_mejora || info.mejoras
+        : info.areas_mejora || info.mejoras
+        ? [info.areas_mejora || info.mejoras]
+        : [];
+      document.getElementById('informe-mejoras').innerHTML =
+        mejorasArray.map(m => `<li>${m}</li>`).join('');
+
+      // Orientación
+      document.getElementById('informe-orientacion').innerText = info.orientacion || '';
+
+      // Conclusión
+      document.getElementById('informe-conclusion').innerText = info.conclusion || '';
     }
 
+    // Exponer la función globalmente para que main.js la invoque
     window.mostrarInforme = mostrarInforme;
 
+    // Botón para descargar en PDF
     document.getElementById('descargar-pdf').addEventListener('click', () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'pt', 'a4');
@@ -108,5 +141,7 @@
       });
     });
   </script>
+
+  <script src="main.js"></script>
 </body>
 </html>
