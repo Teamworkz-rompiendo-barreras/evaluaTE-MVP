@@ -3,189 +3,45 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EvalúaTE</title>
-  <style>
-    body {
-      font-family: Arial, sans-serif;
-      margin: 0;
-      padding: 0;
-      background-color: #f5f5f5;
-      color: #0b474b;
-    }
-    .main-wrapper {
-      max-width: 600px;
-      margin: 40px auto;
-      background-color: #fff;
-      border-radius: 18px;
-      box-shadow: 0 8px 36px rgba(11, 71, 75, 0.13);
-      padding: 36px 28px 22px 28px;
-    }
-    h1 {
-      font-size: 2.1rem;
-      margin-bottom: 18px;
-      color: #0b474b;
-      font-weight: 900;
-      letter-spacing: -1px;
-    }
-    h2 {
-      margin-top: 36px;
-      color: #0b474b;
-      font-size: 1.2rem;
-      font-weight: 700;
-    }
-    label {
-      display: block;
-      margin-top: 15px;
-      font-weight: bold;
-    }
-    input[type="text"], input[type="email"], input[type="tel"], select, input[type="file"] {
-      width: 100%;
-      padding: 9px;
-      margin-top: 5px;
-      border-radius: 7px;
-      border: 1.3px solid #cfd8dc;
-      font-size: 1rem;
-      margin-bottom: 4px;
-    }
-    input[type="file"] {
-      background: #f9f9f9;
-      border: none;
-    }
-    .form-row {
-      display: flex;
-      gap: 14px;
-      margin-bottom: 0px;
-    }
-    .form-row > div {
-      flex: 1;
-    }
-    .input-hint {
-      font-size: 0.92rem;
-      color: #697477;
-      margin-bottom: 2px;
-    }
-    .field-required {
-      color: #e57373;
-      font-weight: bold;
-      margin-left: 3px;
-    }
-    .warning {
-      background: #ffecd2;
-      color: #b4461a;
-      padding: 7px 10px;
-      border-radius: 6px;
-      font-size: 1rem;
-      margin: 8px 0 3px 0;
-      display: none;
-    }
-    button {
-      margin-top: 18px;
-      background-color: #e6cb62;
-      color: #0b474b;
-      font-weight: bold;
-      border: none;
-      padding: 12px 26px;
-      border-radius: 8px;
-      cursor: pointer;
-      font-size: 1rem;
-      transition: background 0.2s;
-    }
-    button[disabled] {
-      opacity: 0.5;
-      cursor: not-allowed;
-    }
-    button:hover:enabled {
-      background-color: #cebc56;
-    }
-    .softskills-section {
-      margin-top: 32px;
-      background: #f0ebe5;
-      border-radius: 12px;
-      padding: 22px 18px;
-      box-shadow: 0 2px 9px rgba(230,203,98,0.08);
-      display: flex;
-      flex-direction: column;
-      align-items: center;
-      gap: 14px;
-    }
-    .softskills-section h2 {
-      color: #0b474b;
-      font-size: 1.18rem;
-      font-weight: 700;
-      margin: 0 0 8px 0;
-      align-self: flex-start;
-    }
-    .softskills-section p {
-      color: #334;
-      font-size: 1rem;
-      margin: 0 0 12px 0;
-      align-self: flex-start;
-    }
-    .cta-button {
-      width: 100%;
-      display: flex;
-      justify-content: center;
-      margin: 0;
-    }
-    .cta-button button {
-      width: 100%;
-      margin: 0;
-    }
-    .bottom-btn-section {
-      margin-top: 38px;
-      display: flex;
-      justify-content: center;
-    }
-    @media (max-width: 680px) {
-      .main-wrapper {
-        padding: 13px 4vw 12px 4vw;
-      }
-      .form-row {
-        flex-direction: column;
-        gap: 0px;
-      }
-    }
-  </style>
+  <title>EvalúaTE - Datos personales</title>
+  <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
   <div class="main-wrapper">
     <h1>EvalúaTE</h1>
-    <form id="cvForm" autocomplete="off" enctype="multipart/form-data">
+    <p>Completa tus datos para empezar la evaluación.</p>
+
+    <form id="form-datos">
       <div class="form-row">
         <div>
-          <label for="nombre">Nombre<span class="field-required">*</span></label>
-          <input type="text" name="nombre" id="nombre" required />
+          <label for="nombre">Nombre <span class="field-required">*</span></label>
+          <input type="text" id="nombre" required />
         </div>
         <div>
-          <label for="apellidos">Apellidos<span class="field-required">*</span></label>
-          <input type="text" name="apellidos" id="apellidos" required />
+          <label for="apellidos">Apellidos <span class="field-required">*</span></label>
+          <input type="text" id="apellidos" required />
         </div>
       </div>
 
       <div class="form-row">
         <div>
           <label for="email">Email</label>
-          <input type="email" name="email" id="email" placeholder="Opcional, pero rellena al menos uno" />
+          <input type="email" id="email" placeholder="Opcional, pero rellena al menos uno" />
         </div>
         <div>
           <label for="whatsapp">WhatsApp</label>
-          <input type="tel" name="whatsapp" id="whatsapp" placeholder="Opcional, pero rellena al menos uno" />
+          <input type="tel" id="whatsapp" placeholder="Opcional, pero rellena al menos uno" />
         </div>
       </div>
 
-      <label for="tipo-puesto">Tipo de puesto<span class="field-required">*</span></label>
-      <input type="text" name="tipo-puesto" id="tipo-puesto" placeholder="Ej. Administrativo, almacén..." required />
+      <label for="tipo">Modalidad deseada <span class="field-required">*</span></label>
+      <input type="text" id="tipo" placeholder="Ej. Remoto, Presencial" required />
 
-      <label for="tipo-trabajo">Modalidad<span class="field-required">*</span></label>
-      <select name="tipo-trabajo" id="tipo-trabajo" required>
-        <option value="">Selecciona modalidad</option>
-        <option value="remoto">Remoto</option>
-        <option value="presencial">Presencial</option>
-        <option value="hibrido">Híbrido</option>
-      </select>
+      <label for="puesto">Puesto deseado <span class="field-required">*</span></label>
+      <input type="text" id="puesto" placeholder="Ej. Auxiliar administrativo" required />
 
-      <label for="jornada">Jornada<span class="field-required">*</span></label>
-      <select name="jornada" id="jornada" required>
+      <label for="jornada">Tipo de jornada <span class="field-required">*</span></label>
+      <select id="jornada" required>
         <option value="">Selecciona jornada</option>
         <option value="completa">Completa</option>
         <option value="parcial">Parcial</option>
@@ -193,183 +49,63 @@
       </select>
 
       <label for="disponibilidad">Disponibilidad (horaria, inmediata, otras...)</label>
-      <input type="text" name="disponibilidad" id="disponibilidad" placeholder="Ej. Mañanas, inmediata, tardes..." />
+      <input type="text" id="disponibilidad" placeholder="Ej. Mañanas, inmediata, tardes..." />
 
-      <label for="traslado">¿Estarías dispuesto/a a trasladarte a otro lugar por trabajo?</label>
-      <select name="traslado" id="traslado">
+      <label for="traslado">¿Estarías dispuesto/a a trasladarte?</label>
+      <select id="traslado">
         <option value="">Selecciona una opción</option>
-        <option value="si">Sí</option>
+        <option value="sí">Sí</option>
         <option value="no">No</option>
         <option value="depende">Depende</option>
       </select>
 
-      <label for="discapacidad">¿Tienes certificado de discapacidad?<span class="field-required">*</span></label>
-      <select name="discapacidad" id="discapacidad" required>
+      <label for="discapacidad">¿Tienes certificado de discapacidad? <span class="field-required">*</span></label>
+      <select id="discapacidad" required>
         <option value="">Selecciona una opción</option>
         <option value="sí">Sí</option>
         <option value="no">No</option>
       </select>
 
-      <label for="cv">Sube tu CV (PDF)<span class="field-required">*</span></label>
-      <input type="file" name="cv" id="cv" accept="application/pdf" required />
-      <div id="cv-warning" class="warning">Tienes que seleccionar y adjuntar tu CV PDF antes de continuar.</div>
-
-      <button type="submit" id="enviarCV">Enviar CV</button>
+      <button type="submit">Siguiente: Autoevaluación</button>
     </form>
-
-    <div class="softskills-section">
-      <h2>Evaluación de Soft Skills</h2>
-      <p>Accede al apartado de evaluación para completar las pruebas de habilidades blandas.</p>
-      <div class="cta-button">
-        <button type="button" id="irSoftSkills">Ir a Evaluación de Soft Skills</button>
-      </div>
-    </div>
-
-    <div class="bottom-btn-section">
-      <button id="botonEnviarTodo" disabled>
-        Enviar todo y ver resultados
-      </button>
-    </div>
   </div>
 
   <script>
-    // Nombres de claves de localStorage para minijuegos
-    const minijuegos = [
-      'minijuego_decisiones_score',
-      'minijuego_resolucion_score',
-      'minijuego_comunicacion_score',
-      'minijuego_adaptabilidad_score',
-      'minijuego_tiempo_score',
-      'minijuego_equipo_score',
-      'minijuego_creatividad_score',
-      'minijuego_liderazgo_score',
-      'minijuego_pensamiento_score',
-      'minijuego_emocional_score'
-    ];
+    document.getElementById('form-datos').addEventListener('submit', function(e) {
+      e.preventDefault();
 
-    // Guardar campos del formulario en localStorage al escribir
-    function guardarCampoLS(nombre, valor) {
-      localStorage.setItem('formulario_' + nombre, valor);
-    }
+      const nombre = document.getElementById('nombre').value.trim();
+      const apellidos = document.getElementById('apellidos').value.trim();
+      const email = document.getElementById('email').value.trim();
+      const whatsapp = document.getElementById('whatsapp').value.trim();
+      const tipo = document.getElementById('tipo').value.trim();
+      const puesto = document.getElementById('puesto').value.trim();
+      const jornada = document.getElementById('jornada').value;
+      const disponibilidad = document.getElementById('disponibilidad').value.trim();
+      const traslado = document.getElementById('traslado').value;
+      const discapacidad = document.getElementById('discapacidad').value;
 
-    // Cargar los valores de localStorage si existen
-    function cargarCamposDeLocalStorage() {
-      ['nombre','apellidos','email','whatsapp','tipo-puesto','tipo-trabajo','jornada','disponibilidad','traslado','discapacidad'].forEach(campo => {
-        let elem = document.getElementById(campo);
-        if (elem && localStorage.getItem('formulario_' + campo)) {
-          elem.value = localStorage.getItem('formulario_' + campo);
-        }
-      });
-    }
-
-    cargarCamposDeLocalStorage();
-
-    // Guardar automáticamente campos de texto y selects
-    document.querySelectorAll('#cvForm input, #cvForm select').forEach(el => {
-      if (el.type !== 'file') {
-        el.addEventListener('input', e => guardarCampoLS(el.name, el.value));
+      // Requiere al menos uno de email o whatsapp
+      if (!email && !whatsapp) {
+        alert('Debes rellenar al menos Email o WhatsApp.');
+        return;
       }
-    });
 
-    // Botón para ir a soft skills: guarda campos actuales
-    document.getElementById('irSoftSkills').addEventListener('click', function () {
-      document.querySelectorAll('#cvForm input, #cvForm select').forEach(el => {
-        if (el.type !== 'file') {
-          guardarCampoLS(el.name, el.value);
-        }
-      });
+      // Guardar en localStorage
+      localStorage.setItem('formulario_nombre', nombre);
+      localStorage.setItem('formulario_apellidos', apellidos);
+      localStorage.setItem('formulario_email', email);
+      localStorage.setItem('formulario_whatsapp', whatsapp);
+      localStorage.setItem('formulario_tipo', tipo);
+      localStorage.setItem('formulario_puesto', puesto);
+      localStorage.setItem('formulario_jornada', jornada);
+      localStorage.setItem('formulario_disponibilidad', disponibilidad);
+      localStorage.setItem('formulario_traslado', traslado);
+      localStorage.setItem('formulario_discapacidad', discapacidad);
+
+      // Redirigir a softskills.html
       window.location.href = 'softskills.html';
     });
-
-    // Cuando suben el CV, guardar solo el nombre del archivo (no es posible guardar el archivo real)
-    document.getElementById('cv').addEventListener('change', function () {
-      if (this.files.length > 0) {
-        localStorage.setItem('formulario_cv_pdf', this.files[0].name);
-        document.getElementById('cv-warning').style.display = 'none';
-      } else {
-        localStorage.removeItem('formulario_cv_pdf');
-        document.getElementById('cv-warning').style.display = 'block';
-      }
-      verificarProgresoCompleto();
-    });
-
-    // Al enviar solo el CV, no se borran los campos ya guardados
-    document.getElementById('cvForm').addEventListener('submit', function (e) {
-      e.preventDefault();
-      // Comprobar si hay un archivo seleccionado
-      const inputCV = document.getElementById('cv');
-      if (inputCV.files.length === 0) {
-        document.getElementById('cv-warning').style.display = 'block';
-        inputCV.focus();
-        return;
-      }
-      document.getElementById('cv-warning').style.display = 'none';
-      alert('CV subido (simulado). Recuerda que tendrás que volver a adjuntarlo si recargas la página antes de enviarlo todo.');
-    });
-
-    // Verificar si todos los campos y minijuegos están completos para habilitar botón final
-    function verificarProgresoCompleto() {
-      let formFields = [
-        'formulario_nombre','formulario_apellidos',
-        // Al menos uno de email o whatsapp:
-        // 'formulario_email','formulario_whatsapp',
-        'formulario_tipo-puesto','formulario_tipo-trabajo',
-        'formulario_jornada','formulario_discapacidad',
-        'formulario_cv_pdf'
-      ];
-
-      let email = localStorage.getItem('formulario_email') || "";
-      let whatsapp = localStorage.getItem('formulario_whatsapp') || "";
-
-      const formOk = formFields.every(f => localStorage.getItem(f))
-                      && (email.trim() !== "" || whatsapp.trim() !== "");
-
-      const todosJuegosListos = minijuegos.every(k => localStorage.getItem(k));
-      const boton = document.getElementById('botonEnviarTodo');
-      if (formOk && todosJuegosListos) {
-        boton.disabled = false;
-        boton.style.opacity = 1;
-        boton.style.cursor = 'pointer';
-      } else {
-        boton.disabled = true;
-        boton.style.opacity = 0.5;
-        boton.style.cursor = 'not-allowed';
-      }
-    }
-
-    // Verificar al cargar y cada vez que se modifique algo
-    document.addEventListener('DOMContentLoaded', verificarProgresoCompleto);
-    window.addEventListener('storage', verificarProgresoCompleto);
-    document.querySelectorAll('#cvForm input, #cvForm select').forEach(el => {
-      el.addEventListener('input', verificarProgresoCompleto);
-      el.addEventListener('change', verificarProgresoCompleto);
-    });
-
-    // Enviar todo y ver resultados: comprobar CV, confirmar y simular envío
-    document.getElementById('botonEnviarTodo').addEventListener('click', function () {
-      // Comprobar CV
-      const inputCV = document.getElementById('cv');
-      if (!localStorage.getItem('formulario_cv_pdf') || inputCV.files.length === 0) {
-        document.getElementById('cv-warning').style.display = 'block';
-        inputCV.focus();
-        alert('Para poder enviar todo y ver resultados, por favor vuelve a seleccionar y adjuntar tu CV en PDF.');
-        return;
-      }
-      document.getElementById('cv-warning').style.display = 'none';
-
-      // Confirmación SIN la frase de volver atrás
-      if (!window.confirm('¿Estás seguro/a de que quieres enviar todos los datos y ver los resultados?')) {
-        return;
-      }
-
-      // Aquí simulas el envío (puedes reemplazarlo por una petición AJAX real)
-      setTimeout(() => {
-        // Suponiendo éxito
-        alert('¡Datos enviados correctamente! Gracias por completar tu perfil.');
-        window.location.href = 'resultados.html';
-      }, 800);
-    });
   </script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>
