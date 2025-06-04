@@ -30,8 +30,8 @@
       const archivo = inputCV.files[0];
       if (archivo) {
         nombreArchivo.innerText = `Has seleccionado: ${archivo.name}`;
-        localStorage.setItem("formulario_cv_pdf", archivo.name);  // Para flujo anterior
-        localStorage.setItem("cv_filename", archivo.name);        // Para backend actual
+        localStorage.setItem("formulario_cv_pdf", archivo.name);
+        localStorage.setItem("cv_filename", archivo.name);
         botonContinuar.disabled = false;
       }
     });
