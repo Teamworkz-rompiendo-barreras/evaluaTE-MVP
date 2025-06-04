@@ -71,32 +71,26 @@ async def shutdown():
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()
 
-    perfil = f"""
-    Nombre: {datos_dict.get('nombre')} {datos_dict.get('apellidos')}
-    Email: {datos_dict.get('email')}
-    WhatsApp: {datos_dict.get('whatsapp')}
-    Certificado de discapacidad: {datos_dict.get('discapacidad')}
-    Modalidad de trabajo: {datos_dict.get('tipo')}
-    Puesto deseado: {datos_dict.get('puesto')}
-    Tipo de jornada: {datos_dict.get('jornada')}
-    Disponibilidad: {datos_dict.get('disponibilidad')}
-    Dispuesto/a a trasladarse: {datos_dict.get('traslado')}
-    CV: {datos_dict.get('cv_filename')}
+    # Preparar datos para la generación del informe de IA
+    datos_generar = datos_dict.copy()
+    datos_generar["ruta_cv"] = (
+        f"uploads/{datos_generar['cv_filename']}" if datos_generar.get("cv_filename") else ""
+    )
+    resultados = [
+        f"Toma de decisiones: {datos_generar.get('minijuego_decisiones_score', '')}",
+        f"Resolución de problemas: {datos_generar.get('minijuego_resolucion_score', '')}",
+        f"Comunicación: {datos_generar.get('minijuego_comunicacion_score', '')}",
+        f"Adaptabilidad: {datos_generar.get('minijuego_adaptabilidad_score', '')}",
+        f"Gestión del tiempo: {datos_generar.get('minijuego_tiempo_score', '')}",
+        f"Trabajo en equipo: {datos_generar.get('minijuego_equipo_score', '')}",
+        f"Creatividad: {datos_generar.get('minijuego_creatividad_score', '')}",
+        f"Liderazgo: {datos_generar.get('minijuego_liderazgo_score', '')}",
+        f"Pensamiento crítico: {datos_generar.get('minijuego_pensamiento_score', '')}",
+        f"Inteligencia emocional: {datos_generar.get('minijuego_emocional_score', '')}"
+    ]
+    datos_generar["resultados_minijuegos"] = ", ".join(resultados)
 
-    Resultados minijuegos:
-    - Toma de decisiones: {datos_dict.get('minijuego_decisiones_score')}
-    - Resolución de problemas: {datos_dict.get('minijuego_resolucion_score')}
-    - Comunicación: {datos_dict.get('minijuego_comunicacion_score')}
-    - Adaptabilidad: {datos_dict.get('minijuego_adaptabilidad_score')}
-    - Gestión del tiempo: {datos_dict.get('minijuego_tiempo_score')}
-    - Trabajo en equipo: {datos_dict.get('minijuego_equipo_score')}
-    - Creatividad: {datos_dict.get('minijuego_creatividad_score')}
-    - Liderazgo: {datos_dict.get('minijuego_liderazgo_score')}
-    - Pensamiento crítico: {datos_dict.get('minijuego_pensamiento_score')}
-    - Inteligencia emocional: {datos_dict.get('minijuego_emocional_score')}
-    """
-
-    texto_generado = generar_informe_ia(perfil)
+    texto_generado = generar_informe_ia(datos_generar)
 
     informe = {
         "nombre": datos_dict["nombre"],
