@@ -1,7 +1,9 @@
 fastapi
-uvicorn[standard]
-sqlalchemy
+uvicorn
 databases[postgresql]
 psycopg2-binary
+sqlalchemy
 python-dotenv
-openai
+openai  # (o azure-openai, según tu paquete)
+PyPDF2
+python-multipart
