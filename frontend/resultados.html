@@ -5,15 +5,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Informe de Empleabilidad</title>
   <link rel="stylesheet" href="estilos.css" />
+  <!-- Necesario para jsPDF.html() -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
+  <!-- jsPDF principal -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+  <!-- Font Awesome (iconos) -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
-  <div class="contenedor" id="informe-wrapper">
-    <div class="encabezado-informe">
-      <img src="Logo_teamworkz.png" alt="Logo Teamworkz" class="logo-informe" />
-      <span id="informe-fecha" class="fecha-informe"></span>
+  <div class="container" id="informe-wrapper">
+    <div class="encabezado-informe" style="display:flex; justify-content:space-between; align-items:center;">
+      <img src="Logo_teamworkz.png" alt="Logo Teamworkz" class="logo-informe" style="height:50px;" />
+      <span id="informe-fecha" class="fecha-informe" style="font-size:0.9em; color:#697477;"></span>
     </div>
 
     <h1 class="titulo-informe">Informe de Empleabilidad</h1>
@@ -35,7 +38,7 @@
 
     <div class="seccion-informe" id="informe-resumen">
       <h2><i class="fas fa-chart-line"></i> Resumen</h2>
-      <!-- El contenido de resumen irá aquí -->
+      <!-- Aquí se inyectará el resumen -->
     </div>
 
     <div class="seccion-informe">
@@ -58,7 +61,7 @@
       <div id="informe-conclusion"></div>
     </div>
 
-    <div class="pie-informe">
+    <div class="pie-informe" style="font-size:0.88em; color:#697477; margin-top:16px;">
       <p>🧠 Informe generado automáticamente por Teamworkz.</p>
       <p>📥 Uso exclusivo de la persona candidata y/o la entidad que le acompaña.</p>
     </div>
@@ -71,65 +74,49 @@
   </div>
 
   <script>
-    // Mostrar la fecha actual
+    // Rellenar la fecha del informe
     document.getElementById('informe-fecha').innerText =
-      new Date().toLocaleDateString('es-ES', {
-        year: 'numeric',
-        month: 'long',
-        day: 'numeric'
-      });
+      new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
 
-    // Función para rellenar el informe con la información recibida
+    // Función para pintar el informe
     function mostrarInforme(info) {
-      document.getElementById('informe-nombre').innerText =
-        `${info.nombre || ''} ${info.apellidos || ''}`;
-      document.getElementById('informe-email').innerText = info.email || '';
-      document.getElementById('informe-whatsapp').innerText = info.whatsapp || '';
-      document.getElementById('informe-jornada').innerText = info.jornada || '';
+      document.getElementById('informe-nombre').innerText       = `${info.nombre || ''} ${info.apellidos || ''}`;
+      document.getElementById('informe-email').innerText        = info.email || '';
+      document.getElementById('informe-whatsapp').innerText     = info.whatsapp || '';
+      document.getElementById('informe-jornada').innerText      = info.jornada || '';
       document.getElementById('informe-disponibilidad').innerText = info.disponibilidad || '';
-      document.getElementById('informe-discapacidad').innerText = info.discapacidad || '';
-      document.getElementById('informe-tipo').innerText = info.tipo || '';
-      document.getElementById('informe-puesto').innerText = info.puesto || '';
+      document.getElementById('informe-discapacidad').innerText   = info.discapacidad || '';
+      document.getElementById('informe-tipo').innerText         = info.tipo || '';
+      document.getElementById('informe-puesto').innerText       = info.puesto || '';
 
-      // Agregar contenido del resumen
-      const resumenContenedor = document.getElementById('informe-resumen');
-      const parrafoResumen = document.createElement('p');
-      parrafoResumen.innerText = info.resumen || '';
-      resumenContenedor.appendChild(parrafoResumen);
+      // Inyectar el resumen (HTML seguro o texto sencillo)
+      document.getElementById('informe-resumen').innerHTML +=
+        `<p>${info.resumen || ''}</p>`;
 
-      // Fortalezas
-      const fortalezas = Array.isArray(info.fortalezas)
-        ? info.fortalezas
-        : info.fortalezas
-        ? [info.fortalezas]
-        : [];
+      // Fortalezas (array)
+      const fortalezas = Array.isArray(info.fortalezas) ? info.fortalezas : [];
       document.getElementById('informe-fortalezas').innerHTML =
         fortalezas.map(f => `<li>${f}</li>`).join('');
 
-      // Mejoras
-      const mejorasArray = Array.isArray(info.areas_mejora || info.mejoras)
-        ? info.areas_mejora || info.mejoras
-        : info.areas_mejora || info.mejoras
-        ? [info.areas_mejora || info.mejoras]
-        : [];
+      // Oportunidades de mejora (array)
+      const mejorasArray = Array.isArray(info.areas_mejora) ? info.areas_mejora : [];
       document.getElementById('informe-mejoras').innerHTML =
         mejorasArray.map(m => `<li>${m}</li>`).join('');
 
-      // Orientación
-      document.getElementById('informe-orientacion').innerText = info.orientacion || '';
-
-      // Conclusión
-      document.getElementById('informe-conclusion').innerText = info.conclusion || '';
+      // Orientación y conclusión
+      document.getElementById('informe-orientacion').innerHTML = `<p>${info.orientacion || ''}</p>`;
+      document.getElementById('informe-conclusion').innerHTML  = `<p>${info.conclusion || ''}</p>`;
     }
 
-    // Exponer la función globalmente para que main.js la invoque
+    // Permitir que main.js llame a mostrarInforme
     window.mostrarInforme = mostrarInforme;
 
-    // Botón para descargar en PDF
+    // Generar PDF cuando el usuario pulse el botón
     document.getElementById('descargar-pdf').addEventListener('click', () => {
       const { jsPDF } = window.jspdf;
       const doc = new jsPDF('p', 'pt', 'a4');
       const informe = document.getElementById('informe-wrapper');
+
       doc.html(informe, {
         callback: function (doc) {
           doc.save('informe-empleabilidad.pdf');
