@@ -5,22 +5,20 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Informe de Empleabilidad</title>
   <link rel="stylesheet" href="estilos.css" />
-  <!-- Necesario para jsPDF.html() -->
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <!-- jsPDF principal -->
+  <!-- jsPDF para descarga en PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- Font Awesome (iconos) -->
+  <!-- FontAwesome para iconos -->
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
 </head>
 <body>
   <div class="container" id="informe-wrapper">
     <div class="encabezado-informe" style="display:flex; justify-content:space-between; align-items:center;">
-      <img src="Logo_teamworkz.png" alt="Logo Teamworkz" class="logo-informe" style="height:50px;" />
-      <span id="informe-fecha" class="fecha-informe" style="font-size:0.9em; color:#697477;"></span>
+      <img src="Logo_teamworkz.png" alt="Logo Teamworkz" style="height:50px;" />
+      <span id="informe-fecha" style="font-size:0.9em; color:#697477;"></span>
     </div>
 
-    <h1 class="titulo-informe">Informe de Empleabilidad</h1>
-    <p class="subtitulo-informe" id="informe-intro">
+    <h1 style="margin-top:16px; color:#374BA6;">Informe de Empleabilidad</h1>
+    <p style="color:#0B474B; margin-bottom: 24px;" id="informe-intro">
       Este informe está basado en tu información personal, resultados de autoevaluación y tus preferencias laborales.
     </p>
 
@@ -38,98 +36,48 @@
 
     <div class="seccion-informe" id="informe-resumen">
       <h2><i class="fas fa-chart-line"></i> Resumen</h2>
-      <!-- Aquí se inyectará el resumen -->
+      <div id="informe-resumen-texto" style="margin-top:8px; color:#0B474B;"></div>
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-thumbs-up"></i> Fortalezas detectadas</h2>
-      <ul id="informe-fortalezas" class="lista-informe"></ul>
+      <ul id="informe-fortalezas" class="lista-informe" style="margin-left: 1.2em;"></ul>
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-lightbulb"></i> Oportunidades de mejora</h2>
-      <ul id="informe-mejoras" class="lista-informe"></ul>
+      <ul id="informe-mejoras" class="lista-informe" style="margin-left: 1.2em;"></ul>
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-compass"></i> Orientación laboral personalizada</h2>
-      <div id="informe-orientacion"></div>
+      <div id="informe-orientacion" style="margin-top:8px; color:#0B474B;"></div>
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-check-circle"></i> Conclusión</h2>
-      <div id="informe-conclusion"></div>
+      <div id="informe-conclusion" style="margin-top:8px; color:#0B474B;"></div>
     </div>
 
-    <div class="pie-informe" style="font-size:0.88em; color:#697477; margin-top:16px;">
+    <div class="pie-informe" style="border-top:1px solid #eee; margin-top:24px; padding-top:12px; font-size:0.88em; color:#697477;">
       <p>🧠 Informe generado automáticamente por Teamworkz.</p>
       <p>📥 Uso exclusivo de la persona candidata y/o la entidad que le acompaña.</p>
     </div>
 
-    <div class="centrado">
+    <div style="text-align:center; margin-top:30px;">
       <button id="descargar-pdf" class="boton-principal">
         <i class="fas fa-download"></i> Descargar informe en PDF
       </button>
     </div>
   </div>
 
+  <!-- main.js será el encargado de llamar a /api/generar-informe y pintar todo -->
+  <script src="main.js"></script>
+
   <script>
-    // Rellenar la fecha del informe
+    // Poner la fecha en el encabezado
     document.getElementById('informe-fecha').innerText =
       new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
-
-    // Función para pintar el informe
-    function mostrarInforme(info) {
-      document.getElementById('informe-nombre').innerText       = `${info.nombre || ''} ${info.apellidos || ''}`;
-      document.getElementById('informe-email').innerText        = info.email || '';
-      document.getElementById('informe-whatsapp').innerText     = info.whatsapp || '';
-      document.getElementById('informe-jornada').innerText      = info.jornada || '';
-      document.getElementById('informe-disponibilidad').innerText = info.disponibilidad || '';
-      document.getElementById('informe-discapacidad').innerText   = info.discapacidad || '';
-      document.getElementById('informe-tipo').innerText         = info.tipo || '';
-      document.getElementById('informe-puesto').innerText       = info.puesto || '';
-
-      // Inyectar el resumen (HTML seguro o texto sencillo)
-      document.getElementById('informe-resumen').innerHTML +=
-        `<p>${info.resumen || ''}</p>`;
-
-      // Fortalezas (array)
-      const fortalezas = Array.isArray(info.fortalezas) ? info.fortalezas : [];
-      document.getElementById('informe-fortalezas').innerHTML =
-        fortalezas.map(f => `<li>${f}</li>`).join('');
-
-      // Oportunidades de mejora (array)
-      const mejorasArray = Array.isArray(info.areas_mejora) ? info.areas_mejora : [];
-      document.getElementById('informe-mejoras').innerHTML =
-        mejorasArray.map(m => `<li>${m}</li>`).join('');
-
-      // Orientación y conclusión
-      document.getElementById('informe-orientacion').innerHTML = `<p>${info.orientacion || ''}</p>`;
-      document.getElementById('informe-conclusion').innerHTML  = `<p>${info.conclusion || ''}</p>`;
-    }
-
-    // Permitir que main.js llame a mostrarInforme
-    window.mostrarInforme = mostrarInforme;
-
-    // Generar PDF cuando el usuario pulse el botón
-    document.getElementById('descargar-pdf').addEventListener('click', () => {
-      const { jsPDF } = window.jspdf;
-      const doc = new jsPDF('p', 'pt', 'a4');
-      const informe = document.getElementById('informe-wrapper');
-
-      doc.html(informe, {
-        callback: function (doc) {
-          doc.save('informe-empleabilidad.pdf');
-        },
-        margin: [15, 15, 15, 15],
-        x: 10,
-        y: 10,
-        width: 560,
-        windowWidth: 800
-      });
-    });
   </script>
-
-  <script src="main.js"></script>
 </body>
 </html>
