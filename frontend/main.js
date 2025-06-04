@@ -12,16 +12,16 @@ function recogerDatosFormulario() {
     jornada: localStorage.getItem('formulario_jornada') || '',
     disponibilidad: localStorage.getItem('formulario_disponibilidad') || '',
     traslado: localStorage.getItem('formulario_traslado') || '',
-    minijuego_decisiones_score: localStorage.getItem('minijuego_decisiones_score') || '',
-    minijuego_resolucion_score: localStorage.getItem('minijuego_resolucion_score') || '',
+    minijuego_decisiones_score: localStorage.getItem('minijuego_toma_decisiones_score') || '',
+    minijuego_resolucion_score: localStorage.getItem('minijuego_resolucion_problemas_score') || '',
     minijuego_comunicacion_score: localStorage.getItem('minijuego_comunicacion_score') || '',
     minijuego_adaptabilidad_score: localStorage.getItem('minijuego_adaptabilidad_score') || '',
-    minijuego_tiempo_score: localStorage.getItem('minijuego_tiempo_score') || '',
-    minijuego_equipo_score: localStorage.getItem('minijuego_equipo_score') || '',
+    minijuego_tiempo_score: localStorage.getItem('minijuego_gestion_tiempo_score') || '',
+    minijuego_equipo_score: localStorage.getItem('minijuego_trabajo_equipo_score') || '',
     minijuego_creatividad_score: localStorage.getItem('minijuego_creatividad_score') || '',
     minijuego_liderazgo_score: localStorage.getItem('minijuego_liderazgo_score') || '',
-    minijuego_pensamiento_score: localStorage.getItem('minijuego_pensamiento_score') || '',
-    minijuego_emocional_score: localStorage.getItem('minijuego_emocional_score') || '',
+    minijuego_pensamiento_score: localStorage.getItem('minijuego_pensamiento_critico_score') || '',
+    minijuego_emocional_score: localStorage.getItem('minijuego_gestion_emocional_score') || '',
     cv_filename: localStorage.getItem('cv_filename') || ''
   };
 }
@@ -49,4 +49,5 @@ async function generarInforme() {
   }
 }
 
+// Al cargar la página, pedimos el informe inmediatamente
 document.addEventListener('DOMContentLoaded', generarInforme);
