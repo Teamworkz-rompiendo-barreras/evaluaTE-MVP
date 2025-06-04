@@ -42,7 +42,7 @@ class DatosInforme(BaseModel):
     minijuego_emocional_score: str = ""
     cv_filename: str
 
-# Tabla SQL
+# Definición de la tabla "informes"
 metadata = sqlalchemy.MetaData()
 informes = sqlalchemy.Table(
     "informes",
@@ -62,6 +62,8 @@ informes = sqlalchemy.Table(
 @app.on_event("startup")
 async def startup():
     await database.connect()
+    # Si aún no has creado la tabla "informes", puedes descomentar la siguiente línea
+    # engine = sqlalchemy.create_engine(DATABASE_URL); metadata.create_all(engine)
 
 @app.on_event("shutdown")
 async def shutdown():
@@ -71,7 +73,7 @@ async def shutdown():
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()
 
-    # Construir el perfil completo
+    # Construir el perfil completo para enviar a la IA
     perfil = f"""
 Nombre: {datos_dict['nombre']} {datos_dict['apellidos']}
 Email: {datos_dict['email']}
@@ -96,10 +98,10 @@ Resultados de habilidades blandas:
 - Inteligencia emocional: {datos_dict['minijuego_emocional_score']}
 """
 
-    # Generar texto del informe
+    # Llamar a Azure OpenAI para generar el informe
     texto_completo = generar_informe_ia(perfil)
 
-    # Extraer partes del texto
+    # Extraer segmentos del texto devuelto
     resumen = texto_completo.split("2.")[0].replace("1. RESUMEN PERSONAL", "").strip()
     fortalezas = []
     mejoras = []
@@ -114,15 +116,22 @@ Resultados de habilidades blandas:
             elif "mejora" in linea.lower() or "oportunidad" in linea.lower():
                 mejoras.append(linea.lstrip("-• ").strip())
         elif "orientación" in linea.lower():
-            orientacion = linea
+            orientacion = linea.lstrip("-• ").strip()
         elif "conclusión" in linea.lower():
-            conclusion = linea
+            conclusion = linea.lstrip("-• ").strip()
 
+    # Construir el objeto que se enviará al frontend y se guardará en BD
     informe = {
         "nombre": datos_dict["nombre"],
         "apellidos": datos_dict["apellidos"],
         "email": datos_dict["email"],
         "whatsapp": datos_dict["whatsapp"],
+        "discapacidad": datos_dict["discapacidad"],
+        "tipo": datos_dict["tipo"],
+        "puesto": datos_dict["puesto"],
+        "jornada": datos_dict["jornada"],
+        "disponibilidad": datos_dict["disponibilidad"],
+        "traslado": datos_dict["traslado"],
         "resumen": resumen,
         "fortalezas": fortalezas,
         "areas_mejora": mejoras,
@@ -130,7 +139,7 @@ Resultados de habilidades blandas:
         "conclusion": conclusion,
     }
 
-    # Guardar en la base de datos
+    # Insertar en la base de datos
     query = informes.insert().values(
         nombre=informe["nombre"],
         apellidos=informe["apellidos"],
@@ -146,7 +155,5 @@ Resultados de habilidades blandas:
 
     return JSONResponse(content={"informe": informe})
 
-# Ejecutar localmente
 if __name__ == "__main__":
     uvicorn.run(app, host="127.0.0.1", port=8000)
-
