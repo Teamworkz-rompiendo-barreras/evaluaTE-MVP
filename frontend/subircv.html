@@ -7,16 +7,16 @@
   <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
-  <div class="contenedor centrado">
-    <h1 class="titulo">Sube tu CV</h1>
-    <p class="texto-aclaracion">Elige tu currículum en PDF para completar tu evaluación.</p>
+  <div class="container" style="text-align:center; margin-top:50px;">
+    <h1>Sube tu CV en PDF</h1>
+    <p>Selecciona tu currículum en PDF para que lo analicemos.</p>
 
-    <label class="boton-subir">
-      Seleccionar archivo
+    <label class="boton-principal" style="display:inline-block; cursor:pointer;">
+      <i class="fas fa-file-upload"></i> Seleccionar archivo
       <input type="file" id="input-cv" accept=".pdf" style="display: none" />
     </label>
 
-    <p id="nombre-archivo" class="texto-archivo"></p>
+    <p id="nombre-archivo" style="margin-top: 16px;"></p>
 
     <button id="boton-continuar" class="boton-principal" disabled>Continuar</button>
   </div>
@@ -26,20 +26,52 @@
     const nombreArchivo = document.getElementById("nombre-archivo");
     const botonContinuar = document.getElementById("boton-continuar");
 
+    // Cuando se selecciona un archivo:
     inputCV.addEventListener("change", () => {
       const archivo = inputCV.files[0];
       if (archivo) {
         nombreArchivo.innerText = `Has seleccionado: ${archivo.name}`;
-        localStorage.setItem("formulario_cv_pdf", archivo.name);
-        localStorage.setItem("cv_filename", archivo.name);
         botonContinuar.disabled = false;
+      } else {
+        nombreArchivo.innerText = "";
+        botonContinuar.disabled = true;
       }
     });
 
-    botonContinuar.addEventListener("click", () => {
-      window.location.href = "resultados.html";
+    // Al hacer clic en “Continuar”, primero subimos el PDF al backend
+    botonContinuar.addEventListener("click", async () => {
+      if (!inputCV.files[0]) return;
+
+      const formData = new FormData();
+      formData.append("file", inputCV.files[0]);
+
+      try {
+        const response = await fetch("http://localhost:8000/api/subir-cv", {
+          method: "POST",
+          body: formData
+        });
+
+        if (!response.ok) {
+          alert("⚠️ Error al subir el CV. Intenta de nuevo.");
+          return;
+        }
+
+        const data = await response.json();
+        const cvText = data.cv_text || "";
+
+        // Guardamos el texto completo del CV en localStorage
+        localStorage.setItem("cv_text", cvText);
+
+        // Redirigimos a la pantalla de resultados
+        window.location.href = "resultados.html";
+      } catch (err) {
+        console.error(err);
+        alert("❌ No hemos podido conectar con el servidor. Revisa que el backend esté activo.");
+      }
     });
   </script>
+
+  <!-- FontAwesome para los iconos -->
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/js/all.min.js"></script>
 </body>
 </html>
-
