@@ -1,6 +1,6 @@
 // softskills.js
 
-// Lista de habilidades y sus preguntas, con clave para localStorage
+// Lista de habilidades y sus preguntas
 const preguntas = [
   {
     habilidad: "decisiones",
@@ -39,7 +39,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "tiempo",
+    habilidad: "gestion_tiempo",
     texto: "En cuanto al uso del tiempo durante la jornada...",
     opciones: [
       { texto: "Organizo mi tiempo y cumplo con los plazos.", valor: 3 },
@@ -48,7 +48,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "equipo",
+    habilidad: "trabajo_equipo",
     texto: "Cuando trabajo con otras personas...",
     opciones: [
       { texto: "Colaboro, doy ideas y respeto las opiniones.", valor: 3 },
@@ -75,7 +75,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "pensamiento",
+    habilidad: "pensamiento_critico",
     texto: "Cuando recibo una nueva información...",
     opciones: [
       { texto: "La analizo y contrasto antes de aceptarla.", valor: 3 },
@@ -84,7 +84,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "emocional",
+    habilidad: "gestion_emocional",
     texto: "Cuando tengo un mal día en el trabajo...",
     opciones: [
       { texto: "Intento calmarme y sigo con mis tareas.", valor: 3 },
@@ -113,8 +113,7 @@ function mostrarPregunta() {
     boton.innerText = opcion.texto;
     boton.className = "opcion";
     boton.addEventListener("click", () => {
-      // Guardar bajo la clave que espera main.js
-      respuestas[`minijuego_${actual.habilidad}_score`] = opcion.valor.toString();
+      respuestas[`minijuego_${actual.habilidad}_score`] = opcion.valor;
       siguientePregunta();
     });
     opcionesContenedor.appendChild(boton);
@@ -133,6 +132,7 @@ function siguientePregunta() {
     Object.keys(respuestas).forEach(key => {
       localStorage.setItem(key, respuestas[key]);
     });
+    // Una vez terminados los juegos, vamos a la pantalla de "Subir CV"
     window.location.href = "subircv.html";
   }
 }
