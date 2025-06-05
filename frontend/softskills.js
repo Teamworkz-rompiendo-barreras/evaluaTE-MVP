@@ -1,6 +1,6 @@
 // softskills.js
 
-// Lista de habilidades y sus preguntas
+// Lista de preguntas / habilidades a evaluar
 const preguntas = [
   {
     habilidad: "decisiones",
@@ -75,8 +75,8 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "pensamiento_critico",
-    texto: "Cuando recibo una nueva información...",
+    habilidad: "pensamiento",
+    texto: "Cuando recibo nueva información...",
     opciones: [
       { texto: "La analizo y contrasto antes de aceptarla.", valor: 3 },
       { texto: "La acepto si me la dice alguien de confianza.", valor: 2 },
@@ -84,7 +84,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "gestion_emocional",
+    habilidad: "emocional",
     texto: "Cuando tengo un mal día en el trabajo...",
     opciones: [
       { texto: "Intento calmarme y sigo con mis tareas.", valor: 3 },
@@ -102,7 +102,7 @@ const opcionesContenedor = document.getElementById("opciones-contenedor");
 const contador = document.getElementById("contador");
 const barraProgreso = document.getElementById("barra-progreso");
 
-// Mostrar la pregunta actual
+// Muestra la pregunta actual y sus botones
 function mostrarPregunta() {
   const actual = preguntas[indice];
   preguntaTexto.innerText = actual.texto;
@@ -128,14 +128,14 @@ function siguientePregunta() {
   if (indice < preguntas.length) {
     mostrarPregunta();
   } else {
-    // Guardar respuestas en localStorage
-    Object.keys(respuestas).forEach(key => {
+    // Llegamos al final: guardamos todas las puntuaciones en localStorage
+    Object.keys(respuestas).forEach((key) => {
       localStorage.setItem(key, respuestas[key]);
     });
-    // Una vez terminados los juegos, vamos a la pantalla de "Subir CV"
+    // Redirigimos a la siguiente etapa: subir CV
     window.location.href = "subircv.html";
   }
 }
 
-// Iniciar
+// Iniciar al cargar
 mostrarPregunta();
