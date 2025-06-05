@@ -1,19 +1,17 @@
-# backend/db.py
-
+# db.py
 import os
-from dotenv import load_dotenv
 import databases
 import sqlalchemy
+from dotenv import load_dotenv
 
-# ---------------------------------------------------
-# CARGAR VARIABLES DE ENTORNO
-# ---------------------------------------------------
-load_dotenv()
+load_dotenv()  # Carga las variables del .env automáticamente
 
-# Este es tu DATABASE_URL (ya con “+asyncpg” si vas a usar asyncpg)
-# Por ejemplo: 
-# postgresql+asyncpg://usuario:clave@<tu-host>.postgres.database.azure.com:5432/<tu-db>
 DATABASE_URL = os.getenv("DATABASE_URL")
+if not DATABASE_URL:
+    raise RuntimeError("Falta la variable DATABASE_URL en el .env")
 
+# Creamos el objeto `database` para usar con `Databases` (asíncrono)
 database = databases.Database(DATABASE_URL)
+
+# Metadata para SQLAlchemy (por si luego queremos declarar tablas adicionales)
 metadata = sqlalchemy.MetaData()
