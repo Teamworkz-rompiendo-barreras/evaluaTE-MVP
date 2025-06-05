@@ -5,21 +5,23 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Informe de Empleabilidad</title>
   <link rel="stylesheet" href="estilos.css" />
-  <!-- jsPDF para descarga en PDF -->
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <!-- FontAwesome para iconos -->
-  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <link
+    rel="stylesheet"
+    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
+  />
 </head>
 <body>
-  <div class="container" id="informe-wrapper">
-    <div class="encabezado-informe" style="display:flex; justify-content:space-between; align-items:center;">
-      <img src="Logo_teamworkz.png" alt="Logo Teamworkz" style="height:50px;" />
-      <span id="informe-fecha" style="font-size:0.9em; color:#697477;"></span>
+  <div class="contenedor" id="informe-wrapper">
+    <div class="encabezado-informe">
+      <img src="Logo_teamworkz.png" alt="Logo Teamworkz" class="logo-informe" />
+      <span id="informe-fecha" class="fecha-informe"></span>
     </div>
 
-    <h1 style="margin-top:16px; color:#374BA6;">Informe de Empleabilidad</h1>
-    <p style="color:#0B474B; margin-bottom: 24px;" id="informe-intro">
-      Este informe está basado en tu información personal, resultados de autoevaluación y tus preferencias laborales.
+    <h1 class="titulo-informe">Informe de Empleabilidad</h1>
+    <p class="subtitulo-informe" id="informe-intro">
+      Este informe está basado en tu información personal, resultados de autoevaluación y tus
+      preferencias laborales.
     </p>
 
     <div class="seccion-informe">
@@ -36,48 +38,116 @@
 
     <div class="seccion-informe" id="informe-resumen">
       <h2><i class="fas fa-chart-line"></i> Resumen</h2>
-      <div id="informe-resumen-texto" style="margin-top:8px; color:#0B474B;"></div>
+      <!-- Aquí irá el texto resumen devuelto por IA -->
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-thumbs-up"></i> Fortalezas detectadas</h2>
-      <ul id="informe-fortalezas" class="lista-informe" style="margin-left: 1.2em;"></ul>
+      <ul id="informe-fortalezas" class="lista-informe"></ul>
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-lightbulb"></i> Oportunidades de mejora</h2>
-      <ul id="informe-mejoras" class="lista-informe" style="margin-left: 1.2em;"></ul>
+      <ul id="informe-mejoras" class="lista-informe"></ul>
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-compass"></i> Orientación laboral personalizada</h2>
-      <div id="informe-orientacion" style="margin-top:8px; color:#0B474B;"></div>
+      <div id="informe-orientacion"></div>
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-check-circle"></i> Conclusión</h2>
-      <div id="informe-conclusion" style="margin-top:8px; color:#0B474B;"></div>
+      <div id="informe-conclusion"></div>
     </div>
 
-    <div class="pie-informe" style="border-top:1px solid #eee; margin-top:24px; padding-top:12px; font-size:0.88em; color:#697477;">
+    <div class="pie-informe">
       <p>🧠 Informe generado automáticamente por Teamworkz.</p>
       <p>📥 Uso exclusivo de la persona candidata y/o la entidad que le acompaña.</p>
     </div>
 
-    <div style="text-align:center; margin-top:30px;">
+    <div class="centrado">
       <button id="descargar-pdf" class="boton-principal">
         <i class="fas fa-download"></i> Descargar informe en PDF
       </button>
     </div>
   </div>
 
-  <!-- main.js será el encargado de llamar a /api/generar-informe y pintar todo -->
   <script src="main.js"></script>
-
   <script>
-    // Poner la fecha en el encabezado
-    document.getElementById('informe-fecha').innerText =
-      new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' });
+    // Completa la fecha arriba a la derecha
+    document.getElementById("informe-fecha").innerText =
+      new Date().toLocaleDateString("es-ES", {
+        year: "numeric",
+        month: "long",
+        day: "numeric",
+      });
+
+    // Función que pinta en pantalla el informe devuelto por el backend
+    function mostrarInforme(info) {
+      document.getElementById(
+        "informe-nombre"
+      ).innerText = `${info.nombre || ""} ${info.apellidos || ""}`;
+      document.getElementById("informe-email").innerText = info.email || "";
+      document.getElementById("informe-whatsapp").innerText = info.whatsapp || "";
+      document.getElementById("informe-jornada").innerText = info.jornada || "";
+      document.getElementById("informe-disponibilidad").innerText =
+        info.disponibilidad || "";
+      document.getElementById("informe-discapacidad").innerText =
+        info.discapacidad || "";
+      document.getElementById("informe-tipo").innerText = info.tipo || "";
+      document.getElementById("informe-puesto").innerText = info.puesto || "";
+
+      // Pinta el resumen (texto, párrafo, HTML simple)
+      document.getElementById("informe-resumen").innerHTML +=
+        `<p>${info.resumen || ""}</p>`;
+
+      // Pinta orientacion y conclusion
+      document.getElementById("informe-orientacion").innerHTML =
+        `<p>${info.orientacion || ""}</p>`;
+      document.getElementById("informe-conclusion").innerHTML =
+        `<p>${info.conclusion || ""}</p>`;
+
+      // Fortalezas y mejoras (listas)
+      const fortalezas = Array.isArray(info.fortalezas)
+        ? info.fortalezas
+        : info.fortalezas
+        ? [info.fortalezas]
+        : [];
+      document.getElementById("informe-fortalezas").innerHTML =
+        fortalezas.map((f) => `<li>${f}</li>`).join("");
+
+      const mejorasArray = Array.isArray(info.areas_mejora)
+        ? info.areas_mejora
+        : info.areas_mejora
+        ? [info.areas_mejora]
+        : [];
+      document.getElementById("informe-mejoras").innerHTML =
+        mejorasArray.map((m) => `<li>${m}</li>`).join("");
+    }
+
+    // Hacemos que la función mostrarInforme esté disponible globalmente,
+    // para que main.js pueda llamarla después de obtener datos.
+    window.mostrarInforme = mostrarInforme;
+
+    // Lógica para exportar a PDF desde el botón "Descargar informe"
+    document
+      .getElementById("descargar-pdf")
+      .addEventListener("click", () => {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF("p", "pt", "a4");
+        const informe = document.getElementById("informe-wrapper");
+        doc.html(informe, {
+          callback: function (doc) {
+            doc.save("informe-empleabilidad.pdf");
+          },
+          margin: [15, 15, 15, 15],
+          x: 10,
+          y: 10,
+          width: 560,
+          windowWidth: 800,
+        });
+      });
   </script>
 </body>
 </html>
