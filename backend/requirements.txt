@@ -1,9 +1,8 @@
-fastapi
-uvicorn
-databases[postgresql]
-psycopg2-binary
-sqlalchemy
-python-dotenv
-openai  # (o azure-openai, según tu paquete)
-PyPDF2
-python-multipart
+fastapi==0.95.2
+uvicorn[standard]==0.22.0
+sqlalchemy[asyncio]==2.0.27
+databases[postgresql]==1.5.5
+python-dotenv==1.0.0
+PyPDF2==3.0.1
+openai==0.39.1
+asyncpg==0.27.0
