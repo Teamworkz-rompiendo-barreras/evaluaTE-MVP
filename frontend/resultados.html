@@ -5,12 +5,10 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>Informe de Empleabilidad</title>
   <link rel="stylesheet" href="estilos.css" />
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2canvas/1.4.1/html2canvas.min.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
-  <link
-    rel="stylesheet"
-    href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"
-  />
+  <!-- FontAwesome para iconos -->
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css" />
+  <!-- Chart.js para el radar chart -->
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
 </head>
 <body>
   <div class="contenedor" id="informe-wrapper">
@@ -21,8 +19,7 @@
 
     <h1 class="titulo-informe">Informe de Empleabilidad</h1>
     <p class="subtitulo-informe" id="informe-intro">
-      Este informe está basado en tu información personal, resultados de autoevaluación y tus
-      preferencias laborales.
+      Este informe está basado en tu información personal, resultados de autoevaluación y tus preferencias laborales.
     </p>
 
     <div class="seccion-informe">
@@ -37,9 +34,15 @@
       <p><strong>Puesto deseado:</strong> <span id="informe-puesto"></span></p>
     </div>
 
+    <!-- Gráfico de radar -->
+    <div class="seccion-informe">
+      <h2><i class="fas fa-chart-pie"></i> Mapa de Habilidades Blandas</h2>
+      <canvas id="radarChart" width="400" height="400"></canvas>
+    </div>
+
     <div class="seccion-informe" id="informe-resumen">
       <h2><i class="fas fa-chart-line"></i> Resumen</h2>
-      <!-- Aquí irá el texto resumen devuelto por IA -->
+      <p id="texto-resumen"></p>
     </div>
 
     <div class="seccion-informe">
@@ -54,12 +57,12 @@
 
     <div class="seccion-informe">
       <h2><i class="fas fa-compass"></i> Orientación laboral personalizada</h2>
-      <div id="informe-orientacion"></div>
+      <p id="informe-orientacion"></p>
     </div>
 
     <div class="seccion-informe">
       <h2><i class="fas fa-check-circle"></i> Conclusión</h2>
-      <div id="informe-conclusion"></div>
+      <p id="informe-conclusion"></p>
     </div>
 
     <div class="pie-informe">
@@ -75,80 +78,5 @@
   </div>
 
   <script src="main.js"></script>
-  <script>
-    // Completa la fecha arriba a la derecha
-    document.getElementById("informe-fecha").innerText =
-      new Date().toLocaleDateString("es-ES", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      });
-
-    // Función que pinta en pantalla el informe devuelto por el backend
-    function mostrarInforme(info) {
-      document.getElementById(
-        "informe-nombre"
-      ).innerText = `${info.nombre || ""} ${info.apellidos || ""}`;
-      document.getElementById("informe-email").innerText = info.email || "";
-      document.getElementById("informe-whatsapp").innerText = info.whatsapp || "";
-      document.getElementById("informe-jornada").innerText = info.jornada || "";
-      document.getElementById("informe-disponibilidad").innerText =
-        info.disponibilidad || "";
-      document.getElementById("informe-discapacidad").innerText =
-        info.discapacidad || "";
-      document.getElementById("informe-tipo").innerText = info.tipo || "";
-      document.getElementById("informe-puesto").innerText = info.puesto || "";
-
-      // Pinta el resumen (texto, párrafo, HTML simple)
-      document.getElementById("informe-resumen").innerHTML +=
-        `<p>${info.resumen || ""}</p>`;
-
-      // Pinta orientacion y conclusion
-      document.getElementById("informe-orientacion").innerHTML =
-        `<p>${info.orientacion || ""}</p>`;
-      document.getElementById("informe-conclusion").innerHTML =
-        `<p>${info.conclusion || ""}</p>`;
-
-      // Fortalezas y mejoras (listas)
-      const fortalezas = Array.isArray(info.fortalezas)
-        ? info.fortalezas
-        : info.fortalezas
-        ? [info.fortalezas]
-        : [];
-      document.getElementById("informe-fortalezas").innerHTML =
-        fortalezas.map((f) => `<li>${f}</li>`).join("");
-
-      const mejorasArray = Array.isArray(info.areas_mejora)
-        ? info.areas_mejora
-        : info.areas_mejora
-        ? [info.areas_mejora]
-        : [];
-      document.getElementById("informe-mejoras").innerHTML =
-        mejorasArray.map((m) => `<li>${m}</li>`).join("");
-    }
-
-    // Hacemos que la función mostrarInforme esté disponible globalmente,
-    // para que main.js pueda llamarla después de obtener datos.
-    window.mostrarInforme = mostrarInforme;
-
-    // Lógica para exportar a PDF desde el botón "Descargar informe"
-    document
-      .getElementById("descargar-pdf")
-      .addEventListener("click", () => {
-        const { jsPDF } = window.jspdf;
-        const doc = new jsPDF("p", "pt", "a4");
-        const informe = document.getElementById("informe-wrapper");
-        doc.html(informe, {
-          callback: function (doc) {
-            doc.save("informe-empleabilidad.pdf");
-          },
-          margin: [15, 15, 15, 15],
-          x: 10,
-          y: 10,
-          width: 560,
-          windowWidth: 800,
-        });
-      });
-  </script>
 </body>
 </html>
