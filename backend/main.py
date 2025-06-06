@@ -1,4 +1,4 @@
-# main.py
+# backend/main.py
 
 from fastapi import FastAPI
 from fastapi.middleware.cors import CORSMiddleware
@@ -6,24 +6,23 @@ from fastapi.responses import JSONResponse
 from pydantic import BaseModel
 import uvicorn
 import sqlalchemy
-from typing import List
 
 from db import database
 from generate_report import generar_informe as generar_informe_ia
 
+# ─── 1) Crear la aplicación FastAPI y habilitar CORS ───
 app = FastAPI()
 
-# Habilitar CORS para permitir llamadas desde el frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],        # Permite orígenes desde cualquier host
+    allow_origins=["*"],        # Permitir peticiones desde cualquier origen (útil en desarrollo)
     allow_credentials=True,
-    allow_methods=["*"],        # Permite todos los métodos HTTP (GET, POST, OPTIONS, etc.)
-    allow_headers=["*"],        # Permite todos los encabezados
-    expose_headers=["*"],       # Expone todos los encabezados en la respuesta (opcional)
+    allow_methods=["*"],        # Permitir todos los métodos HTTP
+    allow_headers=["*"],        # Permitir todos los encabezados
+    expose_headers=["*"],       # Exponer todos los encabezados (opcional)
 )
 
-# ====================== MODELO Pydantic ======================
+# ─── 2) Modelo de datos que recibirá el endpoint ───
 class DatosInforme(BaseModel):
     nombre: str
     apellidos: str
@@ -39,17 +38,16 @@ class DatosInforme(BaseModel):
     minijuego_resolucion_score: str = ""
     minijuego_comunicacion_score: str = ""
     minijuego_adaptabilidad_score: str = ""
-    minijuego_gestion_tiempo_score: str = ""
-    minijuego_trabajo_equipo_score: str = ""
+    minijuego_tiempo_score: str = ""
+    minijuego_equipo_score: str = ""
     minijuego_creatividad_score: str = ""
     minijuego_liderazgo_score: str = ""
     minijuego_pensamiento_score: str = ""
     minijuego_emocional_score: str = ""
     cv_filename: str
 
-# ====================== DEFINICIÓN DE TABLA SQL ======================
+# ─── 3) Definición de la tabla “informes” (SQLAlchemy) ───
 metadata = sqlalchemy.MetaData()
-
 informes = sqlalchemy.Table(
     "informes",
     metadata,
@@ -58,23 +56,6 @@ informes = sqlalchemy.Table(
     sqlalchemy.Column("apellidos", sqlalchemy.String(100)),
     sqlalchemy.Column("email", sqlalchemy.String(150)),
     sqlalchemy.Column("whatsapp", sqlalchemy.String(20)),
-    sqlalchemy.Column("discapacidad", sqlalchemy.Text),
-    sqlalchemy.Column("tipo", sqlalchemy.Text),
-    sqlalchemy.Column("puesto", sqlalchemy.Text),
-    sqlalchemy.Column("jornada", sqlalchemy.Text),
-    sqlalchemy.Column("disponibilidad", sqlalchemy.Text),
-    sqlalchemy.Column("traslado", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_decisiones_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_resolucion_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_comunicacion_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_adaptabilidad_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_gestion_tiempo_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_trabajo_equipo_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_creatividad_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_liderazgo_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_pensamiento_score", sqlalchemy.Text),
-    sqlalchemy.Column("minijuego_emocional_score", sqlalchemy.Text),
-    sqlalchemy.Column("cv_filename", sqlalchemy.Text),
     sqlalchemy.Column("resumen", sqlalchemy.Text),
     sqlalchemy.Column("fortalezas", sqlalchemy.Text),
     sqlalchemy.Column("areas_mejora", sqlalchemy.Text),
@@ -82,7 +63,7 @@ informes = sqlalchemy.Table(
     sqlalchemy.Column("conclusion", sqlalchemy.Text),
 )
 
-# ====================== EVENTOS STARTUP / SHUTDOWN ======================
+# ─── 4) Eventos de arranque y “shutdown” para conectar/desconectar la BD ───
 @app.on_event("startup")
 async def startup():
     await database.connect()
@@ -91,101 +72,76 @@ async def startup():
 async def shutdown():
     await database.disconnect()
 
-# ====================== ENDPOINT PRINCIPAL ======================
+# ─── 5) Endpoint para generar el informe ───
 @app.post("/api/generar-informe")
 async def generar_informe_endpoint(datos: DatosInforme):
     datos_dict = datos.dict()
 
-    # 1) Construir un texto “perfil” para enviar a la IA (una sola cadena)
+    # ─ Construimos la variable `perfil` usando todo lo que viene en el body ─
     perfil = f"""
-Nombre: {datos_dict['nombre']} {datos_dict['apellidos']}
-Email: {datos_dict['email']}
-WhatsApp: {datos_dict['whatsapp']}
-Discapacidad: {datos_dict['discapacidad']}
-Modalidad: {datos_dict['tipo']}
-Puesto deseado: {datos_dict['puesto']}
-Jornada: {datos_dict['jornada']}
-Disponibilidad: {datos_dict['disponibilidad']}
-Traslado: {datos_dict['traslado']}
-CV: {datos_dict['cv_filename']}
+Nombre: {datos_dict.get('nombre', '')} {datos_dict.get('apellidos', '')}
+Email: {datos_dict.get('email', '')}
+WhatsApp: {datos_dict.get('whatsapp', '')}
+Discapacidad: {datos_dict.get('discapacidad', '')}
+Modalidad: {datos_dict.get('tipo', '')}
+Puesto deseado: {datos_dict.get('puesto', '')}
+Jornada: {datos_dict.get('jornada', '')}
+Disponibilidad: {datos_dict.get('disponibilidad', '')}
+Traslado: {datos_dict.get('traslado', '')}
+CV: {datos_dict.get('cv_filename', '')}
 
 Resultados de habilidades blandas:
-- Toma de decisiones: {datos_dict['minijuego_decisiones_score']}
-- Resolución de problemas: {datos_dict['minijuego_resolucion_score']}
-- Comunicación: {datos_dict['minijuego_comunicacion_score']}
-- Adaptabilidad: {datos_dict['minijuego_adaptabilidad_score']}
-- Gestión del tiempo: {datos_dict['minijuego_gestion_tiempo_score']}
-- Trabajo en equipo: {datos_dict['minijuego_trabajo_equipo_score']}
-- Creatividad: {datos_dict['minijuego_creatividad_score']}
-- Liderazgo: {datos_dict['minijuego_liderazgo_score']}
-- Pensamiento crítico: {datos_dict['minijuego_pensamiento_score']}
-- Inteligencia emocional: {datos_dict['minijuego_emocional_score']}
+- Toma de decisiones: {datos_dict.get('minijuego_decisiones_score', '')}
+- Resolución de problemas: {datos_dict.get('minijuego_resolucion_score', '')}
+- Comunicación: {datos_dict.get('minijuego_comunicacion_score', '')}
+- Adaptabilidad: {datos_dict.get('minijuego_adaptabilidad_score', '')}
+- Gestión del tiempo: {datos_dict.get('minijuego_tiempo_score', '')}
+- Trabajo en equipo: {datos_dict.get('minijuego_equipo_score', '')}
+- Creatividad: {datos_dict.get('minijuego_creatividad_score', '')}
+- Liderazgo: {datos_dict.get('minijuego_liderazgo_score', '')}
+- Pensamiento crítico: {datos_dict.get('minijuego_pensamiento_score', '')}
+- Inteligencia emocional: {datos_dict.get('minijuego_emocional_score', '')}
 """
 
-    # 2) Llamamos a la función que invoca a Azure OpenAI para generar el texto completo del informe
+    # ─ Llamamos a la IA para que nos devuelva todo el texto estructurado ─
     texto_completo = generar_informe_ia(perfil)
 
-    # 3) Procesamos el texto completo para extraer las partes:
-    #    - Un “resumen” (todo lo que venga antes de "2. FORTALEZAS")
-    #    - Fortalezas, Mejora, Orientación, Conclusión
+    # ── 6) A partir del texto completo que devuelve la IA, extraemos cada sección ──
+    #    (Esta lógica puedes modificarla si tu IA devuelve un formato distinto)
     resumen = ""
-    fortalezas: List[str] = []
-    mejoras: List[str] = []
+    fortalezas = []
+    mejoras = []
     orientacion = ""
     conclusion = ""
 
-    # Partimos el texto en líneas para analizar
-    lineas = texto_completo.splitlines()
-    # Buscamos dónde comienza “2.” o “FORTALEZAS” para separar el primer bloque como resumen
-    linea_inicio_fort = 0
-    for i, linea in enumerate(lineas):
-        if linea.strip().lower().startswith("2") or linea.strip().lower().startswith("fortalezas"):
-            linea_inicio_fort = i
-            break
+    # Suponemos que la IA separa secciones con encabezados tipo “1. RESUMEN PERSONAL”, “2. FORTALEZAS”, etc.
+    # Aquí hacemos un parse muy simple: buscamos líneas que empiecen con “- ” o “• ” para fortalezas/mejoras,
+    # y buscamos palabras clave en minúsculas para orientacion y conclusion.
+    for linea in texto_completo.splitlines():
+        linea_limpia = linea.strip()
+        if not linea_limpia:
+            continue
 
-    # El “resumen” será todo lo que esté antes de esa línea
-    resumen = "\n".join(lineas[:linea_inicio_fort]).strip()
+        if linea_limpia.lower().startswith("1."):
+            # A veces el “1.” se combina con el texto, ignoramos la etiqueta
+            resumen = linea_limpia.split("1.", 1)[-1].strip()
+        elif linea_limpia.startswith("-") or linea_limpia.startswith("•"):
+            # Si la línea contiene “fortaleza” o “habilidad” la metemos en fortalezas
+            if "fortaleza" in linea_limpia.lower() or "habilidad" in linea_limpia.lower():
+                fortalezas.append(linea_limpia.lstrip("-• ").strip())
+            elif "mejora" in linea_limpia.lower() or "oportunidad" in linea_limpia.lower():
+                mejoras.append(linea_limpia.lstrip("-• ").strip())
+        elif "orientación" in linea_limpia.lower():
+            orientacion = linea_limpia
+        elif "conclusión" in linea_limpia.lower():
+            conclusion = linea_limpia
 
-    # Ahora buscamos en las líneas las viñetas de fortalezas y de mejoras.
-    for linea in lineas[linea_inicio_fort:]:
-        texto = linea.strip()
-        if texto.startswith("-") or texto.startswith("•"):
-            # Si la línea menciona “fortaleza” o “habilidad”, la agregamos a la lista de fortalezas
-            if "fortaleza" in texto.lower() or "habilidad" in texto.lower():
-                fortalezas.append(texto.lstrip("-• ").strip())
-            # Si menciona “mejora” u “oportunidad”, la agregamos a mejoras
-            elif "mejora" in texto.lower() or "oportunidad" in texto.lower():
-                mejoras.append(texto.lstrip("-• ").strip())
-        # Si la línea contiene “orientación”, la tomamos como orientación
-        elif "orientación" in texto.lower():
-            orientacion = texto
-        # Si la línea contiene “conclusión”, la tomamos como conclusión
-        elif "conclusión" in texto.lower():
-            conclusion = texto
-
-    # 4) Construimos el objeto Python para devolver al frontend
+    # ── 7) Creamos el diccionario final “informe” que devolvemos al frontend ──
     informe = {
-        "nombre": datos_dict["nombre"],
-        "apellidos": datos_dict["apellidos"],
-        "email": datos_dict["email"],
-        "whatsapp": datos_dict["whatsapp"],
-        "discapacidad": datos_dict["discapacidad"],
-        "tipo": datos_dict["tipo"],
-        "puesto": datos_dict["puesto"],
-        "jornada": datos_dict["jornada"],
-        "disponibilidad": datos_dict["disponibilidad"],
-        "traslado": datos_dict["traslado"],
-        "minijuego_decisiones_score": datos_dict["minijuego_decisiones_score"],
-        "minijuego_resolucion_score": datos_dict["minijuego_resolucion_score"],
-        "minijuego_comunicacion_score": datos_dict["minijuego_comunicacion_score"],
-        "minijuego_adaptabilidad_score": datos_dict["minijuego_adaptabilidad_score"],
-        "minijuego_gestion_tiempo_score": datos_dict["minijuego_gestion_tiempo_score"],
-        "minijuego_trabajo_equipo_score": datos_dict["minijuego_trabajo_equipo_score"],
-        "minijuego_creatividad_score": datos_dict["minijuego_creatividad_score"],
-        "minijuego_liderazgo_score": datos_dict["minijuego_liderazgo_score"],
-        "minijuego_pensamiento_score": datos_dict["minijuego_pensamiento_score"],
-        "minijuego_emocional_score": datos_dict["minijuego_emocional_score"],
-        "cv_filename": datos_dict["cv_filename"],
+        "nombre": datos_dict.get("nombre", ""),
+        "apellidos": datos_dict.get("apellidos", ""),
+        "email": datos_dict.get("email", ""),
+        "whatsapp": datos_dict.get("whatsapp", ""),
         "resumen": resumen,
         "fortalezas": fortalezas,
         "areas_mejora": mejoras,
@@ -193,29 +149,12 @@ Resultados de habilidades blandas:
         "conclusion": conclusion,
     }
 
-    # 5) Guardar en la base de datos
+    # ── 8) Guardamos en la base de datos la fila nueva en la tabla “informes” ──
     query = informes.insert().values(
         nombre=informe["nombre"],
         apellidos=informe["apellidos"],
         email=informe["email"],
         whatsapp=informe["whatsapp"],
-        discapacidad=informe["discapacidad"],
-        tipo=informe["tipo"],
-        puesto=informe["puesto"],
-        jornada=informe["jornada"],
-        disponibilidad=informe["disponibilidad"],
-        traslado=informe["traslado"],
-        minijuego_decisiones_score=informe["minijuego_decisiones_score"],
-        minijuego_resolucion_score=informe["minijuego_resolucion_score"],
-        minijuego_comunicacion_score=informe["minijuego_comunicacion_score"],
-        minijuego_adaptabilidad_score=informe["minijuego_adaptabilidad_score"],
-        minijuego_gestion_tiempo_score=informe["minijuego_gestion_tiempo_score"],
-        minijuego_trabajo_equipo_score=informe["minijuego_trabajo_equipo_score"],
-        minijuego_creatividad_score=informe["minijuego_creatividad_score"],
-        minijuego_liderazgo_score=informe["minijuego_liderazgo_score"],
-        minijuego_pensamiento_score=informe["minijuego_pensamiento_score"],
-        minijuego_emocional_score=informe["minijuego_emocional_score"],
-        cv_filename=informe["cv_filename"],
         resumen=informe["resumen"],
         fortalezas=", ".join(informe["fortalezas"]),
         areas_mejora=", ".join(informe["areas_mejora"]),
@@ -224,10 +163,9 @@ Resultados de habilidades blandas:
     )
     await database.execute(query)
 
-    # 6) Finalmente devolvemos el JSON de respuesta al frontend
+    # ── 9) Devolvemos el JSON con “informe” al frontend ──
     return JSONResponse(content={"informe": informe})
 
-
-# Si se ejecuta directamente con `python main.py`, arranca uvicorn
+# ─── 10) Para arrancar localmente con Python ───
 if __name__ == "__main__":
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="127.0.0.1", port=8000)
