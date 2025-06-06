@@ -9,44 +9,65 @@
 <body>
   <div class="contenedor centrado">
     <h1 class="titulo">Sube tu CV</h1>
-    <p class="texto-aclaracion">
-      Selecciona tu currículum en PDF para completar tu evaluación.
-    </p>
+    <p class="texto-aclaracion">Elige tu currículum en PDF para que lo analicemos.</p>
 
     <label class="boton-subir">
-      Seleccionar archivo
+      <i class="fas fa-file-pdf"></i> Seleccionar archivo
       <input type="file" id="input-cv" accept=".pdf" style="display: none" />
     </label>
-
     <p id="nombre-archivo" class="texto-archivo"></p>
 
-    <button id="boton-continuar" class="boton-principal" disabled>
-      Continuar
-    </button>
+    <button id="boton-subir-cv" class="boton-principal" disabled>Subir CV</button>
   </div>
 
   <script>
     const inputCV = document.getElementById("input-cv");
     const nombreArchivo = document.getElementById("nombre-archivo");
-    const botonContinuar = document.getElementById("boton-continuar");
+    const botonSubir = document.getElementById("boton-subir-cv");
 
+    // Si cambia el input (archivo PDF seleccionado)
     inputCV.addEventListener("change", () => {
       const archivo = inputCV.files[0];
-      if (archivo) {
+      if (archivo && archivo.name.toLowerCase().endsWith(".pdf")) {
         nombreArchivo.innerText = `Has seleccionado: ${archivo.name}`;
-        // Guardamos en localStorage (para backend y frontend)
-        localStorage.setItem("cv_filename", archivo.name);
-        botonContinuar.disabled = false;
+        botonSubir.disabled = false;
       } else {
-        nombreArchivo.innerText = "";
-        botonContinuar.disabled = true;
+        nombreArchivo.innerText = "Solo archivos PDF permitidos.";
+        botonSubir.disabled = true;
       }
     });
 
-    botonContinuar.addEventListener("click", () => {
-      // Redirigimos a resultados
-      window.location.href = "resultados.html";
+    botonSubir.addEventListener("click", async () => {
+      const archivo = inputCV.files[0];
+      if (!archivo) return;
+
+      // Crear FormData para enviar el PDF
+      const formData = new FormData();
+      formData.append("file", archivo);
+
+      try {
+        // Llamamos al endpoint /api/subir-cv
+        const respuesta = await fetch("http://localhost:8000/api/subir-cv", {
+          method: "POST",
+          body: formData
+        });
+        if (!respuesta.ok) {
+          alert("Error subiendo el CV al servidor: " + respuesta.statusText);
+          return;
+        }
+        const data = await respuesta.json();
+        // Guardamos el texto extraído en localStorage
+        localStorage.setItem("cv_text", data.cv_text);
+
+        // Avisamos al usuario y redirigimos a la página de resultados
+        alert("CV subido correctamente. Ahora generarás tu informe.");
+        window.location.href = "resultados.html";
+      } catch (err) {
+        console.error(err);
+        alert("No se pudo conectar con el servidor para subir el CV.");
+      }
     });
   </script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.2/css/all.min.css"></script>
 </body>
 </html>
