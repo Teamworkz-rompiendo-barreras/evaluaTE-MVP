@@ -16,9 +16,11 @@ app = FastAPI()
 # Habilitar CORS para permitir llamadas desde el frontend
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],            # Permitir todas las URL origen (en producción ajustar dominio)
-    allow_methods=["*"],
-    allow_headers=["*"],
+    allow_origins=["*"],        # Permite orígenes desde cualquier host
+    allow_credentials=True,
+    allow_methods=["*"],        # Permite todos los métodos HTTP (GET, POST, OPTIONS, etc.)
+    allow_headers=["*"],        # Permite todos los encabezados
+    expose_headers=["*"],       # Expone todos los encabezados en la respuesta (opcional)
 )
 
 # ====================== MODELO Pydantic ======================
