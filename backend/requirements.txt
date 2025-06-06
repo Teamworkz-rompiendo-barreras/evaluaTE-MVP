@@ -1,7 +1,7 @@
 fastapi==0.95.2
 uvicorn[standard]==0.22.0
 sqlalchemy[asyncio]==2.0.27
-databases[postgresql]==1.5.5
+databases[postgresql]==0.6.0
 python-dotenv==1.0.0
 PyPDF2==3.0.1
 openai==0.39.1
