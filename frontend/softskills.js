@@ -1,9 +1,9 @@
-// softskills.js
+// frontend/softskills.js
 
-// Lista de preguntas / habilidades a evaluar
+// Lista de habilidades y sus preguntas
 const preguntas = [
   {
-    habilidad: "decisiones",
+    habilidad: "decision",
     texto: "Cuando hay que tomar una decisión importante en el trabajo, yo...",
     opciones: [
       { texto: "Pido ayuda y analizo las opciones antes de decidir.", valor: 3 },
@@ -39,7 +39,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "gestion_tiempo",
+    habilidad: "tiempo",
     texto: "En cuanto al uso del tiempo durante la jornada...",
     opciones: [
       { texto: "Organizo mi tiempo y cumplo con los plazos.", valor: 3 },
@@ -48,7 +48,7 @@ const preguntas = [
     ]
   },
   {
-    habilidad: "trabajo_equipo",
+    habilidad: "equipo",
     texto: "Cuando trabajo con otras personas...",
     opciones: [
       { texto: "Colaboro, doy ideas y respeto las opiniones.", valor: 3 },
@@ -76,7 +76,7 @@ const preguntas = [
   },
   {
     habilidad: "pensamiento",
-    texto: "Cuando recibo nueva información...",
+    texto: "Cuando recibo una nueva información...",
     opciones: [
       { texto: "La analizo y contrasto antes de aceptarla.", valor: 3 },
       { texto: "La acepto si me la dice alguien de confianza.", valor: 2 },
@@ -102,18 +102,17 @@ const opcionesContenedor = document.getElementById("opciones-contenedor");
 const contador = document.getElementById("contador");
 const barraProgreso = document.getElementById("barra-progreso");
 
-// Muestra la pregunta actual y sus botones
 function mostrarPregunta() {
   const actual = preguntas[indice];
   preguntaTexto.innerText = actual.texto;
 
   opcionesContenedor.innerHTML = "";
-  actual.opciones.forEach((opcion) => {
+  actual.opciones.forEach((opcion, idx) => {
     const boton = document.createElement("button");
     boton.innerText = opcion.texto;
     boton.className = "opcion";
     boton.addEventListener("click", () => {
-      respuestas[`minijuego_${actual.habilidad}_score`] = opcion.valor;
+      respuestas[`${actual.habilidad}_score`] = opcion.valor;
       siguientePregunta();
     });
     opcionesContenedor.appendChild(boton);
@@ -128,14 +127,14 @@ function siguientePregunta() {
   if (indice < preguntas.length) {
     mostrarPregunta();
   } else {
-    // Llegamos al final: guardamos todas las puntuaciones en localStorage
-    Object.keys(respuestas).forEach((key) => {
+    // Almacenar respuestas en localStorage
+    Object.keys(respuestas).forEach(key => {
       localStorage.setItem(key, respuestas[key]);
     });
-    // Redirigimos a la siguiente etapa: subir CV
+    // Cuando terminen los 10, vamos a subir el CV
     window.location.href = "subircv.html";
   }
 }
 
-// Iniciar al cargar
+// Iniciar
 mostrarPregunta();
