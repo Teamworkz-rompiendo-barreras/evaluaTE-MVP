@@ -1,75 +1,26 @@
-#########################################
-# IGNORAR ARCHIVOS DE SISTEMA / IDES
-#########################################
-# VSCode
-.vscode/
-
-# Archivos temporales de macOS, Linux, Windows, etc.
-.DS_Store
-Thumbs.db
-
-#########################################
-# IGNORAR ENTORNOS VIRTUALES PYTHON
-#########################################
-# Carpeta de entorno virtual (usualmente "venv/" o "env/")
-venv/
-env/
-__pycache__/
-*.py[cod]
-*$py.class
-
-#########################################
-# IGNORAR ARCHIVOS DE CONFIGURACIÓN DE ENTORNO
-#########################################
-# Archivos de variables de entorno
+# Ignorar carpetas de entorno y datos sensibles
 .env
-.env.*.local
+venv/
+__pycache__/
 
-#########################################
-# IGNORAR DEPENDENCIAS / SALIDAS DE CONSTRUCCIÓN
-#########################################
-# Si en frontend llegas a usar node/npm
-node_modules/
-npm-debug.log*
-yarn-debug.log*
-yarn-error.log*
-
-# Cachés de herramientas de bundling (si llegas a usar alguna)
-.cache/
-.dist/
-build/
-dist/
-
-# Salidas intermedias de compilación (por ejemplo, si usas TypeScript, etc.)
-*.tsbuildinfo
-
-#########################################
-# IGNORAR ARCHIVOS DE BASE DE DATOS / MIGRACIONES TEMPORALES
-#########################################
-# (Si en algún momento generas un archivo SQLite local, etc.)
+# Ignorar dependencias Python
+*.pyc
+__pycache__/
 *.sqlite3
-*.db
-*.db-journal
 
-#########################################
-# IGNORAR LOGS Y OTROS ARCHIVOS TEMPORALES
-#########################################
-logs/
+# Ignorar archivos subidos
+uploads/
+
+# Node modules, caches, logs, etc.
+node_modules/
 *.log
 
-#########################################
-# IGNORAR ARCHIVOS DE PYTEST / COVERAGE
-#########################################
-htmlcov/
-.coverage
-.coverage.*
-.cache
-nosetests.xml
-coverage.xml
+# Entorno de VSCode
+.vscode/
 
-#########################################
-# IGNORAR SUBIDAS / TEMPORALES DEL FRONTEND
-#########################################
-# Si alojas imágenes u otros assets temporales que no se versionan
-uploads/
-tmp/
+# Servidor local
+*.db
+
+# Ignorar compilaciones / caches front-end
+*.cache
+dist/
