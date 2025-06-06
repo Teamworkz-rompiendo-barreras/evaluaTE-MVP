@@ -1,23 +1,38 @@
 # backend/db.py
 
 import os
+from dotenv import load_dotenv      # ① Importamos la función load_dotenv 
 import sqlalchemy
 import databases
 from sqlalchemy.dialects.postgresql import UUID
 import uuid
 
-# Cargar la URL de la base de datos desde variable de entorno
+# ────────────────────────────────────────────────────────────────────────────────
+# ① Cargamos las variables definidas en un fichero `.env` situado en esta carpeta.
+#    load_dotenv() buscará automáticamente un `.env` en el mismo directorio (o en padres,
+#    si no lo encuentra) y volcará esas claves a os.environ.
+load_dotenv()
+# ────────────────────────────────────────────────────────────────────────────────
+
+# ② Leemos la URL de conexión a la base de datos desde la variable de entorno.
 DATABASE_URL = os.getenv("DATABASE_URL")
 if not DATABASE_URL:
-    raise RuntimeError("No se encontró la variable de entorno DATABASE_URL")
+    # Si no existe, arrojamos un error claro para saber que faltó configurar .env
+    raise RuntimeError(
+        "No se encontró la variable de entorno DATABASE_URL. "
+        "Asegúrate de que exista un fichero `.env` con la línea:\n\n"
+        "    DATABASE_URL=postgresql+asyncpg://<usuario>:<clave>@<host>:<puerto>/<bd>\n"
+    )
 
-# Instancia de `databases` para conexión asíncrona
+# ③ Creamos la instancia 'database' para conexiones asíncronas con el paquete 'databases'
 database = databases.Database(DATABASE_URL)
 
-# Metadatos para SQLAlchemy
+# ④ Metadata de SQLAlchemy (se usará para crear/gestionar tablas)
 metadata = sqlalchemy.MetaData()
 
-# Definición de la tabla “informes” (SQLAlchemy)
+# ────────────────────────────────────────────────────────────────────────────────
+# ⑤ Definición de la tabla “informes”
+#    Que debe coincidir con la estructura real en Postgres/Azure.
 informes = sqlalchemy.Table(
     "informes",
     metadata,
@@ -33,7 +48,7 @@ informes = sqlalchemy.Table(
     sqlalchemy.Column("jornada", sqlalchemy.Text),
     sqlalchemy.Column("disponibilidad", sqlalchemy.Text),
     sqlalchemy.Column("traslado", sqlalchemy.Text),
-    sqlalchemy.Column("cv_text", sqlalchemy.Text),              # Texto completo extraído del PDF
+    sqlalchemy.Column("cv_text", sqlalchemy.Text),              # Texto extraído del PDF
     sqlalchemy.Column("decision_score", sqlalchemy.Integer),
     sqlalchemy.Column("resolucion_score", sqlalchemy.Integer),
     sqlalchemy.Column("comunicacion_score", sqlalchemy.Integer),
@@ -51,3 +66,4 @@ informes = sqlalchemy.Table(
     sqlalchemy.Column("conclusion", sqlalchemy.Text),
     sqlalchemy.Column("created_at", sqlalchemy.DateTime, server_default=sqlalchemy.func.now()),
 )
+# ────────────────────────────────────────────────────────────────────────────────
