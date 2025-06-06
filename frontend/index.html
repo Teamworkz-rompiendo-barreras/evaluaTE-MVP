@@ -7,11 +7,9 @@
   <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
-  <div class="contenedor">
+  <div class="main-wrapper">
     <h1>EvalúaTE</h1>
-    <p>Por favor completa tus datos personales y laborales antes de comenzar.</p>
-
-    <form id="form-datos-personales">
+    <form id="cvForm" autocomplete="off" enctype="multipart/form-data">
       <div class="form-row">
         <div>
           <label for="nombre">Nombre<span class="field-required">*</span></label>
@@ -35,13 +33,7 @@
       </div>
 
       <label for="tipo-puesto">Tipo de puesto<span class="field-required">*</span></label>
-      <input
-        type="text"
-        name="tipo"
-        id="tipo"
-        placeholder="Ej. Administrativo, almacén..."
-        required
-      />
+      <input type="text" name="tipo-puesto" id="tipo-puesto" placeholder="Ej. Administrativo, almacén..." required />
 
       <label for="tipo-trabajo">Modalidad<span class="field-required">*</span></label>
       <select name="tipo-trabajo" id="tipo-trabajo" required>
@@ -59,19 +51,10 @@
         <option value="intensiva">Intensiva</option>
       </select>
 
-      <label for="disponibilidad">
-        Disponibilidad (horaria, inmediata, otras...)
-      </label>
-      <input
-        type="text"
-        name="disponibilidad"
-        id="disponibilidad"
-        placeholder="Ej. Mañanas, inmediata, tardes..."
-      />
+      <label for="disponibilidad">Disponibilidad (horaria, inmediata, otras...)</label>
+      <input type="text" name="disponibilidad" id="disponibilidad" placeholder="Ej. Mañanas, inmediata, tardes..." />
 
-      <label for="traslado">
-        ¿Estarías dispuesto/a a trasladarte a otro lugar por trabajo?
-      </label>
+      <label for="traslado">¿Estarías dispuesto/a a trasladarte por trabajo?</label>
       <select name="traslado" id="traslado">
         <option value="">Selecciona una opción</option>
         <option value="si">Sí</option>
@@ -79,96 +62,36 @@
         <option value="depende">Depende</option>
       </select>
 
-      <label for="discapacidad">
-        ¿Tienes certificado de discapacidad?<span class="field-required">*</span>
-      </label>
+      <label for="discapacidad">¿Tienes certificado de discapacidad?<span class="field-required">*</span></label>
       <select name="discapacidad" id="discapacidad" required>
         <option value="">Selecciona una opción</option>
         <option value="sí">Sí</option>
         <option value="no">No</option>
       </select>
 
-      <!-- Advertencia si no hay email o whatsapp -->
-      <div id="contact-warning" class="warning">
-        Debes completar al menos Email o WhatsApp para continuar.
-      </div>
+      <label for="cv">Sube tu CV (PDF)<span class="field-required">*</span></label>
+      <input type="file" name="cv" id="cv" accept="application/pdf" required />
+      <div id="cv-warning" class="warning">Tienes que seleccionar y adjuntar tu CV PDF antes de continuar.</div>
 
-      <button type="button" id="btn-guardar-pers" class="boton-principal">
-        Guardar y Continuar
-      </button>
+      <button type="submit" id="enviarCV">Enviar CV</button>
     </form>
+
+    <div class="softskills-section">
+      <h2>Evaluación de Soft Skills</h2>
+      <p>Accede al apartado de evaluación para completar las pruebas de habilidades blandas.</p>
+      <div class="cta-button">
+        <button type="button" id="irSoftSkills" disabled>Ir a Evaluación de Soft Skills</button>
+      </div>
+    </div>
+
+    <div class="bottom-btn-section">
+      <button id="botonEnviarTodo" disabled>
+        Enviar todo y ver resultados
+      </button>
+    </div>
   </div>
 
-  <script>
-    // Al cargar la página, restauramos valores guardados en localStorage (si existen)
-    window.addEventListener("DOMContentLoaded", () => {
-      const campos = [
-        "nombre",
-        "apellidos",
-        "email",
-        "whatsapp",
-        "tipo",
-        "tipo-trabajo",
-        "jornada",
-        "disponibilidad",
-        "traslado",
-        "discapacidad",
-      ];
-      campos.forEach((c) => {
-        const el = document.getElementById(c);
-        if (el && localStorage.getItem("formulario_" + c)) {
-          el.value = localStorage.getItem("formulario_" + c);
-        }
-      });
-    });
-
-    // Función para guardar en localStorage
-    function guardarLocalStorage(nombre, valor) {
-      localStorage.setItem("formulario_" + nombre, valor);
-    }
-
-    // Cuando haga clic en “Guardar y Continuar”
-    document
-      .getElementById("btn-guardar-pers")
-      .addEventListener("click", function () {
-        // Validaciones mínimas: Nombre y Apellidos siempre, y al menos Email o WhatsApp.
-        const nombre = document.getElementById("nombre").value.trim();
-        const apellidos = document.getElementById("apellidos").value.trim();
-        const email = document.getElementById("email").value.trim();
-        const whatsapp = document.getElementById("whatsapp").value.trim();
-
-        if (!nombre || !apellidos) {
-          alert("Debes completar Nombre y Apellidos para continuar.");
-          return;
-        }
-        if (!email && !whatsapp) {
-          document.getElementById("contact-warning").style.display = "block";
-          return;
-        } else {
-          document.getElementById("contact-warning").style.display = "none";
-        }
-
-        // Guardar cada campo en localStorage
-        const camposAGuardar = [
-          "nombre",
-          "apellidos",
-          "email",
-          "whatsapp",
-          "tipo",
-          "tipo-trabajo",
-          "jornada",
-          "disponibilidad",
-          "traslado",
-          "discapacidad",
-        ];
-        camposAGuardar.forEach((campo) => {
-          const el = document.getElementById(campo);
-          if (el) guardarLocalStorage(campo, el.value.trim());
-        });
-
-        // Redirigir a la página de Soft Skills
-        window.location.href = "softskills.html";
-      });
-  </script>
+  <script src="main.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
 </body>
 </html>
