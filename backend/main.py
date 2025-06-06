@@ -1,8 +1,8 @@
 # backend/main.py
 
 import os
-import shutil                            # ← Aquí importamos shutil para poder usar shutil.copyfileobj()
-from dotenv import load_dotenv           # ← Para cargar el .env
+import shutil 
+from dotenv import load_dotenv   # <<< <-- Asegúrate de importarlo
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -15,20 +15,22 @@ import PyPDF2
 from db import database, informes
 from generate_report import generar_informe as generar_informe_ia
 
-# ─── 1) Cargamos variables de entorno (.env) ───
-load_dotenv()
+# ─── 1) Cargamos el .env antes de leer cualquier variable ───
+load_dotenv()   # <<< Esto lee el archivo .env y pone las variables en el entorno
 
-# ─── 2) Creamos la aplicación y habilitamos CORS ───
+# ─── 2) Creamos la app y habilitamos CORS ───
 app = FastAPI()
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],        # En desarrollo se permite cualquier origen; en producción restringir a tu dominio
+    allow_origins=["*"],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
     expose_headers=["*"],
+)
 
 # … resto de tu código en main.py …
+
 # ─────────────────────────────────────────────────────────────────────────────
 # 2) Modelo de datos para /api/generar-informe (Pydantic)
 class DatosInforme(BaseModel):
