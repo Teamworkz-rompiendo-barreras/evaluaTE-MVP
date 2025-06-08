@@ -1,4 +1,5 @@
 # backend/main.py
+app = FastAPI(debug=True)
 
 import os
 import shutil 
