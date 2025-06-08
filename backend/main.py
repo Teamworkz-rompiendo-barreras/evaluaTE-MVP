@@ -1,5 +1,4 @@
 # backend/main.py
-app = FastAPI(debug=True)
 
 import os
 import shutil 
@@ -20,7 +19,7 @@ from generate_report import generar_informe as generar_informe_ia
 load_dotenv()   # <<< Esto lee el archivo .env y pone las variables en el entorno
 
 # ─── 2) Creamos la app y habilitamos CORS ───
-app = FastAPI()
+app = FastAPI(debug=True)
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
