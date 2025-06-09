@@ -7,6 +7,7 @@ from dotenv import load_dotenv   # <<< <-- Asegúrate de importarlo
 load_dotenv()   # <<< Esto lee el archivo .env y pone las variables en el entorno
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
+from fastapi.openapi.utils import get_openapi
 from fastapi.responses import JSONResponse
 from fastapi import status
 from pydantic import BaseModel
@@ -21,6 +22,25 @@ from generate_report import generar_informe as generar_informe_ia
 
 # ─── 2) Creamos la app y habilitamos CORS ───
 app = FastAPI(debug=True)
+def custom_openapi():
+    if app.openapi_schema:
+        return app.openapi_schema
+    schema = get_openapi(
+        title=app.title,
+        version=app.version,
+        routes=app.routes,
+    )
+    schema["components"]["schemas"].pop("HTTPValidationError", None)
+    schema["components"]["schemas"].pop("ValidationError", None)
+    for path in schema["paths"].values():
+        for op in path.values():
+            op.pop("422", None)
+    app.openapi_schema = schema
+    return app.openapi_schema
+
+app.openapi = custom_openapi
+
+# —– 3) Middleware CORS —–
 app.add_middleware(
     CORSMiddleware,
     allow_origins=["*"],
