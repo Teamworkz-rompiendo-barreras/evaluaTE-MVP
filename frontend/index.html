@@ -3,95 +3,42 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>EvalúaTE</title>
+  <title>EvalúaTE — Datos Personales</title>
   <link rel="stylesheet" href="estilos.css" />
 </head>
 <body>
-  <div class="main-wrapper">
-    <h1>EvalúaTE</h1>
-    <form id="cvForm" autocomplete="off" enctype="multipart/form-data">
-      <div class="form-row">
-        <div>
-          <label for="nombre">Nombre<span class="field-required">*</span></label>
-          <input type="text" name="nombre" id="nombre" required />
-        </div>
-        <div>
-          <label for="apellidos">Apellidos<span class="field-required">*</span></label>
-          <input type="text" name="apellidos" id="apellidos" required />
-        </div>
-      </div>
-
-      <div class="form-row">
-        <div>
-          <label for="email">Email</label>
-          <input type="email" name="email" id="email" placeholder="Opcional, pero rellena al menos uno" />
-        </div>
-        <div>
-          <label for="whatsapp">WhatsApp</label>
-          <input type="tel" name="whatsapp" id="whatsapp" placeholder="Opcional, pero rellena al menos uno" />
-        </div>
-      </div>
-
-      <label for="tipo-puesto">Tipo de puesto<span class="field-required">*</span></label>
-      <input type="text" name="tipo-puesto" id="tipo-puesto" placeholder="Ej. Administrativo, almacén..." required />
-
-      <label for="tipo-trabajo">Modalidad<span class="field-required">*</span></label>
-      <select name="tipo-trabajo" id="tipo-trabajo" required>
-        <option value="">Selecciona modalidad</option>
-        <option value="remoto">Remoto</option>
-        <option value="presencial">Presencial</option>
-        <option value="hibrido">Híbrido</option>
-      </select>
-
-      <label for="jornada">Jornada<span class="field-required">*</span></label>
-      <select name="jornada" id="jornada" required>
-        <option value="">Selecciona jornada</option>
-        <option value="completa">Completa</option>
-        <option value="parcial">Parcial</option>
-        <option value="intensiva">Intensiva</option>
-      </select>
-
-      <label for="disponibilidad">Disponibilidad (horaria, inmediata, otras...)</label>
-      <input type="text" name="disponibilidad" id="disponibilidad" placeholder="Ej. Mañanas, inmediata, tardes..." />
-
-      <label for="traslado">¿Estarías dispuesto/a a trasladarte por trabajo?</label>
-      <select name="traslado" id="traslado">
-        <option value="">Selecciona una opción</option>
-        <option value="si">Sí</option>
-        <option value="no">No</option>
-        <option value="depende">Depende</option>
-      </select>
-
-      <label for="discapacidad">¿Tienes certificado de discapacidad?<span class="field-required">*</span></label>
-      <select name="discapacidad" id="discapacidad" required>
-        <option value="">Selecciona una opción</option>
-        <option value="sí">Sí</option>
-        <option value="no">No</option>
-      </select>
-
-      <label for="cv">Sube tu CV (PDF)<span class="field-required">*</span></label>
-      <input type="file" name="cv" id="cv" accept="application/pdf" required />
-      <div id="cv-warning" class="warning">Tienes que seleccionar y adjuntar tu CV PDF antes de continuar.</div>
-
-      <button type="submit" id="enviarCV">Enviar CV</button>
+  <header><h1>EvalúaTE</h1></header>
+  <main>
+    <form id="form-datos">
+      <label for="nombre">Nombre*</label>
+      <input id="nombre" name="nombre" required />
+      <label for="apellidos">Apellidos*</label>
+      <input id="apellidos" name="apellidos" required />
+      <fieldset>
+        <legend>Contacto (al menos uno):</legend>
+        <label><input type="email" id="email" name="email" /> Email</label>
+        <label><input type="tel" id="whatsapp" name="whatsapp" /> WhatsApp</label>
+      </fieldset>
+      <!-- aquí puedes añadir tipo de puesto, modalidad, jornada, etc. -->
+      <button type="submit" id="btn-ir-soft">Ir a evaluación de Soft Skills</button>
     </form>
-
-    <div class="softskills-section">
-      <h2>Evaluación de Soft Skills</h2>
-      <p>Accede al apartado de evaluación para completar las pruebas de habilidades blandas.</p>
-      <div class="cta-button">
-        <button type="button" id="irSoftSkills" disabled>Ir a Evaluación de Soft Skills</button>
-      </div>
-    </div>
-
-    <div class="bottom-btn-section">
-      <button id="botonEnviarTodo" disabled>
-        Enviar todo y ver resultados
-      </button>
-    </div>
-  </div>
-
-  <script src="main.js"></script>
-  <script src="https://cdnjs.cloudflare.com/ajax/libs/html2pdf.js/0.10.1/html2pdf.bundle.min.js"></script>
+  </main>
+  <script>
+    document.getElementById('form-datos').onsubmit = e => {
+      e.preventDefault();
+      const nombre = e.target.nombre.value.trim();
+      const apellidos = e.target.apellidos.value.trim();
+      const email = e.target.email.value.trim();
+      const whatsapp = e.target.whatsapp.value.trim();
+      if (!nombre || !apellidos || (!email && !whatsapp)) {
+        alert('Por favor, rellena Nombre, Apellidos y al menos Email o WhatsApp.');
+        return;
+      }
+      // Guardamos los datos en localStorage
+      localStorage.setItem('usuario', JSON.stringify({ nombre, apellidos, email, whatsapp }));
+      // Redirigimos a la página de minijuegos
+      window.location.href = 'softskills.html';
+    };
+  </script>
 </body>
 </html>
