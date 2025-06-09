@@ -1,193 +1,72 @@
-/* frontend/estilos.css */
-
+/* Root y tipografía */
+:root {
+  --primary-color: #374BA6;
+  --secondary-color: #F2D680;
+  --neutral-bg: #FFF;
+  --text-color: #454545;
+  --hint-color: #6B6B6B;
+  --focus-outline: 3px solid var(--primary-color);
+  --font-main: 'Inter', 'Atkinson Hyperlegible', Arial, sans-serif;
+}
+* {
+  box-sizing: border-box;
+}
 body {
-  background-color: #F0E8D1;       /* Color secundario Teamworkz */
-  font-family: 'Arial', sans-serif;
-  font-size: 18px;
-  color: #0B474B;                  /* Color principal Teamworkz */
   margin: 0;
-  padding: 0;
+  font-family: var(--font-main);
+  font-size: 1rem;
   line-height: 1.6;
+  color: var(--text-color);
+  background: var(--neutral-bg);
 }
-
-/* Contenedor principal ancho fijo y centrado */
-.main-wrapper, .container {
-  max-width: 750px;
-  margin: 30px auto;
-  padding: 20px;
-  background-color: #fff;
-  border-radius: 16px;
-  box-shadow: 0 4px 12px rgba(0,0,0,0.08);
-}
-
-/* Encabezados */
-h1, h2, h3 {
-  color: #374BA6;       /* Azul Teamworkz */
-  margin-bottom: 0.5em;
-}
-
-/* Inputs y selects uniformes */
-input[type="text"],
-input[type="email"],
-input[type="tel"],
-select,
-input[type="file"] {
-  width: 100%;
-  padding: 10px;
-  margin-top: 5px;
-  border-radius: 7px;
-  border: 1.5px solid #cfd8dc;
-  font-size: 1rem;
-  margin-bottom: 10px;
-  background: #fafafa;
-}
-
-input[type="file"] {
-  border: none;
-  background: transparent;
-}
-
-/* Botones */
-button {
-  background-color: #374BA6;    /* Azul principal Teamworkz */
-  color: #fff;
-  border: none;
-  padding: 14px 24px;
-  margin: 12px 8px 0 0;
-  font-size: 16px;
-  border-radius: 12px;
-  cursor: pointer;
-  transition: background-color 0.3s ease;
-}
-
-button:disabled {
-  background-color: #ccc;
-  cursor: not-allowed;
-}
-
-button:hover:enabled,
-button:focus:enabled {
-  background-color: #8095F2;    /* Color secundario azul */
-  outline: none;
-}
-
-/* Título principal */
-.titulo {
-  font-size: 2rem;
-  font-weight: 900;
-  color: #374BA6;
-  margin-bottom: 20px;
+header {
   text-align: center;
+  padding: 1rem 0;
 }
-
-/* Sección SoftSkills (index.html) */
-.softskills-section {
-  margin-top: 32px;
-  background: #f0ebe5;           /* tonalidad suave */
-  border-radius: 12px;
-  padding: 22px 18px;
-  box-shadow: 0 2px 9px rgba(230,203,98,0.08);
+.form-wrapper {
+  max-width: 42rem;      /* 672px */
+  margin: 0 auto;
+  padding: 1.5rem 1rem;
 }
-.softskills-section h2 {
-  color: #0B474B;
-  font-size: 1.18rem;
-  font-weight: 700;
-  margin: 0 0 8px 0;
-}
-.softskills-section p {
-  color: #334;
-  font-size: 1rem;
-  margin: 0 0 12px 0;
-}
-.cta-button {
-  width: 100%;
+.form-field {
+  margin-block: 0.75rem;
   display: flex;
-  justify-content: center;
-  margin: 0;
-}
-.cta-button button {
-  width: 80%;
-  margin: 0;
-}
-
-/* Formularios index.html */
-.form-row {
-  display: flex;
-  gap: 14px;
-  margin-bottom: 15px;
-}
-.form-row > div {
-  flex: 1;
+  flex-direction: column;
 }
 label {
-  display: block;
-  margin-top: 12px;
+  font-weight: 600;
+  margin-bottom: 0.25rem;
 }
-.field-required {
-  color: #e57373;
-  font-weight: bold;
-  margin-left: 3px;
-}
-.warning {
-  background: #ffecd2;
-  color: #b4461a;
-  padding: 7px 10px;
-  border-radius: 6px;
+input, select {
   font-size: 1rem;
-  margin: 8px 0 3px 0;
-  display: none;
+  padding: 0.5rem;
+  border: 2px solid var(--primary-color);
+  border-radius: 0.5rem;
+  outline: none;
 }
-
-/* Botón inferior index.html */
-.bottom-btn-section {
-  margin-top: 38px;
-  display: flex;
-  justify-content: center;
+input:focus, select:focus {
+  outline: var(--focus-outline);
 }
-
-/* Contenedor centrado para subircv.html */
-.contenedor.centrado {
-  max-width: 500px;
-  margin: 50px auto;
-  text-align: center;
+.field-hint {
+  font-size: 0.875rem;
+  color: var(--hint-color);
+  margin-top: 0.25rem;
 }
-.titulo-informe {
-  font-size: 1.8rem;
-  color: #374BA6;
-  margin-bottom: 15px;
+.field-error {
+  font-size: 0.875rem;
+  color: #B00020;
+  margin-top: 0.25rem;
 }
-.subtitulo-informe {
-  color: #697477;
-  margin-bottom: 20px;
+.primary-btn {
+  background: var(--primary-color);
+  color: #FFF;
+  border: none;
+  padding: 0.75rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 600;
+  border-radius: 0.5rem;
+  cursor: pointer;
 }
-
-/* Secciones del informe resultados.html */
-.seccion-informe {
-  margin-bottom: 24px;
-}
-.lista-informe {
-  margin-left: 1.5em;
-}
-/* Estilo para etiquetas e iconos en resultados.html */
-.encabezado-informe {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-}
-.logo-informe {
-  height: 50px;
-}
-.fecha-informe {
-  font-size: 0.9rem;
-  color: #697477;
-}
-.pie-informe {
-  border-top: 1px solid #eee;
-  margin-top: 18px;
-  padding-top: 8px;
-  font-size: 0.88em;
-  color: #697477;
-}
-.lista-informe li {
-  margin-bottom: 6px;
+.primary-btn:focus {
+  outline: var(--focus-outline);
 }
