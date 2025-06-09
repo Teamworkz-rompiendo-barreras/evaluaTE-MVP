@@ -1,5 +1,5 @@
 # backend/main.py
-
+import uuid
 import os
 import shutil 
 from dotenv import load_dotenv   # <<< <-- Asegúrate de importarlo
@@ -182,6 +182,7 @@ async def generar_informe_endpoint(datos: DatosInforme):
     # ─────────────────────────────────────────────────────────────────────────
     # 7) Insertar fila en la tabla `informes`
     query = informes.insert().values(
+        user_id = uuid.uuid4(),
         nombre = datos_dict["nombre"],
         apellidos = datos_dict["apellidos"],
         email = datos_dict["email"],
