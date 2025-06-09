@@ -63,6 +63,11 @@ class DatosInforme(BaseModel):
 async def startup():
     await database.connect()
     # Si la carpeta uploads no existe, la creamos
+      # 2) Debug: comprueba en qué BD y con qué usuario está conectado
+    row = await database.fetch_one("SELECT current_database() AS db, current_user AS usr")
+    print(f"🔍 API conectada a BD: {row['db']} como {row['usr']}")
+
+    # 3) Crea la carpeta uploads si no existe
     os.makedirs("uploads", exist_ok=True)
 
 @app.on_event("shutdown")
