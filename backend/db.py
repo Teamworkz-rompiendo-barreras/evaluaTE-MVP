@@ -67,3 +67,12 @@ informes = sqlalchemy.Table(
     sqlalchemy.Column("created_at", sqlalchemy.DateTime, server_default=sqlalchemy.func.now()),
 )
 # ────────────────────────────────────────────────────────────────────────────────
+# Al importar db.py, creará automáticamente las tablas que falten
+from sqlalchemy import create_engine
+
+# Convertimos tu URL asyncpg a una URL para create_engine
+sync_url = DATABASE_URL.replace("postgresql+asyncpg://", "postgresql+psycopg2://")
+
+# Creamos un engine síncrono y levantamos las tablas que falten
+engine = create_engine(sync_url, echo=True)  
+metadata.create_all(engine)
