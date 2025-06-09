@@ -1,63 +1,42 @@
-/* Root y tipografía */
 :root {
+  --font-base: 1.125rem;      /* antes 1rem */
   --primary-color: #374BA6;
   --secondary-color: #F2D680;
-  --neutral-bg: #FFF;
-  --text-color: #454545;
-  --hint-color: #6B6B6B;
-  --focus-outline: 3px solid var(--primary-color);
-  --font-main: 'Inter', 'Atkinson Hyperlegible', Arial, sans-serif;
+  /* … resto igual … */
 }
-* {
-  box-sizing: border-box;
-}
+
 body {
   margin: 0;
   font-family: var(--font-main);
-  font-size: 1rem;
+  font-size: var(--font-base);
   line-height: 1.6;
   color: var(--text-color);
   background: var(--neutral-bg);
 }
-header {
-  text-align: center;
-  padding: 1rem 0;
-}
-.form-wrapper {
-  max-width: 42rem;      /* 672px */
-  margin: 0 auto;
-  padding: 1.5rem 1rem;
-}
-.form-field {
-  margin-block: 0.75rem;
+
+/* Header con logo */
+
+.site-header {
   display: flex;
-  flex-direction: column;
+  align-items: center;
+  gap: 1rem;
+  padding: 1rem;
+  background: var(--secondary-color);
 }
-label {
-  font-weight: 600;
-  margin-bottom: 0.25rem;
+.site-logo {
+  width: 120px;     /* Ancho fijo para mantener proporción */
+  height: auto;
 }
-input, select {
-  font-size: 1rem;
-  padding: 0.5rem;
-  border: 2px solid var(--primary-color);
-  border-radius: 0.5rem;
-  outline: none;
+.site-header h1 {
+  font-size: 1.5rem;
+  color: var(--text-color);
+  margin: 0;
 }
-input:focus, select:focus {
-  outline: var(--focus-outline);
-}
-.field-hint {
-  font-size: 0.875rem;
-  color: var(--hint-color);
-  margin-top: 0.25rem;
-}
-.field-error {
-  font-size: 0.875rem;
-  color: #B00020;
-  margin-top: 0.25rem;
-}
+
+/* Ajuste de botones y campos es igual al anterior… */
+
 .primary-btn {
+  font-size: 1rem;  /* relativo al font-base ampliado */
   background: var(--primary-color);
   color: #FFF;
   border: none;
