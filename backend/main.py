@@ -32,9 +32,10 @@ def custom_openapi():
     )
     schema["components"]["schemas"].pop("HTTPValidationError", None)
     schema["components"]["schemas"].pop("ValidationError", None)
-    for path in schema["paths"].values():
-        for op in path.values():
-            op.pop("422", None)
+    for path_item in schema["paths"].values():
+        for operation in path_item.values():
+            if "responses" in operation:
+                operation["responses"].pop("422", None)
     app.openapi_schema = schema
     return app.openapi_schema
 
