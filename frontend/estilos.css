@@ -1,5 +1,8 @@
 /* Root y tipografía */
 :root {
+  html {
+  font-size: 112.5%; /* antes 100% (16px), ahora 18px */
+}
   --primary-color: #374BA6;
   --secondary-color: #F2D680;
   --neutral-bg: #FFF;
