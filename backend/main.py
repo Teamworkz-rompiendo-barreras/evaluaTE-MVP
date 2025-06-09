@@ -3,6 +3,8 @@
 import os
 import shutil 
 from dotenv import load_dotenv   # <<< <-- Asegúrate de importarlo
+# ─── 1) Cargamos el .env antes de leer cualquier variable ───
+load_dotenv()   # <<< Esto lee el archivo .env y pone las variables en el entorno
 from fastapi import FastAPI, UploadFile, File, HTTPException
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
@@ -15,8 +17,7 @@ import PyPDF2
 from db import database, informes
 from generate_report import generar_informe as generar_informe_ia
 
-# ─── 1) Cargamos el .env antes de leer cualquier variable ───
-load_dotenv()   # <<< Esto lee el archivo .env y pone las variables en el entorno
+
 
 # ─── 2) Creamos la app y habilitamos CORS ───
 app = FastAPI(debug=True)
