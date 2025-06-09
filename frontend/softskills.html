@@ -2,126 +2,111 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>Evaluación Soft Skills</title>
-  <!-- Enlazar CSS externo o usar <style> para demostración -->
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>EvalúaTE — Datos Personales</title>
   <link rel="stylesheet" href="estilos.css" />
   <style>
-    /* Colores Teamworkz: amarillo #F2D680, azul #374BA6 */
-    :root {
-      --team-yellow: #F2D680;
-      --team-blue: #374BA6;
-      --text-dark: #000;
-      --bg-light: #FFF;
-      --focus-outline: 3px solid #374BA6;
-      --font-base: 1rem;
-    }
+    /* Aumentar tamaño base y asegurar legibilidad */
+    html { font-size: 1.25rem; } /* 125% de 16px = 20px base */
     body {
+      font-family: 'Inter', 'Atkinson Hyperlegible', Arial, sans-serif;
+      line-height: 1.6;
+      color: #454545;
       margin: 0;
-      font-family: Arial, sans-serif;
-      font-size: var(--font-base);
-      background: var(--bg-light);
-      color: var(--text-dark);
-      line-height: 1.5;
-    }
-    header, main, nav, footer {
-      max-width: 800px;
-      margin: auto;
-      padding: 1rem;
-    }
-    nav#stepper {
-      display: flex;
-      justify-content: space-between;
-      margin-bottom: 1rem;
-      list-style: none;
       padding: 0;
+      background: #FFFFFF;
     }
-    nav#stepper li {
-      flex: 1;
-      text-align: center;
-      position: relative;
-    }
-    nav#stepper li::after {
-      content: '';
-      position: absolute;
-      top: 50%;
-      right: -50%;
-      width: 100%;
-      height: 4px;
-      background: var(--team-yellow);
-      z-index: -1;
-    }
-    nav#stepper li:last-child::after { display: none; }
-    nav#stepper li.active > span {
-      background: var(--team-blue);
-      color: #FFF;
-    }
-    nav#stepper span {
-      display: inline-block;
-      padding: 0.5rem;
-      border-radius: 50%;
-      background: var(--team-yellow);
-      width: 2rem;
-      height: 2rem;
-      line-height: 1.2;
-    }
-    section[role="region"] {
-      margin-bottom: 1rem;
+    header.site-header {
+      display: flex;
+      align-items: center;
+      gap: 1rem;
       padding: 1rem;
-      border: 2px solid var(--team-yellow);
-      border-radius: 0.5rem;
+      background: #F2D680;
     }
-    #pregunta, #opciones, #contador {
-      margin-bottom: 1rem;
+    .site-logo {
+      width: 120px;
+      height: auto;
     }
-    #opciones button {
-      display: block;
-      width: 100%;
-      margin-bottom: 0.5rem;
-      padding: 0.75rem;
-      font-size: 1rem;
-      background: var(--bg-light);
-      border: 2px solid var(--team-blue);
-      border-radius: 0.5rem;
-      cursor: pointer;
-      transition: transform 0.2s ease-in-out;
-    }
-    #opciones button:focus,
-    #opciones button:hover {
-      outline: var(--focus-outline);
-      transform: scale(1.02);
-    }
-    #siguiente {
-      display: inline-block;
-      padding: 0.75rem 1.5rem;
-      font-size: 1rem;
-      background: var(--team-blue);
-      color: #FFF;
-      border: none;
-      border-radius: 0.5rem;
-      cursor: pointer;
-    }
-    #siguiente:focus {
-      outline: var(--focus-outline);
+    header.site-header h1 {
+      font-size: 2rem;
+      color: #374BA6;
+      margin: 0;
     }
   </style>
 </head>
 <body>
-  <header>
-    <h1>Evaluación de Soft Skills</h1>
-    <nav aria-label="Progreso" id="stepper">
-      <li class="active"><span>1</span><div>Minijuegos</div></li>
-      <li><span>2</span><div>Subir CV</div></li>
-      <li><span>3</span><div>Preferencias</div></li>
-      <li><span>4</span><div>Resultados</div></li>
-    </nav>
+  <header class="site-header">
+    <img src="Logo_teamworkz.png" alt="Logo Teamworkz" class="site-logo" />
+    <h1>EvalúaTE</h1>
   </header>
+
   <main>
-    <div id="evaluacion-softskills">
-      <!-- Intro, pregunta y opciones inyectadas por JS -->
-    </div>
-    <button id="siguiente" aria-label="Siguiente paso">Siguiente</button>
+    <form id="form-datos" class="form-wrapper" novalidate>
+      <!-- Nombre -->
+      <div class="form-field">
+        <label for="nombre">Nombre <span aria-hidden="true">*</span></label>
+        <input type="text" id="nombre" name="nombre"
+               required minlength="2" maxlength="40" autocomplete="off"
+               aria-describedby="help-nombre" />
+        <div id="help-nombre" class="field-hint">Entre 2 y 40 caracteres.</div>
+      </div>
+
+      <!-- Apellidos -->
+      <div class="form-field">
+        <label for="apellidos">Apellidos <span aria-hidden="true">*</span></label>
+        <input type="text" id="apellidos" name="apellidos"
+               required minlength="2" maxlength="40" autocomplete="off"
+               aria-describedby="help-apellidos" />
+        <div id="help-apellidos" class="field-hint">Entre 2 y 40 caracteres.</div>
+      </div>
+
+      <!-- Email y WhatsApp -->
+      <fieldset class="form-field" aria-describedby="help-contacto">
+        <legend>Contacto (al menos uno) <span aria-hidden="true">*</span></legend>
+        <div>
+          <label for="email">Email</label>
+          <input type="email" id="email" name="email"
+                 placeholder="ejemplo@dominio.com" />
+        </div>
+        <div>
+          <label for="whatsapp">WhatsApp</label>
+          <input type="tel" id="whatsapp" name="whatsapp"
+                 pattern="^\+?\d{7,15}$" inputmode="tel"
+                 placeholder="+34 600112233" />
+        </div>
+        <div id="help-contacto" class="field-hint">
+          Indica al menos Email o WhatsApp.
+        </div>
+      </fieldset>
+
+      <!-- Resto de campos idéntico... -->
+
+      <!-- Botón -->
+      <div class="form-field">
+        <button type="submit" class="primary-btn">Ir a evaluación de Soft Skills</button>
+      </div>
+    </form>
   </main>
-  <script src="softskills.js"></script>
+  <script>
+    const form = document.getElementById('form-datos');
+    const alerta = document.getElementById('alerta-contacto');
+    form.addEventListener('submit', e => {
+      const email = form.email.value.trim();
+      const whatsapp = form.whatsapp.value.trim();
+      if (!email && !whatsapp) {
+        e.preventDefault();
+        alerta.textContent = 'Indica al menos un e-mail o un WhatsApp.';
+        return;
+      }
+      const datos = {
+        nombre: form.nombre.value.trim(),
+        apellidos: form.apellidos.value.trim(),
+        email, whatsapp
+        // ...otros campos...
+      };
+      localStorage.setItem('usuario', JSON.stringify(datos));
+      window.location.href = 'softskills.html';
+    });
+  </script>
 </body>
 </html>
