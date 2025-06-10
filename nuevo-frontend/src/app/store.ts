@@ -1,17 +1,16 @@
 // src/app/store.ts
 import { configureStore, createSlice, PayloadAction } from "@reduxjs/toolkit";
+import accessibilityReducer from "./accessibilitySlice";
 
+// 1) Slice de progreso
 interface ProgressState {
-  completed: Record<number, boolean>; // true si el minijuego con ese id está completo
+  completed: Record<number, boolean>;
 }
-
-const initialState: ProgressState = {
-  completed: {},
-};
+const initialProgress: ProgressState = { completed: {} };
 
 const progressSlice = createSlice({
   name: "progress",
-  initialState,
+  initialState: initialProgress,
   reducers: {
     markComplete(state, action: PayloadAction<number>) {
       state.completed[action.payload] = true;
@@ -19,14 +18,17 @@ const progressSlice = createSlice({
   },
 });
 
-export const { markComplete } = progressSlice.actions;
-
+// 2) Creamos el store con ambos reducers
 export const store = configureStore({
   reducer: {
     progress: progressSlice.reducer,
+    accessibility: accessibilityReducer,
   },
 });
 
-// Tipado para usar en useSelector / useDispatch
+// 3) Exportamos las actions del slice de progreso
+export const { markComplete } = progressSlice.actions;
+
+// 4) Tipos para usar en useSelector/useDispatch
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
