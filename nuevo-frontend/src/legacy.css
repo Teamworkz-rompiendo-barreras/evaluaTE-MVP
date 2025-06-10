@@ -1,0 +1,27 @@
+/* legacy.css */
+
+/* 1) Alto contraste: cuando <html> lleva la clase .high-contrast */
+.high-contrast {
+  background-color: #000 !important;
+  color: #fff !important;
+}
+
+/* Asegura que botones e inputs también se adapten */
+.high-contrast button,
+.high-contrast input,
+.high-contrast select,
+.high-contrast textarea {
+  background-color: #fff !important;
+  color: #000 !important;
+  border-color: #fff !important;
+}
+
+/* 2) Restablecimientos o animaciones “no-Tailwind” */
+
+@keyframes pulse-slow {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0.5; }
+}
+.spinner {
+  animation: pulse-slow 2s infinite;
+}
