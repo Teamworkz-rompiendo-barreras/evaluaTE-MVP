@@ -73,8 +73,23 @@ input:focus, select:focus {
 .primary-btn:focus {
   outline: var(--focus-outline);
 }
+.site-header {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start; /* 👈 logo alineado a la izquierda */
+  padding: 1rem;
+  gap: 0.5rem;
+}
+
 .site-logo {
-  width: 240px;    /* o prueba con 60px si aún se ve grande */
+  width: 80px;  /* ajusta a lo que necesites */
   height: auto;
-  margin-left: 1rem;
+}
+
+.site-title {
+  align-self: center; /* 👈 título centrado debajo */
+  font-size: 2rem;
+  font-weight: 700;
+  color: #374BA6;
+  margin: 0 auto;
 }
