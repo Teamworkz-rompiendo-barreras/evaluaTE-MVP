@@ -11,14 +11,16 @@ import './legacy.css';
 
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
-    <BrowserRouter>
-      <Routes>
-        <Route path="/"            element={<DatosPersonalesPage />} />
-        <Route path="/games"       element={<GameDashboardPage />} />
-        <Route path="/games/:id"   element={<GameScenePage />} />
-        <Route path="/subircv"     element={<UploadCVPage />} />
-        <Route path="/resultados"  element={<ResultadosPage />} />
+    <Provider store={store}>
+      <BrowserRouter>
+       <Routes>
+         <Route path="/"            element={<DatosPersonalesPage />} />
+         <Route path="/games"       element={<GameDashboardPage />} />
+         <Route path="/games/:id"   element={<GameScenePage />} />
+         <Route path="/subircv"     element={<UploadCVPage />} />
+         <Route path="/resultados"  element={<ResultadosPage />} />
       </Routes>
-    </BrowserRouter>
+     </BrowserRouter>
+    </Provider>
   </React.StrictMode>
 );
