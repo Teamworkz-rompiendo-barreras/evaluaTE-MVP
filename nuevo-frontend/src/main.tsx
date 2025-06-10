@@ -13,9 +13,9 @@ import './legacy.css';
  
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
--    <BrowserRouter>
-+    <Provider store={store}>
-+      <BrowserRouter>
+
+    <Provider store={store}>
+      <BrowserRouter>
        <Routes>
          <Route path="/"            element={<DatosPersonalesPage />} />
          <Route path="/games"       element={<GameDashboardPage />} />
@@ -23,8 +23,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
          <Route path="/subircv"     element={<UploadCVPage />} />
          <Route path="/resultados"  element={<ResultadosPage />} />
        </Routes>
--    </BrowserRouter>
-+      </BrowserRouter>
-+    </Provider>
+      </BrowserRouter>
+    </Provider>
   </React.StrictMode>
 );
