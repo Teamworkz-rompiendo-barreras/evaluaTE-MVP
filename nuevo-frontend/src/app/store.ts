@@ -12,7 +12,7 @@ const progressSlice = createSlice({
   name: "progress",
   initialState: initialProgress,
   reducers: {
-    markComplete(state, action: PayloadAction<number>) {
+    markComplete(state: ProgressState, action: PayloadAction<number>) {
       state.completed[action.payload] = true;
     },
   },
