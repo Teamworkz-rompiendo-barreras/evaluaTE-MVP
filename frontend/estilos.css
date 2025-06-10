@@ -76,5 +76,5 @@ input:focus, select:focus {
 .site-logo {
   width: 240px;    /* o prueba con 60px si aún se ve grande */
   height: auto;
-  margin-left: auto;
+  margin-left: 1rem;
 }
