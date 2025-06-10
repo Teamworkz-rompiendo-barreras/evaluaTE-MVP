@@ -73,3 +73,7 @@ input:focus, select:focus {
 .primary-btn:focus {
   outline: var(--focus-outline);
 }
+.site-logo {
+  width: 80px;    /* o prueba con 60px si aún se ve grande */
+  height: auto;
+}
