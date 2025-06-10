@@ -2,19 +2,17 @@
 <html lang="es">
 <head>
   <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>EvalúaTE — Datos Personales</title>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>EvalúaTE — Evaluación de Soft Skills</title>
   <link rel="stylesheet" href="estilos.css" />
   <style>
-    /* Aumentar tamaño base y asegurar legibilidad */
-    html { font-size: 1.25rem; } /* 125% de 16px = 20px base */
+    html { font-size: 1.25rem; }
     body {
       font-family: 'Inter', 'Atkinson Hyperlegible', Arial, sans-serif;
-      line-height: 1.6;
-      color: #454545;
       margin: 0;
       padding: 0;
-      background: #FFFFFF;
+      color: #454545;
+      background: #FFF;
     }
     header.site-header {
       display: flex;
@@ -32,82 +30,108 @@
       color: #374BA6;
       margin: 0;
     }
+    #game-shell {
+      max-width: 800px;
+      margin: 0 auto;
+      padding: 1rem;
+    }
+    #stepper {
+      display: flex;
+      justify-content: space-between;
+      margin-bottom: 2rem;
+      position: sticky;
+      top: 0;
+      background: #FFF;
+      padding: 0.5rem;
+      border-bottom: 2px solid #E0E0E0;
+      z-index: 10;
+    }
+    .step {
+      width: 24px;
+      height: 24px;
+      border-radius: 50%;
+      background: #E0E0E0;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      font-size: 0.75rem;
+      color: #FFF;
+    }
+    .step.completed { background: #374BA6; }
+    .step.current { border: 4px solid #F2D680; background: #374BA6; }
+    #minijuego-container {
+      background: #F8F8F8;
+      padding: 1.5rem;
+      border-radius: 1rem;
+      box-shadow: 0 2px 6px rgba(0,0,0,.1);
+    }
+    .ayuda {
+      display: flex;
+      align-items: center;
+      gap: 0.5rem;
+      margin-top: 1rem;
+    }
+    .ayuda button {
+      width: 32px;
+      height: 32px;
+      border-radius: 50%;
+      background: #374BA6;
+      color: #FFF;
+      font-weight: 600;
+      border: none;
+      cursor: pointer;
+    }
+    .tooltip {
+      display: none;
+      max-width: 280px;
+      padding: 1rem;
+      border-radius: 8px;
+      background: #FFF;
+      box-shadow: 0 2px 6px rgba(0,0,0,.15);
+      margin-top: 0.5rem;
+    }
+    .tooltip.active { display: block; }
   </style>
 </head>
 <body>
   <header class="site-header">
-  <a href="index.html" aria-label="Volver a la página de inicio">
-    <img src="Logo_teamworkz.png" alt="Logo Teamworkz" class="site-logo" />
-  </a>
-  <h1 class="site-title">EvalúaTE</h1>
-</header>
+    <a href="index.html" aria-label="Volver a la página de inicio">
+      <img src="Logo_teamworkz.png" alt="Logo Teamworkz" class="site-logo" />
+    </a>
+    <h1 class="site-title">EvalúaTE</h1>
+  </header>
   <main>
-    <form id="form-datos" class="form-wrapper" novalidate>
-      <!-- Nombre -->
-      <div class="form-field">
-        <label for="nombre">Nombre <span aria-hidden="true">*</span></label>
-        <input type="text" id="nombre" name="nombre"
-               required minlength="2" maxlength="40" autocomplete="off"
-               aria-describedby="help-nombre" />
-        <div id="help-nombre" class="field-hint">Entre 2 y 40 caracteres.</div>
+    <div id="game-shell">
+      <div id="stepper">
+        <div class="step current">1</div>
+        <div class="step">2</div>
+        <div class="step">3</div>
+        <div class="step">4</div>
+        <div class="step">5</div>
+        <div class="step">6</div>
+        <div class="step">7</div>
+        <div class="step">8</div>
+        <div class="step">9</div>
+        <div class="step">10</div>
       </div>
-
-      <!-- Apellidos -->
-      <div class="form-field">
-        <label for="apellidos">Apellidos <span aria-hidden="true">*</span></label>
-        <input type="text" id="apellidos" name="apellidos"
-               required minlength="2" maxlength="40" autocomplete="off"
-               aria-describedby="help-apellidos" />
-        <div id="help-apellidos" class="field-hint">Entre 2 y 40 caracteres.</div>
+      <div id="minijuego-container">
+        <!-- Aquí se cargará dinámicamente cada minijuego -->
+        <p>Este es el espacio reservado para los minijuegos.</p>
       </div>
-
-      <!-- Email y WhatsApp -->
-      <fieldset class="form-field" aria-describedby="help-contacto">
-        <legend>Contacto (al menos uno) <span aria-hidden="true">*</span></legend>
-        <div>
-          <label for="email">Email</label>
-          <input type="email" id="email" name="email"
-                 placeholder="ejemplo@dominio.com" />
-        </div>
-        <div>
-          <label for="whatsapp">WhatsApp</label>
-          <input type="tel" id="whatsapp" name="whatsapp"
-                 pattern="^\+?\d{7,15}$" inputmode="tel"
-                 placeholder="+34 600112233" />
-        </div>
-        <div id="help-contacto" class="field-hint">
-          Indica al menos Email o WhatsApp.
-        </div>
-      </fieldset>
-
-      <!-- Resto de campos idéntico... -->
-
-      <!-- Botón -->
-      <div class="form-field">
-        <button type="submit" class="primary-btn">Ir a evaluación de Soft Skills</button>
+      <div class="ayuda">
+        <button aria-label="Ayuda" onclick="toggleTooltip()">?</button>
+        <span class="ayuda-texto">Ayuda</span>
       </div>
-    </form>
+      <div class="tooltip" id="tooltip">
+        Si necesitas ayuda con esta pantalla, puedes pulsar este botón para obtener más información sobre cómo jugar.
+      </div>
+    </div>
   </main>
   <script>
-    const form = document.getElementById('form-datos');
-    const alerta = document.getElementById('alerta-contacto');
-    form.addEventListener('submit', e => {
-      const email = form.email.value.trim();
-      const whatsapp = form.whatsapp.value.trim();
-      if (!email && !whatsapp) {
-        e.preventDefault();
-        alerta.textContent = 'Indica al menos un e-mail o un WhatsApp.';
-        return;
-      }
-      const datos = {
-        nombre: form.nombre.value.trim(),
-        apellidos: form.apellidos.value.trim(),
-        email, whatsapp
-        // ...otros campos...
-      };
-      localStorage.setItem('usuario', JSON.stringify(datos));
-      window.location.href = 'softskills.html';
-    });
+    function toggleTooltip() {
+      const tooltip = document.getElementById('tooltip');
+      tooltip.classList.toggle('active');
+    }
   </script>
 </body>
 </html>
