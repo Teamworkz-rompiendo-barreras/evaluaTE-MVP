@@ -23,7 +23,6 @@ body {
   background: var(--neutral-bg);
 }
 header {
-  text-align: center;
   padding: 1rem 0;
 }
 .form-wrapper {
@@ -76,4 +75,5 @@ input:focus, select:focus {
 .site-logo {
   width: 240px;    /* o prueba con 60px si aún se ve grande */
   height: auto;
+  
 }
