@@ -74,6 +74,6 @@ input:focus, select:focus {
   outline: var(--focus-outline);
 }
 .site-logo {
-  width: 80px;    /* o prueba con 60px si aún se ve grande */
+  width: 120px;    /* o prueba con 60px si aún se ve grande */
   height: auto;
 }
