@@ -1,0 +1,20 @@
+{
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/assets/*", "/*.css", "/*.js", "/*.png", "/*.ico", "/*.svg"]
+  },
+  "routes": [
+    {
+      "route": "/softskills",
+      "rewrite": "/softskills.html"
+    },
+    {
+      "route": "/subircv",
+      "rewrite": "/subircv.html"
+    },
+    {
+      "route": "/resultados",
+      "rewrite": "/resultados.html"
+    }
+  ]
+}
