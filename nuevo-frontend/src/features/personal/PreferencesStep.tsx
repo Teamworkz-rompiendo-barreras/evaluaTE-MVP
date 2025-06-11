@@ -1,5 +1,7 @@
 // src/features/personal/PreferencesStep.tsx
+import '@testing-library/jest-dom'
 import React from 'react'
+import { render, screen, fireEvent } from '@testing-library/react'
 import { useForm, SubmitHandler } from 'react-hook-form'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
