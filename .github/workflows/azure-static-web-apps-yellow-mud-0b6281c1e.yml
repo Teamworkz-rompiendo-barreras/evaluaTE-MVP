@@ -32,6 +32,7 @@ jobs:
           app_location: "nuevo-frontend"
           api_location: ""
           output_location: "dist"
+          app_build_command: "npm install && npm run build"
 
 
   close_pull_request_job:
