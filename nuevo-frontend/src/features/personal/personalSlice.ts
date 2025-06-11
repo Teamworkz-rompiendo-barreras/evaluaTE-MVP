@@ -31,10 +31,28 @@ const personalSlice = createSlice({
   name: 'personal',
   initialState,
   reducers: {
-    saveContact(state, action: PayloadAction<Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'>>) {
+    saveContact(
+      state,
+      action: PayloadAction<
+        Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'>
+      >
+    ) {
       Object.assign(state, action.payload)
     },
-    savePreferences(state, action: PayloadAction<Pick<PersonalState, 'jobPreferences' | 'workMode' | 'availability' | 'startDate' | 'willingToRelocate' | 'hasDisabilityCert'>>) {
+    savePreferences(
+      state,
+      action: PayloadAction<
+        Pick<
+          PersonalState,
+          | 'jobPreferences'
+          | 'workMode'
+          | 'availability'
+          | 'startDate'
+          | 'willingToRelocate'
+          | 'hasDisabilityCert'
+        >
+      >
+    ) {
       Object.assign(state, action.payload)
     },
   },
