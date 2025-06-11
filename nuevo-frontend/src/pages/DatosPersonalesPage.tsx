@@ -1,68 +1,106 @@
-import { useState } from "react";
-import { useForm } from 'react-hook-form'
-import { useAppDispatch, useAppSelector } from '../app/hooks'
-import { saveContact } from '../features/personal/personalSlice'
-import { useNavigate } from 'react-router-dom'
-import ProgressBar from '../components/ProgressBar'
-import logo from "../assets/Logo_teamworkz.png";   // ← import explícito
+// src/pages/DatosPersonalesPage.tsx
+import React, { useState } from "react";
+import logo from "../assets/Logo_teamworkz.png";           // ← tu logo
+import { useForm } from 'react-hook-form';               
+import { useAppDispatch, useAppSelector } from '../app/hooks';
+import { saveContact } from '../features/personal/personalSlice';
+import { useNavigate } from 'react-router-dom';
+import ProgressBar from '../components/ProgressBar';
 
 export default function DatosPersonalesPage() {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const current = useAppSelector(state => state.personal)
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
+  const current = useAppSelector(state => state.personal);
 
   const { register, handleSubmit, formState: { errors } } = useForm<{
-    firstName: string
-    lastName: string
-    email: string
-    whatsapp: string
+    firstName: string;
+    lastName: string;
+    email: string;
+    whatsapp: string;
   }>({
     defaultValues: {
       firstName: current.firstName,
-      lastName: current.lastName,
-      email: current.email,
-      whatsapp: current.whatsapp,
+      lastName:  current.lastName,
+      email:     current.email,
+      whatsapp:  current.whatsapp,
     }
-  })
+  });
 
   const onSubmit = (data: { firstName: string; lastName: string; email: string; whatsapp: string }) => {
     if (!data.email.trim() && !data.whatsapp.trim()) {
-      alert('Debes indicar email o WhatsApp.')
-      return
+      alert('Debes indicar email o WhatsApp.');
+      return;
     }
-    dispatch(saveContact(data))
-    navigate('/register/preferences')
-  }
+    dispatch(saveContact(data));
+    navigate('/register/preferences');
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto p-4 space-y-6">
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto p-6 space-y-6">
+      {/* Logo en la parte superior */}
+      <div className="flex justify-center">
+        <img src={logo} alt="Teamworkz" className="h-16" />
+      </div>
+
+      {/* Barra de progreso */}
       <ProgressBar step={1} total={2} />
 
-      <h1 className="text-2xl font-bold">Paso 1 de 2: Datos de contacto</h1>
+      <h1 className="text-2xl font-bold text-center">Paso 1 de 2 – Datos de contacto</h1>
 
       <div>
-        <label className="block font-medium">Nombre</label>
-        <input {...register('firstName', { required: true })} className="input" />
-        {errors.firstName && <p className="text-red-600">Obligatorio</p>}
+        <label htmlFor="firstName" className="block font-medium">Nombre</label>
+        <input
+          id="firstName"
+          type="text"
+          {...register('firstName', { required: 'El nombre es obligatorio' })}
+          className="input mt-1 w-full"
+        />
+        {errors.firstName && (
+          <p className="text-red-600 mt-1">{errors.firstName.message}</p>
+        )}
       </div>
 
       <div>
-        <label className="block font-medium">Apellido</label>
-        <input {...register('lastName', { required: true })} className="input" />
-        {errors.lastName && <p className="text-red-600">Obligatorio</p>}
+        <label htmlFor="lastName" className="block font-medium">Apellido</label>
+        <input
+          id="lastName"
+          type="text"
+          {...register('lastName', { required: 'El apellido es obligatorio' })}
+          className="input mt-1 w-full"
+        />
+        {errors.lastName && (
+          <p className="text-red-600 mt-1">{errors.lastName.message}</p>
+        )}
       </div>
 
       <div>
-        <label className="block font-medium">Email</label>
-        <input type="email" {...register('email')} className="input" />
+        <label htmlFor="email" className="block font-medium">Email (opcional)</label>
+        <input
+          id="email"
+          type="email"
+          {...register('email')}
+          placeholder="juan@example.com"
+          className="input mt-1 w-full"
+        />
       </div>
 
       <div>
-        <label className="block font-medium">WhatsApp</label>
-        <input {...register('whatsapp')} className="input" />
+        <label htmlFor="whatsapp" className="block font-medium">WhatsApp (opcional)</label>
+        <input
+          id="whatsapp"
+          type="tel"
+          {...register('whatsapp')}
+          placeholder="+34123456789"
+          className="input mt-1 w-full"
+        />
       </div>
 
-      <button type="submit" className="btn-primary w-full">Siguiente</button>
+      <button
+        type="submit"
+        className="btn-primary w-full py-2 mt-4"
+      >
+        Siguiente
+      </button>
     </form>
-  )
+  );
 }
