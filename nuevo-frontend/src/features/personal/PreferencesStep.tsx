@@ -31,7 +31,7 @@ export default function PreferencesStep() {
     }
   })
 
-  const onSubmit = (data: PrefData) => {
+  const onSubmit: SubmitHandler<PrefData> = data => {
     if (!data.jobPreferences.trim()) {
       alert('Indica el tipo de trabajo que buscas.')
       return
