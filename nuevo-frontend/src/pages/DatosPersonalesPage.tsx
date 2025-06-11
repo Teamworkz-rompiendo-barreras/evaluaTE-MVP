@@ -7,49 +7,62 @@ import ProgressBar from '../components/ProgressBar'
 import logo from "../assets/Logo_teamworkz.png";   // ← import explícito
 
 export default function DatosPersonalesPage() {
-  const [nombre, setNombre] = useState("");
-  const [apellido, setApellido] = useState("");
-  const navigate = useNavigate();
+  const dispatch = useAppDispatch()
+  const navigate = useNavigate()
+  const current = useAppSelector(state => state.personal)
+
+  const { register, handleSubmit, formState: { errors } } = useForm<{
+    firstName: string
+    lastName: string
+    email: string
+    whatsapp: string
+  }>({
+    defaultValues: {
+      firstName: current.firstName,
+      lastName: current.lastName,
+      email: current.email,
+      whatsapp: current.whatsapp,
+    }
+  })
+
+  const onSubmit = (data: { firstName: string; lastName: string; email: string; whatsapp: string }) => {
+    if (!data.email.trim() && !data.whatsapp.trim()) {
+      alert('Debes indicar email o WhatsApp.')
+      return
+    }
+    dispatch(saveContact(data))
+    navigate('/register/preferences')
+  }
 
   return (
-    <main className="flex flex-col items-center p-6 gap-4 min-h-screen">
-      <img src={logo} alt="Logo EvalúaTE" className="w-48" />
+    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto p-4 space-y-6">
+      <ProgressBar step={1} total={2} />
 
-      <h1 className="text-2xl font-bold">Datos personales</h1>
+      <h1 className="text-2xl font-bold">Paso 1 de 2: Datos de contacto</h1>
 
-      <form
-        onSubmit={(e) => {
-          e.preventDefault();
-          navigate("/games");
-        }}
-        className="flex flex-col gap-4 w-full max-w-md"
-      >
-        <label className="flex flex-col">
-          Nombre
-          <input
-            type="text"
-            required
-            value={nombre}
-            onChange={(e) => setNombre(e.target.value)}
-            className="border p-2 rounded"
-          />
-        </label>
+      <div>
+        <label className="block font-medium">Nombre</label>
+        <input {...register('firstName', { required: true })} className="input" />
+        {errors.firstName && <p className="text-red-600">Obligatorio</p>}
+      </div>
 
-        <label className="flex flex-col">
-          Apellido
-          <input
-            type="text"
-            required
-            value={apellido}
-            onChange={(e) => setApellido(e.target.value)}
-            className="border p-2 rounded"
-          />
-        </label>
+      <div>
+        <label className="block font-medium">Apellido</label>
+        <input {...register('lastName', { required: true })} className="input" />
+        {errors.lastName && <p className="text-red-600">Obligatorio</p>}
+      </div>
 
-        <button type="submit" className="bg-blue-600 text-white p-2 rounded">
-          Ir a evaluación de soft skills
-        </button>
-      </form>
-    </main>
-  );
+      <div>
+        <label className="block font-medium">Email</label>
+        <input type="email" {...register('email')} className="input" />
+      </div>
+
+      <div>
+        <label className="block font-medium">WhatsApp</label>
+        <input {...register('whatsapp')} className="input" />
+      </div>
+
+      <button type="submit" className="btn-primary w-full">Siguiente</button>
+    </form>
+  )
 }
