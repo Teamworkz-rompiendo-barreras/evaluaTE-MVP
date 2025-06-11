@@ -29,7 +29,7 @@ interface PersonalState {
   lastName: string;
   email: string;
   whatsapp: string;
-  jobPreferences: string[];
+  jobPreferences: string;
   workMode: "remoto" | "presencial" | "híbrido";
   availability: "mañana" | "tarde" | "completa";
   startDate: string;
@@ -41,7 +41,7 @@ const initialPersonal: PersonalState = {
   lastName: "",
   email: "",
   whatsapp: "",
-  jobPreferences: [],
+  jobPreferences: "",
   workMode: "remoto",
   availability: "completa",
   startDate: "",
@@ -86,11 +86,10 @@ export const store = configureStore({
 // 7) Creamos el persistor para Redux Persist
 export const persistor = persistStore(store);
 
-// 8) Exportamos las actions que vayamos a usar
+// 7) Exportamos las actions que vayamos a usar
 export const { markComplete } = progressSlice.actions;
-export const { saveContact, savePreferences } = personalSlice.actions;
 export { toggleContrast, setFontScale };
 
-// 9) Exportamos los tipos para useSelector / useDispatch
+// 8) Exportamos los tipos para useSelector / useDispatch
 export type RootState = ReturnType<typeof store.getState>;
 export type AppDispatch = typeof store.dispatch;
