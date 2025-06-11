@@ -6,9 +6,5 @@ export default defineConfig({
     environment: 'jsdom',        // simulación de navegador
     globals: true,               // permite usar expect() sin importarlo
     setupFiles: ['./src/setupTests.ts'], // <— aquí como array
-    include: [
-      'src/**/*.test.ts',
-      'src/**/*.test.tsx'
-    ]
   }
 });
