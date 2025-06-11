@@ -16,6 +16,7 @@ import './legacy.css';
 ReactDOM.createRoot(document.getElementById('root')!).render(
   <React.StrictMode>
     <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
       <AccessibilitySettings />
       <BrowserRouter>
        <Routes>
@@ -25,7 +26,8 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
          <Route path="/subircv"     element={<UploadCVPage />} />
          <Route path="/resultados"  element={<ResultadosPage />} />
       </Routes>
-     </BrowserRouter>
+      </BrowserRouter>
+     </PersistGate>
     </Provider>
   </React.StrictMode>
 );
