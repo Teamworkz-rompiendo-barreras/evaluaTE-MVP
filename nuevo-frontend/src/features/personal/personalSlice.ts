@@ -6,7 +6,7 @@ export interface PersonalState {
   lastName: string
   email: string
   whatsapp: string
-  jobPreferences: string[]
+  jobPreferences: string
   workMode: 'remoto' | 'presencial' | 'híbrido'
   availability: 'mañana' | 'tarde' | 'completa'
   startDate: string
@@ -19,7 +19,7 @@ const initialState: PersonalState = {
   lastName: '',
   email: '',
   whatsapp: '',
-  jobPreferences: [],
+  jobPreferences: '',
   workMode: 'remoto',
   availability: 'completa',
   startDate: '',
