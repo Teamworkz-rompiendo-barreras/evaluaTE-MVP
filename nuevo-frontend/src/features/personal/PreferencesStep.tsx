@@ -21,16 +21,15 @@ export default function PreferencesStep() {
   const current = useAppSelector(s => s.personal)
 
   const { register, handleSubmit, formState: { errors } } = useForm<PrefData>({
-   // ★ Pasamos el estado completo como defaultValues para alinear tipos
    defaultValues: {
-    jobPreferences:    current.jobPreferences,
-    workMode:          current.workMode,
-    availability:      current.availability,
-    startDate:         current.startDate,
-    willingToRelocate: current.willingToRelocate,
-    hasDisabilityCert: current.hasDisabilityCert
-  }
- })
+     jobPreferences:    current.jobPreferences,
+     workMode:          current.workMode,
+     availability:      current.availability,
+     startDate:         current.startDate,
+     willingToRelocate: current.willingToRelocate,
+     hasDisabilityCert: current.hasDisabilityCert
+   } as PrefData  // fuerza a TS a ver aquí un PrefData completo
+ });
 
   const onSubmit: SubmitHandler<PrefData> = data => {
     if (!data.jobPreferences.trim()) {
