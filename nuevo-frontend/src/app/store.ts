@@ -32,7 +32,7 @@ interface PersonalState {
   jobPreferences: string;
   workMode: "remoto" | "presencial" | "híbrido";
   availability: "mañana" | "tarde" | "completa";
-  startDate: string;
+  startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes';
   willingToRelocate: boolean;
   hasDisabilityCert: boolean;
 }
@@ -44,7 +44,7 @@ const initialPersonal: PersonalState = {
   jobPreferences: "",
   workMode: "remoto",
   availability: "completa",
-  startDate: "",
+  startDate: "inmediata",    // o el valor por defecto que prefieras
   willingToRelocate: false,
   hasDisabilityCert: false,
 };
