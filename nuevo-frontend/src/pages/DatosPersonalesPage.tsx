@@ -1,5 +1,9 @@
 import { useState } from "react";
-import { useNavigate } from "react-router-dom";
+import { useForm } from 'react-hook-form'
+import { useAppDispatch, useAppSelector } from '../app/hooks'
+import { saveContact } from '../features/personal/personalSlice'
+import { useNavigate } from 'react-router-dom'
+import ProgressBar from '../components/ProgressBar'
 import logo from "../assets/Logo_teamworkz.png";   // ← import explícito
 
 export default function DatosPersonalesPage() {
