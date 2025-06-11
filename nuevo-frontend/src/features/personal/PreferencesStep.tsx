@@ -21,15 +21,9 @@ export default function PreferencesStep() {
   const current = useAppSelector(s => s.personal)
 
   const { register, handleSubmit, formState: { errors } } = useForm<PrefData>({
-    defaultValues: {
-      jobPreferences:     current.jobPreferences,
-      workMode:           current.workMode,
-      availability:       current.availability,
-      startDate:          current.startDate  as PrefData['startDate'],
-      willingToRelocate:  current.willingToRelocate,
-      hasDisabilityCert:  current.hasDisabilityCert
-    }
-  })
+   // ★ Pasamos el estado completo como defaultValues para alinear tipos
+   defaultValues: current
+ })
 
   const onSubmit: SubmitHandler<PrefData> = data => {
     if (!data.jobPreferences.trim()) {
@@ -41,7 +35,7 @@ export default function PreferencesStep() {
   }
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto p-6 space-y-6">
+    <form onSubmit={handleSubmit<PrefData>(onSubmit)} className="max-w-md mx-auto p-6 space-y-6">
       <ProgressBar step={2} total={2} />
 
       <h2 className="text-2xl font-bold">Paso 2 de 2 – Tus preferencias</h2>
