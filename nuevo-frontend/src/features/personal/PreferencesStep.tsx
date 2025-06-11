@@ -1,13 +1,13 @@
 // src/features/personal/PreferencesStep.tsx
 import React from 'react'
-import { useForm, SubmitHandler } from 'react-hook-form'          // ← importamos SubmitHandler
+import { useForm, SubmitHandler } from 'react-hook-form'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { savePreferences } from './personalSlice'
 import ProgressBar from '../../components/ProgressBar'
 
 type PrefData = {
-  jobPreferences: string
+  jobPreferences: string     // ahora texto libre
   workMode: 'remoto' | 'presencial' | 'híbrido'
   availability: 'mañana' | 'tarde' | 'completa'
   startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
@@ -20,23 +20,18 @@ export default function PreferencesStep() {
   const navigate = useNavigate()
   const current = useAppSelector(s => s.personal)
 
-  const {
-    register,
-    handleSubmit,
-    formState: { errors },
-  } = useForm<PrefData>({
+  const { register, handleSubmit, formState: { errors } } = useForm<PrefData>({
     defaultValues: {
-      jobPreferences:    current.jobPreferences,
-      workMode:          current.workMode,
-      availability:      current.availability,
-      startDate:         current.startDate as PrefData['startDate'],
-      willingToRelocate: current.willingToRelocate,
-      hasDisabilityCert: current.hasDisabilityCert,
+      jobPreferences:     current.jobPreferences,
+      workMode:           current.workMode,
+      availability:       current.availability,
+      startDate:          current.startDate  as PrefData['startDate'],
+      willingToRelocate:  current.willingToRelocate,
+      hasDisabilityCert:  current.hasDisabilityCert
     }
   })
 
-  // ← anotamos explícitamente la firma
-  const onSubmit: SubmitHandler<PrefData> = data => {
+  const onSubmit = (data: PrefData) => {
     if (!data.jobPreferences.trim()) {
       alert('Indica el tipo de trabajo que buscas.')
       return
@@ -67,7 +62,65 @@ export default function PreferencesStep() {
         )}
       </div>
 
-      {/* resto de campos (workMode, availability, startDate, checkboxes…) */}
+      <div>
+        <label htmlFor="workMode" className="block font-medium">Modalidad</label>
+        <select
+          id="workMode"
+          {...register('workMode', { required: 'Elige modalidad' })}
+          className="mt-1 block w-full border rounded px-3 py-2"
+        >
+          <option value="remoto">Remoto</option>
+          <option value="presencial">Presencial</option>
+          <option value="híbrido">Híbrido</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="availability" className="block font-medium">Disponibilidad horaria</label>
+        <select
+          id="availability"
+          {...register('availability', { required: 'Elige disponibilidad' })}
+          className="mt-1 block w-full border rounded px-3 py-2"
+        >
+          <option value="mañana">Mañana</option>
+          <option value="tarde">Tarde</option>
+          <option value="completa">Completa</option>
+        </select>
+      </div>
+
+      <div>
+        <label htmlFor="startDate" className="block font-medium">Incorporación</label>
+        <select
+          id="startDate"
+          {...register('startDate', { required: 'Selecciona opción' })}
+          className="mt-1 block w-full border rounded px-3 py-2"
+        >
+          <option value="inmediata">Inmediata</option>
+          <option value="15_días">En 15 días</option>
+          <option value="1_mes">En 1 mes</option>
+          <option value="más_de_1_mes">Más de 1 mes</option>
+        </select>
+      </div>
+
+      <div className="flex items-center">
+        <input
+          id="relocate"
+          type="checkbox"
+          {...register('willingToRelocate')}
+          className="mr-2"
+        />
+        <label htmlFor="relocate">Estoy dispuesto/a a cambiar de residencia</label>
+      </div>
+
+      <div className="flex items-center">
+        <input
+          id="cert"
+          type="checkbox"
+          {...register('hasDisabilityCert')}
+          className="mr-2"
+        />
+        <label htmlFor="cert">Tengo certificado de discapacidad</label>
+      </div>
 
       <div className="flex justify-between">
         <Link to="/register/contact" className="text-gray-600 hover:underline">
