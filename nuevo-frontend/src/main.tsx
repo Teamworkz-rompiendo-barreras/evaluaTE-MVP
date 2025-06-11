@@ -1,7 +1,8 @@
 import React from 'react';
 import ReactDOM from 'react-dom/client';
 import { Provider } from 'react-redux';
-import { store } from './app/store';
+import { store, persistor } from "./app/store";
+import { PersistGate } from "redux-persist/integration/react";
 import DatosPersonalesPage from './pages/DatosPersonalesPage';
 import GameDashboardPage   from './pages/GameDashboardPage';
 import GameScenePage       from './pages/GameScenePage';
