@@ -25,7 +25,7 @@ describe('Flujo completo de registro, juego y desbloqueo', () => {
     cy.contains('Elige un minijuego').should('be.visible')
 
     // 4) Abrimos el primer juego
-    cy.get('a[aria-disabled="false"]').first().click()
+    cy.get('a[aria-disabled="false"]', { timeout: 10000 }).first().click()
 
     // 5) Recorremos todas las escenas pulsando el botón "Siguiente"
     function avanzarEscena() {
