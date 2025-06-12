@@ -46,3 +46,4 @@ const GameCard: FC<GameCardProps> = ({ id, name, locked }) => {
 export default GameCard
 
 
+
