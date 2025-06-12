@@ -1,13 +1,15 @@
-describe('Flujo registro y dashboard', () => {
-  it('Completa registro y entra al Dashboard', () => {
+// cypress/e2e/registro.cy.ts
+
+describe('Flujo de registro y acceso al juego', () => {
+  it('Completa registro y puede acceder al Dashboard y a un juego', () => {
+    // 1) Registro – Paso 1
     cy.visit('http://localhost:5173/register/contact')
-    // Paso 1: Datos Personales
     cy.get('#firstName').type('Ester')
     cy.get('#lastName').type('Pérez')
     cy.get('#email').type('ester@example.com')
     cy.get('button[type=submit]').click()
 
-    // Paso 2: Preferencias
+    // 2) Registro – Paso 2
     cy.url().should('include', '/register/preferences')
     cy.get('#jobPreferences').type('Desarrollo web')
     cy.get('#workMode').select('remoto')
@@ -17,8 +19,26 @@ describe('Flujo registro y dashboard', () => {
     cy.get('#cert').check()
     cy.get('button[type=submit]').click()
 
-    // Llega al Dashboard de juegos
+    // 3) Dashboard
     cy.url().should('include', '/games')
     cy.contains('Tus juegos').should('exist')
+
+    // 4) Clic en el primer juego
+    cy.get('a[href^="/games/"]').first().click()
+
+    // 5) Comprobar que carga la página de juego
+    cy.url().should('match', /\/games\/\d+$/)
+    cy.contains('Minijuego en construcción').should('exist')
+  })
+
+  it('Bloquea el acceso directo a un juego sin registro', () => {
+    // Limpiar cualquier estado previo
+    cy.clearLocalStorage()
+    // Intentar entrar directamente
+    cy.visit('http://localhost:5173/games/1')
+    // Debe redirigir al inicio del registro
+    cy.url().should('include', '/register/contact')
+    cy.contains('¿Qué tipo de trabajo estás buscando?').should('exist')
   })
 })
+
