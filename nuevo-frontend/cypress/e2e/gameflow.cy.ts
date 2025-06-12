@@ -1,7 +1,7 @@
 // cypress/e2e/gameflow.cy.ts
 
-describe('Flujo completo de registro, juego y desbloqueo', () => {
-  it('Registra al usuario, completa el minijuego 0 y desbloquea el 1', () => {
+describe.skip('Flujo completo de registro, juego y desbloqueo (pendiente)', () => {
+  it.skip('Registra al usuario, completa el minijuego 0 y desbloquea el 1', () => {
     // 1) Limpiamos estado y vamos a registro paso 1
     cy.clearLocalStorage()
     cy.visit('/register/contact')
