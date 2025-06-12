@@ -1,36 +1,65 @@
 // cypress/e2e/gameflow.cy.ts
 
-describe('Flujo completo de juego y desbloqueo', () => {
-  it('Completa el minijuego 0 y desbloquea el 1', () => {
-    // 1) Empezamos en el dashboard
-    cy.visit('http://localhost:5173/games')
+describe('Flujo completo de registro, juego y desbloqueo', () => {
+  it('Registra al usuario, completa el minijuego 0 y desbloquea el 1', () => {
+    // ——————————————
+    // 1) Registro – Paso 1
+    // ——————————————
+    cy.clearLocalStorage()
+    cy.visit('http://localhost:5173/register/contact')
+    cy.get('#firstName').type('Ester')
+    cy.get('#lastName').type('Pérez')
+    cy.get('#email').type('ester@example.com')
+    cy.get('button[type=submit]').click()
 
-    // 2) El primer GameCard (id=0) es un enlace <a href="/games/0">
+    // ——————————————
+    // 2) Registro – Paso 2
+    // ——————————————
+    cy.url().should('include', '/register/preferences')
+    cy.get('#jobPreferences').type('Desarrollo web')
+    cy.get('#workMode').select('remoto')
+    cy.get('#availability').select('mañana')
+    cy.get('#startDate').select('inmediata')
+    cy.get('#relocate').check()
+    cy.get('#cert').check()
+    cy.get('button[type=submit]').click()
+
+    // ——————————————
+    // 3) Dashboard
+    // ——————————————
+    cy.url().should('include', '/games')
+    cy.contains('Elige un minijuego').should('exist')
+
+    // ——————————————
+    // 4) Clic en el primer juego (id=0)
+    // ——————————————
     cy.get('a[href^="/games/"]').first().click()
 
-    // 3) Avanzamos por todas las escenas
+    // ——————————————
+    // 5) Avanzar por todas las escenas
+    // ——————————————
     function avanzarEscena() {
-      cy.get('button')
-        .contains('Siguiente')
-        .then(($btn) => {
-          if ($btn.is(':visible')) {
-            cy.wrap($btn).click()
-            avanzarEscena()
-          }
-        })
+      cy.get('button').contains('Siguiente').then(($btn) => {
+        if ($btn.is(':visible')) {
+          cy.wrap($btn).click()
+          avanzarEscena()
+        }
+      })
     }
     avanzarEscena()
 
-    // 4) Al final, aparece el botón Finalizar
+    // ——————————————
+    // 6) Finalizar y volver al dashboard
+    // ——————————————
     cy.get('button').contains('Finalizar').click()
-
-    // 5) Volvemos al dashboard
     cy.url().should('include', '/games')
 
-    // 6) Ahora hay al menos dos enlaces de juego y el segundo apunta a /games/1
+    // ——————————————
+    // 7) Verificar que el segundo juego (id=1) está desbloqueado
+    // ——————————————
     cy.get('a[href^="/games/"]')
       .should('have.length.at.least', 2)
       .eq(1)
-      .should('have.attr', 'href', '/games/1')
+      .should('not.have.attr', 'aria-disabled', 'true')
   })
 })
