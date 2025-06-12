@@ -1,20 +1,22 @@
+// src/pages/GameScenePage.tsx
+import React from 'react'
 import { useParams } from 'react-router-dom'
 import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
 
 export default function GameScenePage() {
-  // 1️⃣ Leemos el parámetro id de la URL
   const { id } = useParams<{ id: string }>()
 
-  // 2️⃣ Llamamos al endpoint con RTK Query
-  const { data: scene, isLoading, isError } = useGetSceneQuery(id!)
-  
-  // 3️⃣ Estado del juego: esperamos a que llegue scene para arrancar el hook
-  const controller = scene
-    ? useGameController(scene.steps.length)
-    : null
+  // 1️⃣ Traemos la escena con RTK Query
+  const { data: scene, isLoading, isError } = useGetSceneQuery(id!, {
+    skip: !id,
+  })
 
-  // 4️⃣ Gestión de estados de carga y error
+  // 2️⃣ Inicializamos el controlador con la longitud de steps (o 0 si no hay scene aún)
+  const stepsCount = scene ? scene.steps.length : 0
+  const { currentStep, timeLeft, goNext, goPrev } = useGameController(stepsCount)
+
+  // 3️⃣ Manejamos loading y error
   if (isLoading) {
     return (
       <main className="flex items-center justify-center min-h-screen">
@@ -30,9 +32,7 @@ export default function GameScenePage() {
     )
   }
 
-  // 5️⃣ Una vez que tenemos scene y controller, renderizamos
-  const { currentStep, timeLeft, goNext } = controller!
-
+  // 4️⃣ Renderizamos la escena y los controles
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
       <h2 className="text-xl font-semibold mb-4">{scene.title}</h2>
@@ -42,22 +42,34 @@ export default function GameScenePage() {
 
       {/* Paso actual */}
       <div className="mb-6">
-        {/* Ajusta esto según la estructura de tus steps */}
         <p>{scene.steps[currentStep].text}</p>
       </div>
 
-      {/* Botón de siguiente */}
-      {currentStep < scene.steps.length - 1 ? (
+      {/* Controles de navegación */}
+      <div className="flex gap-4">
         <button
-          onClick={goNext}
-          className="py-2 px-4 bg-blue-600 text-white rounded"
+          onClick={goPrev}
+          disabled={currentStep === 0}
+          className="py-2 px-4 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
         >
-          Siguiente
+          Atrás
         </button>
-      ) : (
-        <p>Has completado este minijuego 🎉</p>
-      )}
+        {currentStep < stepsCount - 1 ? (
+          <button
+            onClick={goNext}
+            className="py-2 px-4 bg-blue-600 text-white rounded"
+          >
+            Siguiente
+          </button>
+        ) : (
+          <button
+            onClick={() => alert('¡Has completado el minijuego! 🎉')}
+            className="py-2 px-4 bg-green-600 text-white rounded"
+          >
+            Finalizar
+          </button>
+        )}
+      </div>
     </main>
   )
 }
-
