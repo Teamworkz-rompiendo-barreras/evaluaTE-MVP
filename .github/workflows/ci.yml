@@ -43,5 +43,12 @@ jobs:
       - uses: actions/setup-node@v3
         with: { node-version: '18.x' }
       - run: npm ci
-      - run: npm run dev & # arranca servidor en background
-      - run: npx cypress run
+      - name: Start app
+        run: npm run start:test & # background
+      - uses: cypress-io/github-action@v5
+        with:
+          start: npm run start:test
+          wait-on: http://localhost:5173
+          wait-on-timeout: 60
+          command: npm run cy:run
+
