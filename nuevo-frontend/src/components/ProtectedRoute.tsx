@@ -1,18 +1,31 @@
-import React from 'react'
+// src/components/ProtectedRoute.tsx
+import React, { ReactNode } from 'react'
 import { Navigate, useLocation } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
 
 interface ProtectedRouteProps {
-  children: React.ReactNode
+  children: ReactNode
 }
 
-export const ProtectedRoute = ({ children }: ProtectedRouteProps) => {
+export default function ProtectedRoute({ children }: ProtectedRouteProps) {
   const location = useLocation()
-  const completed = useAppSelector(s => s.progress.completed)
 
-  // Si no hay progreso (registro no completado), redirige al paso 1
-  if (!completed || Object.keys(completed).length === 0) {
-    return <Navigate to="/register/contact" state={{ from: location }} replace />
+  // 1) ¿Registro mínimo?
+  const { firstName, jobPreferences } = useAppSelector(s => s.personal)
+  const isRegistered = Boolean(firstName.trim() && jobPreferences.trim())
+
+  // 2) ¿Algún juego desbloqueado?
+  const completed = useAppSelector(s => s.progress.completed)
+  const hasProgress = completed && Object.keys(completed).length > 0
+
+  if (!isRegistered || !hasProgress) {
+    return (
+      <Navigate
+        to="/register/contact"
+        state={{ from: location }}
+        replace
+      />
+    )
   }
 
   return <>{children}</>
