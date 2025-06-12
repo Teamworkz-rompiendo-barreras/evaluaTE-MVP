@@ -16,11 +16,11 @@ export default function GameScenePage() {
     skip: !id,
   })
 
-  // 2️⃣ Inicializamos el controlador con la longitud de steps (o 0 si no hay scene aún)
+  // 2️⃣ Inicializamos el controlador
   const stepsCount = scene ? scene.steps.length : 0
   const { currentStep, timeLeft, goNext, goPrev } = useGameController(stepsCount)
 
-  // 3️⃣ Manejamos loading y error
+  // 3️⃣ Loading / Error
   if (isLoading) {
     return (
       <main className="flex items-center justify-center min-h-screen">
@@ -36,7 +36,7 @@ export default function GameScenePage() {
     )
   }
 
-  // 4️⃣ Renderizamos la escena y los controles
+  // 4️⃣ Render final
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4">
       <h2 className="text-xl font-semibold mb-4">{scene.title}</h2>
@@ -69,7 +69,7 @@ export default function GameScenePage() {
         ) : (
           <button
             onClick={() => {
-              // 1) Marcamos completado el minijuego actual
+              // 1) Marcamos completado
               dispatch(markComplete(Number(id)))
               // 2) Volvemos al dashboard
               navigate('/games')
