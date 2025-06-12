@@ -4,6 +4,7 @@ import { useForm, SubmitHandler } from 'react-hook-form'
 import { useNavigate, Link } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from '../../app/hooks'
 import { savePreferences } from './personalSlice'
+import { markComplete } from '../../app/store'
 import ProgressBar from '../../components/ProgressBar'
 
 type PrefData = {
@@ -37,6 +38,7 @@ export default function PreferencesStep() {
       return
     }
     dispatch(savePreferences(data))
+    dispatch(markComplete(1))
     navigate('/games')
   }
 
