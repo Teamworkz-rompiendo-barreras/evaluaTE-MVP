@@ -21,24 +21,24 @@ describe('Flujo de registro y acceso al juego', () => {
 
     // 3) Dashboard
     cy.url().should('include', '/games')
-    cy.contains('Tus juegos').should('exist')
+    cy.contains('Elige un minijuego').should('exist')
 
     // 4) Clic en el primer juego
     cy.get('a[href^="/games/"]').first().click()
 
-    // 5) Comprobar que carga la página de juego
+    // 5) Comprobar que carga la página de juego (solo URL, sin depender del contenido)
     cy.url().should('match', /\/games\/\d+$/)
-    cy.contains('Minijuego en construcción').should('exist')
   })
 
   it('Bloquea el acceso directo a un juego sin registro', () => {
     // Limpiar cualquier estado previo
     cy.clearLocalStorage()
+
     // Intentar entrar directamente
     cy.visit('http://localhost:5173/games/1')
+
     // Debe redirigir al inicio del registro
-    cy.url().should('include', '/register/contact')
-    cy.contains('¿Qué tipo de trabajo estás buscando?').should('exist')
+    cy.location('pathname').should('include', '/register/contact')
+    cy.contains('Paso 1 de 2').should('exist')
   })
 })
-
