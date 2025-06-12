@@ -1,31 +1,32 @@
 // src/features/games/useGameController.ts
-import { useState, useEffect, useRef } from 'react'
+import { useState, useEffect, useCallback } from 'react';
 
-export function useGameController(stepsCount: number) {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [timeLeft, setTimeLeft] = useState(60)
-  const timerRef = useRef<NodeJS.Timeout | null>(null)
+export function useGameController(totalSteps: number) {
+  const [currentStep, setCurrentStep] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(30); // por ejemplo, 30s por paso
 
-  // Reinicia el temporizador cada vez que cambias de step
+  // Arranca el temporizador cada vez que cambie el paso
   useEffect(() => {
-    setTimeLeft(60)
-    if (timerRef.current) clearInterval(timerRef.current)
-    timerRef.current = setInterval(() => {
-      setTimeLeft((t) => (t > 0 ? t - 1 : 0))
-    }, 1000)
-    return () => clearInterval(timerRef.current!)
-  }, [currentStep, stepsCount])
+    setTimeLeft(30);
+    const timer = setInterval(() => {
+      setTimeLeft((t) => {
+        if (t <= 1) {
+          clearInterval(timer);
+          return 0;
+        }
+        return t - 1;
+      });
+    }, 1000);
+    return () => clearInterval(timer);
+  }, [currentStep]);
 
-  const goNext = () => {
-    if (currentStep < stepsCount - 1) {
-      setCurrentStep((s) => s + 1)
-    }
-  }
-  const goPrev = () => {
-    if (currentStep > 0) {
-      setCurrentStep((s) => s - 1)
-    }
-  }
+  const goNext = useCallback(() => {
+    setCurrentStep((s) => Math.min(s + 1, totalSteps - 1));
+  }, [totalSteps]);
 
-  return { currentStep, timeLeft, goNext, goPrev }
+  const goPrev = useCallback(() => {
+    setCurrentStep((s) => Math.max(s - 1, 0));
+  }, []);
+
+  return { currentStep, timeLeft, goNext, goPrev };
 }
