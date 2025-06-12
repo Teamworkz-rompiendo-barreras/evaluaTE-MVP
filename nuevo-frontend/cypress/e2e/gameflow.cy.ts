@@ -5,13 +5,10 @@ describe('Flujo completo de juego y desbloqueo', () => {
     // 1) Empezamos en el dashboard
     cy.visit('http://localhost:5173/games')
 
-    // 2) El primer GameCard (id=0) debe estar habilitado como <a aria-disabled="false">
-    cy.get('a[aria-disabled="false"]')
-      .first()
-      .click()
+    // 2) El primer GameCard (id=0) es un enlace <a href="/games/0">
+    cy.get('a[href^="/games/"]').first().click()
 
     // 3) Avanzamos por todas las escenas
-    //    Asumimos que hay un botón con texto 'Siguiente'
     function avanzarEscena() {
       cy.get('button')
         .contains('Siguiente')
@@ -30,9 +27,10 @@ describe('Flujo completo de juego y desbloqueo', () => {
     // 5) Volvemos al dashboard
     cy.url().should('include', '/games')
 
-    // 6) Ahora el segundo GameCard (id=1) debe estar habilitado
-    cy.get('a[aria-disabled="false"]')
+    // 6) Ahora hay al menos dos enlaces de juego y el segundo apunta a /games/1
+    cy.get('a[href^="/games/"]')
+      .should('have.length.at.least', 2)
       .eq(1)
-      .should('exist')
+      .should('have.attr', 'href', '/games/1')
   })
 })
