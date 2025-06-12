@@ -1,0 +1,11 @@
+{
+  "id": "1",
+  "title": "Algo no cuadra",
+  "steps": [
+    { "text": "Escena 1: Encuentras un pedido incompleto." },
+    { "text": "Escena 2: Un albarán no coincide." },
+    { "text": "Escena 3: Contra-reloj para el camión." },
+    { "text": "Escena 4: Buscas un fallo oculto." },
+    { "text": "Escena 5: Creas un informe de mejoras." }
+  ]
+}
