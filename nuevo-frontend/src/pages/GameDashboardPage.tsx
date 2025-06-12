@@ -1,4 +1,6 @@
-import GameCard from "../components/GameCard";
+// src/pages/GameDashboardPage.tsx
+import React from 'react'
+import GameCard from '../components/GameCard'
 
 const skills = [
   "Comunicación",
@@ -11,7 +13,7 @@ const skills = [
   "Creatividad",
   "Empatía",
   "Liderazgo",
-];
+]
 
 export default function GameDashboardPage() {
   return (
@@ -19,15 +21,18 @@ export default function GameDashboardPage() {
       <h1 className="text-2xl font-bold">Elige un minijuego</h1>
 
       <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-5 gap-4">
-        {skills.map((skill, idx) => (
-          <GameCard
-            key={idx}
-            id={idx}
-            name={skill}
-            locked={idx !== 0}   // sólo desbloqueado el primero
-          />
-        ))}
+        {skills.map((skill, idx) => {
+          const gameId = idx + 1  // IDs van de 1 a 10
+          return (
+            <GameCard
+              key={gameId}
+              id={gameId}
+              name={skill}
+              locked={gameId !== 1}  // solo desbloqueado el primero
+            />
+          )
+        })}
       </div>
     </main>
-  );
+  )
 }
