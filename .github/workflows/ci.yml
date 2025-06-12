@@ -9,46 +9,61 @@ on:
 jobs:
   build-and-test:
     runs-on: ubuntu-latest
-
     strategy:
       matrix:
         node-version: [18.x]
-
     steps:
-    - uses: actions/checkout@v3
+      - uses: actions/checkout@v3
 
-    - name: Use Node.js ${{ matrix.node-version }}
-      uses: actions/setup-node@v3
-      with:
-        node-version: ${{ matrix.node-version }}
+      - name: Use Node.js ${{ matrix.node-version }}
+        uses: actions/setup-node@v3
+        with:
+          node-version: ${{ matrix.node-version }}
 
-    - name: Install dependencies
-      run: npm ci
+      - name: Install dependencies
+        working-directory: nuevo-frontend
+        run: npm ci
 
-    - name: Run lint
-      run: npm run lint
-      # si no tienes lint aún, puedes omitir o añadir "npm run lint" después
+      - name: Run lint
+        working-directory: nuevo-frontend
+        run: npm run lint
 
-    - name: Run unit tests
-      run: npm run test -- --coverage
+      - name: Run unit tests
+        working-directory: nuevo-frontend
+        run: npm run test -- --coverage
 
-    - name: Build production
-      run: npm run build
+      - name: Build production
+        working-directory: nuevo-frontend
+        run: npm run build
 
   e2e:
     needs: build-and-test
     runs-on: ubuntu-latest
+
+    # Aplica working-directory a TODOS los pasos con run:
+    defaults:
+      run:
+        working-directory: nuevo-frontend
+
     steps:
       - uses: actions/checkout@v3
-      - uses: actions/setup-node@v3
-        with: { node-version: '18.x' }
-      - run: npm ci
-      - name: Start app
-        run: npm run start:test & # background
-      - uses: cypress-io/github-action@v5
+
+      - name: Use Node.js 18.x
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18.x'
+
+      - name: Install dependencies for E2E
+        run: npm ci        # corre en nuevo-frontend/
+
+      - name: Start app in background
+        run: npm run start:test &   # corre en nuevo-frontend/
+
+      - name: Run Cypress tests
+        uses: cypress-io/github-action@v5
         with:
           start: npm run start:test
-          wait-on: http://localhost:5173
+          wait-on: 'http://localhost:5173'
           wait-on-timeout: 60
-          command: npm run cy:run
+          command: npm run cypress:run
 
