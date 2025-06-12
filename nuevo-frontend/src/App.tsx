@@ -3,7 +3,7 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 // Importa tus páginas y el guardia
-import DatosPersonalesPage from './features/personal/DatosPersonalesPage'
+import DatosPersonalesPage from './pages/DatosPersonalesPage'
 import PreferencesStep      from './features/personal/PreferencesStep'
 import GameScenePage        from './pages/GameScenePage'
 import ProtectedRoute       from './components/ProtectedRoute'

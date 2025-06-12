@@ -5,7 +5,7 @@ import { store, persistor } from './app/store'
 import { PersistGate } from 'redux-persist/integration/react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
-import DatosPersonalesPage from './features/personal/DatosPersonalesPage'
+import DatosPersonalesPage from './pages/DatosPersonalesPage'
 import PreferencesStep      from './features/personal/PreferencesStep'
 import GameDashboardPage   from './pages/GameDashboardPage'
 import GameScenePage       from './pages/GameScenePage'
