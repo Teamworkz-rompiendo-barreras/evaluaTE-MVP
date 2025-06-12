@@ -25,7 +25,9 @@ describe('Flujo completo de registro, juego y desbloqueo', () => {
     cy.contains('Elige un minijuego').should('be.visible')
 
     // 4) Abrimos el primer juego
-    cy.get('a[aria-disabled="false"]', { timeout: 10000 }).first().click()
+    cy.get('[data-cy="game-card-0"]')
+      .should('have.attr', 'aria-disabled', 'false')
+      .click();
 
     // 5) Recorremos todas las escenas pulsando el botón "Siguiente"
     function avanzarEscena() {
@@ -43,9 +45,7 @@ describe('Flujo completo de registro, juego y desbloqueo', () => {
     cy.url().should('include', '/games')
 
     // 7) Comprobamos que el segundo juego (id=1) ya está habilitado
-    cy.get('a[aria-disabled="false"]')
-      .should('have.length.at.least', 2)
-      .eq(1)
-      .should('exist')
+    cy.get('[data-cy="game-card-1"]')
+      .should('have.attr', 'aria-disabled', 'false');
   })
 })
