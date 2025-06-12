@@ -16,6 +16,7 @@ const GameCard: FC<GameCardProps> = ({ id, name, locked }) => {
                   text-center border transition
                   ${locked ? 'opacity-40 cursor-not-allowed'
                             : 'hover:scale-105 bg-white shadow'}`}
+      aria-disabled={locked ? "true" : "false"}   // <-- siempre lo emitimos
     >
       <div className="text-4xl mb-2">{locked ? '🔒' : '🎮'}</div>
       <span className="text-sm font-medium">{name}</span>
