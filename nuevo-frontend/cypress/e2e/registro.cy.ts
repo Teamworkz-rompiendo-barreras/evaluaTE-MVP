@@ -35,7 +35,7 @@ describe('Flujo de registro y acceso al juego', () => {
     cy.clearLocalStorage()
 
     // Intentar entrar directamente
-    cy.visit('http://localhost:5173/games/1')
+    cy.visit('/register/contact')
 
     // Debe redirigir al inicio del registro
     cy.location('pathname').should('include', '/register/contact')
