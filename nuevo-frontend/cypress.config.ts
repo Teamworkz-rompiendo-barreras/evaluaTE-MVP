@@ -1,12 +1,12 @@
-// nuevo-frontend/cypress.config.ts
 import { defineConfig } from 'cypress'
 
 export default defineConfig({
   e2e: {
-    // carpeta donde están tus specs
+    baseUrl: 'http://localhost:5173',   // ➜ aquí apuntas a tu servidor Vite
     specPattern: 'cypress/e2e/**/*.cy.{js,ts,jsx,tsx}',
-    // aquí apuntas al servidor de desarrollo
-    baseUrl: 'http://localhost:5173',
-    supportFile: false, // o 'cypress/support/index.ts' si tienes custom commands
+    setupNodeEvents (on, config) {
+      // si tienes algo que hacer en events...
+      return config
+    },
   },
 })
