@@ -1,11 +1,15 @@
 // src/pages/GameScenePage.tsx
 import React from 'react'
-import { useParams } from 'react-router-dom'
+import { useParams, useNavigate } from 'react-router-dom'
 import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
+import { useAppDispatch } from '../app/hooks'
+import { markComplete } from '../app/store'
 
 export default function GameScenePage() {
   const { id } = useParams<{ id: string }>()
+  const navigate = useNavigate()
+  const dispatch = useAppDispatch()
 
   // 1️⃣ Traemos la escena con RTK Query
   const { data: scene, isLoading, isError } = useGetSceneQuery(id!, {
@@ -54,6 +58,7 @@ export default function GameScenePage() {
         >
           Atrás
         </button>
+
         {currentStep < stepsCount - 1 ? (
           <button
             onClick={goNext}
@@ -63,7 +68,12 @@ export default function GameScenePage() {
           </button>
         ) : (
           <button
-            onClick={() => alert('¡Has completado el minijuego! 🎉')}
+            onClick={() => {
+              // 1) Marcamos completado el minijuego actual
+              dispatch(markComplete(Number(id)))
+              // 2) Volvemos al dashboard
+              navigate('/games')
+            }}
             className="py-2 px-4 bg-green-600 text-white rounded"
           >
             Finalizar
