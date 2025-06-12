@@ -6,7 +6,7 @@ describe('Flujo completo de registro, juego y desbloqueo', () => {
     // 1) Registro – Paso 1
     // ——————————————
     cy.clearLocalStorage()
-    cy.visit('http://localhost:5173/register/contact')
+    cy.visit('/register/contact')
     cy.get('#firstName').type('Ester')
     cy.get('#lastName').type('Pérez')
     cy.get('#email').type('ester@example.com')
