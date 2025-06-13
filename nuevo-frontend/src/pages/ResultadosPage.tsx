@@ -2,6 +2,7 @@
 import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
+import type { CvAnalysis } from '../features/personal/personalSlice'  // 👈 Importa el tipo desde tu slice
 
 // Para renderizar los resultados de los minijuegos
 interface GameResult {
@@ -9,18 +10,13 @@ interface GameResult {
   dA: number
 }
 
-// Para tipar el análisis del CV
-interface CvAnalysis {
-  score: number
-  strengths: string[]
-  weaknesses: string[]
-}
-
 export default function ResultadosPage() {
   const navigate = useNavigate()
 
-  // 1️⃣ Leemos el análisis del CV del state
-  const cvAnalysis = useAppSelector(state => state.personal.cvAnalysis as CvAnalysis | undefined)
+  // 1️⃣ Leemos el análisis del CV (puede ser undefined)
+  const cvAnalysis = useAppSelector(
+    state => state.personal.cvAnalysis as CvAnalysis | undefined
+  )
 
   // 2️⃣ Leemos el progreso de los minijuegos
   const completed = useAppSelector(state => state.progress.completed)
@@ -44,7 +40,9 @@ export default function ResultadosPage() {
       {cvAnalysis ? (
         <div className="bg-gray-50 p-4 rounded shadow">
           <h2 className="text-2xl font-semibold mb-2">Análisis de tu CV</h2>
-          <p className="mb-4">Puntuación global: <strong>{cvAnalysis.score}%</strong></p>
+          <p className="mb-4">
+            Puntuación global: <strong>{cvAnalysis.score}%</strong>
+          </p>
 
           <h3 className="font-medium">Fortalezas</h3>
           <ul className="list-disc ml-6 mb-4">
@@ -61,7 +59,9 @@ export default function ResultadosPage() {
           </ul>
         </div>
       ) : (
-        <p className="text-center text-gray-500">No hay análisis de CV disponible.</p>
+        <p className="text-center text-gray-500">
+          No hay análisis de CV disponible.
+        </p>
       )}
 
       {/* ———————————— */}
@@ -93,7 +93,9 @@ export default function ResultadosPage() {
             ))}
           </ul>
         ) : (
-          <p className="text-gray-500">¡Perfecto! Todos los minijuegos completados.</p>
+          <p className="text-gray-500">
+            ¡Perfecto! Todos los minijuegos completados.
+          </p>
         )}
       </div>
 
