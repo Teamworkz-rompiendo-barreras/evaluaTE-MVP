@@ -1,11 +1,9 @@
 {
-  "id": "0",
-  "title": "Primera llamada del día",
+  "id": 0,
+  "title": "Minijuego 0 – Introducción",
   "steps": [
-    { "text": "Escena 1: Suena el teléfono y un cliente pregunta por tu compañero." },
-    { "text": "Escena 2: Te dan cuatro tareas y debes priorizar." },
-    { "text": "Escena 3: El sistema se congela, decides qué hacer." },
-    { "text": "Escena 4: Un cliente entra nervioso, reaccionas." },
-    { "text": "Escena 5: Feedback final: ¿cómo te sentiste?" }
+    { "text": "Paso 1: haz clic en Siguiente" },
+    { "text": "Paso 2: vuelve a hacer clic" },
+    { "text": "¡Ya casi!" }
   ]
 }
