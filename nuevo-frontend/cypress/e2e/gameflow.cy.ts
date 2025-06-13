@@ -1,12 +1,19 @@
-// cypress/e2e/gameflow.cy.ts
+import { defineConfig } from 'cypress'
+
+export default defineConfig({
+  e2e: {
+    baseUrl: 'http://localhost:5173',
+    specPattern: 'cypress/e2e/**/*.cy.ts',
+    supportFile: false,    // si no usas support
+  },
+})
 
 describe('Flujo completo de registro, juego y desbloqueo', () => {
-  const BASE = 'http://localhost:5173';
-
+  
   beforeEach(() => {
     // Limpiamos cualquier estado anterior
     cy.clearLocalStorage();
-    cy.visit(`${BASE}/register/contact`);
+    cy.visit(`register/contact`);
   });
 
   it('Registra al usuario, completa el minijuego 0 y desbloquea el 1', () => {
@@ -46,15 +53,15 @@ describe('Flujo completo de registro, juego y desbloqueo', () => {
     // ——————————————
     // 5) Recorremos todas las escenas
     // ——————————————
-    const avanzarEscena = () => {
+   function avanzarEscena() {
       cy.contains('button', 'Siguiente').then($btn => {
         if ($btn.is(':visible')) {
-          cy.wrap($btn).click();
-          avanzarEscena();
+          cy.wrap($btn).click()
+          avanzarEscena()
         }
-      });
-    };
-    avanzarEscena();
+      })
+    }
+    avanzarEscena()
 
     // ——————————————
     // 6) Finalizar y volver al dashboard
