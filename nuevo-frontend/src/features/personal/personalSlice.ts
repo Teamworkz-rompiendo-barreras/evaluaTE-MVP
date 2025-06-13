@@ -1,28 +1,33 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
+// 1) Definimos la interfaz para el análisis de CV
+export interface CvAnalysis {
+  score: number
+  strengths: string[]
+  weaknesses: string[]
+}
+
+// 2) Estado de usuario con nuevo campo opcional cvAnalysis
 export interface PersonalState {
   firstName: string
   lastName: string
   email: string
   whatsapp: string
 
-  // texto libre, no array
-  jobPreferences: string  
-
+  jobPreferences: string  // texto libre, no array
   workMode: 'remoto' | 'presencial' | 'híbrido'
   availability: 'mañana' | 'tarde' | 'completa'
-
-  // debe coincidir con PrefData
   startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
 
   willingToRelocate: boolean
   hasDisabilityCert: boolean
 
-  // ← Nuevo campo para guardar el análisis del CV
+  // Nuevo campo para guardar el análisis del CV (opcional)
   cvAnalysis?: CvAnalysis
 }
 
+// 3) Valores iniciales, cvAnalysis arranca undefined
 const initialState: PersonalState = {
   firstName: '',
   lastName: '',
@@ -36,10 +41,10 @@ const initialState: PersonalState = {
 
   willingToRelocate: false,
   hasDisabilityCert: false,
-
-  cvAnalysis: undefined, // sin análisis inicialmente
+  cvAnalysis: undefined,
 }
 
+// 4) Slice con nueva acción saveCvAnalysis
 const personalSlice = createSlice({
   name: 'personal',
   initialState,
@@ -68,11 +73,7 @@ const personalSlice = createSlice({
     ) {
       Object.assign(state, action.payload)
     },
-    // ← Nueva acción para guardar el análisis del CV
-    saveCvAnalysis(
-      state,
-      action: PayloadAction<string>
-    ) {
+    saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
       state.cvAnalysis = action.payload
     },
   },
