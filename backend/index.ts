@@ -33,3 +33,5 @@ app.post('/api/generate-report', async (req, res) => {
 
 const PORT = process.env.PORT || 3001
 app.listen(PORT, () => console.log(`PDF report server running on port ${PORT}`))
+
+export default app
