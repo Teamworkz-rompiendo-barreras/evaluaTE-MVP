@@ -3,52 +3,107 @@ import React from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
 
-// Definimos el formato que usaremos internamente
-interface AnalysisEntry {
+// Para renderizar los resultados de los minijuegos
+interface GameResult {
   subject: string
   dA: number
 }
 
+// Para tipar el análisis del CV
+interface CvAnalysis {
+  score: number
+  strengths: string[]
+  weaknesses: string[]
+}
+
 export default function ResultadosPage() {
   const navigate = useNavigate()
-  // Leemos el progreso de los minijuegos del store
+
+  // 1️⃣ Leemos el análisis del CV del state
+  const cvAnalysis = useAppSelector(state => state.personal.cvAnalysis as CvAnalysis | undefined)
+
+  // 2️⃣ Leemos el progreso de los minijuegos
   const completed = useAppSelector(state => state.progress.completed)
 
-  // Creamos nuestro array de resultados a partir del objeto { [id]: boolean }
-  const data: AnalysisEntry[] = Object.keys(completed).map(key => ({
+  // 3️⃣ Construimos un array para los minijuegos
+  const gameData: GameResult[] = Object.keys(completed).map(key => ({
     subject: `Minijuego ${key}`,
-    dA: completed[Number(key)] ? 100 : 0
+    dA: completed[Number(key)] ? 100 : 0,
   }))
 
-  const fortalezas   = data.filter(d => d.dA >= 75)
-  const areasMejorar = data.filter(d => d.dA < 75)
+  const fortalezas = gameData.filter(d => d.dA >= 75)
+  const areasMejorar = gameData.filter(d => d.dA < 75)
 
   return (
-    <section className="max-w-2xl mx-auto p-6 space-y-6">
+    <section className="max-w-2xl mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold text-center">Tu Informe de Resultados</h1>
 
-      <h2 className="text-xl font-semibold">Puntos fuertes</h2>
-      <ul className="list-disc pl-5">
-        {fortalezas.map(d => (
-          <li key={d.subject}>
-            {d.subject}: {d.dA}%
-          </li>
-        ))}
-      </ul>
+      {/* ———————————— */}
+      {/* 4️⃣ Sección de Análisis de CV */}
+      {/* ———————————— */}
+      {cvAnalysis ? (
+        <div className="bg-gray-50 p-4 rounded shadow">
+          <h2 className="text-2xl font-semibold mb-2">Análisis de tu CV</h2>
+          <p className="mb-4">Puntuación global: <strong>{cvAnalysis.score}%</strong></p>
 
-      <h2 className="text-xl font-semibold mt-6">Áreas a mejorar</h2>
-      <ul className="list-disc pl-5">
-        {areasMejorar.map(d => (
-          <li key={d.subject}>
-            {d.subject}: {d.dA}%
-          </li>
-        ))}
-      </ul>
+          <h3 className="font-medium">Fortalezas</h3>
+          <ul className="list-disc ml-6 mb-4">
+            {cvAnalysis.strengths.map(str => (
+              <li key={str}>{str}</li>
+            ))}
+          </ul>
 
-      <div className="text-center mt-8">
+          <h3 className="font-medium">Áreas a mejorar</h3>
+          <ul className="list-disc ml-6">
+            {cvAnalysis.weaknesses.map(w => (
+              <li key={w}>{w}</li>
+            ))}
+          </ul>
+        </div>
+      ) : (
+        <p className="text-center text-gray-500">No hay análisis de CV disponible.</p>
+      )}
+
+      {/* ———————————— */}
+      {/* 5️⃣ Sección de Minijuegos */}
+      {/* ———————————— */}
+      <div className="bg-white p-4 rounded shadow">
+        <h2 className="text-2xl font-semibold mb-2">Minijuegos</h2>
+
+        <h3 className="font-medium">Puntos fuertes</h3>
+        {fortalezas.length > 0 ? (
+          <ul className="list-disc ml-6 mb-4">
+            {fortalezas.map(d => (
+              <li key={d.subject}>
+                {d.subject}: {d.dA}%
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500 mb-4">No hay puntos fuertes aún.</p>
+        )}
+
+        <h3 className="font-medium">Áreas a mejorar</h3>
+        {areasMejorar.length > 0 ? (
+          <ul className="list-disc ml-6">
+            {areasMejorar.map(d => (
+              <li key={d.subject}>
+                {d.subject}: {d.dA}%
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="text-gray-500">¡Perfecto! Todos los minijuegos completados.</p>
+        )}
+      </div>
+
+      {/* ———————————— */}
+      {/* 6️⃣ Botón para volver al Dashboard */}
+      {/* ———————————— */}
+      <div className="text-center">
         <button
           onClick={() => navigate('/games')}
-          className="px-4 py-2 bg-blue-600 text-white rounded"
+          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
         >
           Volver al Dashboard
         </button>
