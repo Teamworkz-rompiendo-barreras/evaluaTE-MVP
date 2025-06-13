@@ -1,27 +1,26 @@
 // src/features/games/scenesApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
 
-// 1) Define la forma de los datos que espera tu API
+// Define el tipo de la escena según tu backend / mock
+export interface SceneStep {
+  text: string
+}
 export interface Scene {
-  id: string
+  id: number
   title: string
-  steps: Array<{
-    text: string
-    // aquí puedes añadir más campos, p.ej. options, image, etc.
-  }>
+  steps: SceneStep[]
 }
 
-// 2) Crea el API slice con RTK Query
 export const scenesApi = createApi({
-  reducerPath: 'scenesApi',                            // ruta interna del reducer
-  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),      // prefijo de tus endpoints
+  reducerPath: 'scenesApi',
+  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
   endpoints: (builder) => ({
-    // Este endpoint GET /api/scenes/:id
-    getScene: builder.query<Scene, string>({            // <TipoRespuesta, TipoArgumento>
-      query: (id) => `scenes/${id}`,                    // construye la URL
+    getScene: builder.query<Scene, string>({
+      query: (id) => `scenes/${id}.json`,
     }),
+    // en el futuro puedes añadir listScenes, postResults, etc.
   }),
 })
 
-// 3) Exporta el hook para consumir el endpoint desde componentes
+// Exporta el hook
 export const { useGetSceneQuery } = scenesApi
