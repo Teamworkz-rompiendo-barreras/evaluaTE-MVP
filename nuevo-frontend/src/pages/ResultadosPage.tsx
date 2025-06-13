@@ -1,8 +1,8 @@
 // src/pages/ResultadosPage.tsx
-import React, { useState } from 'react'
+import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
-import type { CvAnalysis } from '../features/personal/personalSlice'  // 👈 Importa el tipo desde tu slice
+import type { CvAnalysis } from '../features/personal/personalSlice'
 
 // Para renderizar los resultados de los minijuegos
 interface GameResult {
@@ -13,6 +13,7 @@ interface GameResult {
 export default function ResultadosPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
+  const [toast, setToast] = useState<string | null>(null)
 
   // 1️⃣ Leemos el análisis del CV (puede ser undefined)
   const cvAnalysis = useAppSelector(
@@ -41,7 +42,7 @@ export default function ResultadosPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
-      if (!resp.ok) throw new Error(`Error: ${resp.status}`)
+      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
       const blob = await resp.blob()
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -51,17 +52,33 @@ export default function ResultadosPage() {
       link.click()
       link.remove()
       window.URL.revokeObjectURL(url)
-    } catch (error) {
-      console.error(error)
-      alert('Error al generar el informe. Por favor, inténtalo de nuevo.')
+      setToast('Informe descargado correctamente')
+    } catch (err) {
+      console.error(err)
+      setToast('Error al generar el informe. Intenta más tarde.')
     } finally {
       setLoading(false)
     }
   }
 
+  // Autoocultar toast tras 3s
+  useEffect(() => {
+    if (toast) {
+      const timer = setTimeout(() => setToast(null), 3000)
+      return () => clearTimeout(timer)
+    }
+  }, [toast])
+
   return (
-    <section className="max-w-2xl mx-auto p-6 space-y-8">
+    <section className="relative max-w-2xl mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold text-center">Tu Informe de Resultados</h1>
+
+      {/* Toast Notification */}
+      {toast && (
+        <div className="fixed bottom-6 right-6 bg-black bg-opacity-75 text-white px-4 py-2 rounded shadow-lg">
+          {toast}
+        </div>
+      )}
 
       {/* ———————————— */}
       {/* 4️⃣ Sección de Análisis de CV */}
@@ -141,9 +158,31 @@ export default function ResultadosPage() {
         <button
           onClick={handleDownloadReport}
           disabled={loading}
-          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+          className="flex items-center justify-center px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
         >
-          {loading ? 'Generando informe…' : 'Descargar Informe'}
+          {loading && (
+            <svg
+              className="animate-spin h-5 w-5 mr-2 text-white"
+              xmlns="http://www.w3.org/2000/svg"
+              fill="none"
+              viewBox="0 0 24 24"
+            >
+              <circle
+                className="opacity-25"
+                cx="12"
+                cy="12"
+                r="10"
+                stroke="currentColor"
+                strokeWidth="4"
+              />
+              <path
+                className="opacity-75"
+                fill="currentColor"
+                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
+              />
+            </svg>
+          )}
+          {loading ? 'Generando…' : 'Descargar Informe'}
         </button>
       </div>
     </section>
