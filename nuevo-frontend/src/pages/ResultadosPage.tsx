@@ -30,6 +30,31 @@ export default function ResultadosPage() {
   const fortalezas = gameData.filter(d => d.dA >= 75)
   const areasMejorar = gameData.filter(d => d.dA < 75)
 
+  // 7️⃣ Handler para descargar informe PDF
+  const handleDownloadReport = async () => {
+    try {
+      const payload = { gameData, cvAnalysis }
+      const resp = await fetch('/api/generate-report', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload),
+      })
+      if (!resp.ok) throw new Error(`Error: ${resp.status}`)
+      const blob = await resp.blob()
+      const url = window.URL.createObjectURL(blob)
+      const link = document.createElement('a')
+      link.href = url
+      link.download = 'informe-resultados.pdf'
+      document.body.appendChild(link)
+      link.click()
+      link.remove()
+      window.URL.revokeObjectURL(url)
+    } catch (error) {
+      console.error(error)
+      alert('Error al generar el informe. Por favor, inténtalo de nuevo.')
+    }
+  }
+
   return (
     <section className="max-w-2xl mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold text-center">Tu Informe de Resultados</h1>
@@ -100,14 +125,20 @@ export default function ResultadosPage() {
       </div>
 
       {/* ———————————— */}
-      {/* 6️⃣ Botón para volver al Dashboard */}
+      {/* 6️⃣ Botones de acción */}
       {/* ———————————— */}
-      <div className="text-center">
+      <div className="flex flex-col md:flex-row justify-center gap-4">
         <button
           onClick={() => navigate('/games')}
           className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
         >
           Volver al Dashboard
+        </button>
+        <button
+          onClick={handleDownloadReport}
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+        >
+          Descargar Informe
         </button>
       </div>
     </section>
