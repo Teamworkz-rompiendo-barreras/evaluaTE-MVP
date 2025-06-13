@@ -1,49 +1,46 @@
-// src/components/GameCard.tsx
-import React, { FC } from 'react'
-import { Link } from 'react-router-dom'
+import React, { FC } from 'react';
+import { Link } from 'react-router-dom';
 
 interface GameCardProps {
-  id: number
-  name: string
-  locked: boolean
+  id: number;
+  name: string;
+  locked: boolean;
 }
 
 const GameCard: FC<GameCardProps> = ({ id, name, locked }) => {
-  // Contenido visual de la tarjeta
-  const cardContent = (
+  const dataCy = `game-card-${id}`;
+  const ariaDisabled = locked ? 'true' : 'false';
+  const commonClasses =
+    'flex flex-col items-center justify-center p-4 rounded-xl w-32 h-32 text-center border transition';
+
+  const content = (
     <div
-      data-cy={`game-card-${id}`}             // <-- selector para Cypress
-      className={`flex flex-col items-center justify-center p-4 rounded-xl w-32 h-32
-                  text-center border transition
-                  ${locked ? 'opacity-40 cursor-not-allowed' 
-                            : 'hover:scale-105 bg-white shadow'}`}
-      aria-disabled={locked}                   // booleano en vez de string
+      data-cy={dataCy}
+      aria-disabled={ariaDisabled}
+      className={
+        locked
+          ? `${commonClasses} opacity-40 cursor-not-allowed`
+          : `${commonClasses} hover:scale-105 bg-white shadow`
+      }
     >
-      <div className="text-4xl mb-2">
-        {locked ? '🔒' : '🎮'}
-      </div>
+      <div className="text-4xl mb-2">{locked ? '🔒' : '🎮'}</div>
       <span className="text-sm font-medium">{name}</span>
     </div>
-  )
+  );
 
-  // Si está bloqueada, devolvemos solo el div (no es clicable)
+  // Si está bloqueado, devolvemos un DIV (no clicable)
   if (locked) {
-    return cardContent
+    return content;
   }
 
-  // Si no está bloqueada, envolvemos en Link
+  // Si está desbloqueado, devolvemos un Link envolviendo ese mismo DIV
   return (
-    <Link
-      to={`/games/${id}`}
-      aria-label={`Jugar ${name}`}
-      className="no-underline"               // opcional, para eliminar subrayado
-    >
-      {cardContent}
+    <Link to={`/games/${id}`} aria-label={`Jugar ${name}`} data-cy={dataCy} aria-disabled={ariaDisabled}>
+      {content}
     </Link>
-  )
-}
+  );
+};
 
-export default GameCard
-
+export default GameCard;
 
 
