@@ -1,7 +1,7 @@
 // backend/generate-report.test.ts
 import { describe, it, expect } from 'vitest'
 import request from 'supertest'
-import app from './dist/index.js'  // Asegúrate de exportar `app` en index.ts
+import app from './index'
 
 describe('POST /api/generate-report', () => {
   it('debe devolver un PDF válido', async () => {
