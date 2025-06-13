@@ -1,3 +1,4 @@
+// src/main.tsx
 import React from 'react'
 import ReactDOM from 'react-dom/client'
 import { Provider } from 'react-redux'
@@ -28,13 +29,13 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             {/* raíz → Paso 1 */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
 
-            {/* Paso 1: datos personales */}
+            {/* Paso 1: datos personales (sin protección) */}
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
 
-            {/* Paso 2: preferencias */}
+            {/* Paso 2: preferencias (sin protección) */}
             <Route path="/register/preferences" element={<PreferencesStep />} />
 
-            {/* Dashboard de juegos */}
+            {/* Dashboard de juegos (requiere haber completado registro y preferencias) */}
             <Route
               path="/games"
               element={
@@ -44,7 +45,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               }
             />
 
-            {/* Minijuego individual */}
+            {/* Minijuego individual (requiere estar registrado) */}
             <Route
               path="/games/:id"
               element={
@@ -54,7 +55,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               }
             />
 
-            {/* Subida de CV (también protegida) */}
+            {/* Subida de CV (protegida) */}
             <Route
               path="/subircv"
               element={
