@@ -1,5 +1,5 @@
 // src/pages/ResultadosPage.tsx
-import React from 'react'
+import React, { useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
 import type { CvAnalysis } from '../features/personal/personalSlice'  // 👈 Importa el tipo desde tu slice
@@ -12,6 +12,7 @@ interface GameResult {
 
 export default function ResultadosPage() {
   const navigate = useNavigate()
+  const [loading, setLoading] = useState(false)
 
   // 1️⃣ Leemos el análisis del CV (puede ser undefined)
   const cvAnalysis = useAppSelector(
@@ -32,6 +33,7 @@ export default function ResultadosPage() {
 
   // 7️⃣ Handler para descargar informe PDF
   const handleDownloadReport = async () => {
+    setLoading(true)
     try {
       const payload = { gameData, cvAnalysis }
       const resp = await fetch('/api/generate-report', {
@@ -52,6 +54,8 @@ export default function ResultadosPage() {
     } catch (error) {
       console.error(error)
       alert('Error al generar el informe. Por favor, inténtalo de nuevo.')
+    } finally {
+      setLoading(false)
     }
   }
 
@@ -136,9 +140,10 @@ export default function ResultadosPage() {
         </button>
         <button
           onClick={handleDownloadReport}
-          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition"
+          disabled={loading}
+          className="px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
         >
-          Descargar Informe
+          {loading ? 'Generando informe…' : 'Descargar Informe'}
         </button>
       </div>
     </section>
