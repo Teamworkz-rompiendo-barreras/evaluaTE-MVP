@@ -20,7 +20,7 @@ export interface PersonalState {
   hasDisabilityCert: boolean
 
   // ← Nuevo campo para guardar el análisis del CV
-  cvAnalysis?: string
+  cvAnalysis?: CvAnalysis
 }
 
 const initialState: PersonalState = {
