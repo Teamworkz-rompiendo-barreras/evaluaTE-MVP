@@ -29,7 +29,9 @@
     "vitest.config.ts"    // <-- añadido para que TS reconozca este archivo
   ],
   "exclude": [
-    "vite.config.ts"
+    "vite.config.ts",
+    "dist",
+    "node_modules"
   ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
