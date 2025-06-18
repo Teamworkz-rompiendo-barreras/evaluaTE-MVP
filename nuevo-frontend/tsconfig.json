@@ -28,5 +28,8 @@
     "**/*.tsx",
     "vitest.config.ts"    // <-- añadido para que TS reconozca este archivo
   ],
+  "exclude": [
+    "vite.config.ts"
+  ],
   "references": [{ "path": "./tsconfig.node.json" }]
 }
