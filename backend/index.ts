@@ -4,6 +4,9 @@ import path from 'path'
 import fs from 'fs'
 import puppeteer from 'puppeteer'
 
+// 2) Declaración de la app, justo aquí
+const app = express()
+
 // Creamos la aplicación de Express\ nconst app = express()
 app.use(express.json())
 // Servimos la carpeta de plantillas (HTML y assets)
