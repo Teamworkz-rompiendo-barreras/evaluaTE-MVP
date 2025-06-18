@@ -46,6 +46,6 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
           action: "close"
-          app_location: ""      # <-- necesario aunque no lo uses
+          app_location: "nuevo-frontend"      # <-- necesario aunque no lo uses
           api_location: ""      # <-- necesario aunque no lo uses
-          output_location: ""   # <-- necesario aunque no lo uses
+          output_location: "dist"   # <-- necesario aunque no lo uses
