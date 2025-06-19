@@ -1,11 +1,10 @@
-// backend/generate-report.test.ts
-import { describe, it, expect, afterAll } from 'vitest'
+import { describe, it, expect } from 'vitest'
 import request from 'supertest'
-import server from './index'  // Importa el servidor Express para Supertest
+import app from './index'
 
 describe('POST /api/generate-report', () => {
   it('debe devolver un PDF válido', async () => {
-    const res = await request(server)
+    const res = await request(app)
       .post('/api/generate-report')
       .send({
         gameData: [{ subject: 'Minijuego 0', dA: 100 }],
@@ -16,9 +15,4 @@ describe('POST /api/generate-report', () => {
 
     expect(res.body.length).toBeGreaterThan(1000)
   })
-})
-
-// Cierra el servidor tras los tests para evitar open handles
-afterAll(async () => {
-  await server.close()
 })
