@@ -5,7 +5,7 @@
   "scripts": {
     "build": "tsc",
     "start": "node dist/index.js",
-     "dev": "nodemon src/index.ts",
+    "dev": "nodemon src/index.ts",
     "test": "vitest"
   },
   "dependencies": {
@@ -16,6 +16,7 @@
     "@types/express": "^5.0.3",
     "@types/node": "^24.0.1",
     "@types/supertest": "^6.0.0",
+    "nodemon": "^3.1.10",
     "supertest": "^6.3.3",
     "typescript": "^5.8.3",
     "vitest": "^0.34.0"
