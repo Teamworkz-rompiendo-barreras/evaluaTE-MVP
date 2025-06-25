@@ -1,14 +1,14 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-// 1) Definimos la interfaz para el análisis de CV
+// 1) Interfaz para el análisis de CV
 export interface CvAnalysis {
   score: number
   strengths: string[]
   weaknesses: string[]
 }
 
-// 2) Estado de usuario con nuevo campo opcional cvAnalysis
+// 2) Estado de usuario con campo de progreso
 export interface PersonalState {
   firstName: string
   lastName: string
@@ -23,11 +23,14 @@ export interface PersonalState {
   willingToRelocate: boolean
   hasDisabilityCert: boolean
 
-  // Nuevo campo para guardar el análisis del CV (opcional)
+  // Campo para guardar el análisis del CV (opcional)
   cvAnalysis?: CvAnalysis
+
+  // Campo para el progreso de minijuegos
+  unlockedGames: number
 }
 
-// 3) Valores iniciales, cvAnalysis arranca undefined
+// 3) Valores iniciales
 const initialState: PersonalState = {
   firstName: '',
   lastName: '',
@@ -41,10 +44,13 @@ const initialState: PersonalState = {
 
   willingToRelocate: false,
   hasDisabilityCert: false,
+
   cvAnalysis: undefined,
+
+  unlockedGames: 1, // Solo el primer minijuego desbloqueado al inicio
 }
 
-// 4) Slice con nueva acción saveCvAnalysis
+// 4) Slice con todas las acciones, incluido el progreso de minijuegos
 const personalSlice = createSlice({
   name: 'personal',
   initialState,
@@ -73,11 +79,18 @@ const personalSlice = createSlice({
     ) {
       Object.assign(state, action.payload)
     },
+    // Acción para guardar el análisis del CV
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
       state.cvAnalysis = action.payload
+    },
+    // Acción para desbloquear el siguiente minijuego
+    unlockNextGame(state) {
+      if (state.unlockedGames < 10) {
+        state.unlockedGames += 1;
+      }
     },
   },
 })
 
-export const { saveContact, savePreferences, saveCvAnalysis } = personalSlice.actions
+export const { saveContact, savePreferences, saveCvAnalysis, unlockNextGame } = personalSlice.actions
 export default personalSlice.reducer
