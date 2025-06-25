@@ -18,7 +18,8 @@ const skills = [
 
 export default function GameDashboardPage() {
   // Calcula el número de minijuegos desbloqueados según progreso REAL del store
-  const completed = useSelector((state: RootState) => state.progress.completed);
+  const completed = useSelector(
+    (state: RootState) => state.progress.completed);
   const unlockedGames = Object.keys(completed).length + 1;
 
   return (
