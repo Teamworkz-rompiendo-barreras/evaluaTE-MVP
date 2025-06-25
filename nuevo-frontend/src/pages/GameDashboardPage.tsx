@@ -1,6 +1,7 @@
-// src/pages/GameDashboardPage.tsx
 import React from 'react'
+import { useSelector } from 'react-redux'
 import GameCard from '../components/GameCard'
+import { RootState } from '../app/store' // Asegúrate de importar correctamente tu store
 
 const skills = [
   "Comunicación",
@@ -16,6 +17,9 @@ const skills = [
 ]
 
 export default function GameDashboardPage() {
+  // Saca el número de minijuegos desbloqueados del store de Redux
+  const unlockedGames = useSelector((state: RootState) => state.personal.unlockedGames);
+
   return (
     <main className="min-h-screen p-6 flex flex-col items-center gap-6">
       <h1 className="text-2xl font-bold">Elige un minijuego</h1>
@@ -28,7 +32,7 @@ export default function GameDashboardPage() {
               key={gameId}
               id={gameId}
               name={skill}
-              locked={gameId !== 1}  // solo desbloqueado el primero
+              locked={gameId > unlockedGames}  // desbloqueados hasta el último jugado + 1
             />
           )
         })}
