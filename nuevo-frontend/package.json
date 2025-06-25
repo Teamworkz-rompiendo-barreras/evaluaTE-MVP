@@ -9,6 +9,7 @@
     "cy:run": "start-server-and-test start:test http-get://localhost:5173 cy:run-only",
     "cy:run-only": "cypress run",
     "build": "tsc && vite build",
+    "lint": "echo 'No hay reglas de lint definidas.'",
     "serve": "vite preview --port 5173",
     "test": "vitest",
     "test:watch": "vitest --watch",
