@@ -12,6 +12,7 @@ export default function GameScenePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
+  const dispatchRedux = useDispatch() // <-- Añadimos este para las acciones generales
 
   // 1️⃣ Traemos la escena con RTK Query, y la pedimos solo si tenemos un id
   const {
@@ -86,7 +87,9 @@ export default function GameScenePage() {
             onClick={() => {
               // 1) Marcamos completado el minijuego actual
               dispatch(markComplete(Number(id)))
-              // 2) Redirigimos de vuelta al dashboard
+              // 2) Desbloqueamos el siguiente minijuego
+              dispatchRedux(unlockNextGame())
+              // 3) Redirigimos de vuelta al dashboard
               navigate('/games')
             }}
             className="py-2 px-4 bg-green-600 text-white rounded"
