@@ -5,6 +5,8 @@ import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
 import { useAppDispatch } from '../app/hooks'
 import { markComplete } from '../app/store'
+import { useDispatch } from 'react-redux'
+import { unlockNextGame } from '../features/personal/personalSlice'
 
 export default function GameScenePage() {
   const { id } = useParams<{ id: string }>()
