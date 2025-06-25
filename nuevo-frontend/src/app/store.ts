@@ -30,7 +30,7 @@ const progressSlice = createSlice({
   },
 })
 
-// 3) Slice “personal” con cvAnalysis
+// 3) Slice “personal” con cvAnalysis Y PROGRESO DE MINIJUEGOS
 interface PersonalState {
   firstName: string
   lastName: string
@@ -43,8 +43,11 @@ interface PersonalState {
   willingToRelocate: boolean
   hasDisabilityCert: boolean
 
-  // Nuevo campo opcional
+  // Campo opcional de análisis de CV
   cvAnalysis?: CvAnalysis
+
+  // Campo para el progreso de minijuegos
+  unlockedGames: number
 }
 
 const initialPersonal: PersonalState = {
@@ -59,8 +62,8 @@ const initialPersonal: PersonalState = {
   willingToRelocate: false,
   hasDisabilityCert: false,
 
-  // inicializamos en undefined
   cvAnalysis: undefined,
+  unlockedGames: 1, // Solo el primer minijuego desbloqueado al inicio
 }
 
 const personalSlice = createSlice({
@@ -91,9 +94,15 @@ const personalSlice = createSlice({
     ) {
       Object.assign(state, action.payload)
     },
-    // 4) Reducer para poblar el análisis del CV
+    // Reducer para poblar el análisis del CV
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
       state.cvAnalysis = action.payload
+    },
+    // Reducer para desbloquear el siguiente minijuego
+    unlockNextGame(state) {
+      if (state.unlockedGames < 10) {
+        state.unlockedGames += 1;
+      }
     },
   },
 })
@@ -131,7 +140,7 @@ export const persistor = persistStore(store)
 
 // 10) Exportamos las actions
 export const { markComplete } = progressSlice.actions
-export const { saveContact, savePreferences, saveCvAnalysis } = personalSlice.actions
+export const { saveContact, savePreferences, saveCvAnalysis, unlockNextGame } = personalSlice.actions
 export { toggleContrast, setFontScale }
 
 // 11) Exportamos los tipos para usar en useSelector / useDispatch
