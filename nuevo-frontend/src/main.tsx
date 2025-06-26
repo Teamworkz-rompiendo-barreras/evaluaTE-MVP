@@ -26,50 +26,48 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <AccessibilitySettings />
         <BrowserRouter>
           <Routes>
-            {/* raíz → Paso 1 */}
+            {/* raíz → Paso 1: datos personales */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
-
-            {/* Paso 1: datos personales (sin protección) */}
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
 
-            {/* Paso 2: preferencias (sin protección) */}
-            <Route path="/register/preferences" element={<PreferencesStep />} />
+            {/* Paso 2: preferencias (después de CV, pero aquí si no la quieres proteger al registro) */}
+            <Route path="/preferences" element={<PreferencesStep />} />
 
-            {/* Dashboard de juegos (requiere haber completado registro y preferencias) */}
+            {/* Dashboard de juegos (requiere haber completado registro) */}
             <Route
               path="/games"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute step="games">
                   <GameDashboardPage />
                 </ProtectedRoute>
               }
             />
 
-            {/* Minijuego individual (requiere estar registrado) */}
+            {/* Minijuego individual (requiere registro) */}
             <Route
               path="/games/:id"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute step="games">
                   <GameScenePage />
                 </ProtectedRoute>
               }
             />
 
-            {/* Subida de CV (protegida) */}
+            {/* Subida de CV (requiere completar juegos) */}
             <Route
-              path="/subircv"
+              path="/upload-cv"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute step="uploadCV">
                   <UploadCVPage />
                 </ProtectedRoute>
               }
             />
 
-            {/* Resultados finales (protegida) */}
+            {/* Resultados finales e informe (requiere CV + prefs) */}
             <Route
               path="/resultados"
               element={
-                <ProtectedRoute step="games">
+                <ProtectedRoute step="resultados">
                   <ResultadosPage />
                 </ProtectedRoute>
               }
