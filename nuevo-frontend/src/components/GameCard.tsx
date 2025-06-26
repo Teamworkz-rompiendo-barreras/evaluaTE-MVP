@@ -29,7 +29,6 @@ const GameCard: FC<GameCardProps> = ({ id, name, locked, completed }) => {
         {name}
         {completed && (
           <span className="ml-2 text-green-600 font-bold" title="Minijuego completado">
-            ✔️
           </span>
         )}
       </span>
