@@ -47,7 +47,7 @@ export default function GameDashboardPage() {
       {Object.keys(completed).length === skills.length && (
         <button
           className="mt-8 py-2 px-4 bg-green-600 text-white rounded"
-          onClick={() => navigate('/upload-cv')}
+          onClick={() => window.location.href = '/upload-cv'}
         >
           Avanzar a subir CV
         </button>
