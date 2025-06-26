@@ -1,86 +1,85 @@
-import React, { useState } from 'react'
-import { useAppDispatch } from '../app/hooks'
-import { saveCvAnalysis, type CvAnalysis } from '../features/personal/personalSlice'
-import { useNavigate } from 'react-router-dom'
+// src/pages/UploadCVPage.tsx
+import React, { useState, useEffect } from 'react'
+import { useSelector, useDispatch } from 'react-redux'
+import { useNavigate, Link } from 'react-router-dom'
+import { saveCV } from '../features/progress/progressSlice' // Ajusta import si tu slice se llama distinto
 
 export default function UploadCVPage() {
-  const [file, setFile] = useState<File | null>(null)
-  const [loading, setLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
-
-  const dispatch = useAppDispatch()
+  const dispatch = useDispatch()
   const navigate = useNavigate()
 
+  // Selector: posible CV ya subido
+  const existingCV: File | null = useSelector(
+    (state: any) => state.progress.cvFile || null
+  )
+
+  const [file, setFile] = useState<File | null>(null)
+
+  // Si ya hay CV, redirige automáticamente a preview
+  useEffect(() => {
+    if (existingCV) {
+      // No navega automáticamente, dejamos al usuario revisar
+    }
+  }, [existingCV])
+
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
-    setError(null)
-    if (e.target.files?.[0]) {
+    if (e.target.files && e.target.files[0]) {
       setFile(e.target.files[0])
     }
   }
 
-  const handleSubmit = async (e: React.FormEvent) => {
+  const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) return
-
-    setLoading(true)
-    setError(null)
-
-    try {
-      const form = new FormData()
-      form.append('cv', file)
-
-      const resp = await fetch('/api/upload-cv', {
-        method: 'POST',
-        body: form,
-      })
-
-      if (!resp.ok) {
-        throw new Error(`Error en el servidor: ${resp.status}`)
-      }
-
-      const analysis = (await resp.json()) as CvAnalysis
-
-      dispatch(saveCvAnalysis(analysis))
-      navigate('/resultados')
-    } catch (err: any) {
-      console.error(err)
-      setError('No se pudo analizar tu CV. Por favor, inténtalo de nuevo.')
-    } finally {
-      setLoading(false)
-    }
+    // Guarda en Redux
+    dispatch(saveCV(file))
+    // Avanza a preferencias
+    navigate('/preferences')
   }
 
+  // Si ya existe CV, mostramos preview + botón
+  if (existingCV) {
+    return (
+      <div className="p-4">
+        <h1 className="text-2xl font-bold mb-4">Tu CV</h1>
+        <p className="mb-4">Ya has subido un CV. Puedes revisarlo aquí:</p>
+        <object
+          data={URL.createObjectURL(existingCV)}
+          type="application/pdf"
+          width="100%"
+          height="600px"
+        >
+          <p>Tu navegador no soporta previsualizar PDFs.</p>
+        </object>
+        <Link
+          to="/preferences"
+          className="mt-6 inline-block bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
+        >
+          Siguiente: preferencias laborales
+        </Link>
+      </div>
+    )
+  }
+
+  // Si no hay CV, mostramos formulario de subida
   return (
-    <form
-      onSubmit={handleSubmit}
-      className="max-w-md mx-auto p-6 space-y-4"
-      aria-busy={loading}
-    >
-      <h1 className="text-2xl font-bold">Sube tu CV</h1>
-      <label htmlFor="cv-file" className="block font-medium mb-2">
-        Selecciona tu CV en PDF
-      </label>
-      <input
-        id="cv-file"
-        type="file"
-        accept=".pdf"
-        onChange={handleChange}
-        disabled={loading}
-        aria-label="Selecciona tu CV en PDF"
-      />
-      {file && <p className="text-green-600">CV seleccionado: {file.name}</p>}
-      {error && (
-        <p role="alert" className="text-red-600">
-          {error}
-        </p>
-      )}
-      <button
-        type="submit"
-        disabled={!file || loading}
-        className="btn-primary mt-4 w-full disabled:opacity-50"
-      >
-        {loading ? 'Analizando…' : 'Analizar CV'}
-      </button>
-    </form>
+    <div className="p-4">
+      <h1 className="text-2xl font-bold mb-4">Sube tu CV</h1>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <input
+          type="file"
+          accept=".pdf,.doc,.docx"
+          onChange={handleChange}
+          className="block"
+        />
+        <button
+          type="submit"
+          disabled={!file}
+          className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:opacity-50"
+        >
+          Subir y continuar
+        </button>
+      </form>
+    </div>
   )
 }
