@@ -3,16 +3,16 @@ import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 // Páginas
-import DatosPersonalesPage   from './pages/DatosPersonalesPage'
-import PreferencesStep        from './features/personal/PreferencesStep'
-import GameDashboardPage      from './pages/GameDashboardPage'
-import GameScenePage          from './pages/GameScenePage'
-import UploadCVPage           from './pages/UploadCVPage'
-import ResultadosPage         from './pages/ResultadosPage'
+import DatosPersonalesPage from './pages/DatosPersonalesPage'
+import PreferencesStep      from './features/personal/PreferencesStep'
+import GameDashboardPage    from './pages/GameDashboardPage'
+import GameScenePage        from './pages/GameScenePage'
+import UploadCVPage         from './pages/UploadCVPage'
+import ResultadosPage       from './pages/ResultadosPage'
 
 // Componentes
-import ProtectedRoute         from './components/ProtectedRoute'
-import { Toaster }            from 'react-hot-toast'
+import ProtectedRoute from './components/ProtectedRoute'
+import { Toaster }    from 'react-hot-toast'
 
 export default function App() {
   return (
@@ -21,56 +21,59 @@ export default function App() {
       <Toaster position="top-center" />
 
       <Routes>
-        {/* 1) Inicio redirige a registro */}
+        {/* 1) Inicio → registro (datos personales) */}
         <Route path="/" element={<Navigate to="/register/contact" replace />} />
-
-        {/* 2) Registro paso 1 */}
         <Route path="/register/contact" element={<DatosPersonalesPage />} />
 
-        {/* 3) Registro paso 2 */}
-        <Route path="/register/preferences" element={<PreferencesStep />} />
-
-        {/* 4) Dashboard de minijuegos */}
+        {/* 2) Dashboard de minijuegos */}
         <Route
           path="/games"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute step="games">
               <GameDashboardPage />
             </ProtectedRoute>
           }
         />
-
-        {/* 5) Juego individual */}
         <Route
           path="/games/:id"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute step="games">
               <GameScenePage />
             </ProtectedRoute>
           }
         />
 
-        {/* 6) Subida de CV */}
+        {/* 3) Subida de CV */}
         <Route
           path="/upload-cv"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute step="uploadCV">
               <UploadCVPage />
             </ProtectedRoute>
           }
         />
 
-        {/* 7) Resultados / informe */}
+        {/* 4) Preferencias laborales (tras CV) */}
+        <Route
+          path="/preferences"
+          element={
+            <ProtectedRoute step="preferences">
+              <PreferencesStep />
+            </ProtectedRoute>
+          }
+        />
+
+        {/* 5) Resultados e Informe */}
         <Route
           path="/resultados"
           element={
-            <ProtectedRoute>
+            <ProtectedRoute step="resultados">
               <ResultadosPage />
             </ProtectedRoute>
           }
         />
 
-        {/* 8) Cualquier otra ruta vuelve al registro */}
+        {/* 6) Cualquier otra ruta → inicio registro */}
         <Route path="*" element={<Navigate to="/register/contact" replace />} />
       </Routes>
     </BrowserRouter>
