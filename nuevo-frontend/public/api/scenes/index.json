@@ -1,4 +1,12 @@
 [
   { "id": 0, "title": "Minijuego 0" },
-  { "id": 1, "title": "Minijuego 1" }
+  { "id": 1, "title": "Minijuego 1" },
+  { "id": 2, "title": "Minijuego 2" },
+  { "id": 3, "title": "Minijuego 3" },
+  { "id": 4, "title": "Minijuego 4" },
+  { "id": 5, "title": "Minijuego 5" },
+  { "id": 6, "title": "Minijuego 6" },
+  { "id": 7, "title": "Minijuego 7" },
+  { "id": 8, "title": "Minijuego 8" },
+  { "id": 9, "title": "Minijuego 9" }
 ]
