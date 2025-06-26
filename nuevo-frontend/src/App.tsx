@@ -7,10 +7,13 @@ import DatosPersonalesPage from './pages/DatosPersonalesPage'
 import PreferencesStep      from './features/personal/PreferencesStep'
 import GameScenePage        from './pages/GameScenePage'
 import ProtectedRoute       from './components/ProtectedRoute'
+import { Toaster } from 'react-hot-toast'
 
 export default function App() {
   return (
     <BrowserRouter>
+      {/* Toaster va aquí, fuera de <Routes> */}
+      <Toaster position="top-center" />
       <Routes>
         {/* Redirige la raíz al primer paso de registro */}
         <Route path="/" element={<Navigate to="/register/contact" replace />} />
