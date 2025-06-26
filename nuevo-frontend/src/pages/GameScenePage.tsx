@@ -60,12 +60,13 @@ export default function GameScenePage() {
             onClick={() => {
               dispatch(markComplete(gameNum))
               toast.success(`¡Has completado "${scene.title}"!`)
-              // Si era último, a CV; si no, al siguiente juego
-              if (gameNum === skills.length) {
-                navigate('/upload-cv')
-              } else {
-                navigate(`/games/${gameNum+1}`)
-              }
+                // Si no quedan más juegos, al medallero; si no, al siguiente juego
+            const nextGame = gameNum + 1
+            if (nextGame <= skills.length) {
+             navigate(`/games/${nextGame}`)
+            } else {
+             navigate('/games')
+            }
             }}
             className="py-2 px-4 bg-green-600 text-white rounded"
           >
