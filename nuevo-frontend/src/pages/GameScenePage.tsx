@@ -43,12 +43,25 @@ export default function GameScenePage() {
     )
   }
   if (isError || !scene) {
-    return (
-      <main className="flex items-center justify-center min-h-screen">
-        <p>Error al cargar la escena.</p>
-      </main>
-    )
-  }
+  return (
+    <main className="flex flex-col items-center justify-center min-h-screen gap-6">
+      <p className="text-lg font-semibold text-red-600">
+        Error al cargar la escena.
+      </p>
+      <p>
+        Es posible que este minijuego aún no esté disponible.  
+        Puedes volver al menú de minijuegos y probar otro.
+      </p>
+      <button
+        className="py-2 px-4 bg-blue-600 text-white rounded"
+        onClick={() => window.location.href = '/games'}
+      >
+        Volver al menú de minijuegos
+      </button>
+    </main>
+  )
+}
+
 
   // 4️⃣ Render final
   return (
