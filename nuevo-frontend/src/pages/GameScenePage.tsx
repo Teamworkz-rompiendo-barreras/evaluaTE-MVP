@@ -6,24 +6,32 @@ import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
 import { useAppDispatch } from '../app/hooks'
 import { markComplete } from '../app/store'
-import { useDispatch } from 'react-redux'
-import { unlockNextGame } from '../features/personal/personalSlice'
+
+// Array de habilidades para saber cuántos minijuegos hay
+const skills = [
+  "Comunicación",
+  "Trabajo en equipo",
+  "Autonomía",
+  "Gestión del tiempo",
+  "Flexibilidad",
+  "Pensamiento crítico",
+  "Resolución de problemas",
+  "Creatividad",
+  "Empatía",
+  "Liderazgo",
+]
 
 export default function GameScenePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
-  const dispatchRedux = useDispatch() // <-- Añadimos este para las acciones generales
 
   // 1️⃣ Traemos la escena con RTK Query, y la pedimos solo si tenemos un id
   const {
     data: scene,
     isLoading,
     isError
-  } = useGetSceneQuery(id ?? '', {
-    // no lanzamos la petición si id es undefined
-    skip: !id
-  })
+  } = useGetSceneQuery(id ?? '', { skip: !id })
 
   // 2️⃣ Inicializamos el controlador con el número de pasos
   const stepsCount = scene?.steps.length ?? 0
@@ -43,25 +51,24 @@ export default function GameScenePage() {
     )
   }
   if (isError || !scene) {
-  return (
-    <main className="flex flex-col items-center justify-center min-h-screen gap-6">
-      <p className="text-lg font-semibold text-red-600">
-        Error al cargar la escena.
-      </p>
-      <p>
-        Es posible que este minijuego aún no esté disponible.  
-        Puedes volver al menú de minijuegos y probar otro.
-      </p>
-      <button
-        className="py-2 px-4 bg-blue-600 text-white rounded"
-        onClick={() => window.location.href = '/games'}
-      >
-        Volver al menú de minijuegos
-      </button>
-    </main>
-  )
-}
-
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen gap-6">
+        <p className="text-lg font-semibold text-red-600">
+          Error al cargar la escena.
+        </p>
+        <p>
+          Es posible que este minijuego aún no esté disponible.  
+          Puedes volver al menú de minijuegos y probar otro.
+        </p>
+        <button
+          className="py-2 px-4 bg-blue-600 text-white rounded"
+          onClick={() => navigate('/games')}
+        >
+          Volver al menú de minijuegos
+        </button>
+      </main>
+    )
+  }
 
   // 4️⃣ Render final
   return (
@@ -99,16 +106,18 @@ export default function GameScenePage() {
         ) : (
           <button
             onClick={() => {
+              const gameNum = Number(id)
               // 1) Marcamos completado el minijuego actual
-              dispatch(markComplete(Number(id)))
-              // 2) Desbloqueamos el siguiente minijuego
-              dispatchRedux(unlockNextGame())
-              // 3) Redirigimos de vuelta al dashboard
-              toast.success('¡Enhorabuena! Has desbloqueado el siguiente minijuego 🎉')
-              navigate('/games')
+              dispatch(markComplete(gameNum))
+              toast.success(`¡Has completado "${scene.title}"!`)
+
+              // 2) Si era el último, vamos a subir CV; si no, avanzamos al siguiente juego
+              if (gameNum === skills.length) {
+                navigate('/upload-cv')
+              } else {
+                navigate(`/games/${gameNum + 1}`)
+              }
             }}
-       
-            
             className="py-2 px-4 bg-green-600 text-white rounded"
           >
             Finalizar
