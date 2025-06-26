@@ -1,4 +1,5 @@
 // src/pages/GameScenePage.tsx
+import toast from 'react-hot-toast'
 import React from 'react'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGetSceneQuery } from '../features/games/scenesApi'
@@ -90,8 +91,11 @@ export default function GameScenePage() {
               // 2) Desbloqueamos el siguiente minijuego
               dispatchRedux(unlockNextGame())
               // 3) Redirigimos de vuelta al dashboard
+              toast.success('¡Enhorabuena! Has desbloqueado el siguiente minijuego 🎉')
               navigate('/games')
             }}
+       
+            
             className="py-2 px-4 bg-green-600 text-white rounded"
           >
             Finalizar
