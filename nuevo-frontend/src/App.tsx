@@ -8,6 +8,7 @@ import PreferencesStep      from './features/personal/PreferencesStep'
 import GameScenePage        from './pages/GameScenePage'
 import ProtectedRoute       from './components/ProtectedRoute'
 import { Toaster } from 'react-hot-toast'
+import UploadCVPage from './pages/UploadCVPage'
 
 export default function App() {
   return (
@@ -38,6 +39,11 @@ export default function App() {
               <GameScenePage />
             </ProtectedRoute>
           }
+        />
+        
+        <Route
+          path="/upload-cv"
+          element={<UploadCVPage />}
         />
 
         {/* Si la URL no coincide con nada, vuelve siempre al registro */}
