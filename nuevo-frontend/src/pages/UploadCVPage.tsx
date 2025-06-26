@@ -1,4 +1,3 @@
-// src/pages/UploadCVPage.tsx
 import React, { useState } from 'react'
 import { useAppDispatch } from '../app/hooks'
 import { saveCvAnalysis, type CvAnalysis } from '../features/personal/personalSlice'
@@ -39,7 +38,6 @@ export default function UploadCVPage() {
         throw new Error(`Error en el servidor: ${resp.status}`)
       }
 
-      // Aseguramos tipado
       const analysis = (await resp.json()) as CvAnalysis
 
       dispatch(saveCvAnalysis(analysis))
@@ -59,21 +57,23 @@ export default function UploadCVPage() {
       aria-busy={loading}
     >
       <h1 className="text-2xl font-bold">Sube tu CV</h1>
-
+      <label htmlFor="cv-file" className="block font-medium mb-2">
+        Selecciona tu CV en PDF
+      </label>
       <input
+        id="cv-file"
         type="file"
         accept=".pdf"
         onChange={handleChange}
         disabled={loading}
         aria-label="Selecciona tu CV en PDF"
       />
-
+      {file && <p className="text-green-600">CV seleccionado: {file.name}</p>}
       {error && (
         <p role="alert" className="text-red-600">
           {error}
         </p>
       )}
-
       <button
         type="submit"
         disabled={!file || loading}
