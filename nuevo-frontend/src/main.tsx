@@ -30,8 +30,14 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
 
-            {/* Paso 2: preferencias (sin protección de flujo) */}
-            <Route path="/register/preferences" element={<PreferencesStep />} />
+            {/* Paso 3: preferencias (tras CV) */}
+            <Route
+              path="/preferences"
+              element={
+               <ProtectedRoute step="preferences">
+                 <PreferencesStep />
+               </ProtectedRoute>
+       }
 
             {/* Dashboard de juegos (requiere registro) */}
             <Route
@@ -55,7 +61,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
 
             {/* Subida de CV (requiere completar juegos) */}
             <Route
-              path="/subircv"
+              path="/upload-cv"
               element={
                 <ProtectedRoute step="uploadCV">
                   <UploadCVPage />
