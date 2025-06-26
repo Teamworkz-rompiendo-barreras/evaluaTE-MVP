@@ -69,7 +69,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route
               path="/resultados"
               element={
-                <ProtectedRoute>
+                <ProtectedRoute step="games">
                   <ResultadosPage />
                 </ProtectedRoute>
               }
