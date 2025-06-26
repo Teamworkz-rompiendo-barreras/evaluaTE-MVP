@@ -5,9 +5,10 @@ interface GameCardProps {
   id: number;
   name: string;
   locked: boolean;
+  completed: boolean;
 }
 
-const GameCard: FC<GameCardProps> = ({ id, name, locked }) => {
+const GameCard: FC<GameCardProps> = ({ id, name, locked, completed }) => {
   const dataCy = `game-card-${id}`;
   const ariaDisabled = locked ? 'true' : 'false';
   const commonClasses =
@@ -23,8 +24,15 @@ const GameCard: FC<GameCardProps> = ({ id, name, locked }) => {
           : `${commonClasses} hover:scale-105 bg-white shadow`
       }
     >
-      <div className="text-4xl mb-2">{locked ? '🔒' : '🎮'}</div>
-      <span className="text-sm font-medium">{name}</span>
+      <div className="text-4xl mb-2">{locked ? '🔒' : completed ? '✔️' : '🎮'}</div>
+      <span className="text-sm font-medium">
+        {name}
+        {completed && (
+          <span className="ml-2 text-green-600 font-bold" title="Minijuego completado">
+            ✔️
+          </span>
+        )}
+      </span>
     </div>
   );
 
@@ -42,5 +50,3 @@ const GameCard: FC<GameCardProps> = ({ id, name, locked }) => {
 };
 
 export default GameCard;
-
-
