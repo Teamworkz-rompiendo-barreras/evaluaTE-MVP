@@ -8,7 +8,14 @@ export interface CvAnalysis {
   weaknesses: string[]
 }
 
-// 2) Estado principal del usuario
+// 2) Interfaz por habilidad blanda evaluada
+export interface SoftSkillResult {
+  skill: string
+  level: 'Bajo' | 'Medio' | 'Alto'
+  confidence: number // puntuación entre 0 y 1
+}
+
+// 3) Estado principal del usuario
 export interface PersonalState {
   firstName: string
   lastName: string
@@ -25,9 +32,11 @@ export interface PersonalState {
 
   cvAnalysis?: CvAnalysis // Análisis opcional del CV
   unlockedGames: number // Número de minijuegos desbloqueados
+
+  softSkills?: SoftSkillResult[] // Habilidades blandas evaluadas
 }
 
-// 3) Estado inicial por defecto
+// 4) Estado inicial por defecto
 const initialState: PersonalState = {
   firstName: '',
   lastName: '',
@@ -44,9 +53,10 @@ const initialState: PersonalState = {
 
   cvAnalysis: undefined,
   unlockedGames: 1, // Solo el primer juego disponible al inicio
+  softSkills: undefined, // Inicialmente vacío
 }
 
-// 4) Definición del slice
+// 5) Definición del slice
 const personalSlice = createSlice({
   name: 'personal',
   initialState,
@@ -96,10 +106,21 @@ const personalSlice = createSlice({
         state.unlockedGames += 1
       }
     },
+
+    // Guarda habilidades blandas evaluadas (desde minijuegos)
+    saveSoftSkills(state, action: PayloadAction<SoftSkillResult[]>) {
+      state.softSkills = action.payload
+    },
   },
 })
 
 // Exportamos las acciones y el reducer
-export const { saveContact, savePreferences, saveCvAnalysis, unlockNextGame } =
-  personalSlice.actions
+export const {
+  saveContact,
+  savePreferences,
+  saveCvAnalysis,
+  unlockNextGame,
+  saveSoftSkills,
+} = personalSlice.actions
+
 export default personalSlice.reducer
