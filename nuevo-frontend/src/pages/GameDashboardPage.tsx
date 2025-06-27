@@ -3,43 +3,119 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 
-// Lista de 10 minijuegos
-const GAMES = Array.from({ length: 10 }, (_, i) => {
-  const id = String(i + 1)
-  return {
-    id,
-    title: `Minijuego ${id}`,
-    icon: `/icons/game${id}.svg`
-  }
-})
+// Lista de minijuegos con nombre, descripción e ícono
+const GAMES = [
+  {
+    id: '1',
+    title: 'Primera llamada del día',
+    skill: 'Toma de decisiones',
+    icon: '/icons/game1.svg',
+    day: 'Lunes',
+  },
+  {
+    id: '2',
+    title: 'Algo no cuadra',
+    skill: 'Resolución de problemas',
+    icon: '/icons/game2.svg',
+    day: 'Martes',
+  },
+  {
+    id: '3',
+    title: 'El envío urgente',
+    skill: 'Trabajo en equipo',
+    icon: '/icons/game3.svg',
+    day: 'Miércoles',
+  },
+  {
+    id: '4',
+    title: 'Día de tensiones',
+    skill: 'Gestión emocional',
+    icon: '/icons/game4.svg',
+    day: 'Jueves',
+  },
+  {
+    id: '5',
+    title: 'Reunión sorpresa',
+    skill: 'Comunicación',
+    icon: '/icons/game5.svg',
+    day: 'Viernes',
+  },
+  {
+    id: '6',
+    title: '¿Y esto para qué sirve?',
+    skill: 'Curiosidad y aprendizaje continuo',
+    icon: '/icons/game6.svg',
+    day: 'Extra',
+  },
+  {
+    id: '7',
+    title: 'La caja rota',
+    skill: 'Creatividad',
+    icon: '/icons/game7.svg',
+    day: 'Extra',
+  },
+  {
+    id: '8',
+    title: 'Ruta equivocada',
+    skill: 'Flexibilidad',
+    icon: '/icons/game8.svg',
+    day: 'Extra',
+  },
+  {
+    id: '9',
+    title: 'Pedido duplicado',
+    skill: 'Pensamiento analítico',
+    icon: '/icons/game9.svg',
+    day: 'Extra',
+  },
+  {
+    id: '10',
+    title: 'Sistema nuevo',
+    skill: 'Autonomía',
+    icon: '/icons/game10.svg',
+    day: 'Extra',
+  },
+]
 
 export default function GameDashboardPage() {
   const completedGames: string[] = useSelector(
     (state: any) => state.progress.completedGames || []
   )
+  const unlockedGames: number = useSelector(
+    (state: any) => state.personal.unlockedGames || 1
+  )
 
-  // Si ya completó los 10: medallero 5×2
+  // Si completó todos los juegos → mostrar medallero final
   if (completedGames.length >= GAMES.length) {
     return (
       <div className="p-6 text-center">
         <h1 className="text-3xl font-bold mb-6">🎉 ¡Enhorabuena!</h1>
         <p className="mb-6">Has completado tu semana laboral. Aquí tu medallero:</p>
+
+        {/* Medallero en rejilla */}
         <div className="grid grid-cols-5 grid-rows-2 gap-6 max-w-screen-lg mx-auto mb-8">
-          {GAMES.map((g) => (
-            <div key={g.id} className="flex flex-col items-center">
-              <img
-                src={g.icon}
-                alt={g.title}
-                className="w-16 h-16 mb-2"
-                onError={(e) => { e.currentTarget.src = '/icons/fallback.svg' }}
-              />
-              <span className="text-sm">{g.title}</span>
-            </div>
-          ))}
+          {GAMES.map((game) => {
+            const completed = completedGames.includes(game.id)
+            return (
+              <div key={game.id} className="flex flex-col items-center">
+                <img
+                  src={completed ? game.icon : '/icons/locked.svg'}
+                  alt={game.title}
+                  className="w-16 h-16 mb-2"
+                  onError={(e) => {
+                    e.currentTarget.src = '/icons/fallback.svg'
+                  }}
+                />
+                <span className="text-sm">{game.title}</span>
+              </div>
+            )
+          })}
         </div>
+
+        {/* Botón para subir CV */}
         <Link
           to="/upload-cv"
-          className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700"
+          className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors"
         >
           Ver mi informe completo
         </Link>
@@ -47,28 +123,71 @@ export default function GameDashboardPage() {
     )
   }
 
-  // Juegos pendientes en 5 columnas
-  const pending = GAMES.filter((g) => !completedGames.includes(g.id))
+  // Juegos disponibles hasta el número desbloqueado
+  const availableGames = GAMES.slice(0, unlockedGames)
+
+  // Juegos completados
+  const pendingGames = availableGames.filter((game) => !completedGames.includes(game.id))
 
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Minijuegos</h1>
+
+      {/* Progreso visual */}
+      <div className="mb-6 text-center">
+        <p className="text-gray-600">
+          Has completado{' '}
+          <span className="font-semibold">{completedGames.length}</span> de{' '}
+          <span className="font-semibold">{availableGames.length}</span> minijuegos disponibles
+        </p>
+        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
+          <div
+            className="bg-green-500 h-2.5 rounded-full"
+            style={{
+              width: `${(completedGames.length / availableGames.length) * 100}%`,
+            }}
+          ></div>
+        </div>
+      </div>
+
+      {/* Lista de juegos pendientes */}
       <div className="grid grid-cols-5 gap-6 max-w-screen-lg mx-auto">
-        {pending.map((g) => (
-          <Link
-            key={g.id}
-            to={`/games/${g.id}`}
-            className="flex flex-col items-center p-4 border rounded-lg hover:bg-gray-50"
-          >
-            <img
-              src={g.icon}
-              alt={g.title}
-              className="w-12 h-12 mb-2"
-              onError={(e) => { e.currentTarget.src = '/icons/fallback.svg' }}
-            />
-            <span className="font-medium">{g.title}</span>
-          </Link>
-        ))}
+        {availableGames.map((game) => {
+          const isCompleted = completedGames.includes(game.id)
+          const isUnlocked = Number(game.id) <= unlockedGames
+
+          return (
+            <div
+              key={game.id}
+              className={`flex flex-col items-center p-4 border rounded-lg transition-all ${
+                isCompleted
+                  ? 'opacity-60 cursor-not-allowed'
+                  : isUnlocked
+                  ? 'hover:bg-gray-50 cursor-pointer'
+                  : 'opacity-40 cursor-default'
+              }`}
+            >
+              <Link
+                to={isUnlocked ? `/games/${game.id}` : '#'}
+                className="w-full h-full"
+                onClick={(e) =>
+                  !isUnlocked && e.preventDefault()
+                }
+              >
+                <img
+                  src={isCompleted ? game.icon : '/icons/unlocked-game.svg'}
+                  alt={game.title}
+                  className="w-12 h-12 mb-2 mx-auto"
+                  onError={(e) => {
+                    e.currentTarget.src = '/icons/fallback.svg'
+                  }}
+                />
+                <span className="block font-medium text-center">{game.title}</span>
+                <span className="text-xs text-gray-500 text-center">{game.skill}</span>
+              </Link>
+            </div>
+          )
+        })}
       </div>
     </div>
   )
