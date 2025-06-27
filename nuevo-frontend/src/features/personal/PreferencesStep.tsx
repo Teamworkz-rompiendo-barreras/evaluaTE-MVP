@@ -1,75 +1,106 @@
-import React from 'react'
-import { render, screen, fireEvent } from '@testing-library/react'
-import { useForm, SubmitHandler } from 'react-hook-form'
-import { useNavigate, Link } from 'react-router-dom'
-import { useAppDispatch, useAppSelector } from '../../app/hooks'
-import { savePreferences } from './personalSlice'
-import { markGameComplete } from '../../app/store'
-import ProgressBar from '../../components/ProgressBar'
+import React from "react";
+import { useForm, SubmitHandler } from "react-hook-form";
+import { useNavigate } from "react-router-dom";
+import { useAppDispatch, useAppSelector } from "../../app/hooks";
+import { savePreferences } from "./personalSlice";
+import { markGameComplete } from "../../features/progress/progressSlice";
+import ProgressBar from "../../components/ProgressBar";
 
+// Tipos para los datos del formulario
 type PrefData = {
-  jobPreferences: string     // ahora texto libre
-  workMode: 'remoto' | 'presencial' | 'híbrido'
-  availability: 'mañana' | 'tarde' | 'completa'
-  startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
-  willingToRelocate: boolean
-  hasDisabilityCert: boolean
-}
+  jobPreferences: string;
+  workMode: "remoto" | "presencial" | "híbrido";
+  availability: "mañana" | "tarde" | "completa";
+  startDate:
+    | "inmediata"
+    | "15_días"
+    | "1_mes"
+    | "más_de_1_mes";
+  willingToRelocate: boolean;
+  hasDisabilityCert: boolean;
+};
 
 export default function PreferencesStep() {
-  const dispatch = useAppDispatch()
-  const navigate = useNavigate()
-  const current = useAppSelector(s => s.personal)
+  const dispatch = useAppDispatch();
+  const navigate = useNavigate();
 
-  const { register, handleSubmit, formState: { errors } } = useForm<PrefData>({
-   defaultValues: {
-     jobPreferences:    current.jobPreferences,
-     workMode:          current.workMode,
-     availability:      current.availability,
-     startDate:         current.startDate,
-     willingToRelocate: current.willingToRelocate,
-     hasDisabilityCert: current.hasDisabilityCert
-   } as PrefData  // fuerza a TS a ver aquí un PrefData completo
- });
+  // Accedemos al estado actual del personal
+  const current = useAppSelector((state) => state.personal);
 
-  const onSubmit: SubmitHandler<PrefData> = data => {
+  const {
+    register,
+    handleSubmit,
+    formState: { errors },
+  } = useForm<PrefData>({
+    defaultValues: {
+      jobPreferences: current.jobPreferences || "",
+      workMode: current.workMode || "presencial",
+      availability: current.availability || "completa",
+      startDate: current.startDate || "inmediata",
+      willingToRelocate: Boolean(current.willingToRelocate),
+      hasDisabilityCert: Boolean(current.hasDisabilityCert),
+    },
+  });
+
+  const onSubmit: SubmitHandler<PrefData> = (data) => {
     if (!data.jobPreferences.trim()) {
-      alert('Indica el tipo de trabajo que buscas.')
-      return
+      alert("Indica el tipo de trabajo que buscas.");
+      return;
     }
-    dispatch(savePreferences(data))
-    dispatch(markGameComplete('1'))
-    navigate('/games')
-  }
+
+    // Guardamos preferencias
+    dispatch(savePreferences(data));
+
+    // Marcamos el paso como completado
+    dispatch(markGameComplete("preferences"));
+
+    // Navegamos a juegos
+    navigate("/games");
+  };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto p-6 space-y-6">
+    <form
+      onSubmit={handleSubmit(onSubmit)}
+      className="max-w-md mx-auto p-6 space-y-6 bg-white rounded shadow"
+    >
+      {/* Barra de progreso */}
       <ProgressBar step={2} total={2} />
 
-      <h2 className="text-2xl font-bold">Paso 2 de 2 - Tus preferencias</h2>
+      {/* Título */}
+      <h2 className="text-2xl font-bold text-center">
+        Paso 2 de 2 - Tus preferencias
+      </h2>
 
+      {/* Campo: Tipo de trabajo */}
       <div>
-        <label htmlFor="jobPreferences" className="block font-medium">
+        <label htmlFor="jobPreferences" className="block font-medium mb-1">
           ¿Qué tipo de trabajo estás buscando?
         </label>
         <input
           id="jobPreferences"
           type="text"
-          {...register('jobPreferences', { required: 'Campo obligatorio' })}
           placeholder="Ej. Atención al cliente, Recepción, Desarrollo web…"
-          className="mt-1 block w-full border rounded px-3 py-2"
+          {...register("jobPreferences", {
+            required: "Campo obligatorio",
+          })}
+          className="w-full border rounded px-3 py-2"
         />
         {errors.jobPreferences && (
-          <p className="text-red-600 mt-1">{errors.jobPreferences.message}</p>
+          <p className="text-red-600 mt-1">
+            {errors.jobPreferences.message}
+          </p>
         )}
       </div>
 
+      {/* Campo: Modalidad */}
       <div>
-        <label htmlFor="workMode" className="block font-medium">Modalidad</label>
+        <label htmlFor="workMode" className="block font-medium mb-1">
+          Modalidad
+        </label>
         <select
           id="workMode"
-          {...register('workMode', { required: 'Elige modalidad' })}
-          className="mt-1 block w-full border rounded px-3 py-2"
+          {...register("workMode", { required: "Elige una opción" })}
+          className="w-full border rounded px-3 py-2"
         >
           <option value="remoto">Remoto</option>
           <option value="presencial">Presencial</option>
@@ -77,12 +108,15 @@ export default function PreferencesStep() {
         </select>
       </div>
 
+      {/* Campo: Disponibilidad horaria */}
       <div>
-        <label htmlFor="availability" className="block font-medium">Disponibilidad horaria</label>
+        <label htmlFor="availability" className="block font-medium mb-1">
+          Disponibilidad horaria
+        </label>
         <select
           id="availability"
-          {...register('availability', { required: 'Elige disponibilidad' })}
-          className="mt-1 block w-full border rounded px-3 py-2"
+          {...register("availability", { required: "Elige una opción" })}
+          className="w-full border rounded px-3 py-2"
         >
           <option value="mañana">Mañana</option>
           <option value="tarde">Tarde</option>
@@ -90,12 +124,15 @@ export default function PreferencesStep() {
         </select>
       </div>
 
+      {/* Campo: Incorporación */}
       <div>
-        <label htmlFor="startDate" className="block font-medium">Incorporación</label>
+        <label htmlFor="startDate" className="block font-medium mb-1">
+          Fecha de incorporación
+        </label>
         <select
           id="startDate"
-          {...register('startDate', { required: 'Selecciona opción' })}
-          className="mt-1 block w-full border rounded px-3 py-2"
+          {...register("startDate", { required: "Selecciona una opción" })}
+          className="w-full border rounded px-3 py-2"
         >
           <option value="inmediata">Inmediata</option>
           <option value="15_días">En 15 días</option>
@@ -104,38 +141,46 @@ export default function PreferencesStep() {
         </select>
       </div>
 
-      <div className="flex items-center">
+      {/* Checkbox: Mudanza */}
+      <div className="flex items-center space-x-2">
         <input
           id="relocate"
           type="checkbox"
-          {...register('willingToRelocate')}
-          className="mr-2"
+          {...register("willingToRelocate")}
         />
-        <label htmlFor="relocate">Estoy dispuesto/a a cambiar de residencia</label>
+        <label htmlFor="relocate" className="font-medium">
+          Estoy dispuesto/a a cambiar de residencia
+        </label>
       </div>
 
-      <div className="flex items-center">
+      {/* Checkbox: Certificado de discapacidad */}
+      <div className="flex items-center space-x-2">
         <input
           id="cert"
           type="checkbox"
-          {...register('hasDisabilityCert')}
-          className="mr-2"
+          {...register("hasDisabilityCert")}
         />
-        <label htmlFor="cert">Tengo certificado de discapacidad</label>
+        <label htmlFor="cert" className="font-medium">
+          Tengo certificado de discapacidad
+        </label>
       </div>
 
-      <div className="flex justify-between">
-        <Link to="/register/contact" className="text-gray-600 hover:underline">
+      {/* Botones de navegación */}
+      <div className="flex justify-between pt-4">
+        <button
+          type="button"
+          onClick={() => navigate("/register/contact")}
+          className="text-gray-600 hover:text-gray-800 font-medium"
+        >
           ← Anterior
-        </Link>
+        </button>
         <button
           type="submit"
-          className="py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700"
+          className="py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 transition-colors"
         >
           Finalizar
         </button>
       </div>
     </form>
-  )
+  );
 }
-
