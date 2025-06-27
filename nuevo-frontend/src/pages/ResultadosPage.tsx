@@ -2,17 +2,22 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
-import type { CvAnalysis } from '../features/personal/personalSlice'
 
-// Lista de habilidades / minijuegos
-const skills = [
-  "Comunicación","Trabajo en equipo","Autonomía","Gestión del tiempo","Flexibilidad",
-  "Pensamiento crítico","Resolución de problemas","Creatividad","Empatía","Liderazgo",
-]
+// Importamos los tipos desde personalSlice donde sí están definidos correctamente
+import { PersonalState as PersonalStateFromSlice } from '../features/personal/personalSlice'
 
-interface GameResult {
-  subject: string
-  dA: number
+// Interfaz del análisis de CV
+interface CvAnalysis {
+  score: number
+  strengths: string[]
+  weaknesses: string[]
+}
+
+// Interfaz para habilidades blandas
+interface SoftSkillResult {
+  skill: string
+  level: 'Bajo' | 'Medio' | 'Alto'
+  confidence: number
 }
 
 export default function ResultadosPage() {
@@ -20,26 +25,37 @@ export default function ResultadosPage() {
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
-  // 1️⃣ Leemos el análisis del CV (puede ser undefined)
-  const cvAnalysis = useAppSelector(
-    state => state.personal.cvAnalysis as CvAnalysis | undefined
-  )
+  // Usamos el tipo correcto desde personalSlice
+  const personal = useAppSelector(state => state.personal) as PersonalStateFromSlice
+  const cvAnalysis = personal.cvAnalysis as CvAnalysis | undefined
 
-  // 2️⃣ Leemos el progreso de los minijuegos
-  const completedGames: string[] = useAppSelector(
-    state => state.progress.completedGames
-  )
+  // Obtenemos los minijuegos completados
+  const completedGames = useAppSelector(state => state.progress.completedGames)
 
-  // 3️⃣ Construimos un array de 10 resultados, uno por cada skill
-  const gameData: GameResult[] = skills.map((subject, idx) => ({
-    subject,
-    dA: completedGames.includes(String(idx + 1)) ? 100 : 0,
+  // Definimos las habilidades (deberían venir del backend o ser dinámicas)
+  const skills = [
+    "Comunicación",
+    "Trabajo en equipo",
+    "Autonomía",
+    "Gestión del tiempo",
+    "Flexibilidad",
+    "Pensamiento crítico",
+    "Resolución de problemas",
+    "Creatividad",
+    "Empatía",
+    "Liderazgo"
+  ]
+
+  // Creamos datos ficticios basados en si el juego fue completado
+  const gameData = skills.map((skill, index) => ({
+    subject: skill,
+    level: completedGames.includes(String(index + 1)) ? 'Alto' : 'Bajo'
   }))
 
-  const fortalezas = gameData.filter(d => d.dA >= 75)
-  const areasMejorar = gameData.filter(d => d.dA < 75)
+  const fortalezas = gameData.filter(d => d.level === 'Alto')
+  const areasMejorar = gameData.filter(d => d.level !== 'Alto')
 
-  // 7️⃣ Handler para descargar informe PDF
+  // Handler para descargar informe PDF
   const handleDownloadReport = async () => {
     setLoading(true)
     try {
@@ -49,7 +65,9 @@ export default function ResultadosPage() {
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(payload),
       })
+
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+
       const blob = await resp.blob()
       const url = window.URL.createObjectURL(blob)
       const link = document.createElement('a')
@@ -77,7 +95,7 @@ export default function ResultadosPage() {
   }, [toast])
 
   return (
-    <section className="relative max-w-2xl mx-auto p-6 space-y-8">
+    <section className="relative max-w-3xl mx-auto p-6 space-y-8">
       <h1 className="text-3xl font-bold text-center">Tu Informe de Resultados</h1>
 
       {/* Toast Notification */}
@@ -87,72 +105,92 @@ export default function ResultadosPage() {
         </div>
       )}
 
-      {/* 4️⃣ Sección de Análisis de CV */}
+      {/* Análisis de CV */}
       {cvAnalysis ? (
-        <div className="bg-gray-50 p-4 rounded shadow">
-          <h2 className="text-2xl font-semibold mb-2">Análisis de tu CV</h2>
+        <div className="bg-gray-50 p-6 rounded shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Análisis de tu CV</h2>
           <p className="mb-4">
             Puntuación global: <strong>{cvAnalysis.score}%</strong>
           </p>
 
-          <h3 className="font-medium">Fortalezas</h3>
-          <ul className="list-disc ml-6 mb-4">
-            {cvAnalysis.strengths.map(str => (
-              <li key={str}>{str}</li>
-            ))}
-          </ul>
-
-          <h3 className="font-medium">Áreas a mejorar</h3>
-          <ul className="list-disc ml-6">
-            {cvAnalysis.weaknesses.map(w => (
-              <li key={w}>{w}</li>
-            ))}
-          </ul>
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+            <div>
+              <h3 className="font-medium mb-2">Fortalezas</h3>
+              <ul className="list-disc ml-6">
+                {cvAnalysis.strengths.length > 0 ? (
+                  cvAnalysis.strengths.map((str, i) => <li key={i}>{str}</li>)
+                ) : (
+                  <p className="text-gray-500">No se encontraron fortalezas.</p>
+                )}
+              </ul>
+            </div>
+            <div>
+              <h3 className="font-medium mb-2">Áreas a mejorar</h3>
+              <ul className="list-disc ml-6">
+                {cvAnalysis.weaknesses.length > 0 ? (
+                  cvAnalysis.weaknesses.map((w, i) => <li key={i}>{w}</li>)
+                ) : (
+                  <p className="text-gray-500">Tu CV está bien estructurado.</p>
+                )}
+              </ul>
+            </div>
+          </div>
         </div>
       ) : (
         <p className="text-center text-gray-500">
-          No hay análisis de CV disponible.
+          No hay análisis de CV disponible aún.
         </p>
       )}
 
-      {/* 5️⃣ Sección de Minijuegos */}
-      <div className="bg-white p-4 rounded shadow">
-        <h2 className="text-2xl font-semibold mb-2">Minijuegos</h2>
+      {/* Evaluación de habilidades blandas */}
+      <div className="bg-white p-6 rounded shadow-md">
+        <h2 className="text-2xl font-semibold mb-4">Minijuegos Completados</h2>
 
-        <h3 className="font-medium">Puntos fuertes</h3>
-        {fortalezas.length > 0 ? (
-          <ul className="list-disc ml-6 mb-4">
-            {fortalezas.map(d => (
-              <li key={d.subject}>
-                {d.subject}: {d.dA}%
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500 mb-4">No hay puntos fuertes aún.</p>
-        )}
+        {/* Simulación de gráfico radar */}
+        <div className="mb-6 p-4 bg-gray-100 rounded text-sm text-gray-700 text-center">
+          📊 Aquí iría un gráfico tipo radar mostrando tus niveles por habilidad blanda.
+        </div>
 
-        <h3 className="font-medium">Áreas a mejorar</h3>
-        {areasMejorar.length > 0 ? (
-          <ul className="list-disc ml-6">
-            {areasMejorar.map(d => (
-              <li key={d.subject}>
-                {d.subject}: {d.dA}%
-              </li>
-            ))}
-          </ul>
-        ) : (
-          <p className="text-gray-500">
-            ¡Perfecto! Todos los minijuegos completados.
-          </p>
-        )}
+        {/* Listado de habilidades */}
+        <div className="space-y-4">
+          <h3 className="font-medium">Puntos fuertes</h3>
+          {fortalezas.length > 0 ? (
+            <ul className="list-disc ml-6 mb-4">
+              {fortalezas.map(d => (
+                <li key={d.subject}>
+                  {d.subject} – <span className="font-semibold">{d.level}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500 mb-4">Todavía no tienes puntos fuertes identificados.</p>
+          )}
+
+          <h3 className="font-medium">Áreas a mejorar</h3>
+          {areasMejorar.length > 0 ? (
+            <ul className="list-disc ml-6">
+              {areasMejorar.map(d => (
+                <li key={d.subject}>
+                  {d.subject} – <span className="font-semibold">{d.level}</span>
+                </li>
+              ))}
+            </ul>
+          ) : (
+            <p className="text-gray-500">¡Felicidades! Has desarrollado todas tus áreas clave.</p>
+          )}
+        </div>
       </div>
 
-      {/* 6️⃣ Botones de acción */}
+      {/* Botones de acción */}
       <div className="flex flex-col md:flex-row justify-center gap-4">
         <button
           onClick={() => navigate('/games')}
-          className="px-6 py-2 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          disabled={completedGames.length < 10}
+          className={`px-6 py-2 rounded transition ${
+            completedGames.length < 10
+              ? 'bg-gray-400 cursor-not-allowed'
+              : 'bg-blue-600 hover:bg-blue-700 text-white'
+          }`}
         >
           Volver al Dashboard
         </button>
@@ -183,7 +221,7 @@ export default function ResultadosPage() {
               />
             </svg>
           )}
-          {loading ? 'Generando…' : 'Descargar Informe'}
+          {loading ? 'Generando informe...' : 'Descargar Informe'}
         </button>
       </div>
     </section>
