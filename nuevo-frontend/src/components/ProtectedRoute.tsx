@@ -4,7 +4,7 @@ import { useSelector } from 'react-redux'
 import { Navigate } from 'react-router-dom'
 
 interface Props {
-  step: 'contact' | 'games' | 'uploadCV' | 'preferences' | 'resultados'
+  step: 'contact' | 'preferences' | 'games' | 'uploadCV' | 'resultados'
   children: React.ReactNode
 }
 
@@ -16,30 +16,28 @@ export default function ProtectedRoute({ step, children }: Props) {
   const prefsCompleted  = Boolean(personal.jobPreferences)
 
   // Redirecciones según paso
-  switch (step) {
-    case 'games':
-      if (!registered)       return <Navigate to="/register/contact" replace />
-      return <>{children}</>
+switch (step) {
+  case 'preferences':
+    if (!registered) return <Navigate to="/register/contact" replace />
+    return <>{children}</>
 
-    case 'uploadCV':
-      if (!registered)       return <Navigate to="/register/contact" replace />
-      if (completedGames.length < 10) return <Navigate to="/games" replace />
-      return <>{children}</>
+  case 'games':
+    if (!registered) return <Navigate to="/register/contact" replace />
+    return <>{children}</>
 
-    case 'preferences':
-      if (!registered)       return <Navigate to="/register/contact" replace />
-      if (completedGames.length < 10) return <Navigate to="/games" replace />
-      if (!cvUploaded)       return <Navigate to="/upload-cv" replace />
-      return <>{children}</>
+  case 'uploadCV':
+    if (!registered) return <Navigate to="/register/contact" replace />
+    if (completedGames.length < 10) return <Navigate to="/games" replace />
+    return <>{children}</>
 
-    case 'resultados':
-      if (!registered)       return <Navigate to="/register/contact" replace />
-      if (completedGames.length < 10) return <Navigate to="/games" replace />
-      if (!cvUploaded)       return <Navigate to="/upload-cv" replace />
-      if (!prefsCompleted)   return <Navigate to="/preferences" replace />
-      return <>{children}</>
+  case 'resultados':
+    if (!registered) return <Navigate to="/register/contact" replace />
+    if (completedGames.length < 10) return <Navigate to="/games" replace />
+    if (!cvUploaded) return <Navigate to="/upload-cv" replace />
+    if (!prefsCompleted) return <Navigate to="/preferences" replace />
+    return <>{children}</>
 
-    default:
-      return <>{children}</>
-  }
+  default:
+    return <>{children}</>
+}
 }
