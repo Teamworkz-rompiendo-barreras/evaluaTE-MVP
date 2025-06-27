@@ -1,21 +1,21 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-// 1) Interfaz para el análisis del CV
+// Interfaz para análisis del CV
 export interface CvAnalysis {
   score: number
   strengths: string[]
   weaknesses: string[]
 }
 
-// 2) Interfaz por habilidad blanda evaluada
+// Interfaz por habilidad blanda evaluada
 export interface SoftSkillResult {
   skill: string
   level: 'Bajo' | 'Medio' | 'Alto'
   confidence: number // puntuación entre 0 y 1
 }
 
-// 3) Estado principal del usuario
+// Estado principal del usuario
 export interface PersonalState {
   firstName: string
   lastName: string
@@ -31,12 +31,12 @@ export interface PersonalState {
   hasDisabilityCert: boolean
 
   cvAnalysis?: CvAnalysis // Análisis opcional del CV
+  cvFile: File | null // 👈 Nuevo campo
   unlockedGames: number // Número de minijuegos desbloqueados
-
   softSkills?: SoftSkillResult[] // Habilidades blandas evaluadas
 }
 
-// 4) Estado inicial por defecto
+// Estado inicial por defecto
 const initialState: PersonalState = {
   firstName: '',
   lastName: '',
@@ -52,11 +52,12 @@ const initialState: PersonalState = {
   hasDisabilityCert: false,
 
   cvAnalysis: undefined,
+  cvFile: null, // 👈 Inicializamos el nuevo campo
   unlockedGames: 1, // Solo el primer juego disponible al inicio
-  softSkills: undefined, // Inicialmente vacío
+  softSkills: undefined,
 }
 
-// 5) Definición del slice
+// Definición del slice
 const personalSlice = createSlice({
   name: 'personal',
   initialState,
@@ -95,6 +96,11 @@ const personalSlice = createSlice({
       }
     },
 
+    // Guarda el archivo del CV
+    saveCV(state, action: PayloadAction<File>) {
+      state.cvFile = action.payload
+    },
+
     // Guarda el análisis del CV procesado
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
       state.cvAnalysis = action.payload
@@ -114,10 +120,11 @@ const personalSlice = createSlice({
   },
 })
 
-// Exportamos las acciones y el reducer
+// Exportamos las acciones
 export const {
   saveContact,
   savePreferences,
+  saveCV, // 👈 Exportamos esta nueva acción
   saveCvAnalysis,
   unlockNextGame,
   saveSoftSkills,
