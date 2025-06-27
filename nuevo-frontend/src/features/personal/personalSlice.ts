@@ -1,21 +1,21 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-// 1) Interfaz para el análisis de CV
+// 1) Interfaz para el análisis del CV
 export interface CvAnalysis {
   score: number
   strengths: string[]
   weaknesses: string[]
 }
 
-// 2) Estado de usuario con campo de progreso
+// 2) Estado principal del usuario
 export interface PersonalState {
   firstName: string
   lastName: string
   email: string
   whatsapp: string
 
-  jobPreferences: string  // texto libre, no array
+  jobPreferences: string // Ej: "Desarrollo web"
   workMode: 'remoto' | 'presencial' | 'híbrido'
   availability: 'mañana' | 'tarde' | 'completa'
   startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
@@ -23,14 +23,11 @@ export interface PersonalState {
   willingToRelocate: boolean
   hasDisabilityCert: boolean
 
-  // Campo para guardar el análisis del CV (opcional)
-  cvAnalysis?: CvAnalysis
-
-  // Campo para el progreso de minijuegos
-  unlockedGames: number
+  cvAnalysis?: CvAnalysis // Análisis opcional del CV
+  unlockedGames: number // Número de minijuegos desbloqueados
 }
 
-// 3) Valores iniciales
+// 3) Estado inicial por defecto
 const initialState: PersonalState = {
   firstName: '',
   lastName: '',
@@ -46,23 +43,28 @@ const initialState: PersonalState = {
   hasDisabilityCert: false,
 
   cvAnalysis: undefined,
-
-  unlockedGames: 1, // Solo el primer minijuego desbloqueado al inicio
+  unlockedGames: 1, // Solo el primer juego disponible al inicio
 }
 
-// 4) Slice con todas las acciones, incluido el progreso de minijuegos
+// 4) Definición del slice
 const personalSlice = createSlice({
   name: 'personal',
   initialState,
   reducers: {
+    // Guarda datos personales (nombre, apellidos, contacto)
     saveContact(
       state,
       action: PayloadAction<
         Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'>
       >
     ) {
-      Object.assign(state, action.payload)
+      return {
+        ...state,
+        ...action.payload,
+      }
     },
+
+    // Guarda preferencias laborales
     savePreferences(
       state,
       action: PayloadAction<
@@ -77,20 +79,27 @@ const personalSlice = createSlice({
         >
       >
     ) {
-      Object.assign(state, action.payload)
+      return {
+        ...state,
+        ...action.payload,
+      }
     },
-    // Acción para guardar el análisis del CV
+
+    // Guarda el análisis del CV procesado
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
       state.cvAnalysis = action.payload
     },
-    // Acción para desbloquear el siguiente minijuego
+
+    // Desbloquea el siguiente minijuego
     unlockNextGame(state) {
       if (state.unlockedGames < 10) {
-        state.unlockedGames += 1;
+        state.unlockedGames += 1
       }
     },
   },
 })
 
-export const { saveContact, savePreferences, saveCvAnalysis, unlockNextGame } = personalSlice.actions
+// Exportamos las acciones y el reducer
+export const { saveContact, savePreferences, saveCvAnalysis, unlockNextGame } =
+  personalSlice.actions
 export default personalSlice.reducer
