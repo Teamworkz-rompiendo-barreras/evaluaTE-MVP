@@ -30,16 +30,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
 
-            {/* Paso 3: preferencias (tras CV) */}
-            <Route
-              path="/preferences"
-              element={
-               <ProtectedRoute step="preferences">
-                 <PreferencesStep />
-               </ProtectedRoute>
-       }
-
-            {/* Dashboard de juegos (requiere registro) */}
+            {/* Paso 2: Dashboard de juegos */}
             <Route
               path="/games"
               element={
@@ -49,7 +40,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               }
             />
 
-            {/* Minijuego individual (requiere registro) */}
+            {/* Minijuego individual */}
             <Route
               path="/games/:id"
               element={
@@ -59,7 +50,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               }
             />
 
-            {/* Subida de CV (requiere completar juegos) */}
+            {/* Medallero → Subida de CV */}
             <Route
               path="/upload-cv"
               element={
@@ -69,7 +60,17 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               }
             />
 
-            {/* Resultados finales e informe (requiere CV + prefs) */}
+            {/* Preferencias laborales */}
+            <Route
+              path="/preferences"
+              element={
+                <ProtectedRoute step="preferences">
+                  <PreferencesStep />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* Resultados finales e informe */}
             <Route
               path="/resultados"
               element={
