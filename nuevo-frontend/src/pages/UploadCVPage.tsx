@@ -1,26 +1,19 @@
 // src/pages/UploadCVPage.tsx
-import React, { useState, useEffect } from 'react'
+import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate, Link } from 'react-router-dom'
-import { saveCV } from '../features/progress/progressSlice' // Ajusta import si tu slice se llama distinto
+
+// Importamos la acción saveCV desde personalSlice
+import { saveCV } from '../features/personal/personalSlice'
 
 export default function UploadCVPage() {
   const dispatch = useDispatch()
   const navigate = useNavigate()
 
-  // Selector: posible CV ya subido
-  const existingCV: File | null = useSelector(
-    (state: any) => state.progress.cvFile || null
-  )
+  // Seleccionamos el archivo del CV desde el estado
+  const cvFile = useSelector((state: any) => state.personal.cvFile)
 
   const [file, setFile] = useState<File | null>(null)
-
-  // Si ya hay CV, redirige automáticamente a preview
-  useEffect(() => {
-    if (existingCV) {
-      // No navega automáticamente, dejamos al usuario revisar
-    }
-  }, [existingCV])
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     if (e.target.files && e.target.files[0]) {
@@ -31,51 +24,58 @@ export default function UploadCVPage() {
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) return
-    // Guarda en Redux
+
+    // Guardamos el archivo en Redux
     dispatch(saveCV(file))
-    // Avanza a preferencias
-    navigate('/preferences')
+
+    // Redirigimos a resultados
+    navigate('/resultados')
   }
 
-  // Si ya existe CV, mostramos preview + botón
-  if (existingCV) {
+  // Si ya hay un CV subido, mostramos preview
+  if (cvFile) {
     return (
-      <div className="p-4">
+      <div className="p-6 max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Tu CV</h1>
         <p className="mb-4">Ya has subido un CV. Puedes revisarlo aquí:</p>
-        <object
-          data={URL.createObjectURL(existingCV)}
-          type="application/pdf"
-          width="100%"
-          height="600px"
-        >
-          <p>Tu navegador no soporta previsualizar PDFs.</p>
+
+        {/* Vista previa del PDF */}
+        <object data={URL.createObjectURL(cvFile)} type="application/pdf" width="100%" height="600px">
+          <p>Tu navegador no soporta previsualización de PDFs.</p>
         </object>
-        <Link
-          to="/preferences"
-          className="mt-6 inline-block bg-green-600 text-white px-6 py-2 rounded-lg hover:bg-green-700"
-        >
-          Siguiente: preferencias laborales
-        </Link>
+
+        {/* Botones de acción */}
+        <div className="mt-6 flex gap-4">
+          <Link to="/games" className="bg-blue-600 text-white px-6 py-2 rounded hover:bg-blue-700">
+            Volver a juegos
+          </Link>
+          <button
+            onClick={() => navigate('/resultados')}
+            className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
+          >
+            Ver informe completo
+          </button>
+        </div>
       </div>
     )
   }
 
-  // Si no hay CV, mostramos formulario de subida
   return (
-    <div className="p-4">
+    <div className="p-6 max-w-md mx-auto">
       <h1 className="text-2xl font-bold mb-4">Sube tu CV</h1>
+      <p className="mb-6">Adjunta tu CV en formato PDF para generar tu informe final.</p>
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="file"
           accept=".pdf,.doc,.docx"
           onChange={handleChange}
-          className="block"
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
         />
         <button
           type="submit"
           disabled={!file}
-          className="bg-blue-600 text-white px-6 py-2 rounded-lg disabled:opacity-50"
+          className="bg-blue-600 text-white px-6 py-2 rounded disabled:opacity-50"
         >
           Subir y continuar
         </button>
