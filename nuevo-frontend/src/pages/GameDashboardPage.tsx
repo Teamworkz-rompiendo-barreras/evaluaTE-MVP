@@ -3,7 +3,7 @@ import React from 'react'
 import { useSelector } from 'react-redux'
 import { Link } from 'react-router-dom'
 
-// Lista de minijuegos con nombre, descripción e ícono
+// Lista de minijuegos con nombre, habilidad blanda y día asociado
 const GAMES = [
   {
     id: '1',
@@ -40,6 +40,7 @@ const GAMES = [
     icon: '/icons/game5.svg',
     day: 'Viernes',
   },
+  // JUEGOS EXTRAS – Solo se desbloquean al completar Lunes a Viernes
   {
     id: '6',
     title: '¿Y esto para qué sirve?',
@@ -85,15 +86,32 @@ export default function GameDashboardPage() {
     (state: any) => state.personal.unlockedGames || 1
   )
 
-  // Si completó todos los juegos → mostrar medallero final
+  // Filtramos los juegos por día laboral y extra
+  const workDays = GAMES.slice(0, 5)
+  const extraGames = GAMES.slice(5)
+
+  // Determinamos si los extras están disponibles
+  const allWorkDaysCompleted = workDays.every(game =>
+    completedGames.includes(game.id)
+  )
+
+  // Mostramos solo los juegos básicos + extras si ya completó Lunes a Viernes
+  const availableGames = [
+    ...workDays,
+    ...(allWorkDaysCompleted ? extraGames : []),
+  ]
+
+  // Si completó todos los juegos → medallero final
   if (completedGames.length >= GAMES.length) {
     return (
       <div className="p-6 text-center">
         <h1 className="text-3xl font-bold mb-6">🎉 ¡Enhorabuena!</h1>
-        <p className="mb-6">Has completado tu semana laboral. Aquí tu medallero:</p>
+        <p className="mb-6">
+          Has completado los 10 minijuegos. Ahora sube tu CV para generar tu informe final.
+        </p>
 
-        {/* Medallero en rejilla */}
-        <div className="grid grid-cols-5 grid-rows-2 gap-6 max-w-screen-lg mx-auto mb-8">
+        {/* Medallero */}
+        <div className="grid grid-cols-5 gap-6 max-w-screen-lg mx-auto mb-8">
           {GAMES.map((game) => {
             const completed = completedGames.includes(game.id)
             return (
@@ -117,18 +135,13 @@ export default function GameDashboardPage() {
           to="/upload-cv"
           className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors"
         >
-          Ver mi informe completo
+          Subir tu CV
         </Link>
       </div>
     )
   }
 
-  // Juegos disponibles hasta el número desbloqueado
-  const availableGames = GAMES.slice(0, unlockedGames)
-
-  // Juegos completados
-  const pendingGames = availableGames.filter((game) => !completedGames.includes(game.id))
-
+  // Muestra los juegos disponibles
   return (
     <div className="p-6">
       <h1 className="text-2xl font-bold mb-6">Minijuegos</h1>
@@ -150,7 +163,7 @@ export default function GameDashboardPage() {
         </div>
       </div>
 
-      {/* Lista de juegos pendientes */}
+      {/* Juegos pendientes */}
       <div className="grid grid-cols-5 gap-6 max-w-screen-lg mx-auto">
         {availableGames.map((game) => {
           const isCompleted = completedGames.includes(game.id)
@@ -170,9 +183,7 @@ export default function GameDashboardPage() {
               <Link
                 to={isUnlocked ? `/games/${game.id}` : '#'}
                 className="w-full h-full"
-                onClick={(e) =>
-                  !isUnlocked && e.preventDefault()
-                }
+                onClick={(e) => !isUnlocked && e.preventDefault()}
               >
                 <img
                   src={isCompleted ? game.icon : '/icons/unlocked-game.svg'}
