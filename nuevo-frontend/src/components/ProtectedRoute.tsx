@@ -9,10 +9,11 @@ interface Props {
 }
 
 export default function ProtectedRoute({ step, children }: Props) {
-  const registered      = useSelector((state: any) => Boolean(state.personal.contact))       // true si completó datos
+  const personal = useSelector((state: any) => state.personal)
+  const registered      = Boolean(personal.firstName && personal.lastName)
   const completedGames  = useSelector((state: any) => state.progress.completedGames || [])   // array de ids
   const cvUploaded      = useSelector((state: any) => Boolean(state.progress.cvFile))       // true si hay CV
-  const prefsCompleted  = useSelector((state: any) => Boolean(state.personal.preferences))   // true si puso preferencias
+  const prefsCompleted  = Boolean(personal.jobPreferences)
 
   // Redirecciones según paso
   switch (step) {
