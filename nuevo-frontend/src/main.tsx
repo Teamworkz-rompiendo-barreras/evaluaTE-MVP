@@ -26,11 +26,21 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
         <AccessibilitySettings />
         <BrowserRouter>
           <Routes>
-            {/* raíz → Paso 1: datos personales */}
+            {/* 1) Inicio → registro: datos personales */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
 
-            {/* Paso 2: Dashboard de juegos */}
+            {/* 2) Registro: preferencias */}
+            <Route
+              path="/register/preferences"
+              element={
+                <ProtectedRoute step="preferences">
+                  <PreferencesStep />
+                </ProtectedRoute>
+              }
+            />
+
+            {/* 3) Dashboard de minijuegos */}
             <Route
               path="/games"
               element={
@@ -40,7 +50,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               }
             />
 
-            {/* Minijuego individual */}
+            {/* 4) Minijuego individual */}
             <Route
               path="/games/:id"
               element={
@@ -50,7 +60,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               }
             />
 
-            {/* Medallero → Subida de CV */}
+            {/* 5) Subida de CV (medallero → CV) */}
             <Route
               path="/upload-cv"
               element={
@@ -60,17 +70,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
               }
             />
 
-            {/* Preferencias laborales */}
-            <Route
-              path="/preferences"
-              element={
-                <ProtectedRoute step="preferences">
-                  <PreferencesStep />
-                </ProtectedRoute>
-              }
-            />
-
-            {/* Resultados finales e informe */}
+            {/* 6) Resultados finales e informe */}
             <Route
               path="/resultados"
               element={
