@@ -20,20 +20,19 @@ jobs:
           submodules: true
           lfs: false
 
-      - name: Build And Deploy 
+      - name: Build And Deploy
         id: builddeploy
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
-          action: "upload"
+          action: upload
 
-          # Estas tres rutas SÍ están dentro del bloque `with:` (misma columna)
+          # Ahora apunta al frontend y al dist dentro de él
           app_location: "nuevo-frontend"
           api_location: ""
-          output_location: "dist"
+          output_location: "nuevo-frontend/dist"
           app_build_command: "npm install && npm run build"
-
 
   close_pull_request_job:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
@@ -45,7 +44,9 @@ jobs:
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
-          action: "close"
-          app_location: "nuevo-frontend"      # <-- necesario aunque no lo uses
-          api_location: ""      # <-- necesario aunque no lo uses
-          output_location: "dist"   # <-- necesario aunque no lo uses
+          action: close
+
+          # Aunque no lo use, deben coincidir rutas
+          app_location: "nuevo-frontend"
+          api_location: ""
+          output_location: "nuevo-frontend/dist"
