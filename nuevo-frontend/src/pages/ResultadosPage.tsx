@@ -4,7 +4,12 @@ import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
 import type { CvAnalysis } from '../features/personal/personalSlice'
 
-// Para renderizar los resultados de los minijuegos
+// Lista de habilidades / minijuegos
+const skills = [
+  "Comunicación","Trabajo en equipo","Autonomía","Gestión del tiempo","Flexibilidad",
+  "Pensamiento crítico","Resolución de problemas","Creatividad","Empatía","Liderazgo",
+]
+
 interface GameResult {
   subject: string
   dA: number
@@ -21,12 +26,14 @@ export default function ResultadosPage() {
   )
 
   // 2️⃣ Leemos el progreso de los minijuegos
-  const completed = useAppSelector(state => state.progress.completed)
+  const completedGames: string[] = useAppSelector(
+    state => state.progress.completedGames
+  )
 
-  // 3️⃣ Construimos un array para los minijuegos
-  const gameData: GameResult[] = Object.keys(completed).map(key => ({
-    subject: `Minijuego ${key}`,
-    dA: completed[Number(key)] ? 100 : 0,
+  // 3️⃣ Construimos un array de 10 resultados, uno por cada skill
+  const gameData: GameResult[] = skills.map((subject, idx) => ({
+    subject,
+    dA: completedGames.includes(String(idx + 1)) ? 100 : 0,
   }))
 
   const fortalezas = gameData.filter(d => d.dA >= 75)
@@ -80,9 +87,7 @@ export default function ResultadosPage() {
         </div>
       )}
 
-      {/* ———————————— */}
       {/* 4️⃣ Sección de Análisis de CV */}
-      {/* ———————————— */}
       {cvAnalysis ? (
         <div className="bg-gray-50 p-4 rounded shadow">
           <h2 className="text-2xl font-semibold mb-2">Análisis de tu CV</h2>
@@ -110,9 +115,7 @@ export default function ResultadosPage() {
         </p>
       )}
 
-      {/* ———————————— */}
       {/* 5️⃣ Sección de Minijuegos */}
-      {/* ———————————— */}
       <div className="bg-white p-4 rounded shadow">
         <h2 className="text-2xl font-semibold mb-2">Minijuegos</h2>
 
@@ -145,9 +148,7 @@ export default function ResultadosPage() {
         )}
       </div>
 
-      {/* ———————————— */}
       {/* 6️⃣ Botones de acción */}
-      {/* ———————————— */}
       <div className="flex flex-col md:flex-row justify-center gap-4">
         <button
           onClick={() => navigate('/games')}
