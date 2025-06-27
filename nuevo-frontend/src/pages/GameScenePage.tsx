@@ -4,9 +4,9 @@ import toast from 'react-hot-toast'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
-import { useAppSelector, useAppDispatch } from '../../../app/hooks'
-import { markGameComplete } from '../../../features/progress/progressSlice'
-import { unlockNextGame } from '../../../features/personal/personalSlice'
+import { useAppSelector, useAppDispatch, RootState } from '../../app/hooks'
+import { markGameComplete } from '../../features/progress/progressSlice'
+import { unlockNextGame } from '../../features/personal/personalSlice'
 
 export default function GameScenePage() {
   const { id } = useParams<{ id: string }>()
@@ -14,7 +14,7 @@ export default function GameScenePage() {
   const dispatch = useAppDispatch()
 
   // Accesibilidad
-  const accessibility = useAppSelector((state) => state.accessibility)
+  const accessibility = useAppSelector((state: RootState) => state.accessibility)
 
   // Escena actual
   const {
