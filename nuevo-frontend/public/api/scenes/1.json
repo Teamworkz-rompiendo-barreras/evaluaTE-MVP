@@ -2,7 +2,22 @@
   "id": 1,
   "title": "Minijuego 1: Segundo paso",
   "steps": [
-    { "text": "Escena 1 del juego 1." },
-    { "text": "Escena 2 del juego 1." }
+    {
+      "text": "Escena 1 del juego 1.",
+      "image": "step1.png",
+      "options": [
+        { "text": "Opción A" },
+        { "text": "Opción B" },
+        { "text": "Opción C" }
+      ]
+    },
+    {
+      "text": "Escena 2 del juego 1.",
+      "image": "step2.png",
+      "options": [
+        { "text": "Haz esto" },
+        { "text": "Haz lo otro" }
+      ]
+    }
   ]
 }
