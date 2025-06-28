@@ -1,4 +1,5 @@
 // src/pages/ResultadosPage.tsx
+import { ResponsiveRadar } from '@nivo/radar' // Importamos el gráfico radar de Nivo
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
