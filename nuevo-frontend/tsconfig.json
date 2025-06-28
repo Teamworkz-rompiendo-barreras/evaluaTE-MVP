@@ -15,9 +15,14 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "types": ["vite/client", "@testing-library/jest-dom"],
-    "typeRoots": ["./node_modules/@types", "./src/types"]
+    "typeRoots": ["./node_modules/@types", "./src/types"],
+    "baseUrl": ".",
+    "paths": {
+      "@": ["src"],
+      "@features": ["src/features"],
+      "@types": ["src/types"]
+    }
   },
   "include": ["src", "cypress", "vitest.config.ts"],
-  "exclude": ["vite.config.ts", "dist", "node_modules"],
-  "references": [{ "path": "./tsconfig.node.json" }]
+  "exclude": ["vite.config.ts", "dist", "node_modules", ".swc"]
 }
