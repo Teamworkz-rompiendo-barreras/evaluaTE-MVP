@@ -1,5 +1,4 @@
 // src/pages/ResultadosPage.tsx
-import { ResponsiveRadar } from '@nivo/radar' // Importamos el gráfico radar de Nivo
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
@@ -10,18 +9,23 @@ import {
   CvAnalysis,
 } from '../features/personal/personalSlice'
 
+// Componente de Nivo
+import { ResponsiveRadar } from '@nivo/radar'
+
 export default function ResultadosPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
-  // Accedemos al estado global correctamente tipado
-  const personal = useAppSelector(state => state.personal)
-  const cvAnalysis = personal.cvAnalysis
+  // Accedemos al estado global tipado
+  const personal = useAppSelector((state) => state.personal)
+  const cvAnalysis = personal.cvAnalysis as CvAnalysis | undefined
   const softSkills = personal.softSkills || []
 
   // Obtenemos juegos completados
-  const completedGames = useAppSelector(state => state.progress.completedGames)
+  const completedGames = useAppSelector(
+    (state) => state.progress.completedGames || []
+  )
 
   // Verificamos que todo el progreso sea completo antes de mostrar resultados
   useEffect(() => {
@@ -30,11 +34,74 @@ export default function ResultadosPage() {
     }
   }, [completedGames, cvAnalysis, navigate])
 
-  // Creamos fortalezas y áreas a mejorar
-  const fortalezas = softSkills.filter(skill => skill.level === 'Alto')
-  const areasMejorar = softSkills.filter(skill => skill.level !== 'Alto')
+  // Datos para el gráfico radar
+  const data = [
+    {
+      skill: 'Toma de decisiones',
+      level:
+        softSkills.find((s) => s.skill === 'Toma de decisiones')?.confidence *
+          100 || 0,
+    },
+    {
+      skill: 'Resolución de problemas',
+      level:
+        softSkills.find((s) => s.skill === 'Resolución de problemas')
+          ?.confidence * 100 || 0,
+    },
+    {
+      skill: 'Trabajo en equipo',
+      level:
+        softSkills.find((s) => s.skill === 'Trabajo en equipo')?.confidence *
+          100 || 0,
+    },
+    {
+      skill: 'Gestión emocional',
+      level:
+        softSkills.find((s) => s.skill === 'Gestión emocional')?.confidence *
+          100 || 0,
+    },
+    {
+      skill: 'Comunicación',
+      level:
+        softSkills.find((s) => s.skill === 'Comunicación')?.confidence * 100 ||
+        0,
+    },
+    {
+      skill: 'Curiosidad y aprendizaje continuo',
+      level:
+        softSkills.find(
+          (s) => s.skill === 'Curiosidad y aprendizaje continuo'
+        )?.confidence * 100 || 0,
+    },
+    {
+      skill: 'Creatividad',
+      level:
+        softSkills.find((s) => s.skill === 'Creatividad')?.confidence * 100 || 0,
+    },
+    {
+      skill: 'Flexibilidad',
+      level:
+        softSkills.find((s) => s.skill === 'Flexibilidad')?.confidence * 100 ||
+        0,
+    },
+    {
+      skill: 'Pensamiento crítico',
+      level:
+        softSkills.find((s) => s.skill === 'Pensamiento crítico')?.confidence *
+          100 || 0,
+    },
+    {
+      skill: 'Autonomía',
+      level:
+        softSkills.find((s) => s.skill === 'Autonomía')?.confidence * 100 || 0,
+    },
+  ]
 
-  // Handler para descargar informe PDF
+  // Creamos listas de fortalezas y áreas a mejorar
+  const fortalezas = softSkills.filter((skill) => skill.level === 'Alto')
+  const areasMejorar = softSkills.filter((skill) => skill.level !== 'Alto')
+
+  // Manejador para descargar informe
   const handleDownloadReport = async () => {
     setLoading(true)
     try {
@@ -74,8 +141,9 @@ export default function ResultadosPage() {
   }, [toast])
 
   return (
-    <section className="relative max-w-3xl mx-auto p-6 space-y-8">
-      <h1 className="text-3xl font-bold text-center">Tu Informe de Resultados</h1>
+    <section className="relative max-w-4xl mx-auto p-6 space-y-8">
+      {/* Título */}
+      <h1 className="text-3xl font-bold text-center">Tu Informe Final</h1>
 
       {/* Toast Notification */}
       {toast && (
@@ -84,7 +152,7 @@ export default function ResultadosPage() {
         </div>
       )}
 
-      {/* Análisis de CV */}
+      {/* A. Análisis del CV */}
       {cvAnalysis ? (
         <div className="bg-gray-50 p-6 rounded shadow-md">
           <h2 className="text-2xl font-semibold mb-4">Análisis de tu CV</h2>
@@ -97,7 +165,9 @@ export default function ResultadosPage() {
               <h3 className="font-medium mb-2">Fortalezas</h3>
               <ul className="list-disc ml-6">
                 {cvAnalysis.strengths.length > 0 ? (
-                  cvAnalysis.strengths.map((str, i) => <li key={i}>{str}</li>)
+                  cvAnalysis.strengths.map((str, i) => (
+                    <li key={i}>{str}</li>
+                  ))
                 ) : (
                   <p className="text-gray-500">No se encontraron fortalezas.</p>
                 )}
@@ -109,7 +179,9 @@ export default function ResultadosPage() {
                 {cvAnalysis.weaknesses.length > 0 ? (
                   cvAnalysis.weaknesses.map((w, i) => <li key={i}>{w}</li>)
                 ) : (
-                  <p className="text-gray-500">Tu CV está bien estructurado.</p>
+                  <p className="text-gray-500">
+                    Tu CV está bien estructurado.
+                  </p>
                 )}
               </ul>
             </div>
@@ -121,47 +193,105 @@ export default function ResultadosPage() {
         </p>
       )}
 
-      {/* Evaluación de habilidades blandas */}
+      {/* B. Evaluación de habilidades blandas */}
       <div className="bg-white p-6 rounded shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Minijuegos Completados</h2>
+        <h2 className="text-2xl font-semibold mb-4">
+          Minijuegos Completados
+        </h2>
 
-        {/* Simulación de gráfico radar */}
-        <div className="mb-6 p-4 bg-gray-100 rounded text-sm text-gray-700 text-center">
-          📊 Aquí iría un gráfico tipo radar mostrando tus niveles por habilidad blanda.
+        {/* Gráfico radar */}
+        <div style={{ height: '400px', width: '100%' }}>
+          <ResponsiveRadar
+            data={data}
+            keys={['level']}
+            indexBy="skill"
+            maxValue="auto"
+            margin={{ top: 40, right: 120, bottom: 70, left: 120 }}
+            borderColor="#3182ce"
+            gridShape="linear"
+            dotSize={10}
+            dotColor="#2563eb"
+            dotBorderWidth={2}
+            enableDots={true}
+            animate={true}
+          />
         </div>
 
         {/* Listado de habilidades */}
-        <div className="space-y-4">
-          <h3 className="font-medium">Puntos fuertes</h3>
-          {fortalezas.length > 0 ? (
-            <ul className="list-disc ml-6 mb-4">
-              {fortalezas.map((d, idx) => (
+        <div className="mt-8">
+          <h3 className="font-medium mb-2">Puntos fuertes:</h3>
+          <ul className="list-disc ml-6 mb-4">
+            {fortalezas.length > 0 ? (
+              fortalezas.map((d, idx) => (
                 <li key={idx}>
-                  {d.skill} – <span className="font-semibold">{d.level}</span>
+                  {d.skill}: {d.level} ({Math.round(d.confidence * 100)}%{' '}
+                  confianza)
                 </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500 mb-4">Todavía no tienes puntos fuertes identificados.</p>
-          )}
+              ))
+            ) : (
+              <p className="text-gray-500">
+                Todavía no tienes puntos fuertes identificados.
+              </p>
+            )}
+          </ul>
 
-          <h3 className="font-medium">Áreas a mejorar</h3>
-          {areasMejorar.length > 0 ? (
-            <ul className="list-disc ml-6">
-              {areasMejorar.map((d, idx) => (
+          <h3 className="font-medium mb-2">Áreas a mejorar:</h3>
+          <ul className="list-disc ml-6">
+            {areasMejorar.length > 0 ? (
+              areasMejorar.map((d, idx) => (
                 <li key={idx}>
-                  {d.skill} – <span className="font-semibold">{d.level}</span>
+                  {d.skill}: {d.level} ({Math.round(d.confidence * 100)}%{' '}
+                  confianza)
                 </li>
-              ))}
-            </ul>
-          ) : (
-            <p className="text-gray-500">¡Felicidades! Has desarrollado todas tus áreas clave.</p>
-          )}
+              ))
+            ) : (
+              <p className="text-gray-500">
+                ¡Felicidades! Has desarrollado todas tus áreas clave.
+              </p>
+            )}
+          </ul>
         </div>
       </div>
 
-      {/* Botones de acción */}
-      <div className="flex flex-col md:flex-row justify-center gap-4">
+      {/* C. Recomendaciones laborales */}
+      <div className="bg-blue-50 p-6 rounded shadow-md">
+        <h2 className="text-2xl font-semibold mb-4">Recomendaciones Laborales</h2>
+
+        <div className="space-y-2">
+          <p>
+            <span className="font-medium">Tipo de trabajo recomendado:</span>{' '}
+            {personal.jobPreferences || 'No especificado'}
+          </p>
+          <p>
+            <span className="font-medium">Modalidad ideal:</span>{' '}
+            {personal.workMode || 'No especificado'}
+          </p>
+          <p>
+            <span className="font-medium">Disponibilidad horaria:</span>{' '}
+            {personal.availability || 'No especificado'}
+          </p>
+          <p>
+            <span className="font-medium">Incorporación:</span>{' '}
+            {personal.startDate || 'No especificado'}
+          </p>
+          <p>
+            <span className="font-medium">Certificado de discapacidad:</span>{' '}
+            {personal.hasDisabilityCert ? 'Sí' : 'No'}
+          </p>
+        </div>
+
+        <div className="mt-6">
+          <h3 className="font-medium mb-2">Próximos pasos sugeridos</h3>
+          <ul className="list-disc ml-6">
+            <li>Enviar tu informe a un acompañante</li>
+            <li>Explorar formaciones recomendadas</li>
+            <li>Buscar empleo según tus puntos fuertes</li>
+          </ul>
+        </div>
+      </div>
+
+      {/* D. Botones de acción */}
+      <div className="flex flex-col md:flex-row justify-center gap-4 mt-6">
         <button
           onClick={() => navigate('/games')}
           disabled={completedGames.length < 10}
