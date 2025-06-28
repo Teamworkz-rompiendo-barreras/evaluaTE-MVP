@@ -2,6 +2,8 @@
 import React, { useState } from 'react'
 import toast from 'react-hot-toast'
 import { useParams, useNavigate } from 'react-router-dom'
+
+// Importamos datos del juego
 import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
@@ -9,15 +11,18 @@ import { markGameComplete } from '../features/progress/progressSlice'
 import { unlockNextGame } from '../features/personal/personalSlice'
 import { saveSoftSkills } from '../features/personal/personalSlice'
 
+// Hook para guardar logs de usuario
+import { useLogger } from '../features/games/useLogger'
+
 export default function GameScenePage() {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
   const dispatch = useAppDispatch()
 
   // Accesibilidad
-  const accessibility = useAppSelector((state) => state.accessibility)
+  const accessibilityState = useAppSelector((state) => state.accessibility)
 
-  // Escena actual
+  // Escena actual desde JSON
   const {
     data: scene,
     isLoading,
@@ -26,6 +31,7 @@ export default function GameScenePage() {
 
   const stepsCount = scene?.steps.length ?? 0
   const { currentStep, timeLeft, goNext, goPrev } = useGameController(stepsCount)
+  const { logStep, logSoftSkill, logFinalGame } = useLogger()
 
   // Estado local del juego
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
@@ -59,27 +65,27 @@ export default function GameScenePage() {
 
   // Calculamos softSkills al finalizar todas las escenas
   const handleFinishGame = () => {
-    // Ejemplo de cálculo de habilidad blanda (esto debería venir del backend o IA)
     const skillResults = [
       {
         skill: getSkillNameFromGameId(gameNum),
-        level: calculateLevel(), // Alto / Medio / Bajo
-        confidence: calculateConfidence(), // entre 0 y 1
+        level: calculateLevel(),
+        confidence: calculateConfidence(),
       },
     ]
 
-    // Guardamos habilidades blandas
+    // Guardamos en Redux
     dispatch(saveSoftSkills(skillResults))
-
-    // Marcamos como completado y desbloqueamos siguiente
     dispatch(markGameComplete(String(gameNum)))
     dispatch(unlockNextGame())
 
-    // Navegamos al siguiente juego o al dashboard
-    navigate(`/games/${gameNum + 1}`) // Esto puede cambiar a `/resultados` si es el último
+    // Registramos en backend
+    logFinalGame(gameNum, skillResults)
+    
+    // Navegamos al siguiente juego o resultados
+    navigate(`/games/${gameNum + 1}`) // TODO: ir a `/resultados` si es el último juego
   }
 
-  // Mapea ID del juego a nombre de habilidad
+  // Mapea ID del juego a nombre de habilidad blanda
   const getSkillNameFromGameId = (id: number): string => {
     switch (id) {
       case 1:
@@ -108,21 +114,88 @@ export default function GameScenePage() {
   }
 
   // Calcula nivel (Alto/Medio/Bajo) según decisiones, tiempo y consistencia
-  const calculateLevel = (): 'Alto' | 'Medio' | 'Bajo' => {
-    // Aquí iría lógica real basada en respuestas, tiempo, etc.
-    return 'Alto'
+  const calculateLevel = (): 'Bajo' | 'Medio' | 'Alto' => {
+    // Aquí iría lógica real basada en decisiones + tiempo + uso de ayuda
+    // Ejemplo básico: si hay más de 2 errores → Medio / Bajo
+    const totalErrors = selectedOptions.filter((opt) =>
+      currentScene.options && !currentScene.options[opt]?.isCorrect
+    ).length
+
+    if (totalErrors === 0) return 'Alto'
+    if (totalErrors <= 2) return 'Medio'
+    return 'Bajo'
   }
 
   // Calcula confianza numérica (0 - 1) para gráfico radar
   const calculateConfidence = (): number => {
-    // Por ahora un valor fijo, pero debería ser dinámico
-    return 0.92
+    // Por ahora usamos un cálculo simple
+    const correctAnswers = selectedOptions.filter((opt) =>
+      currentScene.options && currentScene.options[opt]?.isCorrect
+    ).length
+
+    return Math.max(0.1, correctAnswers / stepsCount)
+  }
+
+  // Manejo de selección de opción
+  const handleSelectOption = async (optionIndex: number) => {
+    const option = currentScene.options?.[optionIndex]
+    const timeSpent = 30 - timeLeft
+
+    // Guardamos respuesta localmente
+    const updatedSelections = [...selectedOptions]
+    updatedSelections[currentStep] = optionIndex
+    setSelectedOptions(updatedSelections)
+    setShowFeedback(true)
+
+    // Registramos log de paso en backend
+    await logStep({
+      gameId: gameNum,
+      stepIndex: currentStep,
+      optionIndex,
+      timeSpent,
+      usedHelp: false, // esto podría venir de un botón "ayuda" opcional
+      emotionalResponse: option?.feedback || null,
+    })
+
+    setTimeout(() => {
+      setShowFeedback(false)
+      if (currentStep < stepsCount - 1) {
+        goNext()
+      }
+    }, 1000)
+  }
+
+  if (isLoading) {
+    return (
+      <main className="flex items-center justify-center min-h-screen">
+        <p>Cargando escena…</p>
+      </main>
+    )
+  }
+
+  if (isError || !scene) {
+    return (
+      <main className="flex flex-col items-center justify-center min-h-screen gap-6">
+        <p className="text-lg font-semibold text-red-600">Error al cargar la escena.</p>
+        <p>Este minijuego aún no está disponible. Vuelve al menú de minijuegos.</p>
+        <button
+          className="py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
+          onClick={() => navigate('/games')}
+        >
+          Volver al menú de minijuegos
+        </button>
+      </main>
+    )
   }
 
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4 space-y-6">
       {/* Título */}
-      <h2 className={`text-xl font-bold ${accessibility.highContrast ? 'bg-black text-white p-2' : ''}`}>
+      <h2
+        className={`text-xl font-bold ${
+          accessibilityState.highContrast ? 'bg-black text-white p-2' : ''
+        }`}
+      >
         {scene.title}
       </h2>
 
@@ -130,14 +203,20 @@ export default function GameScenePage() {
       <div className="w-full max-w-sm bg-gray-200 rounded-full h-2.5">
         <div
           className="bg-green-600 h-2.5 rounded-full"
-          style={{ width: `${((currentStep + 1) / stepsCount) * 100}%` }}
+          style={{
+            width: `${((currentStep + 1) / stepsCount) * 100}%`,
+          }}
         ></div>
       </div>
 
       {/* Tiempo restante */}
       <div className="font-medium">
         ⏱️ Tiempo restante:{' '}
-        <span className={accessibility.highContrast ? 'bg-yellow-100 p-1' : ''}>
+        <span
+          className={
+            accessibilityState.highContrast ? 'bg-yellow-100 p-1' : ''
+          }
+        >
           {timeLeft}s
         </span>
       </div>
@@ -146,7 +225,7 @@ export default function GameScenePage() {
       <div className="mb-6 max-w-md text-center">
         <p
           className={`text-lg ${
-            accessibility.fontScale > 100 ? 'text-xl' : ''
+            accessibilityState.fontScale > 100 ? 'text-xl' : ''
           }`}
         >
           {currentScene.text}
@@ -171,11 +250,9 @@ export default function GameScenePage() {
           currentScene.options.map((option, idx) => (
             <button
               key={idx}
-              onClick={() => {
-                handleSelectOption(idx)
-              }}
+              onClick={() => handleSelectOption(idx)}
               className={`w-full text-left p-3 border rounded hover:bg-gray-100 ${
-                accessibility.highContrast ? 'bg-gray-800 text-white' : ''
+                accessibilityState.highContrast ? 'bg-gray-800 text-white' : ''
               }`}
             >
               {option.text}
@@ -225,19 +302,4 @@ export default function GameScenePage() {
       </div>
     </main>
   )
-
-  // Manejo de selección de opción
-  function handleSelectOption(optionIndex: number) {
-    const updatedSelections = [...selectedOptions]
-    updatedSelections[currentStep] = optionIndex
-    setSelectedOptions(updatedSelections)
-    setShowFeedback(true)
-
-    setTimeout(() => {
-      setShowFeedback(false)
-      if (currentStep < stepsCount - 1) {
-        goNext()
-      }
-    }, 1000)
-  }
 }
