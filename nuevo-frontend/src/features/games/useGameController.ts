@@ -1,52 +1,53 @@
 // src/features/games/useGameController.ts
+import React, { useState, useEffect, useCallback, useRef } from 'react'
 
-// …
-import { useState, useEffect, useCallback, useRef } from 'react';
-
-export function useGameController(totalSteps: number, stepDuration = 30) {
-  const [currentStep, setCurrentStep] = useState(0);
-  const [timeLeft, setTimeLeft]     = useState(stepDuration);
-  // Inicializamos timerRef a undefined y permitimos que sea number | undefined
-  const timerRef = useRef<number | undefined>(undefined);
+export function useGameController(totalSteps: number, stepDuration: number = 30) {
+  const [currentStep, setCurrentStep] = useState(0)
+  const [timeLeft, setTimeLeft] = useState(stepDuration)
+  const timerRef = useRef<number | undefined>(undefined)
 
   const goNext = useCallback(() => {
-    setCurrentStep(s => Math.min(s + 1, totalSteps - 1));
-    setTimeLeft(stepDuration);
-  }, [stepDuration, totalSteps]);
+    setCurrentStep((s) => Math.min(s + 1, totalSteps - 1))
+    setTimeLeft(stepDuration)
+  }, [stepDuration, totalSteps])
 
   const goPrev = useCallback(() => {
-    setCurrentStep(s => Math.max(s - 1, 0));
-    setTimeLeft(stepDuration);
-  }, [stepDuration]);
+    setCurrentStep((s) => Math.max(s - 1, 0))
+    setTimeLeft(stepDuration)
+  }, [])
 
-  // Reiniciamos contador al cambiar de paso
+  // Reiniciamos el tiempo cada vez que cambiamos de paso
   useEffect(() => {
-    setTimeLeft(stepDuration);
-  }, [currentStep, stepDuration]);
+    setTimeLeft(stepDuration)
+  }, [currentStep, stepDuration])
 
-  // Efecto de cuenta atrás
+  // Cuenta regresiva activa mientras no estemos en el último paso
   useEffect(() => {
-    if (currentStep >= totalSteps - 1) return; // no contamos si es último paso
+    if (currentStep >= totalSteps - 1) return
 
-    // arrancamos el intervalo
+    // Inicia el temporizador
     timerRef.current = window.setInterval(() => {
-      setTimeLeft(t => {
+      setTimeLeft((t) => {
         if (t <= 1) {
-          goNext();
-          return stepDuration;
+          goNext()
+          return stepDuration
         }
-        return t - 1;
-      });
-    }, 1000);
+        return t - 1
+      })
+    }, 1000)
 
-    // limpieza al desmontar o cambiar de paso
+    // Limpieza
     return () => {
       if (timerRef.current !== undefined) {
-        clearInterval(timerRef.current);
+        clearInterval(timerRef.current)
       }
-    };
-  }, [currentStep, goNext, stepDuration, totalSteps]);
+    }
+  }, [currentStep, goNext, stepDuration, totalSteps])
 
-  return { currentStep, timeLeft, goNext, goPrev };
+  return {
+    currentStep,
+    timeLeft,
+    goNext,
+    goPrev,
+  }
 }
-
