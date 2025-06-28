@@ -1,9 +1,7 @@
-/// <reference types="vitest" />
-/// <reference types="@testing-library/jest-dom" />
+// src/setupTests.ts
+import '@testing-library/jest-dom/extend-expect'
+import { server } from '@/mocks/server.ts'
 
-import '@testing-library/jest-dom';               // 1) Carga los matchers
-import matchers from '@testing-library/jest-dom/matchers';
-import { expect } from 'vitest';
-
-// 2) Registra los matchers de jest-dom en Vitest
-expect.extend(matchers);
+beforeAll(() => server.listen())
+afterEach(() => server.resetHandlers())
+afterAll(() => server.close())
