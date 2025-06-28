@@ -1,5 +1,9 @@
 {
   "dependencies": {
-    "@nivo/radar": "^0.99.0"
+    "@nivo/radar": "^0.99.0",
+    "uuid": "^11.1.0"
+  },
+  "devDependencies": {
+    "@types/uuid": "^10.0.0"
   }
 }
