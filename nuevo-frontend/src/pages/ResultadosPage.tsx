@@ -3,63 +3,41 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
 
-// Importamos los tipos desde personalSlice donde sí están definidos correctamente
-import { PersonalState as PersonalStateFromSlice } from '../features/personal/personalSlice'
-
-// Interfaz del análisis de CV
-interface CvAnalysis {
-  score: number
-  strengths: string[]
-  weaknesses: string[]
-}
-
-// Interfaz para habilidades blandas
-interface SoftSkillResult {
-  skill: string
-  level: 'Bajo' | 'Medio' | 'Alto'
-  confidence: number
-}
+// Tipos desde personalSlice
+import {
+  SoftSkillResult,
+  CvAnalysis,
+} from '../features/personal/personalSlice'
 
 export default function ResultadosPage() {
   const navigate = useNavigate()
   const [loading, setLoading] = useState(false)
   const [toast, setToast] = useState<string | null>(null)
 
-  // Usamos el tipo correcto desde personalSlice
-  const personal = useAppSelector(state => state.personal) as PersonalStateFromSlice
-  const cvAnalysis = personal.cvAnalysis as CvAnalysis | undefined
+  // Accedemos al estado global correctamente tipado
+  const personal = useAppSelector(state => state.personal)
+  const cvAnalysis = personal.cvAnalysis
+  const softSkills = personal.softSkills || []
 
-  // Obtenemos los minijuegos completados
+  // Obtenemos juegos completados
   const completedGames = useAppSelector(state => state.progress.completedGames)
 
-  // Definimos las habilidades (deberían venir del backend o ser dinámicas)
-  const skills = [
-    "Comunicación",
-    "Trabajo en equipo",
-    "Autonomía",
-    "Gestión del tiempo",
-    "Flexibilidad",
-    "Pensamiento crítico",
-    "Resolución de problemas",
-    "Creatividad",
-    "Empatía",
-    "Liderazgo"
-  ]
+  // Verificamos que todo el progreso sea completo antes de mostrar resultados
+  useEffect(() => {
+    if (completedGames.length < 10 || !cvAnalysis) {
+      navigate('/games')
+    }
+  }, [completedGames, cvAnalysis, navigate])
 
-  // Creamos datos ficticios basados en si el juego fue completado
-  const gameData = skills.map((skill, index) => ({
-    subject: skill,
-    level: completedGames.includes(String(index + 1)) ? 'Alto' : 'Bajo'
-  }))
-
-  const fortalezas = gameData.filter(d => d.level === 'Alto')
-  const areasMejorar = gameData.filter(d => d.level !== 'Alto')
+  // Creamos fortalezas y áreas a mejorar
+  const fortalezas = softSkills.filter(skill => skill.level === 'Alto')
+  const areasMejorar = softSkills.filter(skill => skill.level !== 'Alto')
 
   // Handler para descargar informe PDF
   const handleDownloadReport = async () => {
     setLoading(true)
     try {
-      const payload = { gameData, cvAnalysis }
+      const payload = { softSkills, cvAnalysis }
       const resp = await fetch('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -156,9 +134,9 @@ export default function ResultadosPage() {
           <h3 className="font-medium">Puntos fuertes</h3>
           {fortalezas.length > 0 ? (
             <ul className="list-disc ml-6 mb-4">
-              {fortalezas.map(d => (
-                <li key={d.subject}>
-                  {d.subject} – <span className="font-semibold">{d.level}</span>
+              {fortalezas.map((d, idx) => (
+                <li key={idx}>
+                  {d.skill} – <span className="font-semibold">{d.level}</span>
                 </li>
               ))}
             </ul>
@@ -169,9 +147,9 @@ export default function ResultadosPage() {
           <h3 className="font-medium">Áreas a mejorar</h3>
           {areasMejorar.length > 0 ? (
             <ul className="list-disc ml-6">
-              {areasMejorar.map(d => (
-                <li key={d.subject}>
-                  {d.subject} – <span className="font-semibold">{d.level}</span>
+              {areasMejorar.map((d, idx) => (
+                <li key={idx}>
+                  {d.skill} – <span className="font-semibold">{d.level}</span>
                 </li>
               ))}
             </ul>
