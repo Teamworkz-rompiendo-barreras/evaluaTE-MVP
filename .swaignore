@@ -1,0 +1,26 @@
+# .swaignore
+# Archivos y carpetas ignorados por Azure Static Web Apps
+
+# Carpeta de desarrollo frontend
+nuevo-frontend/node_modules
+nuevo-frontend/dist
+nuevo-frontend/.vite
+nuevo-frontend/.svelte-kit
+nuevo-frontend/.next
+nuevo-frontend/.nuxt
+nuevo-frontend/.angular
+nuevo-frontend/.cache
+nuevo-frontend/.temp
+nuevo-frontend/tmp
+nuevo-frontend/public/scenes/__pycache__
+nuevo-frontend/src/types/*.d.ts
+nuevo-frontend/vitest.config.ts
+nuevo-frontend/cypress.config.ts
+
+# Archivos de desarrollo
+*.log
+*.env.local
+*.env.development*
+*.env.test*
+.eslintcache
+.prettierc.js
