@@ -1,19 +1,12 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-// Interfaz para análisis del CV
-export interface CvAnalysis {
-  score: number
-  strengths: string[]
-  weaknesses: string[]
-}
-
-// Interfaz por habilidad blanda evaluada
-export interface SoftSkillResult {
-  skill: string
-  level: 'Bajo' | 'Medio' | 'Alto'
-  confidence: number // puntuación entre 0 y 1
-}
+// Tipos desde tu carpeta compartida de tipos
+import {
+  CvAnalysis,
+  SoftSkillResult,
+  EmployabilityReport,
+} from '../../types/skills'
 
 // Estado principal del usuario
 export interface PersonalState {
@@ -22,7 +15,7 @@ export interface PersonalState {
   email: string
   whatsapp: string
 
-  jobPreferences: string // Ej: "Desarrollo web"
+  jobPreferences: string
   workMode: 'remoto' | 'presencial' | 'híbrido'
   availability: 'mañana' | 'tarde' | 'completa'
   startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
@@ -30,10 +23,11 @@ export interface PersonalState {
   willingToRelocate: boolean
   hasDisabilityCert: boolean
 
-  cvAnalysis?: CvAnalysis // Análisis opcional del CV
-  cvFile: File | null // 👈 Nuevo campo
-  unlockedGames: number // Número de minijuegos desbloqueados
-  softSkills?: SoftSkillResult[] // Habilidades blandas evaluadas
+  cvFile: File | null // Archivo del CV
+  cvAnalysis?: CvAnalysis // Análisis del CV
+  softSkills: SoftSkillResult[] // Habilidades blandas evaluadas
+  unlockedGames: number // Juegos desbloqueados (máx 10)
+  report?: EmployabilityReport // Informe final con todas las habilidades
 }
 
 // Estado inicial por defecto
@@ -51,10 +45,11 @@ const initialState: PersonalState = {
   willingToRelocate: false,
   hasDisabilityCert: false,
 
+  cvFile: null,
   cvAnalysis: undefined,
-  cvFile: null, // 👈 Inicializamos el nuevo campo
-  unlockedGames: 1, // Solo el primer juego disponible al inicio
-  softSkills: undefined,
+  softSkills: [],
+  unlockedGames: 1,
+  report: undefined,
 }
 
 // Definición del slice
@@ -62,7 +57,7 @@ const personalSlice = createSlice({
   name: 'personal',
   initialState,
   reducers: {
-    // Guarda datos personales (nombre, apellidos, contacto)
+    // Guarda datos personales
     saveContact(
       state,
       action: PayloadAction<
@@ -113,9 +108,40 @@ const personalSlice = createSlice({
       }
     },
 
-    // Guarda habilidades blandas evaluadas (desde minijuegos)
+    // Guarda habilidades blandas evaluadas
     saveSoftSkills(state, action: PayloadAction<SoftSkillResult[]>) {
       state.softSkills = action.payload
+    },
+
+    // Genera informe final basado en CV + soft skills
+    generateFinalReport(state) {
+      const totalSoftSkills = state.softSkills.length
+      const highSkills = state.softSkills.filter(skill => skill.level === 'Alto').length
+      const mediumSkills = state.softSkills.filter(skill => skill.level === 'Medio').length
+      const lowSkills = state.softSkills.filter(skill => skill.level === 'Bajo').length
+
+      let employabilityScore = 0
+      if (totalSoftSkills > 0) {
+        employabilityScore = Math.round(
+          ((highSkills * 100 + mediumSkills * 70 + lowSkills * 30) / totalSoftSkills
+        )
+      }
+
+      // Ajustes según el CV
+      if (state.cvAnalysis?.score && state.cvAnalysis.score < 60) {
+        employabilityScore = Math.max(20, employabilityScore - 10)
+      }
+
+      state.report = {
+        userId: 'user-1234', // Esto debería venir de auth
+        fullName: `${state.firstName} ${state.lastName}`,
+        softSkills: state.softSkills,
+        employabilityScore,
+        jobPreferences: state.jobPreferences ? { areas: [state.jobPreferences] } : { areas: [] },
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        completedGames: Array.from({ length: state.unlockedGames }, (_, i) => i + 1),
+      }
     },
   },
 })
@@ -124,10 +150,11 @@ const personalSlice = createSlice({
 export const {
   saveContact,
   savePreferences,
-  saveCV, // 👈 Exportamos esta nueva acción
+  saveCV,
   saveCvAnalysis,
   unlockNextGame,
   saveSoftSkills,
+  generateFinalReport,
 } = personalSlice.actions
 
 export default personalSlice.reducer
