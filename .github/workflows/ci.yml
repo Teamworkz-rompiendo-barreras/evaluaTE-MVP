@@ -11,7 +11,8 @@ jobs:
     runs-on: ubuntu-latest
     strategy:
       matrix:
-        node-version: [18.x]
+        node-version: ['20.19.0']
+
     steps:
       - uses: actions/checkout@v3
 
@@ -21,26 +22,28 @@ jobs:
           node-version: ${{ matrix.node-version }}
 
       - name: Install dependencies
-        working-directory: nuevo-frontend
-        run: npm ci
+        run: |
+          cd nuevo-frontend
+          npm ci
 
       - name: Run lint
-        working-directory: nuevo-frontend
-        run: npm run lint
+        run: |
+          cd nuevo-frontend
+          npm run lint
 
       - name: Run unit tests
-        working-directory: nuevo-frontend
-        run: npm run test -- --coverage
+        run: |
+          cd nuevo-frontend
+          npm run test -- --coverage
 
       - name: Build production
-        working-directory: nuevo-frontend
-        run: npm run build
+        run: |
+          cd nuevo-frontend
+          npm run build
 
   e2e:
     needs: build-and-test
     runs-on: ubuntu-latest
-
-    # Aplica working-directory a TODOS los pasos con run:
     defaults:
       run:
         working-directory: nuevo-frontend
@@ -48,22 +51,27 @@ jobs:
     steps:
       - uses: actions/checkout@v3
 
-      - name: Use Node.js 18.x
+      - name: Use Node.js 20.19.0
         uses: actions/setup-node@v3
         with:
-          node-version: '18.x'
+          node-version: '20.19.0'
 
       - name: Install dependencies for E2E
-        run: npm ci        # corre en nuevo-frontend/
+        run: npm ci
 
-      - name: Start app in background
-        run: npm run start:test &   # corre en nuevo-frontend/
+      - name: Preview app
+        run: |
+          npm run build
+          nohup npm run preview -- --port 5173 > ../preview.log 2>&1 &
+        shell: bash
+
+      - name: Wait for server to start
+        run: |
+          sleep 5 # espera 5 segundos para que el servidor arranque
 
       - name: Run Cypress tests
         uses: cypress-io/github-action@v5
         with:
-          start: npm run start:test
+          start: npm run cypress:run
           wait-on: 'http://localhost:5173'
           wait-on-timeout: 60
-          command: npm run cypress:run
-
