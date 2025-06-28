@@ -1,7 +1,5 @@
 // vitest.config.ts
-import { defineConfig } from 'vitest/config'
-
-// TypeScript ya no dará error al importar estos módulos
+import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 
 export default defineConfig({
@@ -11,5 +9,5 @@ export default defineConfig({
     setupFiles: './src/setupTests.ts',
     include: ['src/**/*.{test,spec}.{ts,tsx}'],
     exclude: ['node_modules', 'dist']
-  },
+  }
 })
