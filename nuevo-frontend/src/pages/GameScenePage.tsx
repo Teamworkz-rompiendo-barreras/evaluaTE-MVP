@@ -4,9 +4,10 @@ import toast from 'react-hot-toast'
 import { useParams, useNavigate } from 'react-router-dom'
 import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
-import { useAppSelector, useAppDispatch, RootState } from '../app/hooks'
+import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { markGameComplete } from '../features/progress/progressSlice'
 import { unlockNextGame } from '../features/personal/personalSlice'
+import { saveSoftSkills } from '../features/personal/personalSlice'
 
 export default function GameScenePage() {
   const { id } = useParams<{ id: string }>()
@@ -14,7 +15,7 @@ export default function GameScenePage() {
   const dispatch = useAppDispatch()
 
   // Accesibilidad
-  const accessibility = useAppSelector((state: RootState) => state.accessibility)
+  const accessibility = useAppSelector((state) => state.accessibility)
 
   // Escena actual
   const {
@@ -29,22 +30,6 @@ export default function GameScenePage() {
   // Estado local del juego
   const [selectedOptions, setSelectedOptions] = useState<number[]>([])
   const [showFeedback, setShowFeedback] = useState(false)
-
-  // Manejo de selección de opción
-  const handleSelectOption = (optionIndex: number) => {
-    const updatedSelections = [...selectedOptions]
-    updatedSelections[currentStep] = optionIndex
-    setSelectedOptions(updatedSelections)
-    setShowFeedback(true)
-
-    // Simular feedback positivo
-    setTimeout(() => {
-      setShowFeedback(false)
-      if (currentStep < stepsCount - 1) {
-        goNext()
-      }
-    }, 1000)
-  }
 
   if (isLoading) {
     return (
@@ -72,6 +57,68 @@ export default function GameScenePage() {
   const gameNum = Number(id)
   const currentScene = scene.steps[currentStep]
 
+  // Calculamos softSkills al finalizar todas las escenas
+  const handleFinishGame = () => {
+    // Ejemplo de cálculo de habilidad blanda (esto debería venir del backend o IA)
+    const skillResults = [
+      {
+        skill: getSkillNameFromGameId(gameNum),
+        level: calculateLevel(), // Alto / Medio / Bajo
+        confidence: calculateConfidence(), // entre 0 y 1
+      },
+    ]
+
+    // Guardamos habilidades blandas
+    dispatch(saveSoftSkills(skillResults))
+
+    // Marcamos como completado y desbloqueamos siguiente
+    dispatch(markGameComplete(String(gameNum)))
+    dispatch(unlockNextGame())
+
+    // Navegamos al siguiente juego o al dashboard
+    navigate(`/games/${gameNum + 1}`) // Esto puede cambiar a `/resultados` si es el último
+  }
+
+  // Mapea ID del juego a nombre de habilidad
+  const getSkillNameFromGameId = (id: number): string => {
+    switch (id) {
+      case 1:
+        return 'Toma de decisiones'
+      case 2:
+        return 'Resolución de problemas'
+      case 3:
+        return 'Trabajo en equipo'
+      case 4:
+        return 'Gestión emocional'
+      case 5:
+        return 'Comunicación'
+      case 6:
+        return 'Curiosidad y aprendizaje continuo'
+      case 7:
+        return 'Creatividad'
+      case 8:
+        return 'Flexibilidad'
+      case 9:
+        return 'Pensamiento crítico'
+      case 10:
+        return 'Autonomía'
+      default:
+        return 'Habilidad desconocida'
+    }
+  }
+
+  // Calcula nivel (Alto/Medio/Bajo) según decisiones, tiempo y consistencia
+  const calculateLevel = (): 'Alto' | 'Medio' | 'Bajo' => {
+    // Aquí iría lógica real basada en respuestas, tiempo, etc.
+    return 'Alto'
+  }
+
+  // Calcula confianza numérica (0 - 1) para gráfico radar
+  const calculateConfidence = (): number => {
+    // Por ahora un valor fijo, pero debería ser dinámico
+    return 0.92
+  }
+
   return (
     <main className="flex flex-col items-center justify-center min-h-screen p-4 space-y-6">
       {/* Título */}
@@ -89,12 +136,19 @@ export default function GameScenePage() {
 
       {/* Tiempo restante */}
       <div className="font-medium">
-        ⏱️ Tiempo restante: <span className={accessibility.highContrast ? 'bg-yellow-100 p-1' : ''}>{timeLeft}s</span>
+        ⏱️ Tiempo restante:{' '}
+        <span className={accessibility.highContrast ? 'bg-yellow-100 p-1' : ''}>
+          {timeLeft}s
+        </span>
       </div>
 
       {/* Texto de escena */}
       <div className="mb-6 max-w-md text-center">
-        <p className={`text-lg ${accessibility.fontScale > 100 ? 'text-xl' : ''}`}>
+        <p
+          className={`text-lg ${
+            accessibility.fontScale > 100 ? 'text-xl' : ''
+          }`}
+        >
           {currentScene.text}
         </p>
       </div>
@@ -113,17 +167,20 @@ export default function GameScenePage() {
 
       {/* Opciones */}
       <div className="space-y-3 w-full max-w-sm">
-        {Array.isArray(currentScene.options) && currentScene.options.map((option, idx) => (
-          <button
-            key={idx}
-            onClick={() => handleSelectOption(idx)}
-            className={`w-full text-left p-3 border rounded hover:bg-gray-100 ${
-              accessibility.highContrast ? 'bg-gray-800 text-white' : ''
-            }`}
-          >
-            {option.text}
-          </button>
-        ))}
+        {Array.isArray(currentScene.options) &&
+          currentScene.options.map((option, idx) => (
+            <button
+              key={idx}
+              onClick={() => {
+                handleSelectOption(idx)
+              }}
+              className={`w-full text-left p-3 border rounded hover:bg-gray-100 ${
+                accessibility.highContrast ? 'bg-gray-800 text-white' : ''
+              }`}
+            >
+              {option.text}
+            </button>
+          ))}
       </div>
 
       {/* Feedback positivo */}
@@ -159,11 +216,7 @@ export default function GameScenePage() {
           </button>
         ) : (
           <button
-            onClick={() => {
-              dispatch(markGameComplete(String(gameNum)))
-              dispatch(unlockNextGame())
-              navigate(`/games/${gameNum + 1}`) // Ir al siguiente juego
-            }}
+            onClick={handleFinishGame}
             className="py-2 px-4 bg-green-600 text-white rounded hover:bg-green-700 transition"
           >
             Finalizar
@@ -172,4 +225,19 @@ export default function GameScenePage() {
       </div>
     </main>
   )
+
+  // Manejo de selección de opción
+  function handleSelectOption(optionIndex: number) {
+    const updatedSelections = [...selectedOptions]
+    updatedSelections[currentStep] = optionIndex
+    setSelectedOptions(updatedSelections)
+    setShowFeedback(true)
+
+    setTimeout(() => {
+      setShowFeedback(false)
+      if (currentStep < stepsCount - 1) {
+        goNext()
+      }
+    }, 1000)
+  }
 }
