@@ -1,6 +1,7 @@
-// src/setupTests.ts
+/// <reference types="vitest/globals" />
+
 import '@testing-library/jest-dom/extend-expect'
-import { server } from '@/mocks/server.ts'
+import { server } from './mocks/server'
 
 beforeAll(() => server.listen())
 afterEach(() => server.resetHandlers())
