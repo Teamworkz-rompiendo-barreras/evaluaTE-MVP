@@ -4,3 +4,7 @@ declare module 'vite' {
   const defineConfig: (config: { plugins?: Plugin[] }) => void
   export { defineConfig }
 }
+declare module 'vite/client' {
+  const value: any
+  export default value
+}
