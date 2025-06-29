@@ -14,15 +14,15 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["@testing-library/jest-dom"],
+    "types": ["vite/client", "@testing-library/jest-dom"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
+    
+    // 👇 Estas dos líneas son clave:
     "baseUrl": ".",
     "paths": {
-      "@": ["src"],
-      "@features": ["src/features"],
-      "@types": ["src/types"]
+      "@/*": ["src/*"]
     }
   },
-  "include": ["src", "cypress", "vitest.config.ts"],
-  "exclude": ["dist", "node_modules", ".swc"]
+  "include": ["src", "vitest.config.ts"],
+  "exclude": ["dist", "node_modules"]
 }
