@@ -38,9 +38,16 @@ export default {
         '84': '21rem',
         '96': '24rem',
       },
-      borderRadius: {
-        '4xl': '2rem',
-      }
+    borderRadius: {
+      '4xl': '2rem',
+    },
+    screens: {
+      'xs': '480px',
+      'sm': '640px',
+      'md': '768px',
+      'lg': '1024px',
+      'xl': '1280px',
+    }  
     },
   },
   plugins: [],
