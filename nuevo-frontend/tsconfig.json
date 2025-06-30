@@ -19,7 +19,7 @@
     "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"],
-    "types": ["vitest"]
+    "types": ["vite/client", "vitest/globals"]  
     }
   },
   "include": ["src", "vitest.config.ts", "vite.config.ts"],
