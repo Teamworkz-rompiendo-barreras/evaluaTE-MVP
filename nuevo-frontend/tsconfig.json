@@ -18,7 +18,8 @@
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"]
+      "@/*": ["src/*"],
+    "types": ["vitest"]
     }
   },
   "include": ["src", "vitest.config.ts", "vite.config.ts"],
