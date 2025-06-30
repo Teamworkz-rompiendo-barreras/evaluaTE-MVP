@@ -4,7 +4,11 @@ import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
 
 // Tipos desde Redux
-import { CvAnalysis } from '../features/personal/personalSlice'
+import {
+  CvAnalysis,
+  SoftSkillResult,
+  JobPreference,
+} from '@/types/skills'
 
 // Componentes visuales
 import { ResponsiveRadar } from '@nivo/radar'
@@ -28,15 +32,14 @@ export default function ResultadosPage() {
     }
   }, [completedGames, cvAnalysis, softSkills])
 
-  // Datos para el gráfico radar
+  // Datos para gráfico radar
   const data = softSkills.map(skill => ({
     skill: skill.skill,
     level: skill.confidence * 100
   }))
 
-  // Creamos listas de fortalezas y áreas a mejorar
-  const fortalezas = softSkills.filter(skill => skill.level === 'Alto')
-  const areasMejorar = softSkills.filter(skill => skill.level !== 'Alto')
+  // Áreas a mejorar (confianza menor a 0.6)
+  const areasMejorar = softSkills.filter(skill => skill.confidence < 0.6)
 
   // Manejador para descargar informe PDF
   const handleDownloadReport = async () => {
@@ -106,7 +109,7 @@ export default function ResultadosPage() {
             <h3 className="font-medium">Puntos fuertes:</h3>
             <ul className="list-disc pl-5">
               {cvAnalysis.strengths?.length > 0 ? (
-                cvAnalysis.strengths.map((strength: string, index: number) => (
+                cvAnalysis.strengths.map((strength, index) => (
                   <li key={index}>{strength}</li>
                 ))
               ) : (
@@ -119,7 +122,7 @@ export default function ResultadosPage() {
             <h3 className="font-medium">Áreas a mejorar:</h3>
             <ul className="list-disc pl-5">
               {cvAnalysis.weaknesses?.length > 0 ? (
-                cvAnalysis.weaknesses.map((weakness: string, index: number) => (
+                cvAnalysis.weaknesses.map((weakness, index) => (
                   <li key={index}>{weakness}</li>
                 ))
               ) : (
@@ -158,7 +161,7 @@ export default function ResultadosPage() {
           data={data}
           keys={['level']}
           indexBy="skill"
-          maxValue={100}
+          maxValue="auto"
           margin={{ top: 70, right: 80, bottom: 70, left: 80 }}
           borderColor="#3182eb"
           dotSize={10}
@@ -176,7 +179,7 @@ export default function ResultadosPage() {
           {areasMejorar.length > 0 ? (
             areasMejorar.map((skill, index) => (
               <li key={index}>
-                <strong>{skill.skill}:</strong> Tu nivel es <em>{skill.level}</em>.
+                <strong>{skill.skill}:</strong> Tu nivel es <em>{skill.level}</em>. Recomendación: {skill.feedback}
               </li>
             ))
           ) : (
