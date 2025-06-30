@@ -161,10 +161,9 @@ export default function ResultadosPage() {
           data={data}
           keys={['level']}
           indexBy="skill"
-          maxValue="auto"
-          margin={{ top: 70, right: 80, bottom: 70, left: 80 }}
-          borderColor="#3182eb"
-          dotSize={10}
+        margin={{ top: 70, right: 80, bottom: 70, left: 80 }}
+        borderColor="#3182eb"
+        dotSize={10}
           dotColor="#2563eb"
           dotBorderWidth={2}
           enableDots={true}
