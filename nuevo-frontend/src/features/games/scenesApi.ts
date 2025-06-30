@@ -69,3 +69,15 @@ export const {
 
 // Exportamos mutación para enviar logs a backend
 export const { useSendGameLogMutation } = scenesApi
+
+export const logSceneInteraction = async (
+  sceneId: number,
+  step: number,
+  choice: string
+) => {
+  await fetch(`/api/logs/step`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({ sceneId, step, choice }),
+  })
+}
