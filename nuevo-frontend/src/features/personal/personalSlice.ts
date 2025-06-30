@@ -1,20 +1,12 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-// Tipos compartidos
-import {
+// Importamos desde carpeta compartida de tipos
+import type {
   CvAnalysis,
   SoftSkillResult,
   EmployabilityReport,
 } from '../../types/skills'
-// Define JobPreference type locally since '../../types/preferences' is missing
-export interface JobPreference {
-  areas: string[]
-  needs: string[]
-  workMode: 'remoto' | 'presencial' | 'híbrido'
-  availability: 'mañana' | 'tarde' | 'completa'
-  // Add other fields as needed
-}
 
 // Estado principal del usuario
 export interface PersonalState {
@@ -23,7 +15,7 @@ export interface PersonalState {
   email: string
   whatsapp: string
 
-  jobPreferences: string | JobPreference // Puede ser cadena o objeto completo
+  jobPreferences: string | JobPreference // Ahora viene de skills.ts
   workMode: 'remoto' | 'presencial' | 'híbrido'
   availability: 'mañana' | 'tarde' | 'completa'
   startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
@@ -95,23 +87,24 @@ const personalSlice = createSlice({
     ) {
       const payload = action.payload
 
-      // Si viene como string, lo convertimos a objeto JobPreference
       if (typeof payload.jobPreferences === 'string') {
         payload.jobPreferences = {
           areas: [payload.jobPreferences],
           needs: [],
           workMode: payload.workMode,
           availability: payload.availability,
+          willingToRelocate: payload.willingToRelocate,
+          hasDisabilityCert: payload.hasDisabilityCert,
         }
       }
 
       return {
         ...state,
-        ...payload,
+        ...action.payload,
       }
     },
 
-    // Guarda el archivo del CV
+    // Guarda archivo del CV
     saveCV(state, action: PayloadAction<File>) {
       state.cvFile = action.payload
     },
@@ -128,7 +121,7 @@ const personalSlice = createSlice({
       }
     },
 
-    // Guarda habilidades blandas evaluadas
+    // Guarda soft skills evaluadas
     saveSoftSkills(state, action: PayloadAction<SoftSkillResult[]>) {
       state.softSkills = action.payload
     },
@@ -147,14 +140,14 @@ const personalSlice = createSlice({
         )
       }
 
-      // Ajustes según el CV
+      // Ajuste según el CV
       if (state.cvAnalysis?.score && state.cvAnalysis.score < 60) {
         employabilityScore = Math.max(20, employabilityScore - 10)
       }
 
       // Actualiza el estado del informe
       state.report = {
-        userId: 'user-1234', // Debe venir de autenticación real
+        userId: 'user-1234',
         fullName: `${state.firstName} ${state.lastName}`,
         softSkills: state.softSkills,
         employabilityScore,
