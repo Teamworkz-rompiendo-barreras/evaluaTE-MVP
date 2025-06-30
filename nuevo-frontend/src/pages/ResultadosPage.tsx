@@ -3,14 +3,12 @@ import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
 
-// Tipos desde personalSlice
-import {
-  SoftSkillResult,
-  CvAnalysis,
-} from '../features/personal/personalSlice'
+// Tipos desde Redux
+import { CvAnalysis } from '../features/personal/personalSlice'
 
-// Componente de Nivo
+// Componentes visuales
 import { ResponsiveRadar } from '@nivo/radar'
+import ProgressBar from '../components/ProgressBar'
 
 export default function ResultadosPage() {
   const navigate = useNavigate()
@@ -21,95 +19,38 @@ export default function ResultadosPage() {
   const personal = useAppSelector((state) => state.personal)
   const cvAnalysis = personal.cvAnalysis as CvAnalysis | undefined
   const softSkills = personal.softSkills || []
-
-  // Obtenemos juegos completados
-  const completedGames = useAppSelector(
-    (state) => state.progress.completedGames || []
-  )
+  const completedGames = useAppSelector((state) => state.progress.completedGames || [])
 
   // Verificamos que todo el progreso sea completo antes de mostrar resultados
   useEffect(() => {
-    if (completedGames.length < 10 || !cvAnalysis) {
+    if (completedGames.length < 10 || !cvAnalysis || softSkills.length === 0) {
       navigate('/games')
     }
-  }, [completedGames, cvAnalysis, navigate])
+  }, [completedGames, cvAnalysis, softSkills])
 
   // Datos para el gráfico radar
-  const data = [
-    {
-      skill: 'Toma de decisiones',
-      level:
-        softSkills.find((s) => s.skill === 'Toma de decisiones')?.confidence *
-          100 || 0,
-    },
-    {
-      skill: 'Resolución de problemas',
-      level:
-        softSkills.find((s) => s.skill === 'Resolución de problemas')
-          ?.confidence * 100 || 0,
-    },
-    {
-      skill: 'Trabajo en equipo',
-      level:
-        softSkills.find((s) => s.skill === 'Trabajo en equipo')?.confidence *
-          100 || 0,
-    },
-    {
-      skill: 'Gestión emocional',
-      level:
-        softSkills.find((s) => s.skill === 'Gestión emocional')?.confidence *
-          100 || 0,
-    },
-    {
-      skill: 'Comunicación',
-      level:
-        softSkills.find((s) => s.skill === 'Comunicación')?.confidence * 100 ||
-        0,
-    },
-    {
-      skill: 'Curiosidad y aprendizaje continuo',
-      level:
-        softSkills.find(
-          (s) => s.skill === 'Curiosidad y aprendizaje continuo'
-        )?.confidence * 100 || 0,
-    },
-    {
-      skill: 'Creatividad',
-      level:
-        softSkills.find((s) => s.skill === 'Creatividad')?.confidence * 100 || 0,
-    },
-    {
-      skill: 'Flexibilidad',
-      level:
-        softSkills.find((s) => s.skill === 'Flexibilidad')?.confidence * 100 ||
-        0,
-    },
-    {
-      skill: 'Pensamiento crítico',
-      level:
-        softSkills.find((s) => s.skill === 'Pensamiento crítico')?.confidence *
-          100 || 0,
-    },
-    {
-      skill: 'Autonomía',
-      level:
-        softSkills.find((s) => s.skill === 'Autonomía')?.confidence * 100 || 0,
-    },
-  ]
+  const data = softSkills.map(skill => ({
+    skill: skill.skill,
+    level: skill.confidence * 100
+  }))
 
   // Creamos listas de fortalezas y áreas a mejorar
-  const fortalezas = softSkills.filter((skill) => skill.level === 'Alto')
-  const areasMejorar = softSkills.filter((skill) => skill.level !== 'Alto')
+  const fortalezas = softSkills.filter(skill => skill.level === 'Alto')
+  const areasMejorar = softSkills.filter(skill => skill.level !== 'Alto')
 
-  // Manejador para descargar informe
+  // Manejador para descargar informe PDF
   const handleDownloadReport = async () => {
     setLoading(true)
     try {
-      const payload = { softSkills, cvAnalysis }
+      const payload = {
+        softSkills,
+        cvAnalysis
+      }
+
       const resp = await fetch('/api/generate-report', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        body: JSON.stringify(payload)
       })
 
       if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
@@ -121,8 +62,9 @@ export default function ResultadosPage() {
       link.download = 'informe-resultados.pdf'
       document.body.appendChild(link)
       link.click()
-      link.remove()
+      document.body.removeChild(link)
       window.URL.revokeObjectURL(url)
+
       setToast('Informe descargado correctamente')
     } catch (err) {
       console.error(err)
@@ -132,7 +74,7 @@ export default function ResultadosPage() {
     }
   }
 
-  // Autoocultar toast tras 3s
+  // Autoocultar notificaciones tras 3s
   useEffect(() => {
     if (toast) {
       const timer = setTimeout(() => setToast(null), 3000)
@@ -145,7 +87,7 @@ export default function ResultadosPage() {
       {/* Título */}
       <h1 className="text-3xl font-bold text-center">Tu Informe Final</h1>
 
-      {/* Toast Notification */}
+      {/* Notificación tipo Toast */}
       {toast && (
         <div className="fixed bottom-6 right-6 bg-black bg-opacity-75 text-white px-4 py-2 rounded shadow-lg">
           {toast}
@@ -160,177 +102,99 @@ export default function ResultadosPage() {
             Puntuación global: <strong>{cvAnalysis.score}%</strong>
           </p>
 
-          <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-            <div>
-              <h3 className="font-medium mb-2">Fortalezas</h3>
-              <ul className="list-disc ml-6">
-                {cvAnalysis.strengths.length > 0 ? (
-                  cvAnalysis.strengths.map((str, i) => (
-                    <li key={i}>{str}</li>
-                  ))
-                ) : (
-                  <p className="text-gray-500">No se encontraron fortalezas.</p>
-                )}
-              </ul>
-            </div>
-            <div>
-              <h3 className="font-medium mb-2">Áreas a mejorar</h3>
-              <ul className="list-disc ml-6">
-                {cvAnalysis.weaknesses.length > 0 ? (
-                  cvAnalysis.weaknesses.map((w, i) => <li key={i}>{w}</li>)
-                ) : (
-                  <p className="text-gray-500">
-                    Tu CV está bien estructurado.
-                  </p>
-                )}
-              </ul>
-            </div>
+          <div className="space-y-2 mb-6">
+            <h3 className="font-medium">Puntos fuertes:</h3>
+            <ul className="list-disc pl-5">
+              {cvAnalysis.strengths?.length > 0 ? (
+                cvAnalysis.strengths.map((strength: string, index: number) => (
+                  <li key={index}>{strength}</li>
+                ))
+              ) : (
+                <li>No se encontraron puntos fuertes.</li>
+              )}
+            </ul>
+          </div>
+
+          <div className="space-y-2">
+            <h3 className="font-medium">Áreas a mejorar:</h3>
+            <ul className="list-disc pl-5">
+              {cvAnalysis.weaknesses?.length > 0 ? (
+                cvAnalysis.weaknesses.map((weakness: string, index: number) => (
+                  <li key={index}>{weakness}</li>
+                ))
+              ) : (
+                <li>No se encontraron áreas a mejorar.</li>
+              )}
+            </ul>
           </div>
         </div>
       ) : (
-        <p className="text-center text-gray-500">
-          No hay análisis de CV disponible aún.
-        </p>
+        <div className="bg-yellow-50 p-4 border border-yellow-200 rounded">
+          No se ha cargado el análisis del CV.
+        </div>
       )}
 
-      {/* B. Evaluación de habilidades blandas */}
-      <div className="bg-white p-6 rounded shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">
-          Minijuegos Completados
-        </h2>
-
-        {/* Gráfico radar */}
-        <div style={{ height: '400px', width: '100%' }}>
-          <ResponsiveRadar
-            data={data}
-            keys={['level']}
-            indexBy="skill"
-            maxValue="auto"
-            margin={{ top: 40, right: 120, bottom: 70, left: 120 }}
-            borderColor="#3182ce"
-            gridShape="linear"
-            dotSize={10}
-            dotColor="#2563eb"
-            dotBorderWidth={2}
-            enableDots={true}
-            animate={true}
-          />
-        </div>
-
-        {/* Listado de habilidades */}
-        <div className="mt-8">
-          <h3 className="font-medium mb-2">Puntos fuertes:</h3>
-          <ul className="list-disc ml-6 mb-4">
-            {fortalezas.length > 0 ? (
-              fortalezas.map((d, idx) => (
-                <li key={idx}>
-                  {d.skill}: {d.level} ({Math.round(d.confidence * 100)}%{' '}
-                  confianza)
-                </li>
-              ))
-            ) : (
-              <p className="text-gray-500">
-                Todavía no tienes puntos fuertes identificados.
-              </p>
-            )}
-          </ul>
-
-          <h3 className="font-medium mb-2">Áreas a mejorar:</h3>
-          <ul className="list-disc ml-6">
-            {areasMejorar.length > 0 ? (
-              areasMejorar.map((d, idx) => (
-                <li key={idx}>
-                  {d.skill}: {d.level} ({Math.round(d.confidence * 100)}%{' '}
-                  confianza)
-                </li>
-              ))
-            ) : (
-              <p className="text-gray-500">
-                ¡Felicidades! Has desarrollado todas tus áreas clave.
-              </p>
-            )}
+      {/* B. Habilidades blandas evaluadas */}
+      {softSkills.length > 0 ? (
+        <div className="bg-white p-6 rounded shadow-md">
+          <h2 className="text-2xl font-semibold mb-4">Habilidades Blandas Evaluadas</h2>
+          <ul className="space-y-2">
+            {softSkills.map((skill, index) => (
+              <li key={index}>
+                <span className="font-medium">{skill.skill}:</span> Nivel: {skill.level} ({Math.round(skill.confidence * 100)}% de confianza)
+              </li>
+            ))}
           </ul>
         </div>
+      ) : (
+        <div className="bg-yellow-50 p-4 border border-yellow-200 rounded">
+          No se han evaluado habilidades blandas aún.
+        </div>
+      )}
+
+      {/* C. Gráfico Radar */}
+      <div className="w-full h-96">
+        <ResponsiveRadar
+          data={data}
+          keys={['level']}
+          indexBy="skill"
+          maxValue={100}
+          margin={{ top: 70, right: 80, bottom: 70, left: 80 }}
+          borderColor="#3182eb"
+          dotSize={10}
+          dotColor="#2563eb"
+          dotBorderWidth={2}
+          enableDots={true}
+          animate={true}
+        />
       </div>
 
-      {/* C. Recomendaciones laborales */}
+      {/* D. Recomendaciones */}
       <div className="bg-blue-50 p-6 rounded shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Recomendaciones Laborales</h2>
-
-        <div className="space-y-2">
-          <p>
-            <span className="font-medium">Tipo de trabajo recomendado:</span>{' '}
-            {personal.jobPreferences || 'No especificado'}
-          </p>
-          <p>
-            <span className="font-medium">Modalidad ideal:</span>{' '}
-            {personal.workMode || 'No especificado'}
-          </p>
-          <p>
-            <span className="font-medium">Disponibilidad horaria:</span>{' '}
-            {personal.availability || 'No especificado'}
-          </p>
-          <p>
-            <span className="font-medium">Incorporación:</span>{' '}
-            {personal.startDate || 'No especificado'}
-          </p>
-          <p>
-            <span className="font-medium">Certificado de discapacidad:</span>{' '}
-            {personal.hasDisabilityCert ? 'Sí' : 'No'}
-          </p>
-        </div>
-
-        <div className="mt-6">
-          <h3 className="font-medium mb-2">Próximos pasos sugeridos</h3>
-          <ul className="list-disc ml-6">
-            <li>Enviar tu informe a un acompañante</li>
-            <li>Explorar formaciones recomendadas</li>
-            <li>Buscar empleo según tus puntos fuertes</li>
-          </ul>
-        </div>
+        <h2 className="text-2xl font-semibold mb-4">Recomendaciones de mejora</h2>
+        <ul className="space-y-2">
+          {areasMejorar.length > 0 ? (
+            areasMejorar.map((skill, index) => (
+              <li key={index}>
+                <strong>{skill.skill}:</strong> Tu nivel es <em>{skill.level}</em>.
+              </li>
+            ))
+          ) : (
+            <li>No hay recomendaciones disponibles aún.</li>
+          )}
+        </ul>
       </div>
 
-      {/* D. Botones de acción */}
-      <div className="flex flex-col md:flex-row justify-center gap-4 mt-6">
-        <button
-          onClick={() => navigate('/games')}
-          disabled={completedGames.length < 10}
-          className={`px-6 py-2 rounded transition ${
-            completedGames.length < 10
-              ? 'bg-gray-400 cursor-not-allowed'
-              : 'bg-blue-600 hover:bg-blue-700 text-white'
-          }`}
-        >
-          Volver al Dashboard
-        </button>
+      {/* E. Botón de descarga */}
+      <div className="flex justify-center mt-6">
         <button
           onClick={handleDownloadReport}
           disabled={loading}
-          className="flex items-center justify-center px-6 py-2 bg-green-600 text-white rounded hover:bg-green-700 transition disabled:opacity-50"
+          className={`py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ${
+            loading ? 'opacity-70 cursor-not-allowed' : ''
+          }`}
         >
-          {loading && (
-            <svg
-              className="animate-spin h-5 w-5 mr-2 text-white"
-              xmlns="http://www.w3.org/2000/svg"
-              fill="none"
-              viewBox="0 0 24 24"
-            >
-              <circle
-                className="opacity-25"
-                cx="12"
-                cy="12"
-                r="10"
-                stroke="currentColor"
-                strokeWidth="4"
-              />
-              <path
-                className="opacity-75"
-                fill="currentColor"
-                d="M4 12a8 8 0 018-8v4a4 4 0 00-4 4H4z"
-              />
-            </svg>
-          )}
-          {loading ? 'Generando informe...' : 'Descargar Informe'}
+          {loading ? 'Generando informe...' : 'Descargar Informe PDF'}
         </button>
       </div>
     </section>
