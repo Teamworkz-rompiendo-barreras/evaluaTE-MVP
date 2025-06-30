@@ -16,11 +16,35 @@ nuevo-frontend/public/scenes/__pycache__
 nuevo-frontend/src/types/*.d.ts
 nuevo-frontend/vitest.config.ts
 nuevo-frontend/cypress.config.ts
+nuevo-frontend/.eslintcache
+nuevo-frontend/.prettierrc.js
+nuevo-frontend/.eslintrc.js
+nuevo-frontend/.browserslistrc
+nuevo-frontend/tailwind.config.ts
+nuevo-frontend/postcss.config.ts
+nuevo-frontend/package-lock.json
+nuevo-frontend/yarn.lock
+nuevo-frontend/pnpm-lock.yaml
 
-# Archivos de desarrollo
+# Archivos sensibles o temporales
 *.log
 *.env.local
 *.env.development*
 *.env.test*
-.eslintcache
-.prettierc.js
+*.env.development.local
+*.env.production.local
+*.env.staging*
+*.env.build*
+
+# Archivos generados por herramientas
+coverage/
+__pycache__
+*.pyc
+*.db
+.DS_Store
+Thumbs.db
+desktop.ini
+.git
+.husky
+.prettierignore
+.eslintignore
