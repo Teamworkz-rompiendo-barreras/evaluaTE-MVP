@@ -1,3 +1,116 @@
+/* src/index.css */
 @tailwind base;
 @tailwind components;
 @tailwind utilities;
+
+/* Estilos globales personalizados (opcional) */
+
+html,
+body {
+  @apply font-sans text-neutral-dark bg-neutral-light antialiased;
+}
+
+* {
+  @apply box-border;
+}
+
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-bold;
+}
+
+h1 {
+  @apply text-3xl md:text-4xl;
+}
+
+h2 {
+  @apply text-2xl md:text-3xl;
+}
+
+p {
+  @apply mb-4;
+}
+
+a {
+  @apply text-primary hover:text-secondary transition-colors;
+  cursor: pointer;
+}
+
+button {
+  @apply rounded font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50;
+}
+
+button:hover {
+  @apply shadow-md;
+}
+
+input,
+select,
+textarea {
+  @apply border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary;
+}
+
+.container {
+  @apply max-w-5xl mx-auto px-4;
+}
+
+.card {
+  @apply bg-white p-6 rounded-lg shadow-md;
+}
+
+.card-header {
+  @apply text-xl font-semibold mb-4;
+}
+
+.card-body {
+  @apply space-y-4;
+}
+
+.bg-primary {
+  background-color: #374BA6;
+}
+
+.text-primary {
+  color: #374BA6;
+}
+
+.bg-secondary {
+  background-color: #F2D680;
+}
+
+.text-secondary {
+  color: #F2D680;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-[#2d3f96] active:bg-[#2a3b8c];
+}
+
+.btn-secondary {
+  @apply bg-secondary text-black hover:bg-[#eac65a] active:bg-[#dbc74d];
+}
+
+.rounded {
+  @apply rounded-lg;
+}
+
+.shadow {
+  @apply shadow-lg;
+}
+
+/* Scrollbar personalizado (opcional) */
+::-webkit-scrollbar {
+  width: 8px;
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary rounded-full;
+}
