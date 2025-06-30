@@ -1,12 +1,20 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
-// Tipos desde tu carpeta compartida de tipos
+// Tipos compartidos
 import {
   CvAnalysis,
   SoftSkillResult,
   EmployabilityReport,
 } from '../../types/skills'
+// Define JobPreference type locally since '../../types/preferences' is missing
+export interface JobPreference {
+  areas: string[]
+  needs: string[]
+  workMode: 'remoto' | 'presencial' | 'híbrido'
+  availability: 'mañana' | 'tarde' | 'completa'
+  // Add other fields as needed
+}
 
 // Estado principal del usuario
 export interface PersonalState {
@@ -15,7 +23,7 @@ export interface PersonalState {
   email: string
   whatsapp: string
 
-  jobPreferences: string
+  jobPreferences: string | JobPreference // Puede ser cadena o objeto completo
   workMode: 'remoto' | 'presencial' | 'híbrido'
   availability: 'mañana' | 'tarde' | 'completa'
   startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
@@ -23,14 +31,14 @@ export interface PersonalState {
   willingToRelocate: boolean
   hasDisabilityCert: boolean
 
-  cvFile: File | null // Archivo del CV
-  cvAnalysis?: CvAnalysis // Análisis del CV
-  softSkills: SoftSkillResult[] // Habilidades blandas evaluadas
-  unlockedGames: number // Juegos desbloqueados (máx 10)
-  report?: EmployabilityReport // Informe final con todas las habilidades
+  cvFile: File | null
+  cvAnalysis?: CvAnalysis
+  softSkills: SoftSkillResult[]
+  unlockedGames: number
+  report?: EmployabilityReport
 }
 
-// Estado inicial por defecto
+// Estado inicial
 const initialState: PersonalState = {
   firstName: '',
   lastName: '',
@@ -85,9 +93,21 @@ const personalSlice = createSlice({
         >
       >
     ) {
+      const payload = action.payload
+
+      // Si viene como string, lo convertimos a objeto JobPreference
+      if (typeof payload.jobPreferences === 'string') {
+        payload.jobPreferences = {
+          areas: [payload.jobPreferences],
+          needs: [],
+          workMode: payload.workMode,
+          availability: payload.availability,
+        }
+      }
+
       return {
         ...state,
-        ...action.payload,
+        ...payload,
       }
     },
 
@@ -96,12 +116,12 @@ const personalSlice = createSlice({
       state.cvFile = action.payload
     },
 
-    // Guarda el análisis del CV procesado
+    // Guarda análisis del CV procesado
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
       state.cvAnalysis = action.payload
     },
 
-    // Desbloquea el siguiente minijuego
+    // Desbloquea siguiente minijuego
     unlockNextGame(state) {
       if (state.unlockedGames < 10) {
         state.unlockedGames += 1
@@ -113,7 +133,7 @@ const personalSlice = createSlice({
       state.softSkills = action.payload
     },
 
-    // Genera informe final basado en CV + soft skills
+    // Genera informe final basado en todo el progreso
     generateFinalReport(state) {
       const totalSoftSkills = state.softSkills.length
       const highSkills = state.softSkills.filter(skill => skill.level === 'Alto').length
@@ -123,7 +143,7 @@ const personalSlice = createSlice({
       let employabilityScore = 0
       if (totalSoftSkills > 0) {
         employabilityScore = Math.round(
-          ((highSkills * 100 + mediumSkills * 70 + lowSkills * 30) / totalSoftSkills
+          ((highSkills * 100 + mediumSkills * 70 + lowSkills * 30) / totalSoftSkills)
         )
       }
 
@@ -132,12 +152,27 @@ const personalSlice = createSlice({
         employabilityScore = Math.max(20, employabilityScore - 10)
       }
 
+      // Actualiza el estado del informe
       state.report = {
-        userId: 'user-1234', // Esto debería venir de auth
+        userId: 'user-1234', // Debe venir de autenticación real
         fullName: `${state.firstName} ${state.lastName}`,
         softSkills: state.softSkills,
         employabilityScore,
-        jobPreferences: state.jobPreferences ? { areas: [state.jobPreferences] } : { areas: [] },
+        jobPreferences:
+          typeof state.jobPreferences === 'string'
+            ? {
+                areas: [state.jobPreferences],
+                needs: [],
+                workMode: state.workMode,
+                availability: state.availability,
+                willingToRelocate: state.willingToRelocate,
+                hasDisabilityCert: state.hasDisabilityCert,
+              }
+            : {
+                ...state.jobPreferences,
+                willingToRelocate: state.willingToRelocate,
+                hasDisabilityCert: state.hasDisabilityCert,
+              },
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
         completedGames: Array.from({ length: state.unlockedGames }, (_, i) => i + 1),
