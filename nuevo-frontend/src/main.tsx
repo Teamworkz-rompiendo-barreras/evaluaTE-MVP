@@ -7,7 +7,7 @@ import { PersistGate } from 'redux-persist/integration/react'
 import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
 
 import DatosPersonalesPage from './pages/DatosPersonalesPage'
-import PreferencesStep      from './features/personal/PreferencesStep'
+import PreferencesStep     from './features/personal/PreferencesStep'
 import GameDashboardPage   from './pages/GameDashboardPage'
 import GameScenePage       from './pages/GameScenePage'
 import UploadCVPage        from './pages/UploadCVPage'
@@ -29,6 +29,7 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             {/* 1) Inicio → registro: datos personales */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
+
 
             {/* 2) Registro: preferencias */}
             <Route
