@@ -6,6 +6,7 @@ import type {
   CvAnalysis,
   SoftSkillResult,
   EmployabilityReport,
+  JobPreference,
 } from '../../types/skills'
 
 // Estado principal del usuario
