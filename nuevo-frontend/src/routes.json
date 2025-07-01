@@ -1,0 +1,39 @@
+{
+  "routes": [
+    {
+      "route": "/api/subir-cv",
+      "methods": ["POST"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/generar-informe",
+      "methods": ["POST"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/logs/scene",
+      "methods": ["POST"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/logs/game-complete",
+      "methods": ["POST"],
+      "allowedRoles": ["anonymous"]
+    },
+    {
+      "route": "/api/reports",
+      "methods": ["GET", "POST"],
+      "allowedRoles": ["anonymous"]
+    }
+  ],
+
+  "platform": {
+    "api": {
+      "runtime": "fastapi"
+    }
+  },
+
+  "navigationFallback": {
+    "rewrite": "/index.html"
+  }
+}
