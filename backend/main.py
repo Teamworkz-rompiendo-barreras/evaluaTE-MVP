@@ -5,6 +5,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel
 import uvicorn
 from typing import List, Optional, Dict, Any
+from datetime import datetime
 
 # Tipos compartidos – puedes moverlos a un paquete común si lo usas también en frontend
 class SoftSkillResult(BaseModel):
