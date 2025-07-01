@@ -2,12 +2,8 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit'
 
 // Importamos desde carpeta compartida de tipos
-import type {
-  CvAnalysis,
-  SoftSkillResult,
-  EmployabilityReport,
-  JobPreference,
-} from '../../types/skills'
+import type { JobPreference, EmployabilityReport } from '@/types/preferences'
+import type { CvAnalysis, SoftSkillResult } from '@/types/skills'
 
 // Estado principal del usuario
 export interface PersonalState {
