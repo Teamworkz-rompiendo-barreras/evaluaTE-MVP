@@ -1,78 +1,74 @@
-import { defineConfig } from 'cypress'
+// cypress/e2e/gameflow.cy.ts
+import { mockUser } from '@/__fixtures__/user.fixtures'
+import { mockScene1, mockScene3 } from '@/__fixtures__/scene.fixture'
+import { userDecision1, userDecision3 } from '@/__fixtures__/user.decision.fixture'
 
-export default defineConfig({
-  e2e: {
-    baseUrl: 'http://localhost:5173',
-    specPattern: 'cypress/e2e/**/*.cy.ts',
-    supportFile: false,    // si no usas support
-  },
-})
-
-describe('Flujo completo de registro, juego y desbloqueo', () => {
-  
+describe('Flujo completo de usuario: registro → juegos → resultados', () => {
   beforeEach(() => {
-    // Limpiamos cualquier estado anterior
-    cy.clearLocalStorage();
-    cy.visit(`register/contact`);
-  });
+    cy.clearLocalStorage()
+    cy.visit('/')
+  })
 
-  it('Registra al usuario, completa el minijuego 0 y desbloquea el 1', () => {
+  it('registra al usuario, completa minijuegos y genera informe final', () => {
     // ——————————————
-    // 1) Registro – Paso 1
+    // 1) Registro – Paso 1: Datos personales
     // ——————————————
-    cy.get('#firstName').type('Ester');
-    cy.get('#lastName').type('Pérez');
-    cy.get('#email').type('ester@example.com');
-    cy.get('button[type=submit]').click();
-
-    // ——————————————
-    // 2) Registro – Paso 2
-    // ——————————————
-    cy.url().should('include', '/register/preferences');
-    cy.get('#jobPreferences').type('Desarrollo web');
-    cy.get('#workMode').select('remoto');
-    cy.get('#availability').select('mañana');
-    cy.get('#startDate').select('inmediata');
-    cy.get('#relocate').check();
-    cy.get('#cert').check();
-    cy.get('button[type=submit]').click();
+    cy.get('#firstName').type(mockUser.firstName)
+    cy.get('#lastName').type(mockUser.lastName)
+    cy.get('#email').type(mockUser.email)
+    cy.contains('button', 'Continuar').click()
 
     // ——————————————
-    // 3) Dashboard
+    // 2) Registro – Paso 2: Preferencias laborales
     // ——————————————
-    cy.url().should('include', '/games');
-    cy.contains('Elige un minijuego').should('be.visible');
+    cy.url().should('include', '/preferences')
+    cy.get('#jobPreferences').type(mockUser.jobPreferences.areas.join(', '))
+    cy.get('#workMode').select(mockUser.jobPreferences.workMode)
+    cy.get('#availability').select(mockUser.jobPreferences.availability)
+    cy.get('#relocate').check(mockUser.jobPreferences.willingToRelocate)
+    cy.get('#cert').check(mockUser.jobPreferences.hasDisabilityCert)
+    cy.contains('button', 'Guardar y continuar').click()
 
     // ——————————————
-    // 4) Abrimos el primer juego (id=0)
+    // 3) Dashboard – Acceso a los minijuegos
     // ——————————————
-    cy.get('[data-cy="game-card-0"]')
-      .should('have.attr', 'aria-disabled', 'false')
-      .click();
+    cy.url().should('include', '/games')
+    cy.contains('h1', 'Minijuegos completados').should('exist')
 
     // ——————————————
-    // 5) Recorremos todas las escenas
+    // 4) Juego 0 – Toma de decisiones
     // ——————————————
-   function avanzarEscena() {
-      cy.contains('button', 'Siguiente').then($btn => {
-        if ($btn.is(':visible')) {
-          cy.wrap($btn).click()
-          avanzarEscena()
-        }
-      })
-    }
-    avanzarEscena()
+    cy.get('[data-cy="game-card-0"]').click()
+
+    cy.contains('p', mockScene1.steps[0].text).should('exist')
+    cy.contains('button', userDecision1.optionText).click()
+    cy.contains('button', 'Siguiente').click()
 
     // ——————————————
-    // 6) Finalizar y volver al dashboard
+    // 5) Juego 1 – Resolución de problemas
     // ——————————————
-    cy.contains('button', 'Finalizar').click();
-    cy.url().should('include', '/games');
+    cy.get('[data-cy="game-card-1"]').click()
+
+    cy.contains('p', mockScene3.steps[0].text).should('exist')
+    cy.contains('button', userDecision3.optionText).click()
+    cy.contains('button', 'Finalizar').click()
 
     // ——————————————
-    // 7) El segundo juego (id=1) ya está habilitado
+    // 6) Navega al informe final
     // ——————————————
-    cy.get('[data-cy="game-card-1"]')
-      .should('have.attr', 'aria-disabled', 'false');
-  });
-});
+    cy.contains('button', 'Ver Resultados').click()
+    cy.url().should('include', '/resultados')
+
+    // Verifica que el informe muestre puntaje global
+    cy.contains('.employabilityScore', '75%').should('exist')
+
+    // Verifica soft skills evaluadas
+    cy.contains('li', 'Toma de decisiones: Alto (90% de confianza)')
+    cy.contains('li', 'Resolución de problemas: Medio (65% de confianza)')
+
+    // Descarga el informe PDF
+    cy.contains('button', 'Descargar Informe PDF').click()
+    cy.wait(1000) // Simula tiempo de generación
+    cy.contains('div', 'Informe descargado correctamente').should('exist')
+  })
+})
