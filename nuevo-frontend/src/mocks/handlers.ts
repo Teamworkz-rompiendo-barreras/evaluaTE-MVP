@@ -1,11 +1,11 @@
 // src/mocks/handlers.ts
 
 import { rest } from 'msw'
-import type { RestRequest, ResponseComposition, RestContext } from 'msw'
+import type { RestRequest, ResponseResolver, RestContext } from 'msw'
 
 export const handlers = [
   // Minijuego 1 - Toma de decisiones
-  rest.get('/api/scenes/1.json', (req: RestRequest, res: ResponseComposition, ctx: RestContext) => {
+  rest.get('/api/scenes/1.json', (req: RestRequest, res: any, ctx: RestContext) => {
     return res(
       ctx.status(200),
       ctx.json({
@@ -35,7 +35,7 @@ export const handlers = [
   }),
 
   // Minijuego 2 - Resolución de problemas
-  rest.get('/api/scenes/2.json', (req: RestRequest, res: ResponseComposition, ctx: RestContext) => {
+  rest.get('/api/scenes/2.json', (req: RestRequest, res: any, ctx: RestContext) => {
     return res(
       ctx.status(200),
       ctx.json({
@@ -65,7 +65,7 @@ export const handlers = [
   }),
 
   // Minijuego 3 - Trabajo en equipo
-  rest.get('/api/scenes/3.json', (req: RestRequest, res: ResponseComposition, ctx: RestContext) => {
+  rest.get('/api/scenes/3.json', (req: RestRequest, res: any, ctx: RestContext) => {
     return res(
       ctx.status(200),
       ctx.json({
@@ -95,7 +95,7 @@ export const handlers = [
   }),
 
   // Minijuego 5 - Comunicación
-  rest.get('/api/scenes/5.json', (req: RestRequest, res: ResponseComposition, ctx: RestContext) => {
+  rest.get('/api/scenes/5.json', (req: RestRequest, res: any, ctx: RestContext) => {
     return res(
       ctx.status(200),
       ctx.json({
@@ -125,11 +125,11 @@ export const handlers = [
   }),
 
   // Logs
-  rest.post('/api/logs/step', (req: RestRequest, res: ResponseComposition, ctx: RestContext) => {
+  rest.post('/api/logs/step', (req: RestRequest, res: any, ctx: RestContext) => {
     return res(ctx.status(200))
   }),
 
-  rest.post('/api/logs/game-complete', (req: RestRequest, res: ResponseComposition, ctx: RestContext) => {
+  rest.post('/api/logs/game-complete', (req: RestRequest, res: any, ctx: RestContext) => {
     return res(ctx.status(200), ctx.json({ success: true }))
   })
 ]
