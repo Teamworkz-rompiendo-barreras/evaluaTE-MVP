@@ -1,15 +1,16 @@
 // src/types/game-scene.ts
-
 import type { SoftSkillResult } from '@/types/skills'
+import type { JobPreference } from '@/types/preferences'
 
 /**
- * Una opción seleccionada por el usuario en una escena
+ * Opción seleccionada por el usuario en una escena
  */
 export interface SceneOption {
   text: string
   isCorrect: boolean
-  skillImpact?: Record<string, number> // Impacto en habilidades blandas (ej: {'Toma de decisiones': 0.9})
-  feedback?: string // Feedback tras elegir esta opción
+  skillImpact?: Record<string, number> // Ej: {'Toma de decisiones': 0.9}
+  feedback?: string // Mensaje tras elegir esta opción
+  requiresAdaptation?: boolean // Si se activa algún ajuste de accesibilidad
 }
 
 /**
@@ -18,7 +19,10 @@ export interface SceneOption {
 export interface GameStep {
   text: string
   image?: string
+  audio?: string // Para usuarios que prefieren audios
   options: SceneOption[]
+  timeLimit?: number // Límite de tiempo (opcional)
+  autoProceed?: boolean // Avanzar automáticamente tras elección
 }
 
 /**
@@ -28,16 +32,20 @@ export interface GameScene {
   id: number
   title: string
   steps: GameStep[]
+  softSkillsTracked: string[] // Habilidades evaluadas en esta escena
+  estimatedTime?: number // Tiempo estimado en minutos
+  difficulty?: 'fácil' | 'media' | 'alta'
+  accessibilityOptions?: {
+    showPictograms: boolean
+    audioAssistiveMode: boolean
+    contrastLevel: 'normal' | 'alto' | 'muy-alto'
+  }
 }
 
 /**
  * Respuesta del API al pedir una escena
  */
-export interface GameSceneResponse {
-  id: number
-  title: string
-  steps: GameStep[]
-}
+export interface GameSceneResponse extends GameScene {}
 
 /**
  * Registro de decisión tomada por el usuario
@@ -49,6 +57,8 @@ export interface UserDecision {
   timestamp: string
   isCorrect: boolean
   skillImpacts: Record<string, number>
+  userAgent: string // Datos del dispositivo
+  screenResolution: string // Para análisis UX
 }
 
 /**
@@ -59,4 +69,8 @@ export interface UserDecisionHistory {
   userId: string
   createdAt: string
   updatedAt: string
+  completedGames: number[]
+  preferencesAtStart: JobPreference // Preferencias laborales iniciales
+  softSkillsAtEnd: SoftSkillResult[] // Evaluación final de habilidades blandas
+  employabilityScore: number // Puntaje global calculado
 }
