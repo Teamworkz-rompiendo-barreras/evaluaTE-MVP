@@ -14,12 +14,12 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
-    "types": ["vitest"],
+    // "types": ["vitest"], // Uncomment if you install @types/vitest
+    "types": [],
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "baseUrl": ".",
     "paths": {
-      "@/*": ["src/*"],
-    "types": ["vite/client", "vitest/globals"]  
+      "@/*": ["src/*"]
     }
   },
   "include": ["src", "vitest.config.ts", "vite.config.ts"],
