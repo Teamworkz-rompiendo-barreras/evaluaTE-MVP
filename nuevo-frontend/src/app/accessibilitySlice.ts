@@ -2,27 +2,47 @@
 import { createSlice, PayloadAction } from "@reduxjs/toolkit";
 
 export interface AccessibilityState {
-  highContrast: boolean;
-  fontScale: number; // en %, e.g. 100 = 100%
+  easyReadingMode: boolean
+  audioAssistiveMode: boolean
+  showPictograms: boolean
+  contrastLevel: 'normal' | 'alto' | 'muy-alto'
+  fontScale: number
 }
 
 const initialState: AccessibilityState = {
-  highContrast: false,
+  easyReadingMode: false,
+  audioAssistiveMode: false,
+  showPictograms: false,
+  contrastLevel: 'normal',
   fontScale: 100,
-};
+}
 
-const accessibilitySlice = createSlice({
-  name: "accessibility",
+export const accessibilitySlice = createSlice({
+  name: 'accessibility',
   initialState,
   reducers: {
-    toggleContrast(state) {
-      state.highContrast = !state.highContrast;
+    toggleEasyReadingMode: (state) => {
+      state.easyReadingMode = !state.easyReadingMode
     },
-    setFontScale(state, action: PayloadAction<number>) {
-      state.fontScale = action.payload;
+    toggleAudioAssistiveMode: (state) => {
+      state.audioAssistiveMode = !state.audioAssistiveMode
     },
-  },
-});
+    setShowPictograms: (state, action) => {
+      state.showPictograms = action.payload
+    },
+    setContrastLevel: (state, action) => {
+      state.contrastLevel = action.payload
+    },
+    setFontScale: (state, action) => {
+      state.fontScale = action.payload
+    }
+  }
+})
 
-export const { toggleContrast, setFontScale } = accessibilitySlice.actions;
-export default accessibilitySlice.reducer;
+export const {
+  toggleEasyReadingMode,
+  toggleAudioAssistiveMode,
+  setShowPictograms,
+  setContrastLevel,
+  setFontScale,
+} = accessibilitySlice.actions
