@@ -2,6 +2,7 @@
 import React, { useState, useEffect } from 'react'
 import { useNavigate } from 'react-router-dom'
 import { useAppSelector } from '../app/hooks'
+import type { RootState } from '../app/store'
 
 // Tipos desde Redux
 import {
@@ -9,6 +10,7 @@ import {
   SoftSkillResult,
   JobPreference,
 } from '@/types/skills'
+import type { EmployabilityReport } from '@/types/skills'
 
 // Componentes visuales
 import { ResponsiveRadar } from '@nivo/radar'
@@ -20,10 +22,19 @@ export default function ResultadosPage() {
   const [toast, setToast] = useState<string | null>(null)
 
   // Accedemos al estado global tipado
-  const personal = useAppSelector((state) => state.personal)
-  const cvAnalysis = personal.cvAnalysis as CvAnalysis | undefined
-  const softSkills = personal.softSkills || []
-  const completedGames = useAppSelector((state) => state.progress.completedGames || [])
+  // Import RootState type from your store (adjust the import path as needed)
+  
+  // Ajusta el selector según la estructura real de tu store
+  // Por ejemplo, si tu store tiene la forma state.personal:
+  // Cambia 'personal' por el nombre correcto del slice en tu store
+  // Reemplaza 'personal' por el nombre correcto del slice según tu store, por ejemplo 'user' o 'profile'
+    // Ajusta el nombre del slice según tu store, por ejemplo 'personal', 'profile', etc.
+        // Replace 'profile' with the actual slice name from your store if different
+                // Replace 'personal' with the actual slice name from your store if different
+                                const profile = useAppSelector((state: RootState) => state.profile)
+                                const cvAnalysis = profile?.cvAnalysis as CvAnalysis | undefined
+                                const softSkills = profile?.softSkills || []
+                                const completedGames = profile?.completedGames || []
 
   // Verificamos que todo el progreso sea completo antes de mostrar resultados
   useEffect(() => {
@@ -33,13 +44,32 @@ export default function ResultadosPage() {
   }, [completedGames, cvAnalysis, softSkills])
 
   // Datos para gráfico radar
-  const data = softSkills.map(skill => ({
+  interface RadarData {
+    skill: string
+    level: number
+  }
+
+  const data: RadarData[] = softSkills.map((skill: SoftSkillResult) => ({
     skill: skill.skill,
     level: skill.confidence * 100
   }))
 
   // Áreas a mejorar (confianza menor a 0.6)
-  const areasMejorar = softSkills.filter(skill => skill.confidence < 0.6)
+  interface AreaMejorar {
+    skill: string
+    level: number
+    confidence: number
+    feedback?: string
+  }
+
+  const areasMejorar: AreaMejorar[] = softSkills
+    .filter((skill: SoftSkillResult) => skill.confidence < 0.6)
+    .map((skill: SoftSkillResult) => ({
+      skill: skill.skill,
+      level: skill.level,
+      confidence: skill.confidence,
+      feedback: skill.feedback,
+    }))
 
   // Manejador para descargar informe PDF
   const handleDownloadReport = async () => {
@@ -142,9 +172,9 @@ export default function ResultadosPage() {
         <div className="bg-white p-6 rounded shadow-md">
           <h2 className="text-2xl font-semibold mb-4">Habilidades Blandas Evaluadas</h2>
           <ul className="space-y-2">
-            {softSkills.map((skill, index) => (
+            {softSkills.map((skill: SoftSkillResult, index: number) => (
               <li key={index}>
-                <span className="font-medium">{skill.skill}:</span> Nivel: {skill.level} ({Math.round(skill.confidence * 100)}% de confianza)
+              <span className="font-medium">{skill.skill}:</span> Nivel: {skill.level} ({Math.round(skill.confidence * 100)}% de confianza)
               </li>
             ))}
           </ul>
