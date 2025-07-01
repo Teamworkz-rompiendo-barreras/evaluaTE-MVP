@@ -1,7 +1,10 @@
 // src/components/ProtectedRoute.tsx
 import React from 'react'
 import { useSelector } from 'react-redux'
-import { Navigate } from 'react-router-dom'
+import { Navigate, useNavigate } from 'react-router-dom'
+
+import type { RootState } from '@/app/store'
+import type { PersonalState } from '@/features/personal/personalSlice'
 
 interface Props {
   step: 'contact' | 'preferences' | 'games' | 'uploadCV' | 'resultados'
@@ -9,31 +12,46 @@ interface Props {
 }
 
 export default function ProtectedRoute({ step, children }: Props) {
-  const personal = useSelector((state: any) => state.personal)
-  const registered = Boolean(personal.firstName && personal.lastName)
-  const completedGames = useSelector((state: any) => state.progress.completedGames || [])
-  const cvUploaded = useSelector((state: any) => Boolean(state.progress.cvFile))
-  const prefsCompleted = Boolean(personal.jobPreferences)
+  const navigate = useNavigate()
+  const personal = useSelector((state: RootState) => state.personal)
+  const progress = useSelector((state: RootState) => state.progress)
+
+  const hasPersonalData = Boolean(personal.firstName && personal.lastName)
+  const hasCV = Boolean(personal.cvFile)
+  const hasPreferences = Boolean(personal.jobPreferences)
+  const hasCompletedAllGames = progress.completedGames.length >= 10
+
+  // Redirección genérica – para evitar repetir código
+  const redirectToStep = (target: string) => {
+    return <Navigate to={target} replace />
+  }
 
   switch (step) {
+    case 'contact':
+      if (!hasPersonalData) return <>{children}</>
+      // Si ya tiene datos personales, redirigimos al siguiente paso
+      return redirectToStep('/preferences')
+
     case 'preferences':
-      if (!registered) return <Navigate to="/register/contact" replace />
+      if (!hasPersonalData) return redirectToStep('/register/contact')
+      if (hasPreferences) return <>{children}</>
+      // Si no hay preferencias, deja continuar
       return <>{children}</>
 
     case 'games':
-      if (!registered) return <Navigate to="/register/contact" replace />
+      if (!hasPersonalData) return redirectToStep('/register/contact')
       return <>{children}</>
 
     case 'uploadCV':
-      if (!registered) return <Navigate to="/register/contact" replace />
-      if (completedGames.length < 10) return <Navigate to="/games" replace />
+      if (!hasPersonalData) return redirectToStep('/register/contact')
+      if (!hasCompletedAllGames) return redirectToStep('/games')
       return <>{children}</>
 
     case 'resultados':
-      if (!registered) return <Navigate to="/register/contact" replace />
-      if (completedGames.length < 10) return <Navigate to="/games" replace />
-      if (!cvUploaded) return <Navigate to="/upload-cv" replace />
-      if (!prefsCompleted) return <Navigate to="/preferences" replace />
+      if (!hasPersonalData) return redirectToStep('/register/contact')
+      if (!hasCompletedAllGames) return redirectToStep('/games')
+      if (!hasCV) return redirectToStep('/upload-cv')
+      if (!hasPreferences) return redirectToStep('/preferences')
       return <>{children}</>
 
     default:
