@@ -17,5 +17,6 @@ interface RadarProps {
 }
 
 declare module '@nivo/radar' {
+  import { ComponentType } from 'react'
   export const ResponsiveRadar: ComponentType<RadarProps>
 }
