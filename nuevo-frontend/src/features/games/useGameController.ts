@@ -1,53 +1,118 @@
 // src/features/games/useGameController.ts
 import React, { useState, useEffect, useCallback, useRef } from 'react'
+import { useDispatch } from 'react-redux'
 
-export function useGameController(totalSteps: number, stepDuration: number = 30) {
-  const [currentStep, setCurrentStep] = useState(0)
-  const [timeLeft, setTimeLeft] = useState(stepDuration)
+// Tipos compartidos
+import type {
+  GameStep,
+  SceneOption,
+} from '@/types/game-scene'
+
+// Acciones desde Redux
+import { unlockGame } from '@/features/progress/progressSlice'
+
+export interface UseGameControllerProps {
+  sceneId: number
+  steps: GameStep[]
+  initialStep?: number
+  timePerStep?: number
+}
+
+export default function useGameController({
+  sceneId,
+  steps = [],
+  initialStep = 0,
+  timePerStep = 30,
+}: UseGameControllerProps) {
+  const dispatch = useDispatch()
+  const [currentStep, setCurrentStep] = useState(initialStep)
+  const [timeLeft, setTimeLeft] = useState(timePerStep)
+  const [choices, setChoices] = useState<SceneOption[]>([])
+  const [completed, setCompleted] = useState(false)
   const timerRef = useRef<number | undefined>(undefined)
 
-  const goNext = useCallback(() => {
-    setCurrentStep((s) => Math.min(s + 1, totalSteps - 1))
-    setTimeLeft(stepDuration)
-  }, [stepDuration, totalSteps])
+  // Avanzar al siguiente paso
+  const nextStep = useCallback(() => {
+    if (currentStep < steps.length - 1) {
+      setCurrentStep((prev) => prev + 1)
+      setTimeLeft(timePerStep)
+    } else {
+      finishGame()
+    }
+  }, [currentStep, steps.length])
 
-  const goPrev = useCallback(() => {
-    setCurrentStep((s) => Math.max(s - 1, 0))
-    setTimeLeft(stepDuration)
+  // Retroceder al paso anterior
+  const prevStep = useCallback(() => {
+    if (currentStep > 0) {
+      setCurrentStep((prev) => prev - 1)
+      setTimeLeft(timePerStep)
+    }
+  }, [currentStep])
+
+  // Registrar una elección del usuario
+  const makeChoice = useCallback(
+    (option: SceneOption) => {
+      setChoices((prev) => [...prev, option])
+      
+      // Si es correcta, desbloqueamos el próximo juego
+      if (option.isCorrect) {
+        dispatch(unlockGame(sceneId))
+      }
+
+      nextStep()
+    },
+    [sceneId, nextStep]
+  )
+
+  // Finaliza el juego y genera puntaje
+  const finishGame = useCallback(() => {
+    setCompleted(true)
+    setTimeLeft(0)
   }, [])
 
-  // Reiniciamos el tiempo cada vez que cambiamos de paso
-  useEffect(() => {
-    setTimeLeft(stepDuration)
-  }, [currentStep, stepDuration])
+  // Reinicia el juego
+  const resetGame = useCallback(() => {
+    setCurrentStep(0)
+    setTimeLeft(timePerStep)
+    setChoices([])
+    setCompleted(false)
+  }, [timePerStep])
 
-  // Cuenta regresiva activa mientras no estemos en el último paso
+  // Reiniciar temporizador cuando cambia de paso
   useEffect(() => {
-    if (currentStep >= totalSteps - 1) return
+    setTimeLeft(timePerStep)
+  }, [currentStep, timePerStep])
 
-    // Inicia el temporizador
+  // Inicia el temporizador
+  useEffect(() => {
+    if (completed || currentStep >= steps.length - 1) return
+
     timerRef.current = window.setInterval(() => {
       setTimeLeft((t) => {
         if (t <= 1) {
-          goNext()
-          return stepDuration
+          nextStep()
+          return timePerStep
         }
         return t - 1
       })
     }, 1000)
 
-    // Limpieza
     return () => {
       if (timerRef.current !== undefined) {
         clearInterval(timerRef.current)
       }
     }
-  }, [currentStep, goNext, stepDuration, totalSteps])
+  }, [completed, currentStep, steps.length, timePerStep])
 
   return {
     currentStep,
     timeLeft,
-    goNext,
-    goPrev,
+    choices,
+    completed,
+    nextStep,
+    prevStep,
+    makeChoice,
+    resetGame,
+    progress: Math.round(((currentStep + 1) / steps.length) * 100),
   }
 }
