@@ -1,5 +1,7 @@
 // src/types/preferences.ts
 
+import type { SoftSkillResult } from '@/types/skills'
+
 /**
  * Preferencias laborales del candidato
  */
@@ -69,7 +71,7 @@ export interface AccessibilitySettings {
   audioAssistiveMode: boolean
 
   /**
-   * Si muestra pictogramas
+   * Si muestra pictogramas visuales
    */
   showPictograms: boolean
 
@@ -77,4 +79,54 @@ export interface AccessibilitySettings {
    * Nivel de contraste activo
    */
   contrastLevel: 'normal' | 'alto' | 'muy-alto'
+}
+
+/**
+ * Informe final de empleabilidad
+ */
+export interface EmployabilityReport {
+  /**
+   * ID único del usuario
+   */
+  userId: string
+
+  /**
+   * Nombre completo del candidato
+   */
+  fullName: string
+
+  /**
+   * Habilidades blandas evaluadas
+   */
+  softSkills: SoftSkillResult[]
+
+  /**
+   * Puntaje global de empleabilidad (0-100)
+   */
+  employabilityScore: number
+
+  /**
+   * Preferencias laborales del candidato
+   */
+  jobPreferences: JobPreference
+
+  /**
+   * Análisis del CV cargado
+   */
+  cvAnalysis?: CvAnalysis
+
+  /**
+   * Fecha de generación del informe
+   */
+  createdAt: string
+
+  /**
+   * Última fecha de modificación
+   */
+  updatedAt: string
+
+  /**
+   * Juegos completados hasta ahora
+   */
+  completedGames: number[]
 }
