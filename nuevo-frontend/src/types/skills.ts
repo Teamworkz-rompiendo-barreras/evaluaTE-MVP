@@ -35,13 +35,9 @@ export interface JobPreference {
 /**
  * Informe final de empleabilidad
  */
-export interface EmployabilityReport {
-  userId: string
-  fullName: string
-  softSkills: SoftSkillResult[]
+export interface EmployabilityReport extends Omit<JobPreference, 'jobPreferences'> {
   employabilityScore: number
-  jobPreferences: JobPreference
-  createdAt: string
-  updatedAt: string
+  softSkills: SoftSkillResult[]
+  cvAnalysis?: CvAnalysis
   completedGames: number[]
 }
