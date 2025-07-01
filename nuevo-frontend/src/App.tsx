@@ -1,31 +1,57 @@
 // src/App.tsx
 import React from 'react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 
-// Páginas
+// Páginas principales
 import DatosPersonalesPage from './pages/DatosPersonalesPage'
-import PreferencesStep      from './features/personal/PreferencesStep'
-import GameDashboardPage    from './pages/GameDashboardPage'
-import GameScenePage        from './pages/GameScenePage'
-import UploadCVPage         from './pages/UploadCVPage'
-import ResultadosPage       from './pages/ResultadosPage'
+import PreferencesStep from './features/personal/PreferencesStep'
+import GameDashboardPage from './pages/GameDashboardPage'
+import GameScenePage from './pages/GameScenePage'
+import UploadCVPage from './pages/UploadCVPage'
+import ResultadosPage from './pages/ResultadosPage'
 
-// Componentes
+// Componentes visuales
 import ProtectedRoute from './components/ProtectedRoute'
-import { Toaster }    from 'react-hot-toast'
+import { Toaster } from 'react-hot-toast'
+import ProgressBar from './components/ProgressBar'
+import AccessibilitySettings from './components/AccessibilitySettings'
+
+// Layouts compartidos
+function AppLayout() {
+  return (
+    <div className="min-h-screen bg-gray-50">
+      {/* Barra de progreso opcional */}
+      <ProgressBar />
+
+      {/* Contenido principal */}
+      <main className="container mx-auto p-4">
+        <Outlet />
+      </main>
+
+      {/* Notificaciones globales */}
+      <Toaster position="top-center" />
+
+      {/* Configuración de accesibilidad */}
+      <div className="fixed bottom-4 right-4 z-50">
+        <AccessibilitySettings />
+      </div>
+    </div>
+  )
+}
 
 export default function App() {
   return (
     <BrowserRouter>
-      {/* Feedback global */}
-      <Toaster position="top-center" />
-
       <Routes>
-        {/* 1) Inicio → registro (datos personales) */}
+        {/* Ruta raíz → redirige al registro */}
         <Route path="/" element={<Navigate to="/register/contact" replace />} />
-        <Route path="/register/contact" element={<DatosPersonalesPage />} />
 
-        {/* 2) Dashboard de minijuegos */}
+        {/* Registro inicial */}
+        <Route path="/register" element={<AppLayout />}>
+          <Route path="contact" element={<DatosPersonalesPage />} />
+        </Route>
+
+        {/* Dashboard de minijuegos */}
         <Route
           path="/games"
           element={
@@ -34,16 +60,18 @@ export default function App() {
             </ProtectedRoute>
           }
         />
+
+        {/* Escena de minijuego específico */}
         <Route
-          path="/games/:id"
+          path="/game/:id"
           element={
-            <ProtectedRoute step="games">
+            <ProtectedRoute step="game">
               <GameScenePage />
             </ProtectedRoute>
           }
         />
 
-        {/* 3) Subida de CV */}
+        {/* Subida de CV */}
         <Route
           path="/upload-cv"
           element={
@@ -53,7 +81,7 @@ export default function App() {
           }
         />
 
-        {/* 4) Preferencias laborales (tras CV) */}
+        {/* Preferencias laborales (tras CV) */}
         <Route
           path="/preferences"
           element={
@@ -63,7 +91,7 @@ export default function App() {
           }
         />
 
-        {/* 5) Resultados e Informe */}
+        {/* Resultados e informe final */}
         <Route
           path="/resultados"
           element={
@@ -73,7 +101,7 @@ export default function App() {
           }
         />
 
-        {/* 6) Cualquier otra ruta → inicio registro */}
+        {/* Ruta no encontrada */}
         <Route path="*" element={<Navigate to="/register/contact" replace />} />
       </Routes>
     </BrowserRouter>
