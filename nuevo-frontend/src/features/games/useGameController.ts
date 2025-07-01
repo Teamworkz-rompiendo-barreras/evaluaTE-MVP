@@ -8,6 +8,8 @@ import type {
   SceneOption,
 } from '@/types/game-scene'
 
+import type { UserDecision } from '@/types/skills'
+
 // Acciones desde Redux
 import { unlockGame } from '@/features/progress/progressSlice'
 
