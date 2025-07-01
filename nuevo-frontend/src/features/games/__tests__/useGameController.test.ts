@@ -2,29 +2,84 @@
 import { renderHook, act } from '@testing-library/react'
 import useGameController from '@/features/games/useGameController'
 
+// Tipos desde tu proyecto
+import type {
+  GameScene,
+  SceneOption,
+  UserDecision,
+} from '@/types/game-scene'
+
 describe('useGameController', () => {
-  it('debería iniciar con estado inicial correcto', () => {
-    const { result } = renderHook(() => useGameController())
+  const mockScene: GameScene = {
+    id: 1,
+    title: 'Minijuego 1: La primera llamada',
+    steps: [
+      {
+        text: 'Recibes una llamada inesperada. ¿Qué haces?',
+        options: [
+          {
+            text: 'Respondes de inmediato',
+            isCorrect: true,
+            skillImpact: { 'Toma de decisiones': 0.9 },
+            feedback: 'Buena toma de decisión. Has actuado con responsabilidad.'
+          },
+          {
+            text: 'Pides tiempo para pensar',
+            isCorrect: false,
+            skillImpact: { 'Toma de decisiones': 0.5 },
+            feedback: 'Has querido ayudar, pero es mejor asegurarse antes de actuar.'
+          }
+        ]
+      },
+      {
+        text: 'Demasiadas tareas. ¿Cómo las ordenas?',
+        options: [
+          {
+            text: 'Según prioridad',
+            isCorrect: true,
+            skillImpact: { 'Resolución de problemas': 0.8 },
+            feedback: 'Has organizado bien'
+          },
+          {
+            text: 'Dejas algunas para después',
+            isCorrect: false,
+            skillImpact: { 'Gestión del tiempo': 0.4 },
+            feedback: 'Evita dejar cosas pendientes si puedes'
+          }
+        ]
+      }
+    ],
+    softSkillsTracked: ['Toma de decisiones', 'Resolución de problemas'],
+    accessibilityOptions: {
+      showPictograms: true,
+      audioAssistiveMode: true,
+      contrastLevel: 'normal'
+    }
+  }
+
+  it('debería iniciar correctamente con datos de escena', () => {
+    const { result } = renderHook(() => useGameController(mockScene))
 
     expect(result.current.currentStep).toBe(0)
-    expect(result.current.choices).toEqual([])
+    expect(result.current.timeLeft).toBe(30)
+    expect(result.current.choices.length).toBe(0)
     expect(result.current.completed).toBe(false)
-    expect(result.current.progress).toBe(0)
   })
 
-  it('debería avanzar al siguiente paso correctamente', () => {
-    const { result } = renderHook(() => useGameController())
+  it('debería avanzar al siguiente paso', () => {
+    const { result } = renderHook(() => useGameController(mockScene))
 
     act(() => {
       result.current.nextStep()
     })
 
     expect(result.current.currentStep).toBe(1)
-    expect(result.current.progress).toBe(20) // 1 de 5 pasos → ~20%
+    expect(result.current.timeLeft).toBe(30)
+    expect(result.current.progress).toBe(50)
   })
 
   it('debería retroceder al paso anterior', () => {
-    const { result } = renderHook(() => useGameController())
+    const { result } = renderHook(() => useGameController(mockScene))
 
     act(() => {
       result.current.nextStep()
@@ -32,43 +87,37 @@ describe('useGameController', () => {
     })
 
     expect(result.current.currentStep).toBe(0)
-    expect(result.current.progress).toBe(0)
+    expect(result.current.timeLeft).toBe(30)
   })
 
-  it('debería registrar una decisión cuando se selecciona una opción', () => {
-    const { result } = renderHook(() => useGameController())
+  it('debería registrar una decisión del usuario', () => {
+    const { result } = renderHook(() => useGameController(mockScene))
 
-    const choice = {
-      sceneId: 1,
-      stepIndex: 0,
-      optionText: 'Respuesta correcta',
+    const option: SceneOption = {
+      text: 'Respondes de inmediato',
       isCorrect: true,
-      skillImpacts: { 'Toma de decisiones': 0.9 },
-      timestamp: new Date().toISOString(),
+      skillImpact: { 'Toma de decisiones': 0.9 },
+      feedback: 'Buena toma de decisión'
     }
 
     act(() => {
-      result.current.makeChoice(choice)
+      result.current.makeChoice(option)
+      result.current.nextStep()
     })
 
-    expect(result.current.choices).toContainEqual(choice)
     expect(result.current.choices.length).toBe(1)
+    expect(result.current.choices[0].text).toBe('Respondes de inmediato')
   })
 
-  it('debería completar el minijuego tras 5 decisiones', () => {
-    const { result } = renderHook(() => useGameController())
+  it('debería completar el juego tras finalizar todos los pasos', () => {
+    const { result } = renderHook(() => useGameController(mockScene))
 
     act(() => {
-      for (let i = 0; i < 5; i++) {
-        result.current.makeChoice({
-          sceneId: 1,
-          stepIndex: i,
-          optionText: `Respuesta ${i}`,
-          isCorrect: i % 2 === 0,
-          skillImpacts: { 'Resolución de problemas': i % 2 === 0 ? 0.8 : 0.4 },
-          timestamp: new Date().toISOString(),
-        })
-        if (i < 4) result.current.nextStep()
+      for (let i = 0; i < mockScene.steps.length; i++) {
+        result.current.makeChoice(mockScene.steps[i].options[0])
+        if (i < mockScene.steps.length - 1) {
+          result.current.nextStep()
+        }
       }
     })
 
@@ -76,8 +125,36 @@ describe('useGameController', () => {
     expect(result.current.progress).toBe(100)
   })
 
+  it('debería calcular puntaje promedio de habilidades blandas', () => {
+    const { result } = renderHook(() => useGameController(mockScene))
+
+    const option1: SceneOption = {
+      text: 'Opción A',
+      isCorrect: true,
+      skillImpact: { 'Toma de decisiones': 0.9 },
+      feedback: 'Muy buena opción'
+    }
+
+    const option2: SceneOption = {
+      text: 'Opción B',
+      isCorrect: false,
+      skillImpact: { 'Resolución de problemas': 0.6 },
+      feedback: 'Aceptable'
+    }
+
+    act(() => {
+      result.current.makeChoice(option1)
+      result.current.makeChoice(option2)
+    })
+
+    const scores = result.current.getSkillScores()
+
+    expect(scores['Toma de decisiones']).toBe(0.9)
+    expect(scores['Resolución de problemas']).toBe(0.6)
+  })
+
   it('debería reiniciar el juego correctamente', () => {
-    const { result } = renderHook(() => useGameController())
+    const { result } = renderHook(() => useGameController(mockScene))
 
     act(() => {
       result.current.nextStep()
@@ -90,32 +167,23 @@ describe('useGameController', () => {
     expect(result.current.progress).toBe(0)
   })
 
-  it('debería calcular puntaje promedio de habilidades blandas', () => {
-    const { result } = renderHook(() => useGameController())
+  it('debería registrar decisiones del usuario con contexto completo', () => {
+    const { result } = renderHook(() => useGameController(mockScene))
+
+    const userDecision: UserDecision = {
+      sceneId: 1,
+      stepIndex: 0,
+      optionText: 'Respondes de inmediato',
+      isCorrect: true,
+      skillImpacts: { 'Toma de decisiones': 0.9 },
+      timestamp: new Date().toISOString(),
+    }
 
     act(() => {
-      result.current.makeChoice({
-        sceneId: 1,
-        stepIndex: 0,
-        optionText: 'Opción A',
-        isCorrect: true,
-        skillImpacts: { 'Toma de decisiones': 0.9 },
-        timestamp: new Date().toISOString(),
-      })
-
-      result.current.makeChoice({
-        sceneId: 1,
-        stepIndex: 1,
-        optionText: 'Opción B',
-        isCorrect: false,
-        skillImpacts: { 'Pensamiento crítico': 0.6 },
-        timestamp: new Date().toISOString(),
-      })
+      result.current.makeChoice(userDecision)
     })
 
-    const scores = result.current.getSkillScores()
-
-    expect(scores['Toma de decisiones']).toBe(0.9)
-    expect(scores['Pensamiento crítico']).toBe(0.6)
+    expect(result.current.choices.length).toBe(1)
+    expect(result.current.choices[0].isCorrect).toBe(true)
   })
 })
