@@ -3,7 +3,9 @@
 import type {
   JobPreference,
   AccessibilitySettings
-} from '@/types/preferences'
+} from '../../types/preferences'
+
+
 
 export const mockUser = {
   firstName: 'Ester',
