@@ -250,6 +250,11 @@ export interface EmployabilityReport {
   level: 'Baja empleabilidad' | 'Empleabilidad media' | 'Alta empleabilidad';
 
   /**
+   * Score ajustado después de análisis del CV
+   */
+  adjustedScore: number;
+
+  /**
    * Preferencias laborales del candidato
    */
   jobPreferences: JobPreference;
@@ -293,9 +298,9 @@ export interface EmployabilityReport {
      */
     cvImprovements: string[];
 
-      /**
-       * Próximos pasos sugeridos
-       */
-      nextSteps: string[];
-    };
-  }
+    /**
+     * Próximos pasos sugeridos
+     */
+    nextSteps: string[];
+  };
+}
