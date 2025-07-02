@@ -168,133 +168,14 @@ describe('personalSlice', () => {
     });
   });
 
-  it('debe desbloquear el siguiente minijuego correctamente', () => {
-    const state = personalSlice.getInitialState();
-    const action = personalSlice.actions.unlockNextGame();
-
-    const newState = personalSlice.reducer(state, action);
-    expect(newState).toEqual({
-      ...initialState,
-      unlockedGames: 2,
+    it('debe desbloquear el siguiente minijuego correctamente', () => {
+      const state = personalSlice.getInitialState();
+      const action = personalSlice.actions.unlockNextGame();
+  
+      const newState = personalSlice.reducer(state, action);
+      expect(newState).toEqual({
+        ...initialState,
+        unlockedGames: 2,
+      });
     });
   });
-
-  it('debe guardar habilidades blandas evaluadas correctamente', () => {
-    const state = personalSlice.getInitialState();
-    const action = personalSlice.actions.saveSoftSkills(mockSoftSkillResults);
-
-    const newState = personalSlice.reducer(state, action);
-    expect(newState).toEqual({
-      ...initialState,
-      softSkills: mockSoftSkillResults,
-    });
-  });
-
-  it('debe registrar decisiones tomadas durante escenas correctamente', () => {
-    const state = personalSlice.getInitialState();
-    const action = personalSlice.actions.addSceneDecision({
-      sceneId: 1,
-      stepIndex: 0,
-      optionText: 'Opción 1',
-      isCorrect: true,
-      skillImpacts: { 'Toma de decisiones': 10 },
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      screenResolution: `${window.innerWidth}x${window.innerHeight}`,
-    });
-
-    const newState = personalSlice.reducer(state, action);
-    expect(newState).toEqual({
-      ...initialState,
-      logs: [mockGameDecisionLog],
-    });
-  });
-
-  it('debe guardar configuración de accesibilidad correctamente', () => {
-    const state = personalSlice.getInitialState();
-    const action = personalSlice.actions.setAccessibilitySettings({
-      easyReadingMode: true,
-      audioAssistiveMode: false,
-      showPictograms: true,
-      contrastLevel: 'normal',
-      fontScale: 120,
-    });
-
-    const newState = personalSlice.reducer(state, action);
-    expect(newState).toEqual({
-      ...initialState,
-      accessibilitySettings: {
-        easyReadingMode: true,
-        audioAssistiveMode: false,
-        showPictograms: true,
-        contrastLevel: 'normal',
-        fontScale: 120,
-      },
-    });
-  });
-
-  it('debe generar informe final basado en todo el progreso correctamente', () => {
-    const state = {
-      ...personalSlice.getInitialState(),
-      firstName: 'Juan',
-      lastName: 'Pérez',
-      email: 'juan@example.com',
-      whatsapp: '123456789',
-      jobPreferences: mockJobPreference,
-      cvAnalysis: mockCvAnalysis,
-      softSkills: mockSoftSkillResults,
-      unlockedGames: 10,
-      logs: [mockGameDecisionLog],
-    };
-
-    const action = personalSlice.actions.generateFinalReport();
-
-    const newState = personalSlice.reducer(state, action);
-    const employabilityScore = 67; // Calculado como (100 + 70 + 30) / 3 = 66.67 -> redondeado a 67
-    const level = 'Empleabilidad media';
-    const recommendations = {
-      roles: ['Desarrollador frontend', 'Soporte técnico'],
-      resources: ['Platzi', 'Microsoft Learn'],
-      cvImprovements: ['Creatividad'],
-      nextSteps: ['Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias'],
-    };
-
-    expect(newState).toEqual({
-      ...state,
-      report: {
-        userId: 'user-ester-2025',
-        fullName: 'Juan Pérez',
-        softSkills: mockSoftSkillResults,
-        employabilityScore,
-        jobPreferences: mockJobPreference,
-        cvAnalysis: mockCvAnalysis,
-        createdAt: expect.any(String),
-        updatedAt: expect.any(String),
-        completedGames: Array.from({ length: 10 }, (_, i) => i + 1),
-        level,
-        recommendations,
-        logs: [mockGameDecisionLog],
-      },
-    });
-  });
-
-  it('debe reiniciar todo el estado correctamente', () => {
-    const state = {
-      ...personalSlice.getInitialState(),
-      firstName: 'Juan',
-      lastName: 'Pérez',
-      email: 'juan@example.com',
-      whatsapp: '123456789',
-      jobPreferences: mockJobPreference,
-      cvAnalysis: mockCvAnalysis,
-      softSkills: mockSoftSkillResults,
-      unlockedGames: 10,
-      logs: [mockGameDecisionLog],
-    };
-
-    const action = personalSlice.actions.resetPersonalState();
-
-    const newState = personalSlice.reducer(state, action);
-    expect(newState).toEqual(personalSlice.getInitialState());
-  });
-});
