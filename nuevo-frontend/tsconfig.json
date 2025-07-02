@@ -1,5 +1,4 @@
 {
-  "extends": "../tsconfig.json",
   "compilerOptions": {
     "target": "ESNext",
     "useDefineForClassFields": true,
@@ -16,14 +15,13 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "forceConsistentCasingInFileNames": true,
-    // "types": ["vitest"], // Uncomment if you install @types/vitest
-    "types" : ["cypress"],
+    "types": ["cypress"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "vitest.config.ts", "vite.config.ts", "cypress", "**/*.ts"],
+  "include": ["src", "vitest.config.ts", "vite.config.ts", "cypress/**/*.ts", "cypress/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
   "exclude": ["dist", "node_modules"]
 }
