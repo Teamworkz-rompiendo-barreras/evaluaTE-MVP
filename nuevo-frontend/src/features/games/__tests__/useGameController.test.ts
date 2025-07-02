@@ -129,11 +129,13 @@ describe('useGameController', () => {
 
   it('debe manejar completar el juego correctamente', () => {
     const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
-    mockScene.steps.forEach((step) => {
+    mockScene.steps.forEach((step, index) => {
       const mockOption: SceneOption = step.options[0];
       act(() => {
         result.current.makeChoice(mockOption);
-        result.current.nextStep();
+        if (index < mockScene.steps.length - 1) {
+          result.current.nextStep();
+        }
       });
     });
     expect(result.current.completed).toBe(true);
