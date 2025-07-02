@@ -16,9 +16,9 @@ export const AccessibilitySettings: FC = () => {
       <button
         onClick={toggleContrast}
         className="p-2 border rounded"
-        aria-pressed={highContrast}
+        aria-pressed={!!highContrast}
       >
-        {highContrast ? "🌙 Modo normal" : "⚡ Alto contraste"}
+        {!highContrast ? "🌙 Modo normal" : "⚡ Alto contraste"}
       </button>
 
       {/* Slider de tamaño de fuente */}
