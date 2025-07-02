@@ -42,15 +42,24 @@ const useGameController = ({ sceneId }: UseGameControllerProps) => {
   }, [scene, currentStep]);
 
   useEffect(() => {
-    const timer = setInterval(() => {
-      setTimeLeft((prevTime) => prevTime - 1);
-    }, 1000);
+    if (scene) {
+      const timer = setInterval(() => {
+        setTimeLeft((prevTime) => {
+          if (prevTime > 0) {
+            return prevTime - 1;
+          } else {
+            clearInterval(timer);
+            return 0;
+          }
+        });
+      }, 1000);
 
-    return () => clearInterval(timer);
-  }, []);
+      return () => clearInterval(timer);
+    }
+  }, [scene, currentStep]);
 
   const nextStep = () => {
-    if (currentStep < (scene?.steps.length || 0) - 1) {
+    if (scene && currentStep < scene.steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -77,7 +86,7 @@ const useGameController = ({ sceneId }: UseGameControllerProps) => {
 
   const resetGame = () => {
     setCurrentStep(0);
-    setTimeLeft(scene?.steps[0].timeLimit || 0);
+    setTimeLeft(scene?.steps[0]?.timeLimit || 0);
     setChoices([]);
     setCompleted(false);
     setProgress(0);
