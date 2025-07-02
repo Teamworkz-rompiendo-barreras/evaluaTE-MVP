@@ -3,7 +3,7 @@ import { FC } from "react";
 import { useAccessibility } from "../hooks/useAccessibility";
 
 export const AccessibilitySettings: FC = () => {
-  const { highContrast, fontScale, toggleContrast, setFontScale } =
+  const { contrastLevel, fontScale, toggleContrast, setFontScale } =
     useAccessibility();
 
   return (
@@ -16,9 +16,9 @@ export const AccessibilitySettings: FC = () => {
       <button
         onClick={toggleContrast}
         className="p-2 border rounded"
-        aria-pressed={!!highContrast}
+        aria-pressed={contrastLevel !== 'normal'}
       >
-        {!highContrast ? "🌙 Modo normal" : "⚡ Alto contraste"}
+        {contrastLevel === 'normal' ? "🌙 Modo normal" : "⚡ Alto contraste"}
       </button>
 
       {/* Slider de tamaño de fuente */}
