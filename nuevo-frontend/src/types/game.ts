@@ -1,7 +1,6 @@
 // src/types/game.ts
 
 import type { SoftSkillResult } from '@/types/preferences';
-import type { UserDecision } from '@/types/skills';
 
 /**
  * Opción seleccionada por el usuario en una escena
