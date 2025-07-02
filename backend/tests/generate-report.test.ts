@@ -1,18 +1,23 @@
 // backend/tests/generate-report.test.ts
 import request from 'supertest';
-import { app, server } from '../src/app'; // Asegúrate de que la ruta sea correcta
+import { app } from '../src/app'; // Asegúrate de que la ruta sea correcta
+import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 describe('POST /api/generate-report', () => {
-  beforeAll((done) => {
-    server.listen(3001, done);
+  let server: any;
+
+  beforeAll(async () => {
+    server = app.listen(3001);
   });
 
-  afterAll((done) => {
-    server.close(done);
+  afterAll(async () => {
+    await new Promise<void>((resolve, reject) => {
+      server.close((err: any) => (err ? reject(err) : resolve()));
+    });
   });
 
   it('debe devolver un PDF válido', async () => {
-    const res = await request(server)
+    const res = await request(app)
       .post('/api/generate-report')
       .send({
         gameData: [{ subject: 'Minijuego 0', dA: 100 }],
@@ -26,6 +31,12 @@ describe('POST /api/generate-report', () => {
           areas: ['Logística', 'Atención al cliente'],
           needs: ['Trabajo en entorno tranquilo'],
         },
+        employabilityScore: 75,
+        level: 'Empleabilidad media',
+        adjustedScore: 70,
+        completedGames: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       });
 
     expect(res.status).toBe(200);
@@ -34,7 +45,7 @@ describe('POST /api/generate-report', () => {
   });
 
   it('debe manejar solicitudes con datos incompletos', async () => {
-    const res = await request(server)
+    const res = await request(app)
       .post('/api/generate-report')
       .send({
         gameData: [{ subject: 'Minijuego 0', dA: 100 }],
@@ -53,7 +64,7 @@ describe('POST /api/generate-report', () => {
   });
 
   it('debe manejar solicitudes con datos inválidos', async () => {
-    const res = await request(server)
+    const res = await request(app)
       .post('/api/generate-report')
       .send({
         gameData: 'invalid data', // Datos inválidos
