@@ -1,6 +1,6 @@
 // nuevo-frontend/src/features/games/__tests__/useGameController.test.ts
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import { useGameController } from '../useGameController';
 import { GameScene, SceneOption } from '@/types/game-scene';
 import { UserDecision } from '@/types/skills';
