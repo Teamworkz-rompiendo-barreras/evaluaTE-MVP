@@ -1,6 +1,5 @@
 // src/types/preferences.ts
 
-import type { SoftSkillResult } from '@/types/skills';
 
 /**
  * Análisis del CV cargado
@@ -97,6 +96,11 @@ export interface JobPreference {
   accessibilitySettings?: AccessibilitySettings;
 }
 
+export interface SoftSkillResult {
+  skill: string
+  score: number
+  level: 'bajo' | 'medio' | 'alto'
+}
 /**
  * Configuración de accesibilidad según elecciones del usuario
  */
@@ -139,7 +143,8 @@ export interface EmployabilityReport {
   /**
    * Nombre completo del candidato
    */
-  fullName: string;
+  firstName: string
+  lastName: string
 
   /**
    * Habilidades blandas evaluadas
@@ -185,4 +190,5 @@ export interface EmployabilityReport {
    * Score ajustado después de análisis del CV
    */
   adjustedScore: number;
+  recommendations: string[]
 }
