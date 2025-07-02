@@ -3,7 +3,7 @@
 import type {
   JobPreference,
   AccessibilitySettings
-} from '../../types/preferences'
+} from '../../src/types/preferences'
 
 
 
