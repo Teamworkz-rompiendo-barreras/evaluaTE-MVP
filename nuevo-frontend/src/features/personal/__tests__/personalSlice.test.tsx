@@ -2,13 +2,16 @@
 import { describe, it, expect } from 'vitest';
 import { personalSlice } from '../personalSlice';
 
+const initialState = personalSlice.getInitialState();
+
 // Tipos compartidos desde el proyecto
 import type {
   JobPreference,
   EmployabilityReport,
   AccessibilitySettings,
 } from '@/types/preferences';
-import type { CvAnalysis, SoftSkillResult, GameDecisionLog } from '@/types/skills';
+import type { SoftSkillResult, GameDecisionLog } from '@/types/skills';
+import type { CvAnalysis } from '@/types/preferences';
 
 // Mock de los tipos necesarios
 const mockJobPreference: JobPreference = {
@@ -28,13 +31,11 @@ const mockJobPreference: JobPreference = {
 };
 
 const mockCvAnalysis: CvAnalysis = {
-  score: 85,
-  strengths: ['Toma de decisiones', 'Resolución de problemas'],
-  weaknesses: ['Creatividad'],
-  feedback: 'Buen trabajo general.',
-  rawLog: {},
+  structure: 'bueno',
+  coherence: 'bueno',
+  experience: 'regular',
+  skills: ['Comunicación', 'Trabajo en equipo'],
 };
-
 const mockSoftSkillResults: SoftSkillResult[] = [
   { skill: 'Toma de decisiones', level: 'Alto', confidence: 0.9, feedback: 'Excelente', interactions: [] },
   { skill: 'Resolución de problemas', level: 'Medio', confidence: 0.6, feedback: 'Bueno', interactions: [] },
@@ -146,12 +147,13 @@ describe('personalSlice', () => {
   it('debe guardar archivo del CV correctamente', () => {
     const state = personalSlice.getInitialState();
     const mockFile = new File([''], 'example.pdf', { type: 'application/pdf' });
-    const action = personalSlice.actions.saveCV(mockFile);
+    const mockFilePayload = { fileName: mockFile.name, fileContent: '' }; // Simulate empty content for test
+    const action = personalSlice.actions.saveCV(mockFilePayload);
 
     const newState = personalSlice.reducer(state, action);
     expect(newState).toEqual({
       ...initialState,
-      cvFile: mockFile,
+      cvFile: mockFilePayload,
       unlockedGames: 2,
     });
   });
