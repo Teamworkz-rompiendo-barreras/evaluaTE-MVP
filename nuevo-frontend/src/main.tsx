@@ -1,25 +1,27 @@
 // src/main.tsx
-import React from 'react'
-import ReactDOM from 'react-dom/client'
-import { Provider } from 'react-redux'
-import { store, persistor } from './app/store'
-import { PersistGate } from 'redux-persist/integration/react'
-import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom'
+import React from 'react';
+import ReactDOM from 'react-dom/client';
+import { Provider } from 'react-redux';
+import { store, persistor } from './app/store';
+import { PersistGate } from 'redux-persist/integration/react';
+import { BrowserRouter, Routes, Route, Navigate } from 'react-router-dom';
 
-import DatosPersonalesPage from './pages/DatosPersonalesPage'
-import PreferencesStep     from './features/personal/PreferencesStep'
-import GameDashboardPage   from './pages/GameDashboardPage'
-import GameScenePage       from './pages/GameScenePage'
-import UploadCVPage        from './pages/UploadCVPage'
-import ResultadosPage      from './pages/ResultadosPage'
+import DatosPersonalesPage from './pages/DatosPersonalesPage';
+import PreferencesStep from './features/personal/PreferencesStep';
+import GameDashboardPage from './pages/GameDashboardPage';
+import GameScenePage from './pages/GameScenePage';
+import UploadCVPage from './pages/UploadCVPage';
+import ResultadosPage from './pages/ResultadosPage';
 
-import ProtectedRoute      from './components/ProtectedRoute'
-import { AccessibilitySettings } from './components/AccessibilitySettings'
+import ProtectedRoute from './components/ProtectedRoute';
+import AccessibilitySettings from './components/AccessibilitySettings';
 
-import './index.css'
-import './legacy.css'
+import './index.css';
+import './legacy.css';
 
-ReactDOM.createRoot(document.getElementById('root')!).render(
+const root = ReactDOM.createRoot(document.getElementById('root')!);
+
+root.render(
   <React.StrictMode>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
@@ -29,7 +31,6 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
             {/* 1) Inicio → registro: datos personales */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
-
 
             {/* 2) Registro: preferencias */}
             <Route
@@ -88,4 +89,4 @@ ReactDOM.createRoot(document.getElementById('root')!).render(
       </PersistGate>
     </Provider>
   </React.StrictMode>
-)
+);
