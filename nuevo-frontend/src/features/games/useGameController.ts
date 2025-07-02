@@ -1,118 +1,73 @@
-// nuevo-frontend/src/features/games/__tests__/useGameController.test.ts
+// nuevo-frontend/src/features/games/useGameController.ts
 
-import { renderHook, act } from '@testing-library/react-hooks';
-import { useGameController } from '../useGameController';
-import { GameScene, SceneOption } from '@/types/game-scene';
+import { useEffect, useState } from 'react';
+import { useDispatch, useSelector } from 'react-redux';
+import { unlockGame } from '../progress/progressSlice';
 import { UserDecision } from '@/types/skills';
+import { SceneOption } from '@/types/game-scene';
+import { getScene } from '@/features/games/scenesApi';
 
-describe('useGameController', () => {
-  const mockScene: GameScene = {
-    id: 1,
-    sceneId: 1, // Agregado
-    title: 'Minijuego 1',
-    description: 'Descripción del minijuego 1',
-    steps: [
-      {
-        id: 1,
-        description: 'Paso 1',
-        options: [
-          { id: 1, text: 'Opción 1' },
-          { id: 2, text: 'Opción 2' },
-        ],
-      },
-    ],
+interface UseGameControllerProps {
+  sceneId: number;
+}
+
+const useGameController = ({ sceneId }: UseGameControllerProps) => {
+  const dispatch = useDispatch();
+  const scene = useSelector(getScene(sceneId));
+
+  const [currentStep, setCurrentStep] = useState(0);
+  const [timeLeft, setTimeLeft] = useState(scene?.steps[currentStep]?.timeLimit || 0);
+  const [choices, setChoices] = useState<UserDecision[]>([]);
+  const [completed, setCompleted] = useState(false);
+  const [progress, setProgress] = useState(0);
+
+  useEffect(() => {
+    if (scene) {
+      setTimeLeft(scene.steps[currentStep].timeLimit);
+    }
+  }, [scene, currentStep]);
+
+  useEffect(() => {
+    if (scene && currentStep >= scene.steps.length) {
+      setCompleted(true);
+      dispatch(unlockGame(sceneId));
+    }
+  }, [scene, currentStep, dispatch, sceneId]);
+
+  useEffect(() => {
+    if (scene) {
+      const totalSteps = scene.steps.length;
+      setProgress((currentStep / totalSteps) * 100);
+    }
+  }, [scene, currentStep]);
+
+  useEffect(() => {
+    const timer = setInterval(() => {
+      setTimeLeft((prevTime) => prevTime - 1);
+    }, 1000);
+
+    return () => clearInterval(timer);
+  }, []);
+
+  const nextStep = () => {
+    if (currentStep < (scene?.steps.length || 0) - 1) {
+      setCurrentStep(currentStep + 1);
+    }
   };
 
-  it('debe inicializar el estado correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    expect(result.current.currentStep).toBe(0);
-    expect(result.current.timeLeft).toBeGreaterThan(0);
-    expect(result.current.choices).toEqual([]);
-    expect(result.current.completed).toBe(false);
-    expect(result.current.progress).toBe(0);
-  });
+  const prevStep = () => {
+    if (currentStep > 0) {
+      setCurrentStep(currentStep - 1);
+    }
+  };
 
-  it('debe manejar nextStep correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    act(() => {
-      result.current.nextStep();
-    });
-    expect(result.current.currentStep).toBe(1);
-  });
-
-  it('debe manejar prevStep correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    act(() => {
-      result.current.nextStep();
-      result.current.prevStep();
-    });
-    expect(result.current.currentStep).toBe(0);
-  });
-
-  it('debe manejar makeChoice correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    const mockOption: SceneOption = { id: 1, text: 'Opción 1' };
-    act(() => {
-      result.current.makeChoice(mockOption);
-    });
-    expect(result.current.choices).toContainEqual(mockOption);
-  });
-
-  it('debe manejar resetGame correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    act(() => {
-      result.current.nextStep();
-      result.current.resetGame();
-    });
-    expect(result.current.currentStep).toBe(0);
-    expect(result.current.timeLeft).toBeGreaterThan(0);
-    expect(result.current.choices).toEqual([]);
-    expect(result.current.completed).toBe(false);
-    expect(result.current.progress).toBe(0);
-  });
-
-  it('debe manejar completar el juego correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    mockScene.steps.forEach((step) => {
-      const mockOption: SceneOption = step.options[0];
-      act(() => {
-        result.current.makeChoice(mockOption);
-        result.current.nextStep();
-      });
-    });
-    expect(result.current.completed).toBe(true);
-  });
-
-  it('debe manejar decisiones correctas e incorrectas', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    const mockOptionCorrect: SceneOption = { id: 1, text: 'Opción 1', isCorrect: true };
-    const mockOptionIncorrect: SceneOption = { id: 2, text: 'Opción 2', isCorrect: false };
-    act(() => {
-      result.current.makeChoice(mockOptionCorrect);
-      result.current.nextStep();
-      result.current.makeChoice(mockOptionIncorrect);
-      result.current.nextStep();
-    });
-    expect(result.current.choices).toContainEqual(mockOptionCorrect);
-    expect(result.current.choices).toContainEqual(mockOptionIncorrect);
-  });
-
-  it('debe manejar tiempo correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    act(() => {
-      jest.advanceTimersByTime(1000);
-    });
-    expect(result.current.timeLeft).toBeLessThan(mockScene.steps[0].timeLimit);
-  });
-
-  it('debe manejar decisiones con impactos en habilidades', () => {
-    const { result } = renderHook(() => useGameController(mockScene.sceneId));
-    const mockOption: SceneOption = { id: 1, text: 'Opción 1', skillImpacts: { 'Toma de decisiones': 10 } };
-    act(() => {
-      result.current.makeChoice(mockOption);
-      result.current.nextStep();
-    });
-    expect(result.current.choices).toContainEqual(mockOption);
-    expect(result.current.getSkillScores()).toHaveProperty('Toma de decisiones', 10);
-  });
-});
+  const makeChoice = (option: SceneOption) => {
+    const decision: UserDecision = {
+      sceneId,
+      stepIndex: currentStep,
+      optionText: option.text,
+      isCorrect: option.isCorrect || false,
+      skillImpacts: option.skillImpact || {},
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      screenResolution: `${window.innerWidth}x
