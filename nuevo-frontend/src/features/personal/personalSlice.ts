@@ -33,7 +33,7 @@ const initialState: {
   registrationStep: 'contact',
   softSkillsScores: [],
   employabilityScore: 0,
-  level: '',
+  level: 'Baja empleabilidad',
   adjustedScore: 0,
   finalReport: null,
   unlockedGames: 0,
@@ -67,12 +67,19 @@ export const personalSlice = createSlice({
     generateFinalReport: (state, action: PayloadAction<Draft<EmployabilityReport>>) => {
       const employabilityScore = action.payload.employabilityScore;
       const adjustedScore = action.payload.adjustedScore;
-      const level = employabilityScore >= 80 ? 'Alta empleabilidad' : employabilityScore >= 50 ? 'Empleabilidad media' : 'Baja empleabilidad';
+      const levelLabel = employabilityScore >= 80 ? 'Alta empleabilidad' : employabilityScore >= 50 ? 'Empleabilidad media' : 'Baja empleabilidad';
+      const level: 'alto' | 'medio' | 'bajo' =
+        levelLabel === 'Alta empleabilidad'
+          ? 'alto'
+          : levelLabel === 'Empleabilidad media'
+          ? 'medio'
+          : 'bajo';
 
       // Actualiza el estado del informe
       state.finalReport = {
         userId: action.payload.userId,
-        fullName: `${action.payload.firstName} ${action.payload.lastName}`,
+        firstName: state.firstName,
+        lastName: state.lastName,
         softSkills: action.payload.softSkills,
         employabilityScore: employabilityScore,
         jobPreferences: action.payload.jobPreferences,
