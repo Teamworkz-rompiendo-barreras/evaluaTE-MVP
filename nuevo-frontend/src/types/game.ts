@@ -44,6 +44,14 @@ export interface GameScene {
   };
 }
 
+export type UserDecision = {
+  // Define the properties of UserDecision here, for example:
+  sceneId: string;
+  optionText: string;
+  skillImpacts: Record<string, number>;
+  // Add other fields as needed
+};
+
 /**
  * Respuesta del API al pedir una escena
  */
