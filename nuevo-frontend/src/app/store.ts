@@ -1,25 +1,26 @@
 // src/app/store.ts
 
-import { configureStore, combineReducers } from '@reduxjs/toolkit'
-import { persistStore, persistReducer } from 'redux-persist'
-import storage from 'redux-persist/lib/storage'
+import { configureStore, combineReducers } from '@reduxjs/toolkit';
+import { persistStore, persistReducer } from 'redux-persist';
+import storage from 'redux-persist/lib/storage';
+import { autoMergeLevel1 } from 'redux-persist/es/stateReconciler/autoMergeLevel1';
 
 // Reducers compartidos
 import accessibilityReducer, {
   toggleContrast,
   setFontScale,
   setAudioAssistiveMode,
-  setShowPictograms
-} from './accessibilitySlice'
+  setShowPictograms,
+} from './accessibilitySlice';
 import personalReducer, {
   saveContact,
   savePreferences,
   saveCV,
   analyzeCV,
-  generateFinalReport
-} from '../features/personal/personalSlice'
-import progressReducer, { unlockGame, resetProgress } from '../features/progress/progressSlice'
-import { scenesApi } from '../features/games/scenesApi'
+  generateFinalReport,
+} from '../features/personal/personalSlice';
+import progressReducer, { unlockGame, resetProgress } from '../features/progress/progressSlice';
+import { scenesApi } from '../features/games/scenesApi';
 
 // Combina todos los reducers
 const rootReducer = combineReducers({
@@ -27,7 +28,7 @@ const rootReducer = combineReducers({
   progress: progressReducer,
   accessibility: accessibilityReducer,
   [scenesApi.reducerPath]: scenesApi.reducer,
-})
+});
 
 // Configuración de persistencia
 const persistConfig = {
@@ -35,12 +36,10 @@ const persistConfig = {
   storage,
   whitelist: ['personal', 'progress', 'accessibility'],
   version: 1,
-  stateReconciler: autoMergeLevel1, // Importado más abajo
-}
+  stateReconciler: autoMergeLevel1,
+};
 
-import { autoMergeLevel1 } from 'redux-persist/es/stateReconciler/autoMergeLevel1'
-
-const persistedReducer = persistReducer(persistConfig, rootReducer)
+const persistedReducer = persistReducer(persistConfig, rootReducer);
 
 // Definición del Store
 export const store = configureStore({
@@ -51,10 +50,10 @@ export const store = configureStore({
       immutableCheck: false,
     }).concat(scenesApi.middleware),
   devTools: process.env.NODE_ENV !== 'production',
-})
+});
 
 // Persistor para guardar estado local
-export const persistor = persistStore(store)
+export const persistor = persistStore(store);
 
 // Acciones exportadas – listas para usar en componentes
 export {
@@ -74,8 +73,8 @@ export {
   // Acciones de progreso
   unlockGame,
   resetProgress,
-} from '../features/personal/personalSlice'
+};
 
 // Tipos para uso global
-export type RootState = ReturnType<typeof store.getState>
-export type AppDispatch = typeof store.dispatch
+export type RootState = ReturnType<typeof store.getState>;
+export type AppDispatch = typeof store.dispatch;
