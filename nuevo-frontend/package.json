@@ -14,6 +14,7 @@
     "cy:run-only": "cypress run"
   },
   "dependencies": {
+    "@apollo/client": "^3.13.8",
     "@nivo/radar": "^0.99.0",
     "@reduxjs/toolkit": "^2.8.2",
     "react": "^18.3.1",

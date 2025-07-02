@@ -1,7 +1,7 @@
 // src/pages/ResultadosPage.test.tsx
 
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom/extend-expect'; // Asegúrate de importar extend-expect para usar matchers de jest-dom
+import '@testing-library/jest-dom'; // Asegúrate de importar extend-expect para usar matchers de jest-dom
 import ResultadosPage from './ResultadosPage';
 import { MockedProvider } from '@apollo/client/testing';
 import { GET_EVALUATION_RESULTS } from './queries'; // Asegúrate de que la consulta GraphQL esté correctamente importada
