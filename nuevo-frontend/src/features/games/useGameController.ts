@@ -70,4 +70,44 @@ const useGameController = ({ sceneId }: UseGameControllerProps) => {
       skillImpacts: option.skillImpact || {},
       timestamp: new Date().toISOString(),
       userAgent: navigator.userAgent,
-      screenResolution: `${window.innerWidth}x
+      screenResolution: `${window.innerWidth}x${window.innerHeight}`,
+    };
+    setChoices([...choices, decision]);
+  };
+
+  const resetGame = () => {
+    setCurrentStep(0);
+    setTimeLeft(scene?.steps[0].timeLimit || 0);
+    setChoices([]);
+    setCompleted(false);
+    setProgress(0);
+  };
+
+  const getSkillScores = () => {
+    const scores: Record<string, number> = {};
+    choices.forEach((choice) => {
+      Object.keys(choice.skillImpacts).forEach((skill) => {
+        if (!scores[skill]) {
+          scores[skill] = 0;
+        }
+        scores[skill] += choice.skillImpacts[skill];
+      });
+    });
+    return scores;
+  };
+
+  return {
+    currentStep,
+    timeLeft,
+    choices,
+    completed,
+    nextStep,
+    prevStep,
+    makeChoice,
+    resetGame,
+    progress,
+    getSkillScores, // Agregado getSkillScores
+  };
+};
+
+export default useGameController;
