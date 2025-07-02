@@ -1,9 +1,8 @@
 // nuevo-frontend/src/features/games/__tests__/useGameController.test.ts
 
-import { renderHook, act } from '@testing-library/react-hooks';
+import { renderHook, act } from '@testing-library/react';
 import useGameController from '../useGameController';
 import { GameScene, SceneOption } from '@/types/game-scene';
-import { UserDecision } from '@/types/skills';
 import { vi } from 'vitest'; // Importa vi de vitest para mocks
 
 // Mock de la función getScene para simular la obtención de escenas
@@ -19,10 +18,18 @@ const mockScenes: GameScene[] = [
     description: 'Descripción del minijuego 1',
     steps: [
       {
-        description: 'Paso 1',
+        text: 'Paso 1', // Cambiado de description a text
         options: [
           { text: 'Opción 1', isCorrect: true, skillImpact: { 'Toma de decisiones': 10 } },
           { text: 'Opción 2', isCorrect: false, skillImpact: { 'Toma de decisiones': 5 } },
+        ],
+        timeLimit: 30,
+      },
+      {
+        text: 'Paso 2', // Cambiado de description a text
+        options: [
+          { text: 'Opción A', isCorrect: true, skillImpact: { 'Toma de decisiones': 15 } },
+          { text: 'Opción B', isCorrect: false, skillImpact: { 'Toma de decisiones': 8 } },
         ],
         timeLimit: 30,
       },
@@ -54,10 +61,18 @@ describe('useGameController', () => {
     description: 'Descripción del minijuego 1',
     steps: [
       {
-        description: 'Paso 1',
+        text: 'Paso 1', // Cambiado de description a text
         options: [
           { text: 'Opción 1', isCorrect: true, skillImpact: { 'Toma de decisiones': 10 } },
           { text: 'Opción 2', isCorrect: false, skillImpact: { 'Toma de decisiones': 5 } },
+        ],
+        timeLimit: 30,
+      },
+      {
+        text: 'Paso 2', // Cambiado de description a text
+        options: [
+          { text: 'Opción A', isCorrect: true, skillImpact: { 'Toma de decisiones': 15 } },
+          { text: 'Opción B', isCorrect: false, skillImpact: { 'Toma de decisiones': 8 } },
         ],
         timeLimit: 30,
       },
@@ -71,7 +86,7 @@ describe('useGameController', () => {
   };
 
   it('debe inicializar el estado correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     expect(result.current.currentStep).toBe(0);
     expect(result.current.timeLeft).toBeGreaterThan(0);
     expect(result.current.choices).toEqual([]);
@@ -80,7 +95,7 @@ describe('useGameController', () => {
   });
 
   it('debe manejar nextStep correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     act(() => {
       result.current.nextStep();
     });
@@ -88,7 +103,7 @@ describe('useGameController', () => {
   });
 
   it('debe manejar prevStep correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     act(() => {
       result.current.nextStep();
       result.current.prevStep();
@@ -97,7 +112,7 @@ describe('useGameController', () => {
   });
 
   it('debe manejar makeChoice correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     const mockOption: SceneOption = { text: 'Opción 1', isCorrect: true, skillImpact: { 'Toma de decisiones': 10 } };
     act(() => {
       result.current.makeChoice(mockOption);
@@ -115,7 +130,7 @@ describe('useGameController', () => {
   });
 
   it('debe manejar resetGame correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     act(() => {
       result.current.nextStep();
       result.current.resetGame();
@@ -128,7 +143,7 @@ describe('useGameController', () => {
   });
 
   it('debe manejar completar el juego correctamente', () => {
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     mockScene.steps.forEach((step, index) => {
       const mockOption: SceneOption = step.options[0];
       act(() => {
@@ -143,7 +158,7 @@ describe('useGameController', () => {
   });
 
   it('debe manejar decisiones correctas e incorrectas', () => {
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     const mockOptionCorrect: SceneOption = { text: 'Opción 1', isCorrect: true, skillImpact: { 'Toma de decisiones': 10 } };
     const mockOptionIncorrect: SceneOption = { text: 'Opción 2', isCorrect: false, skillImpact: { 'Toma de decisiones': 5 } };
     act(() => {
@@ -176,7 +191,7 @@ describe('useGameController', () => {
 
   it('debe manejar tiempo correctamente', () => {
     vi.useFakeTimers(); // Utilizar temporizadores falsos para controlar el tiempo
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     act(() => {
       vi.advanceTimersByTime(1000);
     });
@@ -185,7 +200,7 @@ describe('useGameController', () => {
   });
 
   it('debe manejar decisiones con impactos en habilidades', () => {
-    const { result } = renderHook(() => useGameController(mockScene.id)); // Usa id en vez de sceneId
+    const { result } = renderHook(() => useGameController({ sceneId: mockScene.id })); // Pasar objeto con sceneId
     const mockOption: SceneOption = { text: 'Opción 1', isCorrect: true, skillImpact: { 'Toma de decisiones': 10 } };
     act(() => {
       result.current.makeChoice(mockOption);
