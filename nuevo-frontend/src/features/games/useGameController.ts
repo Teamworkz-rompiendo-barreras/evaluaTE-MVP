@@ -1,120 +1,118 @@
-// src/features/games/useGameController.ts
-import React, { useState, useEffect, useCallback, useRef } from 'react'
-import { useDispatch } from 'react-redux'
+// nuevo-frontend/src/features/games/__tests__/useGameController.test.ts
 
-// Tipos compartidos
-import type {
-  GameStep,
-  SceneOption,
-} from '@/types/game-scene'
+import { renderHook, act } from '@testing-library/react-hooks';
+import { useGameController } from '../useGameController';
+import { GameScene, SceneOption } from '@/types/game-scene';
+import { UserDecision } from '@/types/skills';
 
-import type { UserDecision } from '@/types/skills'
+describe('useGameController', () => {
+  const mockScene: GameScene = {
+    id: 1,
+    sceneId: 1, // Agregado
+    title: 'Minijuego 1',
+    description: 'Descripción del minijuego 1',
+    steps: [
+      {
+        id: 1,
+        description: 'Paso 1',
+        options: [
+          { id: 1, text: 'Opción 1' },
+          { id: 2, text: 'Opción 2' },
+        ],
+      },
+    ],
+  };
 
-// Acciones desde Redux
-import { unlockGame } from '@/features/progress/progressSlice'
+  it('debe inicializar el estado correctamente', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    expect(result.current.currentStep).toBe(0);
+    expect(result.current.timeLeft).toBeGreaterThan(0);
+    expect(result.current.choices).toEqual([]);
+    expect(result.current.completed).toBe(false);
+    expect(result.current.progress).toBe(0);
+  });
 
-export interface UseGameControllerProps {
-  sceneId: number
-  steps: GameStep[]
-  initialStep?: number
-  timePerStep?: number
-}
+  it('debe manejar nextStep correctamente', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    act(() => {
+      result.current.nextStep();
+    });
+    expect(result.current.currentStep).toBe(1);
+  });
 
-export default function useGameController({
-  sceneId,
-  steps = [],
-  initialStep = 0,
-  timePerStep = 30,
-}: UseGameControllerProps) {
-  const dispatch = useDispatch()
-  const [currentStep, setCurrentStep] = useState(initialStep)
-  const [timeLeft, setTimeLeft] = useState(timePerStep)
-  const [choices, setChoices] = useState<SceneOption[]>([])
-  const [completed, setCompleted] = useState(false)
-  const timerRef = useRef<number | undefined>(undefined)
+  it('debe manejar prevStep correctamente', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    act(() => {
+      result.current.nextStep();
+      result.current.prevStep();
+    });
+    expect(result.current.currentStep).toBe(0);
+  });
 
-  // Avanzar al siguiente paso
-  const nextStep = useCallback(() => {
-    if (currentStep < steps.length - 1) {
-      setCurrentStep((prev) => prev + 1)
-      setTimeLeft(timePerStep)
-    } else {
-      finishGame()
-    }
-  }, [currentStep, steps.length])
+  it('debe manejar makeChoice correctamente', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    const mockOption: SceneOption = { id: 1, text: 'Opción 1' };
+    act(() => {
+      result.current.makeChoice(mockOption);
+    });
+    expect(result.current.choices).toContainEqual(mockOption);
+  });
 
-  // Retroceder al paso anterior
-  const prevStep = useCallback(() => {
-    if (currentStep > 0) {
-      setCurrentStep((prev) => prev - 1)
-      setTimeLeft(timePerStep)
-    }
-  }, [currentStep])
+  it('debe manejar resetGame correctamente', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    act(() => {
+      result.current.nextStep();
+      result.current.resetGame();
+    });
+    expect(result.current.currentStep).toBe(0);
+    expect(result.current.timeLeft).toBeGreaterThan(0);
+    expect(result.current.choices).toEqual([]);
+    expect(result.current.completed).toBe(false);
+    expect(result.current.progress).toBe(0);
+  });
 
-  // Registrar una elección del usuario
-  const makeChoice = useCallback(
-    (option: SceneOption) => {
-      setChoices((prev) => [...prev, option])
-      
-      // Si es correcta, desbloqueamos el próximo juego
-      if (option.isCorrect) {
-        dispatch(unlockGame(sceneId))
-      }
+  it('debe manejar completar el juego correctamente', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    mockScene.steps.forEach((step) => {
+      const mockOption: SceneOption = step.options[0];
+      act(() => {
+        result.current.makeChoice(mockOption);
+        result.current.nextStep();
+      });
+    });
+    expect(result.current.completed).toBe(true);
+  });
 
-      nextStep()
-    },
-    [sceneId, nextStep]
-  )
+  it('debe manejar decisiones correctas e incorrectas', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    const mockOptionCorrect: SceneOption = { id: 1, text: 'Opción 1', isCorrect: true };
+    const mockOptionIncorrect: SceneOption = { id: 2, text: 'Opción 2', isCorrect: false };
+    act(() => {
+      result.current.makeChoice(mockOptionCorrect);
+      result.current.nextStep();
+      result.current.makeChoice(mockOptionIncorrect);
+      result.current.nextStep();
+    });
+    expect(result.current.choices).toContainEqual(mockOptionCorrect);
+    expect(result.current.choices).toContainEqual(mockOptionIncorrect);
+  });
 
-  // Finaliza el juego y genera puntaje
-  const finishGame = useCallback(() => {
-    setCompleted(true)
-    setTimeLeft(0)
-  }, [])
+  it('debe manejar tiempo correctamente', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    act(() => {
+      jest.advanceTimersByTime(1000);
+    });
+    expect(result.current.timeLeft).toBeLessThan(mockScene.steps[0].timeLimit);
+  });
 
-  // Reinicia el juego
-  const resetGame = useCallback(() => {
-    setCurrentStep(0)
-    setTimeLeft(timePerStep)
-    setChoices([])
-    setCompleted(false)
-  }, [timePerStep])
-
-  // Reiniciar temporizador cuando cambia de paso
-  useEffect(() => {
-    setTimeLeft(timePerStep)
-  }, [currentStep, timePerStep])
-
-  // Inicia el temporizador
-  useEffect(() => {
-    if (completed || currentStep >= steps.length - 1) return
-
-    timerRef.current = window.setInterval(() => {
-      setTimeLeft((t) => {
-        if (t <= 1) {
-          nextStep()
-          return timePerStep
-        }
-        return t - 1
-      })
-    }, 1000)
-
-    return () => {
-      if (timerRef.current !== undefined) {
-        clearInterval(timerRef.current)
-      }
-    }
-  }, [completed, currentStep, steps.length, timePerStep])
-
-  return {
-    currentStep,
-    timeLeft,
-    choices,
-    completed,
-    nextStep,
-    prevStep,
-    makeChoice,
-    resetGame,
-    progress: Math.round(((currentStep + 1) / steps.length) * 100),
-  }
-}
+  it('debe manejar decisiones con impactos en habilidades', () => {
+    const { result } = renderHook(() => useGameController(mockScene.sceneId));
+    const mockOption: SceneOption = { id: 1, text: 'Opción 1', skillImpacts: { 'Toma de decisiones': 10 } };
+    act(() => {
+      result.current.makeChoice(mockOption);
+      result.current.nextStep();
+    });
+    expect(result.current.choices).toContainEqual(mockOption);
+    expect(result.current.getSkillScores()).toHaveProperty('Toma de decisiones', 10);
+  });
+});
