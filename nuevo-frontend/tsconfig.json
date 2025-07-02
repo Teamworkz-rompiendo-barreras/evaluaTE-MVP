@@ -18,11 +18,11 @@
     // "types": ["vitest"], // Uncomment if you install @types/vitest
     "types" : ["cypress"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
-    "baseUrl": ".",
+    "baseUrl": "./",
     "paths": {
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "vitest.config.ts", "vite.config.ts", "cipress", "**/*.ts"],
+  "include": ["src", "vitest.config.ts", "vite.config.ts", "cypress", "**/*.ts"],
   "exclude": ["dist", "node_modules"]
 }
