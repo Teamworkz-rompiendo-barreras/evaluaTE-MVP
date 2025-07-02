@@ -1,185 +1,119 @@
-// src/features/personal/personalSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+// nuevo-frontend/src/features/personal/personalSlice.ts
 
-// Importamos desde carpeta compartida de tipos
-import type { JobPreference, EmployabilityReport } from '@/types/preferences'
-import type { CvAnalysis, SoftSkillResult } from '@/types/skills'
+import { createSlice, PayloadAction, Draft } from "@reduxjs/toolkit";
+import type { CvAnalysis, JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from "@/types/preferences";
 
-// Estado principal del usuario
-export interface PersonalState {
-  firstName: string
-  lastName: string
-  email: string
-  whatsapp: string
-
-  jobPreferences: string | JobPreference // Ahora viene de skills.ts
-  workMode: 'remoto' | 'presencial' | 'híbrido'
-  availability: 'mañana' | 'tarde' | 'completa'
-  startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
-
-  willingToRelocate: boolean
-  hasDisabilityCert: boolean
-
-  cvFile: File | null
-  cvAnalysis?: CvAnalysis
-  softSkills: SoftSkillResult[]
-  unlockedGames: number
-  report?: EmployabilityReport
-}
-
-// Estado inicial
-const initialState: PersonalState = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  whatsapp: '',
-
-  jobPreferences: '',
-  workMode: 'remoto',
-  availability: 'completa',
-  startDate: 'inmediata',
-
+const initialState: {
+  firstName: string;
+  lastName: string;
+  contactEmail: string;
+  contactPhone: string;
+  cvFile: { fileName: string; fileContent: string } | null;
+  cvAnalysis: CvAnalysis | null;
+  jobPreferences: JobPreference | null;
+  registrationStep: 'contact' | 'preferences' | 'games' | 'uploadCV' | 'resultados';
+  softSkillsScores: SoftSkillResult[];
+  employabilityScore: number;
+  level: 'Baja empleabilidad' | 'Empleabilidad media' | 'Alta empleabilidad';
+  adjustedScore: number;
+  finalReport: EmployabilityReport | null;
+  unlockedGames: number;
+  workMode?: 'remoto' | 'presencial' | 'híbrido';
+  availability?: 'mañana' | 'tarde' | 'completa';
+  willingToRelocate: boolean;
+  hasDisabilityCert: boolean;
+} = {
+  firstName: "",
+  lastName: "",
+  contactEmail: "",
+  contactPhone: "",
+  cvFile: null,
+  cvAnalysis: null,
+  jobPreferences: null,
+  registrationStep: 'contact',
+  softSkillsScores: [],
+  employabilityScore: 0,
+  level: '',
+  adjustedScore: 0,
+  finalReport: null,
+  unlockedGames: 0,
   willingToRelocate: false,
   hasDisabilityCert: false,
+};
 
-  cvFile: null,
-  cvAnalysis: undefined,
-  softSkills: [],
-  unlockedGames: 1,
-  report: undefined,
-}
-
-// Definición del slice
-const personalSlice = createSlice({
+export const personalSlice = createSlice({
   name: 'personal',
   initialState,
   reducers: {
-    // Guarda datos personales
-    saveContact(
-      state,
-      action: PayloadAction<
-        Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'>
-      >
-    ) {
-      return {
-        ...state,
-        ...action.payload,
-      }
+    saveContact: (state, action: PayloadAction<{ firstName: string; lastName: string; contactEmail: string; contactPhone: string }>) => {
+      state.firstName = action.payload.firstName;
+      state.lastName = action.payload.lastName;
+      state.contactEmail = action.payload.contactEmail;
+      state.contactPhone = action.payload.contactPhone;
     },
-
-    // Guarda preferencias laborales
-    savePreferences(
-      state,
-      action: PayloadAction<
-        Pick<
-          PersonalState,
-          | 'jobPreferences'
-          | 'workMode'
-          | 'availability'
-          | 'startDate'
-          | 'willingToRelocate'
-          | 'hasDisabilityCert'
-        >
-      >
-    ) {
-      const payload = action.payload
-
-      if (typeof payload.jobPreferences === 'string') {
-        payload.jobPreferences = {
-          areas: [payload.jobPreferences],
-          needs: [],
-          workMode: payload.workMode,
-          availability: payload.availability,
-          willingToRelocate: payload.willingToRelocate,
-          hasDisabilityCert: payload.hasDisabilityCert,
-        }
-      }
-
-      return {
-        ...state,
-        ...action.payload,
-      }
+    savePreferences: (state, action: PayloadAction<JobPreference>) => {
+      state.jobPreferences = action.payload;
+      state.workMode = action.payload.workMode;
+      state.availability = action.payload.availability;
+      state.willingToRelocate = action.payload.willingToRelocate;
+      state.hasDisabilityCert = action.payload.hasDisabilityCert;
     },
-
-    // Guarda archivo del CV
-    saveCV(state, action: PayloadAction<File>) {
-      state.cvFile = action.payload
+    saveCV: (state, action: PayloadAction<{ fileName: string; fileContent: string }>) => {
+      state.cvFile = action.payload;
     },
-
-    // Guarda análisis del CV procesado
-    saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
-      state.cvAnalysis = action.payload
+    analyzeCV: (state, action: PayloadAction<CvAnalysis>) => {
+      state.cvAnalysis = action.payload;
     },
-
-    // Desbloquea siguiente minijuego
-    unlockNextGame(state) {
-      if (state.unlockedGames < 10) {
-        state.unlockedGames += 1
-      }
-    },
-
-    // Guarda soft skills evaluadas
-    saveSoftSkills(state, action: PayloadAction<SoftSkillResult[]>) {
-      state.softSkills = action.payload
-    },
-
-    // Genera informe final basado en todo el progreso
-    generateFinalReport(state) {
-      const totalSoftSkills = state.softSkills.length
-      const highSkills = state.softSkills.filter(skill => skill.level === 'Alto').length
-      const mediumSkills = state.softSkills.filter(skill => skill.level === 'Medio').length
-      const lowSkills = state.softSkills.filter(skill => skill.level === 'Bajo').length
-
-      let employabilityScore = 0
-      if (totalSoftSkills > 0) {
-        employabilityScore = Math.round(
-          ((highSkills * 100 + mediumSkills * 70 + lowSkills * 30) / totalSoftSkills)
-        )
-      }
-
-      // Ajuste según el CV
-      if (state.cvAnalysis?.score && state.cvAnalysis.score < 60) {
-        employabilityScore = Math.max(20, employabilityScore - 10)
-      }
+    generateFinalReport: (state, action: PayloadAction<Draft<EmployabilityReport>>) => {
+      const employabilityScore = action.payload.employabilityScore;
+      const adjustedScore = action.payload.adjustedScore;
+      const level = employabilityScore >= 80 ? 'Alta empleabilidad' : employabilityScore >= 50 ? 'Empleabilidad media' : 'Baja empleabilidad';
 
       // Actualiza el estado del informe
-      state.report = {
-        userId: 'user-1234',
-        fullName: `${state.firstName} ${state.lastName}`,
-        softSkills: state.softSkills,
-        employabilityScore,
-        jobPreferences:
-          typeof state.jobPreferences === 'string'
-            ? {
-                areas: [state.jobPreferences],
-                needs: [],
-                workMode: state.workMode,
-                availability: state.availability,
-                willingToRelocate: state.willingToRelocate,
-                hasDisabilityCert: state.hasDisabilityCert,
-              }
-            : {
-                ...state.jobPreferences,
-                willingToRelocate: state.willingToRelocate,
-                hasDisabilityCert: state.hasDisabilityCert,
-              },
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        completedGames: Array.from({ length: state.unlockedGames }, (_, i) => i + 1),
-      }
+      state.finalReport = {
+        userId: action.payload.userId,
+        fullName: `${action.payload.firstName} ${action.payload.lastName}`,
+        softSkills: action.payload.softSkills,
+        employabilityScore: employabilityScore,
+        jobPreferences: action.payload.jobPreferences,
+        cvAnalysis: action.payload.cvAnalysis,
+        createdAt: action.payload.createdAt,
+        updatedAt: action.payload.updatedAt,
+        completedGames: action.payload.completedGames,
+        level: level,
+        adjustedScore: adjustedScore,
+        recommendations: action.payload.recommendations,
+      };
+    },
+    updateSoftSkillsScores: (state, action: PayloadAction<SoftSkillResult[]>) => {
+      state.softSkillsScores = action.payload;
+    },
+    updateEmployabilityScore: (state, action: PayloadAction<number>) => {
+      state.employabilityScore = action.payload;
+    },
+    updateLevel: (state, action: PayloadAction<'Baja empleabilidad' | 'Empleabilidad media' | 'Alta empleabilidad'>) => {
+      state.level = action.payload;
+    },
+    updateAdjustedScore: (state, action: PayloadAction<number>) => {
+      state.adjustedScore = action.payload;
+    },
+    unlockGame: (state) => {
+      state.unlockedGames += 1;
     },
   },
-})
+});
 
-// Exportamos las acciones
 export const {
   saveContact,
   savePreferences,
   saveCV,
-  saveCvAnalysis,
-  unlockNextGame,
-  saveSoftSkills,
+  analyzeCV,
   generateFinalReport,
-} = personalSlice.actions
+  updateSoftSkillsScores,
+  updateEmployabilityScore,
+  updateLevel,
+  updateAdjustedScore,
+  unlockGame,
+} = personalSlice.actions;
 
-export default personalSlice.reducer
+export default personalSlice.reducer;
