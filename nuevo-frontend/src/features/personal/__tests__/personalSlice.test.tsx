@@ -1,313 +1,296 @@
-// src/features/personal/personalSlice.ts
-import { createSlice, PayloadAction } from '@reduxjs/toolkit'
+// src/features/personal/__tests__/personalSlice.test.tsx
+import { describe, it, expect } from 'vitest';
+import { personalSlice } from '../personalSlice';
 
 // Tipos compartidos desde el proyecto
 import type {
   JobPreference,
   EmployabilityReport,
-  AccessibilitySettings
-} from '@/types/preferences'
-import type { CvAnalysis, SoftSkillResult, GameDecisionLog } from '@/types/skills'
+  AccessibilitySettings,
+} from '@/types/preferences';
+import type { CvAnalysis, SoftSkillResult, GameDecisionLog } from '@/types/skills';
 
-export interface PersonalState {
-  // Datos básicos del usuario
-  firstName: string
-  lastName: string
-  email: string
-  whatsapp: string
-
-  // Preferencias laborales
-  jobPreferences: string | JobPreference
-  workMode?: 'remoto' | 'presencial' | 'híbrido'
-  availability?: 'mañana' | 'tarde' | 'completa'
-  startDate?: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
-  willingToRelocate: boolean
-  hasDisabilityCert: boolean
-
-  // Archivo del CV
-  cvFile: File | null
-  cvAnalysis?: CvAnalysis
-
-  // Evaluación de habilidades blandas
-  softSkills: SoftSkillResult[]
-  unlockedGames: number
-
-  // Informe final
-  report?: EmployabilityReport
-
-  // Logs gamificados para IA
-  logs: GameDecisionLog[]
-
-  // Configuración de accesibilidad
-  accessibilitySettings?: AccessibilitySettings
-}
-
-// Estado inicial
-const initialState: PersonalState = {
-  firstName: '',
-  lastName: '',
-  email: '',
-  whatsapp: '',
-
-  jobPreferences: '',
-  workMode: 'remoto',
+// Mock de los tipos necesarios
+const mockJobPreference: JobPreference = {
+  areas: ['Logística', 'Atención al cliente'],
+  needs: ['Trabajo en entorno tranquilo'],
+  workMode: 'presencial',
   availability: 'completa',
-  startDate: 'inmediata',
-
   willingToRelocate: false,
   hasDisabilityCert: false,
-
-  cvFile: null,
-  cvAnalysis: undefined,
-
-  softSkills: [],
-  unlockedGames: 1,
-
-  report: undefined,
-  logs: [],
   accessibilitySettings: {
-    easyReadingMode: false,
+    easyReadingMode: true,
     audioAssistiveMode: false,
-    showPictograms: false,
-    contrastLevel: 'normal'
-  }
-}
-
-// Definición del slice
-export const personalSlice = createSlice({
-  name: 'personal',
-  initialState,
-  reducers: {
-    // Guarda datos personales
-    saveContact(
-      state,
-      action: PayloadAction<
-        Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'>
-      >
-    ) {
-      return {
-        ...state,
-        ...action.payload,
-        unlockedGames: Math.max(state.unlockedGames, 1),
-      }
-    },
-
-    // Guarda preferencias laborales
-    savePreferences(
-      state,
-      action: PayloadAction<
-        Pick<
-          PersonalState,
-          'jobPreferences' | 'workMode' | 'availability' | 'startDate' | 'willingToRelocate' | 'hasDisabilityCert'
-        >
-      >
-    ) {
-      const payload = action.payload
-
-      if (typeof payload.jobPreferences === 'string') {
-        payload.jobPreferences = {
-          areas: [payload.jobPreferences],
-          needs: [],
-          workMode: payload.workMode || 'remoto',
-          availability: payload.availability || 'completa',
-          willingToRelocate: payload.willingToRelocate,
-          hasDisabilityCert: payload.hasDisabilityCert,
-          accessibilitySettings: state.accessibilitySettings
-        }
-      }
-
-      return {
-        ...state,
-        ...payload,
-        unlockedGames: Math.min(10, state.unlockedGames + 1)
-      }
-    },
-
-    // Guarda archivo del CV
-    saveCV(state, action: PayloadAction<File>) {
-      return {
-        ...state,
-        cvFile: action.payload,
-        unlockedGames: Math.min(10, state.unlockedGames + 1)
-      }
-    },
-
-    // Guarda análisis del CV
-    saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
-      return {
-        ...state,
-        cvAnalysis: action.payload,
-        unlockedGames: Math.min(10, state.unlockedGames + 1)
-      }
-    },
-
-    // Desbloquea siguiente minijuego
-    unlockNextGame(state) {
-      if (state.unlockedGames < 10) {
-        state.unlockedGames += 1
-      }
-    },
-
-    // Guarda habilidades blandas evaluadas
-    saveSoftSkills(state, action: PayloadAction<SoftSkillResult[]>) {
-      return {
-        ...state,
-        softSkills: [...state.softSkills, ...action.payload]
-      }
-    },
-
-    // Registra decisiones tomadas durante escenas
-    addSceneDecision(state, action: PayloadAction<UserDecision>) {
-      const sceneId = action.payload.sceneId
-      const existingIndex = state.report?.logs.findIndex(log => log.sceneId === sceneId)
-
-      if (existingIndex !== undefined && existingIndex > -1) {
-        state.report!.logs[existingIndex].decisions.push(action.payload)
-      } else {
-        state.report = {
-          ...state.report!,
-          logs: [
-            ...(state.report?.logs || []),
-            {
-              sceneId,
-              decisions: [action.payload],
-              totalSteps: 5,
-              totalTime: 300,
-              averageConfidence: action.payload.skillImpacts[action.payload.optionText] || 0.6,
-              emotionalTrend: ['positivo', 'neutro'],
-              accessibilityUsed: !!state.accessibilitySettings,
-              accessibilitySettings: state.accessibilitySettings
-            }
-          ]
-        }
-      }
-    },
-
-    // Guarda configuración de accesibilidad
-    setAccessibilitySettings(state, action: PayloadAction<AccessibilitySettings>) {
-      state.accessibilitySettings = action.payload
-    },
-
-    // Genera informe final basado en todo el progreso
-    generateFinalReport(state) {
-      const totalSoftSkills = state.softSkills.length
-      const highSkills = state.softSkills.filter(skill => skill.level === 'Alto').length
-      const mediumSkills = state.softSkills.filter(skill => skill.level === 'Medio').length
-      const lowSkills = state.softSkills.filter(skill => skill.level === 'Bajo').length
-
-      let employabilityScore = 0
-      if (totalSoftSkills > 0) {
-        employabilityScore = Math.round(
-          ((highSkills * 100 + mediumSkills * 70 + lowSkills * 30) / totalSoftSkills)
-        )
-      }
-
-      // Ajuste según el CV
-      if (state.cvAnalysis?.score && state.cvAnalysis.score < 60) {
-        employabilityScore = Math.max(20, employabilityScore - 10)
-      }
-
-      // Nivel de empleabilidad
-      let employabilityLevel: 'Baja empleabilidad' | 'Empleabilidad media' | 'Alta empleabilidad' =
-        employabilityScore >= 80
-          ? 'Alta empleabilidad'
-          : employabilityScore >= 50
-          ? 'Empleabilidad media'
-          : 'Baja empleabilidad'
-
-      // Recomendaciones personalizadas
-      const recommendations = getRecommendationsFromProfile({
-        softSkills: state.softSkills,
-        cvAnalysis: state.cvAnalysis,
-        preferences: state.jobPreferences as JobPreference,
-        hasDisabilityCert: state.hasDisabilityCert,
-      })
-
-      // Actualiza el estado del informe
-      state.report = {
-        userId: 'user-ester-2025',
-        fullName: `${state.firstName} ${state.lastName}`,
-        softSkills: state.softSkills,
-        employabilityScore,
-        jobPreferences:
-          typeof state.jobPreferences === 'string'
-            ? {
-                areas: [state.jobPreferences],
-                needs: [],
-                workMode: state.workMode,
-                availability: state.availability,
-                willingToRelocate: state.willingToRelocate,
-                hasDisabilityCert: state.hasDisabilityCert,
-              }
-            : {
-                ...state.jobPreferences,
-                willingnessToRelocate: state.willingToRelocate,
-                hasDisabilityCert: state.hasDisabilityCert,
-              },
-        cvAnalysis: state.cvAnalysis,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        completedGames: Array.from({ length: state.unlockedGames }, (_, i) => i + 1),
-        level: employabilityLevel,
-        recommendations,
-        logs: state.logs,
-      }
-    },
-
-    // Reinicia todo el estado
-    resetPersonalState(state) {
-      return initialState
-    },
+    showPictograms: true,
+    contrastLevel: 'normal',
+    fontScale: 120,
   },
-})
+};
 
-// Función auxiliar para generar recomendaciones
-function getRecommendationsFromProfile(params: {
-  softSkills: SoftSkillResult[]
-  cvAnalysis?: CvAnalysis
-  preferences: JobPreference
-  hasDisabilityCert: boolean
-}) {
-  const roles: string[] = []
-  const resources: string[] = []
-  const cvImprovements: string[] = []
-  const nextSteps: string[] = []
+const mockCvAnalysis: CvAnalysis = {
+  score: 85,
+  strengths: ['Toma de decisiones', 'Resolución de problemas'],
+  weaknesses: ['Creatividad'],
+  feedback: 'Buen trabajo general.',
+  rawLog: {},
+};
 
-  // Ejemplo de lógica básica – puedes expandir esto desde backend o IA
-  if (params.softSkills.some(skill => skill.level === 'Alto')) {
-    roles.push('Desarrollador frontend')
-    roles.push('Soporte técnico')
-    resources.push('Platzi')
-    resources.push('Microsoft Learn')
-  }
+const mockSoftSkillResults: SoftSkillResult[] = [
+  { skill: 'Toma de decisiones', level: 'Alto', confidence: 0.9, feedback: 'Excelente', interactions: [] },
+  { skill: 'Resolución de problemas', level: 'Medio', confidence: 0.6, feedback: 'Bueno', interactions: [] },
+  { skill: 'Creatividad', level: 'Bajo', confidence: 0.3, feedback: 'Necesitas mejorar', interactions: [] },
+];
 
-  if (params.cvAnalysis?.weaknesses.length) {
-    cvImprovements.push(...params.cvAnalysis.weaknesses)
-  }
+const mockGameDecisionLog: GameDecisionLog = {
+  sceneId: 1,
+  decisions: [
+    {
+      sceneId: 1,
+      stepIndex: 0,
+      optionText: 'Opción 1',
+      isCorrect: true,
+      skillImpacts: { 'Toma de decisiones': 10 },
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      screenResolution: `${window.innerWidth}x${window.innerHeight}`,
+    },
+  ],
+  totalSteps: 5,
+  totalTime: 300,
+  averageConfidence: 0.9,
+  emotionalTrend: ['positivo', 'neutro'],
+  accessibilityUsed: true,
+  accessibilitySettings: {
+    easyReadingMode: true,
+    audioAssistiveMode: false,
+    showPictograms: true,
+    contrastLevel: 'normal',
+    fontScale: 120,
+  },
+};
 
-  nextSteps.push('Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias')
+describe('personalSlice', () => {
+  it('debe inicializar con valores predeterminados', () => {
+    const initialState = personalSlice.getInitialState();
+    expect(initialState).toEqual({
+      firstName: '',
+      lastName: '',
+      email: '',
+      whatsapp: '',
+      jobPreferences: '',
+      workMode: 'remoto',
+      availability: 'completa',
+      startDate: 'inmediata',
+      willingToRelocate: false,
+      hasDisabilityCert: false,
+      cvFile: null,
+      cvAnalysis: undefined,
+      softSkills: [],
+      unlockedGames: 1,
+      report: undefined,
+      logs: [],
+      accessibilitySettings: {
+        easyReadingMode: false,
+        audioAssistiveMode: false,
+        showPictograms: false,
+        contrastLevel: 'normal',
+        fontScale: 120,
+      },
+    });
+  });
 
-  return {
-    roles,
-    resources,
-    cvImprovements,
-    nextSteps,
-  }
-}
+  it('debe guardar datos personales correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const action = personalSlice.actions.saveContact({
+      firstName: 'Juan',
+      lastName: 'Pérez',
+      email: 'juan@example.com',
+      whatsapp: '123456789',
+    });
 
-// Exportamos las acciones
-export const {
-  saveContact,
-  savePreferences,
-  saveCV,
-  saveCvAnalysis,
-  unlockNextGame,
-  saveSoftSkills,
-  setAccessibilitySettings,
-  addSceneDecision,
-  generateFinalReport,
-  resetPersonalState,
-} = personalSlice.actions
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      firstName: 'Juan',
+      lastName: 'Pérez',
+      email: 'juan@example.com',
+      whatsapp: '123456789',
+      unlockedGames: 1,
+    });
+  });
 
-// Exportamos el reducer
-export default personalSlice.reducer
+  it('debe guardar preferencias laborales correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const action = personalSlice.actions.savePreferences({
+      jobPreferences: mockJobPreference,
+      workMode: 'presencial',
+      availability: 'completa',
+      startDate: 'inmediata',
+      willingToRelocate: false,
+      hasDisabilityCert: false,
+    });
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      jobPreferences: mockJobPreference,
+      workMode: 'presencial',
+      availability: 'completa',
+      startDate: 'inmediata',
+      willingToRelocate: false,
+      hasDisabilityCert: false,
+      unlockedGames: 2,
+    });
+  });
+
+  it('debe guardar archivo del CV correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const mockFile = new File([''], 'example.pdf', { type: 'application/pdf' });
+    const action = personalSlice.actions.saveCV(mockFile);
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      cvFile: mockFile,
+      unlockedGames: 2,
+    });
+  });
+
+  it('debe guardar análisis del CV correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const action = personalSlice.actions.saveCvAnalysis(mockCvAnalysis);
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      cvAnalysis: mockCvAnalysis,
+      unlockedGames: 2,
+    });
+  });
+
+  it('debe desbloquear el siguiente minijuego correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const action = personalSlice.actions.unlockNextGame();
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      unlockedGames: 2,
+    });
+  });
+
+  it('debe guardar habilidades blandas evaluadas correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const action = personalSlice.actions.saveSoftSkills(mockSoftSkillResults);
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      softSkills: mockSoftSkillResults,
+    });
+  });
+
+  it('debe registrar decisiones tomadas durante escenas correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const action = personalSlice.actions.addSceneDecision({
+      sceneId: 1,
+      stepIndex: 0,
+      optionText: 'Opción 1',
+      isCorrect: true,
+      skillImpacts: { 'Toma de decisiones': 10 },
+      timestamp: new Date().toISOString(),
+      userAgent: navigator.userAgent,
+      screenResolution: `${window.innerWidth}x${window.innerHeight}`,
+    });
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      logs: [mockGameDecisionLog],
+    });
+  });
+
+  it('debe guardar configuración de accesibilidad correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const action = personalSlice.actions.setAccessibilitySettings({
+      easyReadingMode: true,
+      audioAssistiveMode: false,
+      showPictograms: true,
+      contrastLevel: 'normal',
+      fontScale: 120,
+    });
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      accessibilitySettings: {
+        easyReadingMode: true,
+        audioAssistiveMode: false,
+        showPictograms: true,
+        contrastLevel: 'normal',
+        fontScale: 120,
+      },
+    });
+  });
+
+  it('debe generar informe final basado en todo el progreso correctamente', () => {
+    const state = {
+      ...personalSlice.getInitialState(),
+      firstName: 'Juan',
+      lastName: 'Pérez',
+      jobPreferences: mockJobPreference,
+      cvAnalysis: mockCvAnalysis,
+      softSkills: mockSoftSkillResults,
+      unlockedGames: 10,
+      logs: [mockGameDecisionLog],
+    };
+
+    const action = personalSlice.actions.generateFinalReport();
+
+    const newState = personalSlice.reducer(state, action);
+    const employabilityScore = 67; // Calculado como (100 + 70 + 30) / 3 = 66.67 -> redondeado a 67
+    const level = 'Empleabilidad media';
+    const recommendations = {
+      roles: ['Desarrollador frontend', 'Soporte técnico'],
+      resources: ['Platzi', 'Microsoft Learn'],
+      cvImprovements: ['Creatividad'],
+      nextSteps: ['Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias'],
+    };
+
+    expect(newState).toEqual({
+      ...state,
+      report: {
+        userId: 'user-ester-2025',
+        fullName: 'Juan Pérez',
+        softSkills: mockSoftSkillResults,
+        employabilityScore,
+        jobPreferences: mockJobPreference,
+        cvAnalysis: mockCvAnalysis,
+        createdAt: expect.any(String),
+        updatedAt: expect.any(String),
+        completedGames: Array.from({ length: 10 }, (_, i) => i + 1),
+        level,
+        recommendations,
+        logs: [mockGameDecisionLog],
+      },
+    });
+  });
+
+  it('debe reiniciar todo el estado correctamente', () => {
+    const state = {
+      ...personalSlice.getInitialState(),
+      firstName: 'Juan',
+      lastName: 'Pérez',
+      jobPreferences: mockJobPreference,
+      cvAnalysis: mockCvAnalysis,
+      softSkills: mockSoftSkillResults,
+      unlockedGames: 10,
+      logs: [mockGameDecisionLog],
+    };
+
+    const action = personalSlice.actions.resetPersonalState();
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual(personalSlice.getInitialState());
+  });
+});
