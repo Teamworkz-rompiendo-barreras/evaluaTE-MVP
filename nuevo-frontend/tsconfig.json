@@ -15,6 +15,7 @@
     "isolatedModules": true,
     "noEmit": true,
     "jsx": "react-jsx",
+    "forceConsistentCasingInFileNames": true,
     // "types": ["vitest"], // Uncomment if you install @types/vitest
     "types" : ["cypress"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
