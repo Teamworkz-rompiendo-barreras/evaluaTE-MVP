@@ -1,234 +1,148 @@
-// src/pages/ResultadosPage.tsx
-import React, { useState, useEffect } from 'react'
-import { useNavigate } from 'react-router-dom'
-import { useAppSelector } from '../app/hooks'
-import type { RootState } from '../app/store'
+// src/pages/ResultadosPage.test.tsx
 
-// Tipos desde Redux
-import {
-  CvAnalysis,
-  SoftSkillResult,
-  JobPreference,
-} from '@/types/skills'
-import type { EmployabilityReport } from '@/types/skills'
+import { render, screen } from '@testing-library/react';
+import '@testing-library/jest-dom/extend-expect'; // Asegúrate de importar extend-expect para usar matchers de jest-dom
+import ResultadosPage from './ResultadosPage';
+import { MockedProvider } from '@apollo/client/testing';
+import { GET_EVALUATION_RESULTS } from './queries'; // Asegúrate de que la consulta GraphQL esté correctamente importada
 
-// Componentes visuales
-import { ResponsiveRadar } from '@nivo/radar'
-import ProgressBar from '../components/ProgressBar'
+// Mock de los datos de evaluación
+const mockEvaluationResults = {
+  request: {
+    query: GET_EVALUATION_RESULTS,
+  },
+  result: {
+    data: {
+      evaluationResults: {
+        userId: 'uuid',
+        softSkillsScores: {
+          Resolución_de_Problemas: 78,
+          Gestión_emocional: 54,
+          Trabajo_en_equipo: 85,
+          Curiosidad_y_aprendizaje_continuo: 90,
+          Resiliencia_y_flexibilidad: 80,
+          Autoconciencia: 75,
+          Empatía: 95,
+          Escucha_activa: 88,
+          Gestión_del_tiempo: 82,
+        },
+        employabilityScore: 78,
+        level: 'Empleabilidad_media',
+        cvScore: 62,
+        adjustedScore: 78,
+      },
+    },
+  },
+};
 
-export default function ResultadosPage() {
-  const navigate = useNavigate()
-  const [loading, setLoading] = useState(false)
-  const [toast, setToast] = useState<string | null>(null)
+describe('ResultadosPage', () => {
+  it('muestra el título del informe correctamente', () => {
+    render(
+      <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+        <ResultadosPage />
+      </MockedProvider>
+    );
 
-  // Accedemos al estado global tipado
-  // Import RootState type from your store (adjust the import path as needed)
-  
-  // Ajusta el selector según la estructura real de tu store
-  // Por ejemplo, si tu store tiene la forma state.personal:
-  // Cambia 'personal' por el nombre correcto del slice en tu store
-  // Reemplaza 'personal' por el nombre correcto del slice según tu store, por ejemplo 'user' o 'profile'
-    // Ajusta el nombre del slice según tu store, por ejemplo 'personal', 'profile', etc.
-        // Replace 'profile' with the actual slice name from your store if different
-                // Replace 'personal' with the actual slice name from your store if different
-                                const profile = useAppSelector((state: RootState) => state.profile)
-                                const cvAnalysis = profile?.cvAnalysis as CvAnalysis | undefined
-                                const softSkills = profile?.softSkills || []
-                                const completedGames = profile?.completedGames || []
+    expect(screen.getByText('Tu Informe Final')).toBeInTheDocument();
+  });
 
-  // Verificamos que todo el progreso sea completo antes de mostrar resultados
-  useEffect(() => {
-    if (completedGames.length < 10 || !cvAnalysis || softSkills.length === 0) {
-      navigate('/games')
-    }
-  }, [completedGames, cvAnalysis, softSkills])
+  it('muestra el mapa de habilidades correctamente', async () => {
+    render(
+      <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+        <ResultadosPage />
+      </MockedProvider>
+    );
 
-  // Datos para gráfico radar
-  interface RadarData {
-    skill: string
-    level: number
-  }
+    // Espera a que los datos se carguen
+    const radarChart = await screen.findByTestId('radar-chart');
+    expect(radarChart).toBeInTheDocument();
+  });
 
-  const data: RadarData[] = softSkills.map((skill: SoftSkillResult) => ({
-    skill: skill.skill,
-    level: skill.confidence * 100
-  }))
+  it('muestra las fortalezas más destacadas correctamente', async () => {
+    render(
+      <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+        <ResultadosPage />
+      </MockedProvider>
+    );
 
-  // Áreas a mejorar (confianza menor a 0.6)
-  interface AreaMejorar {
-    skill: string
-    level: number
-    confidence: number
-    feedback?: string
-  }
+    // Espera a que los datos se carguen
+    const fortalezas = await screen.findByText(/Fortalezas más destacadas/i);
+    expect(fortalezas).toBeInTheDocument();
+    expect(screen.getByText(/Resolución de Problemas: Alto/i)).toBeInTheDocument();
+    expect(screen.getByText(/Trabajo en equipo: Alto/i)).toBeInTheDocument();
+  });
 
-  const areasMejorar: AreaMejorar[] = softSkills
-    .filter((skill: SoftSkillResult) => skill.confidence < 0.6)
-    .map((skill: SoftSkillResult) => ({
-      skill: skill.skill,
-      level: skill.level,
-      confidence: skill.confidence,
-      feedback: skill.feedback,
-    }))
+  it('muestra las áreas de mejora correctamente', async () => {
+    render(
+      <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+        <ResultadosPage />
+      </MockedProvider>
+    );
 
-  // Manejador para descargar informe PDF
-  const handleDownloadReport = async () => {
-    setLoading(true)
-    try {
-      const payload = {
-        softSkills,
-        cvAnalysis
-      }
+    // Espera a que los datos se carguen
+    const areasDeMejora = await screen.findByText(/Áreas a mejorar/i);
+    expect(areasDeMejora).toBeInTheDocument();
+    expect(screen.getByText(/Gestión emocional/i)).toBeInTheDocument();
+    expect(screen.getByText(/Curiosidad y aprendizaje continuo/i)).toBeInTheDocument();
+  });
 
-      const resp = await fetch('/api/generate-report', {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload)
-      })
+  it('muestra las recomendaciones laborales correctamente', async () => {
+    render(
+      <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+        <ResultadosPage />
+      </MockedProvider>
+    );
 
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`)
+    // Espera a que los datos se carguen
+    const recomendaciones = await screen.findByText(/Recomendaciones laborales/i);
+    expect(recomendaciones).toBeInTheDocument();
+    expect(screen.getByText(/Tipos de puestos recomendados/i)).toBeInTheDocument();
+    expect(screen.getByText(/Entornos preferibles/i)).toBeInTheDocument();
+  });
 
-      const blob = await resp.blob()
-      const url = window.URL.createObjectURL(blob)
-      const link = document.createElement('a')
-      link.href = url
-      link.download = 'informe-resultados.pdf'
-      document.body.appendChild(link)
-      link.click()
-      document.body.removeChild(link)
-      window.URL.revokeObjectURL(url)
+  it('muestra el análisis del CV correctamente', async () => {
+    render(
+      <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+        <ResultadosPage />
+      </MockedProvider>
+    );
 
-      setToast('Informe descargado correctamente')
-    } catch (err) {
-      console.error(err)
-      setToast('Error al generar el informe. Intenta más tarde.')
-    } finally {
-      setLoading(false)
-    }
-  }
+    // Espera a que los datos se carguen
+    const cvAnalysis = await screen.findByText(/Análisis de tu CV/i);
+    expect(cvAnalysis).toBeInTheDocument();
+    expect(screen.getByText(/CV bien estructurado/i)).toBeInTheDocument();
+    expect(screen.getByText(/Recomendación: añadir habilidades duras/i)).toBeInTheDocument();
+  });
 
-  // Autoocultar notificaciones tras 3s
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000)
-      return () => clearTimeout(timer)
-    }
-  }, [toast])
+  it('muestra los próximos pasos sugeridos correctamente', async () => {
+    render(
+      <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+        <ResultadosPage />
+      </MockedProvider>
+    );
 
-  return (
-    <section className="relative max-w-4xl mx-auto p-6 space-y-8">
-      {/* Título */}
-      <h1 className="text-3xl font-bold text-center">Tu Informe Final</h1>
+    // Espera a que los datos se carguen
+    const proximosPasos = await screen.findByText(/Próximos pasos sugeridos/i);
+    expect(proximosPasos).toBeInTheDocument();
+    expect(screen.getByText(/Formación sugerida/i)).toBeInTheDocument();
+    expect(screen.getByText(/Portales de empleo recomendados/i)).toBeInTheDocument();
+  });
 
-      {/* Notificación tipo Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 bg-black bg-opacity-75 text-white px-4 py-2 rounded shadow-lg">
-          {toast}
-        </div>
-      )}
+  it('muestra los botones de descarga y envío de correo correctamente', async () => {
+    render(
+      <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+        <ResultadosPage />
+      </MockedProvider>
+    );
 
-      {/* A. Análisis del CV */}
-      {cvAnalysis ? (
-        <div className="bg-gray-50 p-6 rounded shadow-md">
-          <h2 className="text-2xl font-semibold mb-4">Análisis de tu CV</h2>
-          <p className="mb-4">
-            Puntuación global: <strong>{cvAnalysis.score}%</strong>
-          </p>
+    // Espera a que los datos se carguen
+    const descargarInforme = await screen.findByText(/Descargar informe en PDF/i);
+    expect(descargarInforme).toBeInTheDocument();
 
-          <div className="space-y-2 mb-6">
-            <h3 className="font-medium">Puntos fuertes:</h3>
-            <ul className="list-disc pl-5">
-              {cvAnalysis.strengths?.length > 0 ? (
-                cvAnalysis.strengths.map((strength, index) => (
-                  <li key={index}>{strength}</li>
-                ))
-              ) : (
-                <li>No se encontraron puntos fuertes.</li>
-              )}
-            </ul>
-          </div>
+    const enviarCorreo = await screen.findByText(/Enviar por email/i);
+    expect(enviarCorreo).toBeInTheDocument();
 
-          <div className="space-y-2">
-            <h3 className="font-medium">Áreas a mejorar:</h3>
-            <ul className="list-disc pl-5">
-              {cvAnalysis.weaknesses?.length > 0 ? (
-                cvAnalysis.weaknesses.map((weakness, index) => (
-                  <li key={index}>{weakness}</li>
-                ))
-              ) : (
-                <li>No se encontraron áreas a mejorar.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-yellow-50 p-4 border border-yellow-200 rounded">
-          No se ha cargado el análisis del CV.
-        </div>
-      )}
-
-      {/* B. Habilidades blandas evaluadas */}
-      {softSkills.length > 0 ? (
-        <div className="bg-white p-6 rounded shadow-md">
-          <h2 className="text-2xl font-semibold mb-4">Habilidades Blandas Evaluadas</h2>
-          <ul className="space-y-2">
-            {softSkills.map((skill: SoftSkillResult, index: number) => (
-              <li key={index}>
-              <span className="font-medium">{skill.skill}:</span> Nivel: {skill.level} ({Math.round(skill.confidence * 100)}% de confianza)
-              </li>
-            ))}
-          </ul>
-        </div>
-      ) : (
-        <div className="bg-yellow-50 p-4 border border-yellow-200 rounded">
-          No se han evaluado habilidades blandas aún.
-        </div>
-      )}
-
-      {/* C. Gráfico Radar */}
-      <div className="w-full h-96">
-        <ResponsiveRadar
-          data={data}
-          keys={['level']}
-          indexBy="skill"
-        margin={{ top: 70, right: 80, bottom: 70, left: 80 }}
-        borderColor="#3182eb"
-        dotSize={10}
-          dotColor="#2563eb"
-          dotBorderWidth={2}
-          enableDots={true}
-          animate={true}
-        />
-      </div>
-
-      {/* D. Recomendaciones */}
-      <div className="bg-blue-50 p-6 rounded shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Recomendaciones de mejora</h2>
-        <ul className="space-y-2">
-          {areasMejorar.length > 0 ? (
-            areasMejorar.map((skill, index) => (
-              <li key={index}>
-                <strong>{skill.skill}:</strong> Tu nivel es <em>{skill.level}</em>. Recomendación: {skill.feedback}
-              </li>
-            ))
-          ) : (
-            <li>No hay recomendaciones disponibles aún.</li>
-          )}
-        </ul>
-      </div>
-
-      {/* E. Botón de descarga */}
-      <div className="flex justify-center mt-6">
-        <button
-          onClick={handleDownloadReport}
-          disabled={loading}
-          className={`py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ${
-            loading ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
-        >
-          {loading ? 'Generando informe...' : 'Descargar Informe PDF'}
-        </button>
-      </div>
-    </section>
-  )
-}
+    const repetirEvaluacion = await screen.findByText(/Repetir evaluación/i);
+    expect(repetirEvaluacion).toBeInTheDocument();
+  });
+});
