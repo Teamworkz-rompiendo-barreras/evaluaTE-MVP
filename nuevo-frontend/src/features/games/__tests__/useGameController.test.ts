@@ -2,7 +2,7 @@
 
 import { renderHook, act } from '@testing-library/react';
 import useGameController from '../useGameController';
-import { GameScene, SceneOption } from '@/types/game-scene';
+import { GameScene, SceneOption } from '@/types/game';
 import { UserDecision } from '@/types/skills';
 import { vi } from 'vitest'; // Importa vi de vitest para mocks
 
@@ -16,10 +16,10 @@ const mockScenes: GameScene[] = [
   {
     id: 1,
     title: 'Minijuego 1',
-    description: 'Descripción del minijuego 1',
+    description: 'Descripción del minijuego 1', // Usar description si está definido en GameScene
     steps: [
       {
-        text: 'Paso 1', // Cambiado de description a text
+        text: 'Paso 1', // Usar text en vez de description
         options: [
           { text: 'Opción 1', isCorrect: true, skillImpact: { 'Toma de decisiones': 10 } },
           { text: 'Opción 2', isCorrect: false, skillImpact: { 'Toma de decisiones': 5 } },
@@ -27,7 +27,7 @@ const mockScenes: GameScene[] = [
         timeLimit: 30,
       },
       {
-        text: 'Paso 2', // Cambiado de description a text
+        text: 'Paso 2', // Usar text en vez de description
         options: [
           { text: 'Opción A', isCorrect: true, skillImpact: { 'Toma de decisiones': 15 } },
           { text: 'Opción B', isCorrect: false, skillImpact: { 'Toma de decisiones': 8 } },
@@ -59,10 +59,10 @@ describe('useGameController', () => {
   const mockScene: GameScene = {
     id: 1,
     title: 'Minijuego 1',
-    description: 'Descripción del minijuego 1',
+    description: 'Descripción del minijuego 1', // Usar description si está definido en GameScene
     steps: [
       {
-        text: 'Paso 1', // Cambiado de description a text
+        text: 'Paso 1', // Usar text en vez de description
         options: [
           { text: 'Opción 1', isCorrect: true, skillImpact: { 'Toma de decisiones': 10 } },
           { text: 'Opción 2', isCorrect: false, skillImpact: { 'Toma de decisiones': 5 } },
@@ -70,7 +70,7 @@ describe('useGameController', () => {
         timeLimit: 30,
       },
       {
-        text: 'Paso 2', // Cambiado de description a text
+        text: 'Paso 2', // Usar text en vez de description
         options: [
           { text: 'Opción A', isCorrect: true, skillImpact: { 'Toma de decisiones': 15 } },
           { text: 'Opción B', isCorrect: false, skillImpact: { 'Toma de decisiones': 8 } },
