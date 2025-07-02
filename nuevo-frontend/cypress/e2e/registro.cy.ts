@@ -1,5 +1,5 @@
 // cypress/e2e/registro.cy.ts
-import { mockUser } from '../__fixtures__/user.fixtures'
+import mockUser from '../__fixtures__/user.fixtures'
 
 describe('Flujo completo de registro', () => {
   beforeEach(() => {
@@ -49,3 +49,4 @@ describe('Flujo completo de registro', () => {
     cy.contains('p', 'Paso 1 de 2').should('exist')
   })
 })
+
