@@ -6,20 +6,27 @@ import { toggleContrast, setFontScale } from "../app/accessibilitySlice";
 
 export function useAccessibility() {
   const dispatch = useDispatch();
-  const { highContrast, fontScale } = useSelector(
+  const { contrastLevel, fontScale } = useSelector(
     (state: RootState) => state.accessibility
   );
 
   // Efecto: aplica la clase y la escala de fuente en <html>
   useEffect(() => {
     const html = document.documentElement;
-    if (highContrast) html.classList.add("high-contrast");
-    else html.classList.remove("high-contrast");
+
+    // Ajusta la clase de contraste según el nivel
+    if (contrastLevel === 'alto' || contrastLevel === 'muy-alto') {
+      html.classList.add("high-contrast");
+    } else {
+      html.classList.remove("high-contrast");
+    }
+
+    // Ajusta la escala de fuente
     html.style.fontSize = `${fontScale}%`;
-  }, [highContrast, fontScale]);
+  }, [contrastLevel, fontScale]);
 
   return {
-    highContrast,
+    contrastLevel,
     fontScale,
     toggleContrast: () => dispatch(toggleContrast()),
     setFontScale: (scale: number) => dispatch(setFontScale(scale)),
