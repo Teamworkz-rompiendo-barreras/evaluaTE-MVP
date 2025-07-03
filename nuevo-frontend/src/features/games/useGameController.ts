@@ -2,10 +2,10 @@
 
 import { useEffect, useState } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { unlockGame } from '../progress/progressSlice';
+import { markGameComplete } from '../progress/progressSlice';
 import { UserDecision } from '@/types/skills';
 import { SceneOption } from '@/types/game-scene';
-import { getScene } from '@/features/games/scenesApi';
+import { useGetSceneQuery } from '@/features/games/scenesApi';
 
 interface UseGameControllerProps {
   sceneId: number;
@@ -13,38 +13,38 @@ interface UseGameControllerProps {
 
 const useGameController = ({ sceneId }: UseGameControllerProps) => {
   const dispatch = useDispatch();
-  const scene = useSelector(getScene(sceneId));
+  const { data: scene } = useGetSceneQuery(String(sceneId));
 
   const [currentStep, setCurrentStep] = useState(0);
-  const [timeLeft, setTimeLeft] = useState(scene?.steps[currentStep]?.timeLimit || 0);
+  const [timeLeft, setTimeLeft] = useState(scene?.steps?.[currentStep]?.timeLimit || 0);
   const [choices, setChoices] = useState<UserDecision[]>([]);
   const [completed, setCompleted] = useState(false);
   const [progress, setProgress] = useState(0);
 
   useEffect(() => {
-    if (scene) {
-      setTimeLeft(scene.steps[currentStep].timeLimit);
+    if (scene && scene.steps && scene.steps[currentStep]) {
+      setTimeLeft(scene.steps[currentStep].timeLimit || 0);
     }
   }, [scene, currentStep]);
 
   useEffect(() => {
-    if (scene && currentStep >= scene.steps.length) {
+    if (scene && scene.steps && currentStep >= scene.steps.length) {
       setCompleted(true);
-      dispatch(unlockGame(sceneId));
+      dispatch(markGameComplete(String(sceneId)));
     }
   }, [scene, currentStep, dispatch, sceneId]);
 
   useEffect(() => {
-    if (scene) {
+    if (scene && scene.steps) {
       const totalSteps = scene.steps.length;
       setProgress((currentStep / totalSteps) * 100);
     }
   }, [scene, currentStep]);
 
   useEffect(() => {
-    if (scene) {
+    if (scene && scene.steps) {
       const timer = setInterval(() => {
-        setTimeLeft((prevTime) => {
+        setTimeLeft((prevTime: number) => {
           if (prevTime > 0) {
             return prevTime - 1;
           } else {
@@ -59,7 +59,7 @@ const useGameController = ({ sceneId }: UseGameControllerProps) => {
   }, [scene, currentStep]);
 
   const nextStep = () => {
-    if (scene && currentStep < scene.steps.length - 1) {
+    if (scene && scene.steps && currentStep < scene.steps.length - 1) {
       setCurrentStep(currentStep + 1);
     }
   };
@@ -86,7 +86,7 @@ const useGameController = ({ sceneId }: UseGameControllerProps) => {
 
   const resetGame = () => {
     setCurrentStep(0);
-    setTimeLeft(scene?.steps[0]?.timeLimit || 0);
+    setTimeLeft(scene?.steps?.[0]?.timeLimit || 0);
     setChoices([]);
     setCompleted(false);
     setProgress(0);
