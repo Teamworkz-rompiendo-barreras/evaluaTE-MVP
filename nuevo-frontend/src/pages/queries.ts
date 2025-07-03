@@ -6,15 +6,15 @@ export const GET_EVALUATION_RESULTS = gql`
     evaluationResults(userId: $userId) {
       userId
       softSkillsScores {
-        Resolución_de_Problemas
-        Gestión_emocional
+        Resolucion_de_Problemas
+        Gestion_emocional
         Trabajo_en_equipo
         Curiosidad_y_aprendizaje_continuo
         Resiliencia_y_flexibilidad
         Autoconciencia
-        Empatía
+        Empatia
         Escucha_activa
-        Gestión_del_tiempo
+        Gestion_del_tiempo
       }
       employabilityScore
       level
