@@ -1,3 +1,4 @@
+/// <reference types="cypress" />
 // cypress/e2e/report.cy.ts
 describe('Informe de Resultados', () => {
   before(() => {
