@@ -40,11 +40,6 @@ export interface PersonalState {
   accessibilitySettings?: AccessibilitySettings;
 }
 
-export interface SoftSkillResult {
-  skill: string
-  score: number
-  level: 'Baja empleabilidad' | 'Empleabilidad media' | 'Alta empleabilidad'
-} 
 // Estado inicial
 const initialState: PersonalState = {
   firstName: '',
@@ -164,7 +159,7 @@ export const personalSlice = createSlice({
     // Registra decisiones tomadas durante escenas
     addSceneDecision(state, action: PayloadAction<UserDecision>) {
       const sceneId = action.payload.sceneId;
-      const logs = (state.report && 'logs' in state.report && Array.isArray((state.report as any).logs))
+      const logs = (state.report && Array.isArray((state.report as any).logs))
         ? (state.report as any).logs as SceneLog[]
         : [];
 
@@ -174,32 +169,21 @@ export const personalSlice = createSlice({
         logs[existingIndex].decisions.push(action.payload);
         state.report = {
           ...state.report!,
-          logs: [...logs],
         };
       } else {
-        state.report = {
-          ...state.report!,
-          logs: [
-            ...logs,
-            {
-              sceneId,
-              decisions: [{
-                ...action.payload,
-                sceneId: typeof action.payload.sceneId === 'string' ? parseInt(action.payload.sceneId, 10) : action.payload.sceneId,
-                stepIndex: (action.payload as any).stepIndex ?? 0,
-                timestamp: (action.payload as any).timestamp ?? new Date().toISOString(),
-                isCorrect: (action.payload as any).isCorrect ?? false,
-                userAgent: (action.payload as any).userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : ''),
-                screenResolution: (action.payload as any).screenResolution ?? (typeof window !== 'undefined' ? `${window.screen.width}x${window.screen.height}` : ''),
-              }],
-              totalSteps: 5,
-              totalTime: 300,
-              averageConfidence: action.payload.skillImpacts[action.payload.optionText] || 0.6,
-              emotionalTrend: ['positivo', 'neutro'] as ('positivo' | 'neutro' | 'negativo')[],
-              accessibilityUsed: !!state.accessibilitySettings,
-              accessibilitySettings: state.accessibilitySettings,
-            },
-        };
+        state.logs = [
+          ...logs,
+          {
+            sceneId: String(sceneId),
+            decisions: [action.payload],
+            totalSteps: 5,
+            totalTime: 300,
+            averageConfidence: action.payload.skillImpacts[action.payload.optionText] || 0.6,
+            emotionalTrend: ['positivo', 'neutro'] as ('positivo' | 'neutro' | 'negativo')[],
+            accessibilityUsed: !!state.accessibilitySettings,
+            accessibilitySettings: state.accessibilitySettings,
+          },
+        ];
       }
     },
 
@@ -232,12 +216,12 @@ export const personalSlice = createSlice({
       }
 
       // Nivel de empleabilidad
-      const level: 'Baja empleabilidad' | 'Empleabilidad media' | 'Alta empleabilidad' =
+      const level: 'bajo' | 'medio' | 'alto' =
         employabilityScore >= 80
-          ? 'Alta empleabilidad'
+          ? 'alto'
           : employabilityScore >= 50
-          ? 'Empleabilidad media'
-          : 'Baja empleabilidad';
+          ? 'medio'
+          : 'bajo';
 
       // Recomendaciones personalizadas
       const recommendationsObj = getRecommendationsFromProfile({
@@ -257,7 +241,8 @@ export const personalSlice = createSlice({
       // Actualiza el estado del informe
       state.report = {
         userId: 'user-ester-2025',
-        fullName: `${state.firstName} ${state.lastName}`,
+        firstName: state.firstName,
+        lastName: state.lastName,
         softSkills: state.softSkills,
         employabilityScore,
         jobPreferences:
@@ -282,7 +267,7 @@ export const personalSlice = createSlice({
         completedGames: Array.from({ length: state.unlockedGames }, (_, i) => i + 1),
         level,
         recommendations,
-        logs: state.logs,
+        adjustedScore: employabilityScore,
       };
     },
 
