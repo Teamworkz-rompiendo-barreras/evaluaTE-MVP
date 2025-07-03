@@ -21,14 +21,20 @@ export default function UploadCVPage() {
     }
   }
 
-  const handleSubmit = (e: React.FormEvent) => {
+  const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault()
     if (!file) return
 
-    // Guardamos el archivo en Redux
-    dispatch(saveCV(file))
+    // Leer el archivo como base64
+    const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+      const reader = new FileReader()
+      reader.readAsDataURL(file)
+      reader.onload = () => resolve(reader.result as string)
+      reader.onerror = error => reject(error)
+    })
 
-    // Redirigimos a resultados
+    const fileContent = await toBase64(file)
+    dispatch(saveCV({ fileName: file.name, fileContent }))
     navigate('/resultados')
   }
 

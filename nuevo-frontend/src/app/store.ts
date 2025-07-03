@@ -3,23 +3,21 @@
 import { configureStore, combineReducers } from '@reduxjs/toolkit';
 import { persistStore, persistReducer } from 'redux-persist';
 import storage from 'redux-persist/lib/storage';
-import { autoMergeLevel1 } from 'redux-persist/es/stateReconciler/autoMergeLevel1';
 
 // Reducers compartidos
 import accessibilityReducer, {
   toggleContrast,
   setFontScale,
-  setAudioAssistiveMode,
+  toggleAudioAssistiveMode,
   setShowPictograms,
 } from './accessibilitySlice';
 import personalReducer, {
   saveContact,
   savePreferences,
   saveCV,
-  analyzeCV,
   generateFinalReport,
 } from '../features/personal/personalSlice';
-import progressReducer, { unlockGame, resetProgress } from '../features/progress/progressSlice';
+import progressReducer, { markGameComplete, saveCV as saveProgressCV } from '../features/progress/progressSlice';
 import { scenesApi } from '../features/games/scenesApi';
 
 // Combina todos los reducers
@@ -36,7 +34,6 @@ const persistConfig = {
   storage,
   whitelist: ['personal', 'progress', 'accessibility'],
   version: 1,
-  stateReconciler: autoMergeLevel1,
 };
 
 const persistedReducer = persistReducer(persistConfig, rootReducer);
@@ -60,19 +57,18 @@ export {
   // Acciones de accesibilidad
   toggleContrast,
   setFontScale,
-  setAudioAssistiveMode,
+  toggleAudioAssistiveMode,
   setShowPictograms,
 
   // Acciones de personal
   saveContact,
   savePreferences,
   saveCV,
-  analyzeCV,
   generateFinalReport,
 
   // Acciones de progreso
-  unlockGame,
-  resetProgress,
+  markGameComplete,
+  saveProgressCV,
 };
 
 // Tipos para uso global

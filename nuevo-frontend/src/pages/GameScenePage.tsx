@@ -5,7 +5,7 @@ import { useParams, useNavigate } from 'react-router-dom'
 
 // Importamos datos del juego
 import { useGetSceneQuery } from '../features/games/scenesApi'
-import { useGameController } from '../features/games/useGameController'
+import useGameController from '../features/games/useGameController'
 import { useAppDispatch, useAppSelector } from '../app/hooks'
 import { markGameComplete } from '../features/progress/progressSlice'
 import { unlockNextGame } from '../features/personal/personalSlice'
@@ -30,7 +30,7 @@ export default function GameScenePage() {
   } = useGetSceneQuery(id ?? '', { skip: !id })
 
   const stepsCount = scene?.steps.length ?? 0
-  const { currentStep, timeLeft, goNext, goPrev } = useGameController(stepsCount)
+  const { currentStep, timeLeft, nextStep, prevStep } = useGameController({ sceneId: Number(id) })
   const { logStep, logSoftSkill, logFinalGame } = useLogger()
 
   // Estado local del juego
@@ -65,11 +65,16 @@ export default function GameScenePage() {
 
   // Calculamos softSkills al finalizar todas las escenas
   const handleFinishGame = () => {
+    const levelMap = {
+      'Bajo': 'bajo',
+      'Medio': 'medio',
+      'Alto': 'alto',
+    } as const;
     const skillResults = [
       {
         skill: getSkillNameFromGameId(gameNum),
-        level: calculateLevel(),
-        confidence: calculateConfidence(),
+        score: Math.round(calculateConfidence() * 100),
+        level: levelMap[calculateLevel()],
       },
     ]
 
@@ -160,7 +165,7 @@ export default function GameScenePage() {
     setTimeout(() => {
       setShowFeedback(false)
       if (currentStep < stepsCount - 1) {
-        goNext()
+        nextStep()
       }
     }, 1000)
   }
@@ -193,7 +198,7 @@ export default function GameScenePage() {
       {/* Título */}
       <h2
         className={`text-xl font-bold ${
-          accessibilityState.highContrast ? 'bg-black text-white p-2' : ''
+          (accessibilityState.contrastLevel === 'alto' || accessibilityState.contrastLevel === 'muy-alto') ? 'bg-black text-white p-2' : ''
         }`}
       >
         {scene.title}
@@ -270,7 +275,7 @@ export default function GameScenePage() {
       {/* Controles */}
       <div className="flex gap-4 mt-4">
         <button
-          onClick={goPrev}
+          onClick={prevStep}
           disabled={currentStep === 0}
           className="py-2 px-4 bg-gray-300 text-gray-700 rounded disabled:opacity-50"
         >
@@ -281,7 +286,7 @@ export default function GameScenePage() {
           <button
             onClick={() => {
               if (selectedOptions[currentStep] !== undefined) {
-                goNext()
+                nextStep()
                 setShowFeedback(false)
               } else {
                 toast.error('Debes elegir una opción')

@@ -102,7 +102,8 @@ export const mockEmployabilityReport: EmployabilityReport = {
       easyReadingMode: true,
       audioAssistiveMode: false,
       showPictograms: true,
-      contrastLevel: 'alto'
+      contrastLevel: 'alto',
+      fontScale: 120
     }
   },
 
@@ -132,92 +133,4 @@ export const mockEmployabilityReport: EmployabilityReport = {
 
   // Nivel de empleabilidad (bajo/media/alta)
   level: 'Empleabilidad media',
-
-  // Logs del juego para análisis posterior
-  logs: [
-    {
-      sceneId: 1,
-      decisions: [
-        {
-          sceneId: 1,
-          stepIndex: 0,
-          optionText: 'Respondes de inmediato',
-          isCorrect: true,
-          skillImpacts: { 'Toma de decisiones': 0.9 },
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          screenResolution: `${window.screen.width}x${window.screen.height}`,
-          timeSpent: 120,
-          retries: 0,
-          emotionalState: 'positivo'
-        },
-        {
-          sceneId: 1,
-          stepIndex: 1,
-          optionText: 'Organizas según prioridad',
-          isCorrect: true,
-          skillImpacts: { 'Resolución de problemas': 0.8 },
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          screenResolution: `${window.screen.width}x${window.screen.height}`,
-          timeSpent: 180,
-          retries: 1,
-          emotionalState: 'neutro'
-        }
-      ],
-      totalSteps: 5,
-      totalTime: 1200,
-      averageConfidence: 0.75,
-      emotionalTrend: ['positivo', 'neutro', 'positivo', 'neutro', 'positivo'],
-      accessibilityUsed: true,
-      accessibilitySettings: {
-        easyReadingMode: true,
-        audioAssistiveMode: false,
-        showPictograms: true,
-        contrastLevel: 'alto'
-      }
-    },
-    {
-      sceneId: 3,
-      decisions: [
-        {
-          sceneId: 3,
-          stepIndex: 0,
-          optionText: 'Llamas a soporte técnico',
-          isCorrect: false,
-          skillImpacts: { 'Autonomía': 0.4 },
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          screenResolution: `${window.screen.width}x${window.screen.height}`,
-          timeSpent: 200,
-          retries: 2,
-          emotionalState: 'negativo'
-        },
-        {
-          sceneId: 3,
-          stepIndex: 1,
-          optionText: 'Reinicias el equipo',
-          isCorrect: true,
-          skillImpacts: { 'Gestión del tiempo': 0.75 },
-          timestamp: new Date().toISOString(),
-          userAgent: navigator.userAgent,
-          screenResolution: `${window.screen.width}x${window.screen.height}`,
-  timeSpent: 150,
-  retries: 0,
-  emotionalState: 'positivo'
-}
-],
-totalSteps: 10,
-totalTime: 3600,
-averageConfidence: 0.7,
-emotionalTrend: Array(10).fill('positivo').map((_, i) => i % 3 === 0 ? 'negativo' : 'positivo'),
-accessibilityUsed: true,
-accessibilitySettings: {
-  easyReadingMode: true,
-  audioAssistiveMode: false,
-  showPictograms: true,
-  contrastLevel: 'alto'
-}
-    }
-  ]
 }

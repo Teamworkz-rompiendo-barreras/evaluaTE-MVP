@@ -25,26 +25,34 @@ export default function ResultadosPage() {
   // Ajusta el selector según la estructura real de tu store
   const personal = useAppSelector((state: RootState) => state.personal);
   const cvAnalysis = personal?.cvAnalysis as CvAnalysis | undefined;
-  const softSkills = personal?.softSkillsScores || [];
-  const completedGames = personal?.completedGames || [];
-  const employabilityScore = personal?.employabilityScore || 0;
-  const level = personal?.level || '';
-  const adjustedScore = personal?.adjustedScore || 0;
 
   // Verificamos que todo el progreso sea completo antes de mostrar resultados
   useEffect(() => {
-    if (completedGames.length < 10 || !cvAnalysis || softSkills.length === 0) {
+    if (personal?.report?.completedGames.length < 10 || !cvAnalysis || personal?.report?.softSkills.length === 0) {
       navigate('/games');
     }
-  }, [completedGames, cvAnalysis, softSkills, navigate]);
+  }, [personal?.report?.completedGames, cvAnalysis, personal?.report?.softSkills, navigate]);
 
   // Datos para gráfico radar
   interface RadarData {
     skill: string;
     level: number;
+    interactions: string[];
   }
 
-  const data: RadarData[] = softSkills.map((skill: SoftSkillResult) => ({
+  // Normaliza los datos de softSkills para asegurar que cumplen el tipo SoftSkillResult
+  function normalizeSoftSkills(skills: any[]): SoftSkillResult[] {
+    return (skills ?? []).map((skill) => ({
+      skill: skill.skill,
+      level: skill.level,
+      confidence: skill.confidence ?? (typeof skill.score === 'number' ? skill.score / 100 : 0),
+      feedback: skill.feedback ?? '',
+      interactions: skill.interactions ?? [],
+    }));
+  }
+
+  const normalizedSoftSkills = normalizeSoftSkills(personal?.report?.softSkills ?? []);
+  const data: RadarData[] = normalizedSoftSkills.map((skill) => ({
     skill: skill.skill,
     level: skill.confidence * 100,
   }));
@@ -55,11 +63,12 @@ export default function ResultadosPage() {
     level: string;
     confidence: number;
     feedback?: string;
+    interactions: string[];
   }
 
-  const areasMejorar: AreaMejorar[] = softSkills
-    .filter((skill: SoftSkillResult) => skill.confidence < 0.6)
-    .map((skill: SoftSkillResult) => ({
+  const areasMejorar: AreaMejorar[] = normalizedSoftSkills
+    .filter((skill) => skill.confidence < 0.6)
+    .map((skill) => ({
       skill: skill.skill,
       level: skill.level,
       confidence: skill.confidence,
@@ -71,13 +80,13 @@ export default function ResultadosPage() {
     setLoading(true);
     try {
       const payload = {
-        softSkills,
+        softSkills: personal?.report?.softSkills,
         cvAnalysis,
-        employabilityScore,
-        level,
-        adjustedScore,
+        employabilityScore: personal?.report?.employabilityScore,
+        level: personal?.report?.level,
+        adjustedScore: personal?.report?.adjustedScore,
         jobPreferences: personal?.jobPreferences,
-        completedGames,
+        completedGames: personal?.report?.completedGames,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
       };
@@ -170,11 +179,11 @@ export default function ResultadosPage() {
       )}
 
       {/* B. Habilidades blandas evaluadas */}
-      {softSkills.length > 0 ? (
+      {normalizedSoftSkills.length > 0 ? (
         <div className="bg-white p-6 rounded shadow-md">
           <h2 className="text-2xl font-semibold mb-4">Habilidades Blandas Evaluadas</h2>
           <ul className="space-y-2">
-            {softSkills.map((skill: SoftSkillResult, index: number) => (
+            {normalizedSoftSkills.map((skill, index) => (
               <li key={index}>
                 <span className="font-medium">{skill.skill}:</span> Nivel: {skill.level} ({Math.round(skill.confidence * 100)}% de confianza)
               </li>
@@ -223,13 +232,11 @@ export default function ResultadosPage() {
       <div className="bg-green-50 p-6 rounded shadow-md">
         <h2 className="text-2xl font-semibold mb-4">Fortalezas más destacadas</h2>
         <ul className="space-y-2">
-          {softSkills
-            .filter((skill: SoftSkillResult) => skill.confidence >= 0.8)
-            .map((skill: SoftSkillResult, index: number) => (
-              <li key={index}>
-                <strong>{skill.skill}:</strong> Nivel: <em>{skill.level}</em> ({Math.round(skill.confidence * 100)}% de confianza)
-              </li>
-            ))}
+          {normalizedSoftSkills.filter((skill) => skill.confidence >= 0.8).map((skill, index) => (
+            <li key={index}>
+              <strong>{skill.skill}:</strong> Nivel: <em>{skill.level}</em> ({Math.round(skill.confidence * 100)}% de confianza)
+            </li>
+          ))}
         </ul>
       </div>
 
@@ -255,15 +262,15 @@ export default function ResultadosPage() {
         <div className="grid grid-cols-2 gap-4">
           <div>
             <h3 className="font-medium">Puntaje global de empleabilidad:</h3>
-            <p className="text-xl font-bold">{employabilityScore}</p>
+            <p className="text-xl font-bold">{personal?.report?.employabilityScore ?? 0}</p>
           </div>
           <div>
             <h3 className="font-medium">Nivel de empleabilidad:</h3>
-            <p className="text-xl font-bold">{level}</p>
+            <p className="text-xl font-bold">{personal?.report?.level ?? ''}</p>
           </div>
           <div>
             <h3 className="font-medium">Puntaje ajustado:</h3>
-            <p className="text-xl font-bold">{adjustedScore}</p>
+            <p className="text-xl font-bold">{personal?.report?.adjustedScore ?? 0}</p>
           </div>
         </div>
       </div>

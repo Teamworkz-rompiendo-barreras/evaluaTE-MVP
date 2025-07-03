@@ -14,6 +14,8 @@ export const userDecision1: UserDecision = {
   isCorrect: true,
   skillImpacts: { 'Toma de decisiones': 0.9 },
   timestamp: new Date().toISOString(),
+  userAgent: 'test-agent',
+  screenResolution: '1920x1080',
 }
 
 export const userDecision2: UserDecision = {
@@ -23,6 +25,8 @@ export const userDecision2: UserDecision = {
   isCorrect: true,
   skillImpacts: { 'Resolución de problemas': 0.8 },
   timestamp: new Date().toISOString(),
+  userAgent: 'test-agent',
+  screenResolution: '1920x1080',
 }
 
 export const userDecision3: UserDecision = {
@@ -32,6 +36,8 @@ export const userDecision3: UserDecision = {
   isCorrect: false,
   skillImpacts: { 'Autonomía': 0.4 },
   timestamp: new Date().toISOString(),
+  userAgent: 'test-agent',
+  screenResolution: '1920x1080',
 }
 
 export const userDecision4: UserDecision = {
@@ -41,6 +47,8 @@ export const userDecision4: UserDecision = {
   isCorrect: true,
   skillImpacts: { 'Gestión del tiempo': 0.75 },
   timestamp: new Date().toISOString(),
+  userAgent: 'test-agent',
+  screenResolution: '1920x1080',
 }
 
 export const userDecisionsForScene1 = [

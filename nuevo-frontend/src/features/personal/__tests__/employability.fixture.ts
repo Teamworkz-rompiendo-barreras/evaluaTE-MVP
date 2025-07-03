@@ -16,61 +16,71 @@ export const mockEmployabilityReport: EmployabilityReport = {
       skill: 'Toma de decisiones',
       level: 'Alto',
       confidence: 0.9,
-      feedback: 'Siempre eliges rápido y bien'
+      feedback: 'Siempre eliges rápido y bien',
+      interactions: []
     },
     {
       skill: 'Resolución de problemas',
       level: 'Medio',
       confidence: 0.65,
-      feedback: 'A veces necesitas apoyo adicional'
+      feedback: 'A veces necesitas apoyo adicional',
+      interactions: []
     },
     {
       skill: 'Gestión emocional',
       level: 'Bajo',
       confidence: 0.4,
-      feedback: 'Necesitas más estrategias para controlar frustración'
+      feedback: 'Necesitas más estrategias para controlar frustración',
+      interactions: []
     },
     {
       skill: 'Comunicación',
       level: 'Alto',
       confidence: 0.85,
-      feedback: 'Muy buena expresión clara y empática'
+      feedback: 'Muy buena expresión clara y empática',
+      interactions: []
     },
     {
       skill: 'Trabajo en equipo',
       level: 'Medio',
       confidence: 0.7,
-      feedback: 'Colaboras bien, pero puedes mejorar coordinación'
+      feedback: 'Colaboras bien, pero puedes mejorar coordinación',
+      interactions: []
     },
     {
       skill: 'Autonomía',
       level: 'Bajo',
       confidence: 0.35,
-      feedback: 'Demasiada dependencia de ayuda externa'
+      feedback: 'Demasiada dependencia de ayuda externa',
+      interactions: []
     },
     {
       skill: 'Gestión del tiempo',
       level: 'Medio',
       confidence: 0.6,
-      feedback: 'Organizas tareas, pero con retrasos frecuentes'
+      feedback: 'Organizas tareas, pero con retrasos frecuentes',
+      interactions: []
     },
     {
       skill: 'Flexibilidad operativa',
       level: 'Alto',
       confidence: 0.88,
-      feedback: 'Te adaptas bien a cambios inesperados'
+      feedback: 'Te adaptas bien a cambios inesperados',
+      interactions: []
     },
     {
       skill: 'Pensamiento crítico',
       level: 'Medio',
       confidence: 0.65,
-      feedback: 'Buena base, pero debes profundizar más'
+      feedback: 'Buena base, pero debes profundizar más',
+      interactions: []
     },
     {
       skill: 'Orientación al detalle',
       level: 'Bajo',
       confidence: 0.4,
-      feedback: 'Algunos errores evitables'
+      feedback: 'Algunos errores evitables',
+      interactions: []
     }
   ],
 

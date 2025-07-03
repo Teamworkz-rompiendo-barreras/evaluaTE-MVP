@@ -1,5 +1,5 @@
 // cypress/e2e/registro.cy.ts
-import mockUser from '../__fixtures__/user.fixtures'
+import { userFixture } from '../__fixtures__/user.fixtures'
 
 describe('Flujo completo de registro', () => {
   beforeEach(() => {
@@ -9,10 +9,10 @@ describe('Flujo completo de registro', () => {
 
   it('Completa registro → preferencias → accede al Dashboard y primer juego', () => {
     // 1) Paso 1 - Datos personales
-    cy.get('#firstName').type(mockUser.firstName)
-    cy.get('#lastName').type(mockUser.lastName)
-    cy.get('#email').type(mockUser.email)
-    cy.get('#whatsapp').type(mockUser.whatsapp)
+    cy.get('#firstName').type(userFixture.firstName)
+    cy.get('#lastName').type(userFixture.lastName)
+    cy.get('#email').type(userFixture.email)
+    cy.get('#whatsapp').type(userFixture.whatsapp)
 
     cy.contains('button', 'Continuar').click()
 

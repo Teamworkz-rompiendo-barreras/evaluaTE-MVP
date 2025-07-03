@@ -1,15 +1,26 @@
 // src/features/personal/__tests__/preferences.step.fixture.ts
 
 import type { JobPreference } from '@/types/preferences'
-import { mockUser } from '@/__fixtures__/user.fixtures'
+
+// Si mockUser no existe, define un mock local:
+const mockUser = {
+  jobPreferences: {
+    areas: ['Desarrollo web'],
+    needs: ['Horario flexible', 'Acceso remoto'],
+    workMode: 'remoto',
+    availability: 'mañana',
+    willingToRelocate: false,
+    hasDisabilityCert: true,
+  }
+};
 
 const preferencesFixture: JobPreference = {
-  areas: mockUser.jobPreferences.areas || ['Desarrollo web'],
-  needs: mockUser.jobPreferences.needs || ['Horario flexible', 'Acceso remoto'],
-  workMode: mockUser.jobPreferences.workMode || 'remoto',
-  availability: mockUser.jobPreferences.availability || 'mañana',
-  willingToRelocate: mockUser.jobPreferences.willingToRelocate || false,
-  hasDisabilityCert: mockUser.jobPreferences.hasDisabilityCert || true,
+  areas: mockUser.jobPreferences.areas,
+  needs: mockUser.jobPreferences.needs,
+  workMode: mockUser.jobPreferences.workMode,
+  availability: mockUser.jobPreferences.availability,
+  willingToRelocate: mockUser.jobPreferences.willingToRelocate,
+  hasDisabilityCert: mockUser.jobPreferences.hasDisabilityCert,
 }
 
 export default preferencesFixture

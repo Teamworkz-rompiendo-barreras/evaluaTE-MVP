@@ -1,7 +1,7 @@
 // cypress/e2e/gameflow.cy.ts
-import { mockUser } from '@/__fixtures__/user.fixtures'
-import { mockScene1, mockScene3 } from '@/__fixtures__/scene.fixture'
-import { userDecision1, userDecision3 } from '@/__fixtures__/user.decision.fixture'
+import { userFixture } from '../__fixtures__/user.fixtures'
+import { mockScene1, mockScene3 } from '../../src/features/games/__fixtures__/scene.fixture'
+import { userDecision1, userDecision3 } from '../../src/features/games/__fixtures__/user.decision.fixture'
 
 describe('Flujo completo de usuario: registro → juegos → resultados', () => {
   beforeEach(() => {
@@ -13,20 +13,20 @@ describe('Flujo completo de usuario: registro → juegos → resultados', () => 
     // ——————————————
     // 1) Registro – Paso 1: Datos personales
     // ——————————————
-    cy.get('#firstName').type(mockUser.firstName)
-    cy.get('#lastName').type(mockUser.lastName)
-    cy.get('#email').type(mockUser.email)
+    cy.get('#firstName').type(userFixture.firstName)
+    cy.get('#lastName').type(userFixture.lastName)
+    cy.get('#email').type(userFixture.email)
     cy.contains('button', 'Continuar').click()
 
     // ——————————————
     // 2) Registro – Paso 2: Preferencias laborales
     // ——————————————
     cy.url().should('include', '/preferences')
-    cy.get('#jobPreferences').type(mockUser.jobPreferences.areas.join(', '))
-    cy.get('#workMode').select(mockUser.jobPreferences.workMode)
-    cy.get('#availability').select(mockUser.jobPreferences.availability)
-    cy.get('#relocate').check(mockUser.jobPreferences.willingToRelocate)
-    cy.get('#cert').check(mockUser.jobPreferences.hasDisabilityCert)
+    cy.get('#jobPreferences').type(userFixture.jobPreferences.areas.join(', '))
+    cy.get('#workMode').select(userFixture.jobPreferences.workMode)
+    cy.get('#availability').select(userFixture.jobPreferences.availability)
+    cy.get('#relocate').check(userFixture.jobPreferences.willingToRelocate)
+    cy.get('#cert').check(userFixture.jobPreferences.hasDisabilityCert)
     cy.contains('button', 'Guardar y continuar').click()
 
     // ——————————————

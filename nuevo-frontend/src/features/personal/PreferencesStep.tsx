@@ -34,7 +34,9 @@ export default function PreferencesStep() {
     formState: { errors },
   } = useForm<PrefData>({
     defaultValues: {
-      jobPreferences: current.jobPreferences || '',
+      jobPreferences: typeof current.jobPreferences === 'string'
+        ? current.jobPreferences
+        : (current.jobPreferences?.areas?.[0] || ''),
       workMode: current.workMode || 'remoto',
       availability: current.availability || 'completa',
       startDate: current.startDate || 'inmediata',
@@ -49,11 +51,17 @@ export default function PreferencesStep() {
       return
     }
 
-    // Guardamos las preferencias en Redux
-    dispatch(savePreferences(data))
-    dispatch(markGameComplete('preferences'))
+    const jobPrefObj = {
+      areas: [data.jobPreferences],
+      needs: [],
+      workMode: data.workMode,
+      availability: data.availability,
+      willingToRelocate: data.willingToRelocate,
+      hasDisabilityCert: data.hasDisabilityCert,
+    };
 
-    // Avanzamos al siguiente paso
+    dispatch(savePreferences({ ...data, jobPreferences: jobPrefObj }))
+    dispatch(markGameComplete('preferences'))
     navigate('/games')
   }
 
