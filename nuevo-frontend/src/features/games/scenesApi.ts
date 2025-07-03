@@ -65,10 +65,8 @@ export const scenesApi = createApi({
 export const {
   useGetScenesQuery,
   useGetSceneQuery,
+  useSendGameLogMutation,
 } = scenesApi
-
-// Exportamos mutación para enviar logs a backend
-export const { useSendGameLogMutation } = scenesApi
 
 export const logSceneInteraction = async (
   sceneId: number,
