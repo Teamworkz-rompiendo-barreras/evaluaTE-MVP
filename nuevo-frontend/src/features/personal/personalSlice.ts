@@ -1,7 +1,19 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction, Draft } from '@reduxjs/toolkit';
 import type { CvAnalysis, JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
-import type { GameDecisionLog } from '../../types/game'; // Adjust the import path as needed
+import type { UserDecision } from '../../types/game'; // Adjust the import path as needed
+
+// Define SceneLog type if not imported from elsewhere
+export interface SceneLog {
+  sceneId: string;
+  decisions: UserDecision[];
+  totalSteps: number;
+  totalTime: number;
+  averageConfidence: number;
+  emotionalTrend: string[];
+  accessibilityUsed: boolean;
+  accessibilitySettings?: AccessibilitySettings;
+}
 
 export interface PersonalState {
   firstName: string;
@@ -23,11 +35,16 @@ export interface PersonalState {
   unlockedGames: number;
 
   report?: EmployabilityReport;
-  logs: GameDecisionLog[];
+  logs: SceneLog[];
 
   accessibilitySettings?: AccessibilitySettings;
 }
 
+export interface SoftSkillResult {
+  skill: string
+  score: number
+  level: 'Baja empleabilidad' | 'Empleabilidad media' | 'Alta empleabilidad'
+} 
 // Estado inicial
 const initialState: PersonalState = {
   firstName: '',
@@ -147,26 +164,41 @@ export const personalSlice = createSlice({
     // Registra decisiones tomadas durante escenas
     addSceneDecision(state, action: PayloadAction<UserDecision>) {
       const sceneId = action.payload.sceneId;
-      const existingIndex = state.report?.logs.findIndex(log => log.sceneId === sceneId);
+      const logs = (state.report && 'logs' in state.report && Array.isArray((state.report as any).logs))
+        ? (state.report as any).logs as SceneLog[]
+        : [];
 
-      if (existingIndex !== undefined && existingIndex > -1) {
-        state.report!.logs[existingIndex].decisions.push(action.payload);
+      const existingIndex: number = logs.findIndex((log: SceneLog) => log.sceneId === sceneId);
+
+      if (existingIndex > -1) {
+        logs[existingIndex].decisions.push(action.payload);
+        state.report = {
+          ...state.report!,
+          logs: [...logs],
+        };
       } else {
         state.report = {
           ...state.report!,
           logs: [
-            ...(state.report?.logs || []),
+            ...logs,
             {
               sceneId,
-              decisions: [action.payload],
+              decisions: [{
+                ...action.payload,
+                sceneId: typeof action.payload.sceneId === 'string' ? parseInt(action.payload.sceneId, 10) : action.payload.sceneId,
+                stepIndex: (action.payload as any).stepIndex ?? 0,
+                timestamp: (action.payload as any).timestamp ?? new Date().toISOString(),
+                isCorrect: (action.payload as any).isCorrect ?? false,
+                userAgent: (action.payload as any).userAgent ?? (typeof navigator !== 'undefined' ? navigator.userAgent : ''),
+                screenResolution: (action.payload as any).screenResolution ?? (typeof window !== 'undefined' ? `${window.screen.width}x${window.screen.height}` : ''),
+              }],
               totalSteps: 5,
               totalTime: 300,
               averageConfidence: action.payload.skillImpacts[action.payload.optionText] || 0.6,
-              emotionalTrend: ['positivo', 'neutro'],
+              emotionalTrend: ['positivo', 'neutro'] as ('positivo' | 'neutro' | 'negativo')[],
               accessibilityUsed: !!state.accessibilitySettings,
               accessibilitySettings: state.accessibilitySettings,
             },
-          ],
         };
       }
     },
@@ -191,7 +223,11 @@ export const personalSlice = createSlice({
       }
 
       // Ajuste según el CV
-      if (state.cvAnalysis?.score && state.cvAnalysis.score < 60) {
+      if (
+        state.cvAnalysis &&
+        typeof (state.cvAnalysis as any).score === 'number' &&
+        (state.cvAnalysis as any).score < 60
+      ) {
         employabilityScore = Math.max(20, employabilityScore - 10);
       }
 
@@ -204,12 +240,19 @@ export const personalSlice = createSlice({
           : 'Baja empleabilidad';
 
       // Recomendaciones personalizadas
-      const recommendations = getRecommendationsFromProfile({
+      const recommendationsObj = getRecommendationsFromProfile({
         softSkills: state.softSkills,
         cvAnalysis: state.cvAnalysis,
         preferences: state.jobPreferences as JobPreference,
         hasDisabilityCert: state.hasDisabilityCert,
       });
+      // Flatten recommendations object into a string array
+      const recommendations: string[] = [
+        ...recommendationsObj.roles.map(role => `Rol recomendado: ${role}`),
+        ...recommendationsObj.resources.map(resource => `Recurso sugerido: ${resource}`),
+        ...recommendationsObj.cvImprovements.map(improvement => `Mejora de CV: ${improvement}`),
+        ...recommendationsObj.nextSteps.map(step => `Próximo paso: ${step}`),
+      ];
 
       // Actualiza el estado del informe
       state.report = {
@@ -263,15 +306,15 @@ function getRecommendationsFromProfile(params: {
   const nextSteps: string[] = [];
 
   // Ejemplo de lógica básica – puedes expandir esto desde backend o IA
-  if (params.softSkills.some(skill => skill.level === 'Alto')) {
+  if (params.softSkills.some(skill => skill.level === 'alto')) {
     roles.push('Desarrollador frontend');
     roles.push('Soporte técnico');
     resources.push('Platzi');
     resources.push('Microsoft Learn');
   }
 
-  if (params.cvAnalysis?.weaknesses.length) {
-    cvImprovements.push(...params.cvAnalysis.weaknesses);
+  if (params.cvAnalysis && Array.isArray((params.cvAnalysis as any).weaknesses) && (params.cvAnalysis as any).weaknesses.length) {
+    cvImprovements.push(...(params.cvAnalysis as any).weaknesses);
   }
 
   nextSteps.push('Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias');
