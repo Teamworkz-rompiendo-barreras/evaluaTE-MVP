@@ -10,7 +10,42 @@ async function safeLoadImage(path: string, label: string) {
   }
 }
 
+// Función para validar datos de entrada
+function validateData(data: any) {
+  const errors: string[] = [];
+
+  // Validar gameData
+  if (!data.gameData) {
+    errors.push('gameData es requerido');
+  } else if (!Array.isArray(data.gameData)) {
+    errors.push('gameData debe ser un array');
+  }
+
+  // Validar cvAnalysis
+  if (!data.cvAnalysis) {
+    errors.push('cvAnalysis es requerido');
+  } else if (typeof data.cvAnalysis !== 'object') {
+    errors.push('cvAnalysis debe ser un objeto');
+  }
+
+  // Validar jobPreferences
+  if (!data.jobPreferences) {
+    errors.push('jobPreferences es requerido');
+  } else if (typeof data.jobPreferences !== 'object') {
+    errors.push('jobPreferences debe ser un objeto');
+  } else if (!Array.isArray(data.jobPreferences.areas)) {
+    errors.push('jobPreferences.areas debe ser un array');
+  }
+
+  if (errors.length > 0) {
+    throw new Error(`Datos inválidos: ${errors.join(', ')}`);
+  }
+}
+
 export const createPdf = async (data: any) => {
+  // Validar datos de entrada
+  validateData(data);
+
   const { gameData, cvAnalysis, jobPreferences } = data;
 
   const canvas = createCanvas(800, 1200);
@@ -34,9 +69,13 @@ export const createPdf = async (data: any) => {
 
   // Fortalezas más destacadas
   ctx.fillText('Fortalezas más destacadas', 50, 470);
-  gameData.forEach((game: any, index: number) => {
-    ctx.fillText(`${game.subject}: ${game.dA}`, 50, 500 + index * 30);
-  });
+  if (Array.isArray(gameData)) {
+    gameData.forEach((game: any, index: number) => {
+      const subject = game?.subject || 'Sin nombre';
+      const dA = game?.dA || 0;
+      ctx.fillText(`${subject}: ${dA}`, 50, 500 + index * 30);
+    });
+  }
 
   // Áreas de mejora
   ctx.fillText('Áreas a mejorar', 50, 700);
@@ -46,15 +85,20 @@ export const createPdf = async (data: any) => {
   // Recomendaciones laborales
   ctx.fillText('Recomendaciones laborales', 50, 800);
   ctx.fillText('Tipos de puestos recomendados:', 50, 830);
-  jobPreferences.areas.forEach((area: string, index: number) => {
-    ctx.fillText(`- ${area}`, 50, 860 + index * 30);
-  });
+  if (Array.isArray(jobPreferences.areas)) {
+    jobPreferences.areas.forEach((area: string, index: number) => {
+      ctx.fillText(`- ${area}`, 50, 860 + index * 30);
+    });
+  }
 
   // Análisis del CV
   ctx.fillText('Análisis de tu CV', 50, 1000);
-  ctx.fillText(cvAnalysis.structure, 50, 1030);
-  ctx.fillText(cvAnalysis.coherence, 50, 1060);
-  ctx.fillText(cvAnalysis.experience, 50, 1090);
+  const structure = cvAnalysis?.structure || 'No especificado';
+  const coherence = cvAnalysis?.coherence || 'No especificado';
+  const experience = cvAnalysis?.experience || 'No especificado';
+  ctx.fillText(structure, 50, 1030);
+  ctx.fillText(coherence, 50, 1060);
+  ctx.fillText(experience, 50, 1090);
 
   // Próximos pasos sugeridos
   ctx.fillText('Próximos pasos sugeridos', 50, 1130);

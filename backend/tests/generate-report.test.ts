@@ -58,9 +58,10 @@ describe('POST /api/generate-report', () => {
         // jobPreferences no está incluido para simular datos incompletos
       });
 
-    expect(res.status).toBe(400); // Asumimos que se devuelve un 400 Bad Request si los datos son incompletos
+    expect(res.status).toBe(400);
     expect(res.headers['content-type']).toBe('application/json');
-    expect(res.body).toHaveProperty('error', 'Datos incompletos');
+    expect(res.body.error).toContain('Datos inválidos');
+    expect(res.body.error).toContain('jobPreferences es requerido');
   });
 
   it('debe manejar solicitudes con datos inválidos', async () => {
@@ -80,8 +81,9 @@ describe('POST /api/generate-report', () => {
         },
       });
 
-    expect(res.status).toBe(400); // Asumimos que se devuelve un 400 Bad Request si los datos son inválidos
+    expect(res.status).toBe(400);
     expect(res.headers['content-type']).toBe('application/json');
-    expect(res.body).toHaveProperty('error', 'Datos inválidos');
+    expect(res.body.error).toContain('Datos inválidos');
+    expect(res.body.error).toContain('gameData debe ser un array');
   });
 });

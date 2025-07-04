@@ -10,9 +10,17 @@ export const generatePDF = async (req: Request, res: Response) => {
     res.send(pdfBuffer);
   } catch (error: any) {
     console.error('Error generating PDF:', error);
-    if (error.message && error.message.includes('No se pudo cargar la imagen')) {
+    
+    // Manejar errores de validación de datos
+    if (error.message && error.message.includes('Datos inválidos')) {
+      res.status(400).json({ error: error.message });
+    }
+    // Manejar errores de carga de imágenes
+    else if (error.message && error.message.includes('No se pudo cargar la imagen')) {
       res.status(500).json({ error: error.message });
-    } else {
+    }
+    // Otros errores
+    else {
       res.status(500).json({ error: 'Error generating PDF' });
     }
   }
