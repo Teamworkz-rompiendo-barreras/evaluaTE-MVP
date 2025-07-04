@@ -1,19 +1,21 @@
 // src/types/msw.d.ts
 import type { RequestHandler, RestContext, RestRequest } from 'msw'
 declare module 'msw' {
-  export function rest(): any
-  export type RestRequest = any
-  export type ResponseResolver = any
-  export type RestContext = any
-  export const rest: {
-    get: (path: string, resolver: RequestHandler) => void
-    post: (path: string, resolver: RequestHandler) => void
-    put: (path: string, resolver: RequestHandler) => void
-    delete: (path: string, resolver: RequestHandler) => void
+  export function http(): any
+  export const http: {
+    get: (path: string, resolver?: any) => any
+    post: (path: string, resolver?: any) => any
+    put: (path: string, resolver?: any) => any
+    delete: (path: string, resolver?: any) => any
   }
 
-  export function setupServer(...handlers: RequestHandler[]): {
-    listen: () => void
+  export class HttpResponse {
+    static json(data: any): HttpResponse
+    constructor(body?: any, init?: any)
+  }
+
+  export function setupServer(...handlers: any[]): {
+    listen: (options?: any) => void
     close: () => void
     resetHandlers: () => void
   }

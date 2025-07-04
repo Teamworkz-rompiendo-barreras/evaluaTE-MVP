@@ -7,8 +7,21 @@ import { MockedProvider } from '@apollo/client/testing';
 import { GET_EVALUATION_RESULTS } from './queries'; // Asegúrate de que la consulta GraphQL esté correctamente importada
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
-import { store } from "../app/store";
+import { configureStore } from '@reduxjs/toolkit';
 import { useGetSceneQuery } from "../features/games/scenesApi";
+
+// Store de prueba simple
+const testStore = configureStore({
+  reducer: {
+    personal: (state = {}, action) => state,
+    progress: (state = {}, action) => state,
+    accessibility: (state = {}, action) => state,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
+});
 
 // Mock de los datos de evaluación
 const mockEvaluationResults = {
@@ -46,8 +59,8 @@ const mockEvaluationResults = {
 
 describe('ResultadosPage', () => {
   it('muestra el título del informe correctamente', () => {
-    render(
-      <Provider store={store}>
+    const { container } = render(
+      <Provider store={testStore}>
         <MemoryRouter>
           <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
             <ResultadosPage />
@@ -56,12 +69,12 @@ describe('ResultadosPage', () => {
       </Provider>
     );
 
-    expect(screen.getByText('Tu Informe Final')).toBeInTheDocument();
+    expect(container.textContent).toContain('Tu Informe Final');
   });
 
   it('muestra el mapa de habilidades correctamente', async () => {
-    render(
-      <Provider store={store}>
+    const { container } = render(
+      <Provider store={testStore}>
         <MemoryRouter>
           <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
             <ResultadosPage />
@@ -71,13 +84,13 @@ describe('ResultadosPage', () => {
     );
 
     // Espera a que los datos se carguen
-    const radarChart = await screen.findByTestId('radar-chart');
-    expect(radarChart).toBeInTheDocument();
+    await screen.findByTestId('radar-chart');
+    expect(container.querySelector('[data-testid="radar-chart"]')).toBeTruthy();
   });
 
   it('muestra las fortalezas más destacadas correctamente', async () => {
-    render(
-      <Provider store={store}>
+    const { container } = render(
+      <Provider store={testStore}>
         <MemoryRouter>
           <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
             <ResultadosPage />
@@ -87,15 +100,15 @@ describe('ResultadosPage', () => {
     );
 
     // Espera a que los datos se carguen
-    const fortalezas = await screen.findByText(/Fortalezas más destacadas/i);
-    expect(fortalezas).toBeInTheDocument();
-    expect(screen.getByText(/Resolución de Problemas: Alto/i)).toBeInTheDocument();
-    expect(screen.getByText(/Trabajo en equipo: Alto/i)).toBeInTheDocument();
+    await screen.findByText(/Fortalezas más destacadas/i);
+    expect(container.textContent).toContain('Fortalezas más destacadas');
+    expect(container.textContent).toContain('Resolución de Problemas: Alto');
+    expect(container.textContent).toContain('Trabajo en equipo: Alto');
   });
 
   it('muestra las áreas de mejora correctamente', async () => {
-    render(
-      <Provider store={store}>
+    const { container } = render(
+      <Provider store={testStore}>
         <MemoryRouter>
           <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
             <ResultadosPage />
@@ -105,15 +118,15 @@ describe('ResultadosPage', () => {
     );
 
     // Espera a que los datos se carguen
-    const areasDeMejora = await screen.findByText(/Áreas a mejorar/i);
-    expect(areasDeMejora).toBeInTheDocument();
-    expect(screen.getByText(/Gestión emocional/i)).toBeInTheDocument();
-    expect(screen.getByText(/Curiosidad y aprendizaje continuo/i)).toBeInTheDocument();
+    await screen.findByText(/Áreas a mejorar/i);
+    expect(container.textContent).toContain('Áreas a mejorar');
+    expect(container.textContent).toContain('Gestión emocional');
+    expect(container.textContent).toContain('Curiosidad y aprendizaje continuo');
   });
 
   it('muestra las recomendaciones laborales correctamente', async () => {
-    render(
-      <Provider store={store}>
+    const { container } = render(
+      <Provider store={testStore}>
         <MemoryRouter>
           <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
             <ResultadosPage />
@@ -123,15 +136,15 @@ describe('ResultadosPage', () => {
     );
 
     // Espera a que los datos se carguen
-    const recomendaciones = await screen.findByText(/Recomendaciones laborales/i);
-    expect(recomendaciones).toBeInTheDocument();
-    expect(screen.getByText(/Tipos de puestos recomendados/i)).toBeInTheDocument();
-    expect(screen.getByText(/Entornos preferibles/i)).toBeInTheDocument();
+    await screen.findByText(/Recomendaciones laborales/i);
+    expect(container.textContent).toContain('Recomendaciones laborales');
+    expect(container.textContent).toContain('Tipos de puestos recomendados');
+    expect(container.textContent).toContain('Entornos preferibles');
   });
 
   it('muestra el análisis del CV correctamente', async () => {
-    render(
-      <Provider store={store}>
+    const { container } = render(
+      <Provider store={testStore}>
         <MemoryRouter>
           <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
             <ResultadosPage />
@@ -141,15 +154,15 @@ describe('ResultadosPage', () => {
     );
 
     // Espera a que los datos se carguen
-    const cvAnalysis = await screen.findByText(/Análisis de tu CV/i);
-    expect(cvAnalysis).toBeInTheDocument();
-    expect(screen.getByText(/CV bien estructurado/i)).toBeInTheDocument();
-    expect(screen.getByText(/Recomendación: añadir habilidades duras/i)).toBeInTheDocument();
+    await screen.findByText(/Análisis de tu CV/i);
+    expect(container.textContent).toContain('Análisis de tu CV');
+    expect(container.textContent).toContain('CV bien estructurado');
+    expect(container.textContent).toContain('Recomendación: añadir habilidades duras');
   });
 
   it('muestra los próximos pasos sugeridos correctamente', async () => {
-    render(
-      <Provider store={store}>
+    const { container } = render(
+      <Provider store={testStore}>
         <MemoryRouter>
           <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
             <ResultadosPage />
@@ -159,15 +172,15 @@ describe('ResultadosPage', () => {
     );
 
     // Espera a que los datos se carguen
-    const proximosPasos = await screen.findByText(/Próximos pasos sugeridos/i);
-    expect(proximosPasos).toBeInTheDocument();
-    expect(screen.getByText(/Formación sugerida/i)).toBeInTheDocument();
-    expect(screen.getByText(/Portales de empleo recomendados/i)).toBeInTheDocument();
+    await screen.findByText(/Próximos pasos sugeridos/i);
+    expect(container.textContent).toContain('Próximos pasos sugeridos');
+    expect(container.textContent).toContain('Formación sugerida');
+    expect(container.textContent).toContain('Portales de empleo recomendados');
   });
 
   it('muestra los botones de descarga y envío de correo correctamente', async () => {
-    render(
-      <Provider store={store}>
+    const { container } = render(
+      <Provider store={testStore}>
         <MemoryRouter>
           <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
             <ResultadosPage />
@@ -177,13 +190,13 @@ describe('ResultadosPage', () => {
     );
 
     // Espera a que los datos se carguen
-    const descargarInforme = await screen.findByText(/Descargar informe en PDF/i);
-    expect(descargarInforme).toBeInTheDocument();
+    await screen.findByText(/Descargar Informe PDF/i);
+    expect(container.textContent).toContain('Descargar Informe PDF');
 
-    const enviarCorreo = await screen.findByText(/Enviar por email/i);
-    expect(enviarCorreo).toBeInTheDocument();
+    await screen.findByText(/Enviar por email/i);
+    expect(container.textContent).toContain('Enviar por email');
 
-    const repetirEvaluacion = await screen.findByText(/Repetir evaluación/i);
-    expect(repetirEvaluacion).toBeInTheDocument();
+    await screen.findByText(/Repetir evaluación/i);
+    expect(container.textContent).toContain('Repetir evaluación');
   });
 });

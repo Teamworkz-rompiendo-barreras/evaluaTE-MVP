@@ -9,9 +9,9 @@ import type {
   JobPreference,
   EmployabilityReport,
   AccessibilitySettings,
-} from '@/types/preferences';
-import type { SoftSkillResult, GameDecisionLog } from '@/types/skills';
-import type { CvAnalysis } from '@/types/preferences';
+} from '../../../types/preferences';
+import type { SoftSkillResult, GameDecisionLog } from '../../../types/skills';
+import type { CvAnalysis } from '../../../types/preferences';
 
 // Mock de los tipos necesarios
 const mockJobPreference: JobPreference = {

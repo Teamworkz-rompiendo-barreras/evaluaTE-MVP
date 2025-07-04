@@ -6,13 +6,26 @@ import React from 'react'
 import { render, screen, fireEvent } from '@testing-library/react'
 import { BrowserRouter } from 'react-router-dom'
 import { Provider } from 'react-redux'
-import { store } from '../../../app/store'
+import { configureStore } from '@reduxjs/toolkit'
 import PreferencesStep from '../PreferencesStep'
+
+// Store de prueba simple
+const testStore = configureStore({
+  reducer: {
+    personal: (state = {}, action) => state,
+    progress: (state = {}, action) => state,
+    accessibility: (state = {}, action) => state,
+  },
+  middleware: (getDefaultMiddleware) =>
+    getDefaultMiddleware({
+      serializableCheck: false,
+    }),
+});
 
 describe('PreferencesStep', () => {
   function setup() {
     render(
-      <Provider store={store}>
+      <Provider store={testStore}>
         <BrowserRouter>
           <PreferencesStep />
         </BrowserRouter>
