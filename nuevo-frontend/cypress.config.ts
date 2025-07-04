@@ -10,7 +10,7 @@ export default defineConfig({
     specPattern: 'cypress/e2e/**/*.cy.{js,ts,jsx,tsx}',
 
     // Configuración adicional para Cypress UI
-    supportFile: 'cypress/support/index.js',
+    supportFile: 'cypress/support/index.ts',
     viewportWidth: 1440,
     viewportHeight: 900,
 
