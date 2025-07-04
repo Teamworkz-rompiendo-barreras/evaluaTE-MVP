@@ -17,7 +17,7 @@
     "forceConsistentCasingInFileNames": true,
     "types": ["cypress", "node"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
-    "baseUrl": "./",
+    "baseUrl": ".",
     "paths": {
       "@/*": ["src/*"]
     }
