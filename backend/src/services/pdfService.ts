@@ -2,6 +2,14 @@
 import { createCanvas, loadImage } from 'canvas';
 import { join } from 'path';
 
+async function safeLoadImage(path: string, label: string) {
+  try {
+    return await loadImage(path);
+  } catch (err) {
+    throw new Error(`No se pudo cargar la imagen (${label}): ${path}. Asegúrate de que el archivo es una imagen PNG válida.`);
+  }
+}
+
 export const createPdf = async (data: any) => {
   const { gameData, cvAnalysis, jobPreferences } = data;
 
@@ -9,7 +17,7 @@ export const createPdf = async (data: any) => {
   const ctx = canvas.getContext('2d');
 
   // Cargar fondo
-  const background = await loadImage(join(__dirname, '../assets/background.png'));
+  const background = await safeLoadImage(join(__dirname, '../assets/background.png'), 'background');
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
   // Estilos básicos
@@ -21,7 +29,8 @@ export const createPdf = async (data: any) => {
 
   // Mapa de habilidades (ejemplo)
   ctx.fillText('Mapa de Habilidades', 50, 100);
-  ctx.drawImage(await loadImage(join(__dirname, '../assets/radar-chart.png')), 50, 150, 300, 300);
+  const radarChart = await safeLoadImage(join(__dirname, '../assets/radarchart.png'), 'radarchart');
+  ctx.drawImage(radarChart, 50, 150, 300, 300);
 
   // Fortalezas más destacadas
   ctx.fillText('Fortalezas más destacadas', 50, 470);

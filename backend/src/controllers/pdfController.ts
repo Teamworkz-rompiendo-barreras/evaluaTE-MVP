@@ -8,8 +8,12 @@ export const generatePDF = async (req: Request, res: Response) => {
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader('Content-Disposition', 'attachment; filename=report.pdf');
     res.send(pdfBuffer);
-  } catch (error) {
+  } catch (error: any) {
     console.error('Error generating PDF:', error);
-    res.status(500).send('Error generating PDF');
+    if (error.message && error.message.includes('No se pudo cargar la imagen')) {
+      res.status(500).json({ error: error.message });
+    } else {
+      res.status(500).json({ error: 'Error generating PDF' });
+    }
   }
 };
