@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { markGameComplete } from '../progress/progressSlice';
 import { UserDecision } from '@/types/skills';
 import { SceneOption } from '@/types/game-scene';
-import { useGetSceneQuery } from '@/features/games/scenesApi';
+import { useGetSceneQuery } from "./scenesApi";
 
 interface UseGameControllerProps {
   sceneId: number;

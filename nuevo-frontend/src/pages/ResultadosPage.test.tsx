@@ -7,7 +7,7 @@ import { MockedProvider } from '@apollo/client/testing';
 import { GET_EVALUATION_RESULTS } from './queries'; // Asegúrate de que la consulta GraphQL esté correctamente importada
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
-import { store } from "@/app/store";
+import { store } from "../app/store";
 
 // Mock de los datos de evaluación
 const mockEvaluationResults = {
