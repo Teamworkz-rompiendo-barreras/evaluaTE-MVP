@@ -15,7 +15,7 @@
     "noEmit": true,
     "jsx": "react-jsx",
     "forceConsistentCasingInFileNames": true,
-    "types": ["cypress", "node"],
+    "types": ["cypress", "node", "vitest/globals", "jest", "@testing-library/jest-dom"],
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "baseUrl": ".",
     "paths": {
