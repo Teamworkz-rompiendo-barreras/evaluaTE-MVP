@@ -6,6 +6,8 @@ import ResultadosPage from './ResultadosPage';
 import { MockedProvider } from '@apollo/client/testing';
 import { GET_EVALUATION_RESULTS } from './queries'; // Asegúrate de que la consulta GraphQL esté correctamente importada
 import { MemoryRouter } from "react-router-dom";
+import { Provider } from "react-redux";
+import { store } from "@/app/store";
 
 // Mock de los datos de evaluación
 const mockEvaluationResults = {
@@ -39,11 +41,13 @@ const mockEvaluationResults = {
 describe('ResultadosPage', () => {
   it('muestra el título del informe correctamente', () => {
     render(
-      <MemoryRouter>
-        <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-          <ResultadosPage />
-        </MockedProvider>
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+            <ResultadosPage />
+          </MockedProvider>
+        </MemoryRouter>
+      </Provider>
     );
 
     expect(screen.getByText('Tu Informe Final')).toBeInTheDocument();
@@ -51,11 +55,13 @@ describe('ResultadosPage', () => {
 
   it('muestra el mapa de habilidades correctamente', async () => {
     render(
-      <MemoryRouter>
-        <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-          <ResultadosPage />
-        </MockedProvider>
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+            <ResultadosPage />
+          </MockedProvider>
+        </MemoryRouter>
+      </Provider>
     );
 
     // Espera a que los datos se carguen
@@ -65,11 +71,13 @@ describe('ResultadosPage', () => {
 
   it('muestra las fortalezas más destacadas correctamente', async () => {
     render(
-      <MemoryRouter>
-        <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-          <ResultadosPage />
-        </MockedProvider>
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+            <ResultadosPage />
+          </MockedProvider>
+        </MemoryRouter>
+      </Provider>
     );
 
     // Espera a que los datos se carguen
@@ -81,11 +89,13 @@ describe('ResultadosPage', () => {
 
   it('muestra las áreas de mejora correctamente', async () => {
     render(
-      <MemoryRouter>
-        <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-          <ResultadosPage />
-        </MockedProvider>
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+            <ResultadosPage />
+          </MockedProvider>
+        </MemoryRouter>
+      </Provider>
     );
 
     // Espera a que los datos se carguen
@@ -97,11 +107,13 @@ describe('ResultadosPage', () => {
 
   it('muestra las recomendaciones laborales correctamente', async () => {
     render(
-      <MemoryRouter>
-        <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-          <ResultadosPage />
-        </MockedProvider>
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+            <ResultadosPage />
+          </MockedProvider>
+        </MemoryRouter>
+      </Provider>
     );
 
     // Espera a que los datos se carguen
@@ -113,11 +125,13 @@ describe('ResultadosPage', () => {
 
   it('muestra el análisis del CV correctamente', async () => {
     render(
-      <MemoryRouter>
-        <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-          <ResultadosPage />
-        </MockedProvider>
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+            <ResultadosPage />
+          </MockedProvider>
+        </MemoryRouter>
+      </Provider>
     );
 
     // Espera a que los datos se carguen
@@ -129,11 +143,13 @@ describe('ResultadosPage', () => {
 
   it('muestra los próximos pasos sugeridos correctamente', async () => {
     render(
-      <MemoryRouter>
-        <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-          <ResultadosPage />
-        </MockedProvider>
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+            <ResultadosPage />
+          </MockedProvider>
+        </MemoryRouter>
+      </Provider>
     );
 
     // Espera a que los datos se carguen
@@ -145,11 +161,13 @@ describe('ResultadosPage', () => {
 
   it('muestra los botones de descarga y envío de correo correctamente', async () => {
     render(
-      <MemoryRouter>
-        <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-          <ResultadosPage />
-        </MockedProvider>
-      </MemoryRouter>
+      <Provider store={store}>
+        <MemoryRouter>
+          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
+            <ResultadosPage />
+          </MockedProvider>
+        </MemoryRouter>
+      </Provider>
     );
 
     // Espera a que los datos se carguen
