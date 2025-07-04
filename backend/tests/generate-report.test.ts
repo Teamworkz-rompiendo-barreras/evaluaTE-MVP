@@ -3,11 +3,16 @@ import request from 'supertest';
 import { app } from '../src/app'; // Asegúrate de que la ruta sea correcta
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
-describe('POST /api/generate-report', () => {
-  let server: any;
+let server: any;
+let baseURL: string;
 
+describe('POST /api/generate-report', () => {
   beforeAll(async () => {
-    server = app.listen(3001);
+    // Usar puerto aleatorio para evitar conflictos
+    server = app.listen(0);
+    const address = server.address();
+    const port = typeof address === 'string' ? 3001 : address.port;
+    baseURL = `http://localhost:${port}`;
   });
 
   afterAll(async () => {
@@ -17,7 +22,7 @@ describe('POST /api/generate-report', () => {
   });
 
   it('debe devolver un PDF válido', async () => {
-    const res = await request(app)
+    const res = await request(baseURL)
       .post('/api/generate-report')
       .send({
         gameData: [{ subject: 'Minijuego 0', dA: 100 }],
@@ -37,7 +42,8 @@ describe('POST /api/generate-report', () => {
         completedGames: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-      });
+      })
+      .timeout({ response: 5000, deadline: 10000 });
 
     expect(res.status).toBe(200);
     expect(res.headers['content-type']).toBe('application/pdf');
@@ -45,7 +51,7 @@ describe('POST /api/generate-report', () => {
   });
 
   it('debe manejar solicitudes con datos incompletos', async () => {
-    const res = await request(app)
+    const res = await request(baseURL)
       .post('/api/generate-report')
       .send({
         gameData: [{ subject: 'Minijuego 0', dA: 100 }],
@@ -56,7 +62,8 @@ describe('POST /api/generate-report', () => {
           skills: ['habilidad1', 'habilidad2'],
         },
         // jobPreferences no está incluido para simular datos incompletos
-      });
+      })
+      .timeout({ response: 5000, deadline: 10000 });
 
     expect(res.status).toBe(400);
     expect(res.headers['content-type']).toBe('application/json');
@@ -65,7 +72,7 @@ describe('POST /api/generate-report', () => {
   });
 
   it('debe manejar solicitudes con datos inválidos', async () => {
-    const res = await request(app)
+    const res = await request(baseURL)
       .post('/api/generate-report')
       .send({
         gameData: 'invalid data', // Datos inválidos
@@ -79,7 +86,8 @@ describe('POST /api/generate-report', () => {
           areas: ['Logística', 'Atención al cliente'],
           needs: ['Trabajo en entorno tranquilo'],
         },
-      });
+      })
+      .timeout({ response: 5000, deadline: 10000 });
 
     expect(res.status).toBe(400);
     expect(res.headers['content-type']).toBe('application/json');
