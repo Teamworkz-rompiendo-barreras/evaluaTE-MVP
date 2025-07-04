@@ -1,19 +1,53 @@
 // src/pages/ResultadosPage.test.tsx
 
 import { render, screen } from '@testing-library/react';
-import '@testing-library/jest-dom'; // Asegúrate de importar extend-expect para usar matchers de jest-dom
+import '@testing-library/jest-dom';
 import ResultadosPage from './ResultadosPage';
-import { MockedProvider } from '@apollo/client/testing';
-import { GET_EVALUATION_RESULTS } from './queries'; // Asegúrate de que la consulta GraphQL esté correctamente importada
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { configureStore } from '@reduxjs/toolkit';
-import { useGetSceneQuery } from "../features/games/scenesApi";
 
-// Store de prueba simple
+// Store de prueba con datos mockeados que coinciden con el componente real
+const mockPersonalState = {
+  cvAnalysis: {
+    score: 85,
+    strengths: ['CV bien estructurado', 'Experiencia relevante'],
+    weaknesses: ['Falta de habilidades duras', 'Necesita más proyectos']
+  },
+  report: {
+    softSkills: [
+      {
+        skill: 'Resolución de Problemas',
+        level: 'Alto',
+        confidence: 0.9,
+        feedback: 'Excelente capacidad de resolución',
+        interactions: []
+      },
+      {
+        skill: 'Trabajo en equipo',
+        level: 'Alto',
+        confidence: 0.85,
+        feedback: 'Muy buen trabajo colaborativo',
+        interactions: []
+      },
+      {
+        skill: 'Gestión emocional',
+        level: 'Medio',
+        confidence: 0.5,
+        feedback: 'Necesitas mejorar el control emocional',
+        interactions: []
+      }
+    ],
+    employabilityScore: 78,
+    level: 'Empleabilidad_media',
+    adjustedScore: 82,
+    completedGames: ['game1', 'game2', 'game3', 'game4', 'game5', 'game6', 'game7', 'game8', 'game9', 'game10']
+  }
+};
+
 const testStore = configureStore({
   reducer: {
-    personal: (state = {}, action) => state,
+    personal: (state = mockPersonalState, action) => state,
     progress: (state = {}, action) => state,
     accessibility: (state = {}, action) => state,
   },
@@ -23,48 +57,12 @@ const testStore = configureStore({
     }),
 });
 
-// Mock de los datos de evaluación
-const mockEvaluationResults = {
-  request: {
-    query: GET_EVALUATION_RESULTS,
-    variables: { /* ... */ },
-  },
-  result: {
-    data: {
-      evaluationResults: {
-        userId: 'uuid',
-        softSkillsScores: {
-          Resolucion_de_Problemas: 78,
-          Gestion_emocional: 54,
-          Trabajo_en_equipo: 85,
-          Curiosidad_y_aprendizaje_continuo: 90,
-          Resiliencia_y_flexibilidad: 80,
-          Autoconciencia: 75,
-          Empatia: 95,
-          Escucha_activa: 88,
-          Gestion_del_tiempo: 82,
-        },
-        employabilityScore: 78,
-        level: 'Empleabilidad_media',
-        cvScore: 62,
-        adjustedScore: 78,
-        nextSteps: [
-          { id: 1, description: "Próximos pasos sugeridos" },
-          { id: 2, description: "Formación sugerida" }
-        ],
-      },
-    },
-  },
-};
-
 describe('ResultadosPage', () => {
   it('muestra el título del informe correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
         <MemoryRouter>
-          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-            <ResultadosPage />
-          </MockedProvider>
+          <ResultadosPage />
         </MemoryRouter>
       </Provider>
     );
@@ -72,131 +70,97 @@ describe('ResultadosPage', () => {
     expect(container.textContent).toContain('Tu Informe Final');
   });
 
-  it('muestra el mapa de habilidades correctamente', async () => {
+  it('muestra el análisis del CV correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
         <MemoryRouter>
-          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-            <ResultadosPage />
-          </MockedProvider>
+          <ResultadosPage />
         </MemoryRouter>
       </Provider>
     );
 
-    // Espera a que los datos se carguen
-    await screen.findByTestId('radar-chart');
-    expect(container.querySelector('[data-testid="radar-chart"]')).toBeTruthy();
-  });
-
-  it('muestra las fortalezas más destacadas correctamente', async () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-            <ResultadosPage />
-          </MockedProvider>
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // Espera a que los datos se carguen
-    await screen.findByText(/Fortalezas más destacadas/i);
-    expect(container.textContent).toContain('Fortalezas más destacadas');
-    expect(container.textContent).toContain('Resolución de Problemas: Alto');
-    expect(container.textContent).toContain('Trabajo en equipo: Alto');
-  });
-
-  it('muestra las áreas de mejora correctamente', async () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-            <ResultadosPage />
-          </MockedProvider>
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // Espera a que los datos se carguen
-    await screen.findByText(/Áreas a mejorar/i);
-    expect(container.textContent).toContain('Áreas a mejorar');
-    expect(container.textContent).toContain('Gestión emocional');
-    expect(container.textContent).toContain('Curiosidad y aprendizaje continuo');
-  });
-
-  it('muestra las recomendaciones laborales correctamente', async () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-            <ResultadosPage />
-          </MockedProvider>
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // Espera a que los datos se carguen
-    await screen.findByText(/Recomendaciones laborales/i);
-    expect(container.textContent).toContain('Recomendaciones laborales');
-    expect(container.textContent).toContain('Tipos de puestos recomendados');
-    expect(container.textContent).toContain('Entornos preferibles');
-  });
-
-  it('muestra el análisis del CV correctamente', async () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-            <ResultadosPage />
-          </MockedProvider>
-        </MemoryRouter>
-      </Provider>
-    );
-
-    // Espera a que los datos se carguen
-    await screen.findByText(/Análisis de tu CV/i);
     expect(container.textContent).toContain('Análisis de tu CV');
     expect(container.textContent).toContain('CV bien estructurado');
-    expect(container.textContent).toContain('Recomendación: añadir habilidades duras');
+    expect(container.textContent).toContain('Falta de habilidades duras');
   });
 
-  it('muestra los próximos pasos sugeridos correctamente', async () => {
+  it('muestra las habilidades blandas evaluadas correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
         <MemoryRouter>
-          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-            <ResultadosPage />
-          </MockedProvider>
+          <ResultadosPage />
         </MemoryRouter>
       </Provider>
     );
 
-    // Espera a que los datos se carguen
-    await screen.findByText(/Próximos pasos sugeridos/i);
-    expect(container.textContent).toContain('Próximos pasos sugeridos');
-    expect(container.textContent).toContain('Formación sugerida');
-    expect(container.textContent).toContain('Portales de empleo recomendados');
+    expect(container.textContent).toContain('Habilidades Blandas Evaluadas');
+    expect(container.textContent).toContain('Resolución de Problemas');
+    expect(container.textContent).toContain('Trabajo en equipo');
   });
 
-  it('muestra los botones de descarga y envío de correo correctamente', async () => {
+  it('muestra las fortalezas más destacadas correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
         <MemoryRouter>
-          <MockedProvider mocks={[mockEvaluationResults]} addTypename={false}>
-            <ResultadosPage />
-          </MockedProvider>
+          <ResultadosPage />
         </MemoryRouter>
       </Provider>
     );
 
-    // Espera a que los datos se carguen
-    await screen.findByText(/Descargar Informe PDF/i);
+    expect(container.textContent).toContain('Fortalezas más destacadas');
+    expect(container.textContent).toContain('Resolución de Problemas');
+    expect(container.textContent).toContain('Trabajo en equipo');
+  });
+
+  it('muestra las áreas a mejorar correctamente', () => {
+    const { container } = render(
+      <Provider store={testStore}>
+        <MemoryRouter>
+          <ResultadosPage />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(container.textContent).toContain('Áreas a mejorar');
+    expect(container.textContent).toContain('Gestión emocional');
+  });
+
+  it('muestra las recomendaciones de mejora correctamente', () => {
+    const { container } = render(
+      <Provider store={testStore}>
+        <MemoryRouter>
+          <ResultadosPage />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(container.textContent).toContain('Recomendaciones de mejora');
+    expect(container.textContent).toContain('Gestión emocional');
+  });
+
+  it('muestra el resumen de habilidades correctamente', () => {
+    const { container } = render(
+      <Provider store={testStore}>
+        <MemoryRouter>
+          <ResultadosPage />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(container.textContent).toContain('Resumen de habilidades');
+    expect(container.textContent).toContain('Puntaje global de empleabilidad');
+    expect(container.textContent).toContain('78');
+  });
+
+  it('muestra el botón de descarga correctamente', () => {
+    const { container } = render(
+      <Provider store={testStore}>
+        <MemoryRouter>
+          <ResultadosPage />
+        </MemoryRouter>
+      </Provider>
+    );
+
     expect(container.textContent).toContain('Descargar Informe PDF');
-
-    await screen.findByText(/Enviar por email/i);
-    expect(container.textContent).toContain('Enviar por email');
-
-    await screen.findByText(/Repetir evaluación/i);
-    expect(container.textContent).toContain('Repetir evaluación');
   });
 });

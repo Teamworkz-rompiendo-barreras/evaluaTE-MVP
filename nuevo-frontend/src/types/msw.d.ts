@@ -1,7 +1,5 @@
 // src/types/msw.d.ts
-import type { RequestHandler, RestContext, RestRequest } from 'msw'
 declare module 'msw' {
-  export function http(): any
   export const http: {
     get: (path: string, resolver?: any) => any
     post: (path: string, resolver?: any) => any

@@ -118,5 +118,18 @@ export const handlers = [
 
   http.post('/api/logs/game-complete', () => {
     return HttpResponse.json({ success: true })
+  }),
+
+  // Generación de reporte PDF
+  http.post('/api/generate-report', () => {
+    // Mock de un blob de PDF
+    const pdfBlob = new Blob(['PDF content'], { type: 'application/pdf' });
+    return new HttpResponse(pdfBlob, {
+      status: 200,
+      headers: {
+        'Content-Type': 'application/pdf',
+        'Content-Disposition': 'attachment; filename="informe-resultados.pdf"'
+      }
+    });
   })
 ]
