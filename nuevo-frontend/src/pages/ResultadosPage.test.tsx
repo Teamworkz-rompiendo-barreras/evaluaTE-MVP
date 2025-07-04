@@ -8,6 +8,7 @@ import { GET_EVALUATION_RESULTS } from './queries'; // Asegúrate de que la cons
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { store } from "../app/store";
+import { useGetSceneQuery } from "./scenesApi";
 
 // Mock de los datos de evaluación
 const mockEvaluationResults = {
