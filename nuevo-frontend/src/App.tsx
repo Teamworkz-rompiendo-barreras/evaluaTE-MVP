@@ -14,14 +14,14 @@ import ResultadosPage from './pages/ResultadosPage'
 import ProtectedRoute from './components/ProtectedRoute'
 import { Toaster } from 'react-hot-toast'
 import ProgressBar from './components/ProgressBar'
-import AccessibilitySettings from './components/AccessibilitySettings'
+import { AccessibilitySettings } from './components/AccessibilitySettings'
 
 // Layouts compartidos
 function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Barra de progreso opcional */}
-      <ProgressBar />
+      <ProgressBar step={1} total={1} />
 
       {/* Contenido principal */}
       <main className="container mx-auto p-4">
@@ -65,7 +65,7 @@ export default function App() {
         <Route
           path="/game/:id"
           element={
-            <ProtectedRoute step="game">
+            <ProtectedRoute step="games">
               <GameScenePage />
             </ProtectedRoute>
           }
