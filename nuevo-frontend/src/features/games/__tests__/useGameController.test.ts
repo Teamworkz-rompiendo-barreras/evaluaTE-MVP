@@ -5,6 +5,7 @@ import useGameController from '../useGameController';
 import { GameScene, SceneOption } from '@/types/game';
 import { UserDecision } from '@/types/skills';
 import { vi } from 'vitest'; // Importa vi de vitest para mocks
+import * as reactRedux from "react-redux";
 
 // Mock de la función getScene para simular la obtención de escenas
 vi.mock('@/features/games/scenesApi', () => ({
@@ -50,10 +51,14 @@ const mockState = {
 };
 
 // Mock del store
-vi.mock('react-redux', () => ({
-  ...vi.importActual('react-redux'),
-  useSelector: (selector: any) => selector(mockState),
-}));
+vi.mock("react-redux", async (importActual) => {
+  const actual = await importActual();
+  return {
+    ...actual,
+    useDispatch: vi.fn(() => () => {}),
+    useSelector: vi.fn(),
+  };
+});
 
 describe('useGameController', () => {
   const mockScene: GameScene = {

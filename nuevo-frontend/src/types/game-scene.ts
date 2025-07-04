@@ -7,7 +7,7 @@ import type { JobPreference } from '@/types/preferences'
  */
 export interface SceneOption {
   text: string
-  isCorrect: boolean
+  isCorrect?: boolean
   skillImpact?: Record<string, number> // Ej: {'Toma de decisiones': 0.9}
   feedback?: string // Mensaje tras elegir esta opción
   requiresAdaptation?: boolean // Si se activa algún ajuste de accesibilidad

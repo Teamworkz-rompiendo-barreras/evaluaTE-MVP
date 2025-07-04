@@ -14,6 +14,7 @@ import { useGetSceneQuery } from "../features/games/scenesApi";
 const mockEvaluationResults = {
   request: {
     query: GET_EVALUATION_RESULTS,
+    variables: { /* ... */ },
   },
   result: {
     data: {
@@ -34,6 +35,10 @@ const mockEvaluationResults = {
         level: 'Empleabilidad_media',
         cvScore: 62,
         adjustedScore: 78,
+        nextSteps: [
+          { id: 1, description: "Próximos pasos sugeridos" },
+          { id: 2, description: "Formación sugerida" }
+        ],
       },
     },
   },
