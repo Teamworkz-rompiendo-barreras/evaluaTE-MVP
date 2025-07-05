@@ -115,7 +115,7 @@ const GameDashboardPage: React.FC = () => {
         {/* Botones de acción */}
         <div className="mt-8 flex justify-center space-x-4">
           <button
-            onClick={() => navigate('/personal')}
+            onClick={() => navigate('/register/contact')}
             className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
           >
             ← Datos Personales

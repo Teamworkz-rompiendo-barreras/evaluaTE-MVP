@@ -103,6 +103,8 @@ export const personalSlice = createSlice({
         >
       >
     ) {
+      console.log('personalSlice - savePreferences llamado con:', action.payload);
+      
       const payload = action.payload;
 
       if (typeof payload.jobPreferences === 'string') {
@@ -117,11 +119,14 @@ export const personalSlice = createSlice({
         };
       }
 
-      return {
+      const newState = {
         ...state,
         ...payload,
         unlockedGames: Math.min(10, state.unlockedGames + 1),
       };
+      
+      console.log('personalSlice - Nuevo estado después de savePreferences:', newState);
+      return newState;
     },
 
     // Guarda archivo del CV

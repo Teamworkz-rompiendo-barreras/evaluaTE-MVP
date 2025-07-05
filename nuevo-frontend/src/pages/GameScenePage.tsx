@@ -62,8 +62,8 @@ const GameScenePage: React.FC = () => {
     );
     
     if (!hasValidPreferences) {
-      console.log('GameScenePage - Redirigiendo a /preferences - faltan preferencias válidas')
-      navigate('/preferences')
+      console.log('GameScenePage - Redirigiendo a /register/preferences - faltan preferencias válidas')
+      navigate('/register/preferences')
       return
     }
     

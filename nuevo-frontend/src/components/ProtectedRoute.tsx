@@ -14,6 +14,7 @@ export default function ProtectedRoute({ step, children }: Props) {
   const location = useLocation();
   const personal = useSelector((state: RootState) => state.personal);
   const progress = useSelector((state: RootState) => state.progress);
+  const game = useSelector((state: RootState) => state.game);
 
   const hasPersonalData = Boolean(personal.firstName && personal.lastName);
   const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
@@ -22,7 +23,8 @@ export default function ProtectedRoute({ step, children }: Props) {
       ? personal.jobPreferences.trim() !== ''
       : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0
   );
-  const hasCompletedAllGames = progress.completedGames.length >= 10;
+  // Usar el slice de game para los juegos completados
+  const hasCompletedAllGames = game.completedGames.length >= 10;
 
   console.log('ProtectedRoute - step:', step);
   console.log('ProtectedRoute - personal:', personal);
@@ -31,6 +33,7 @@ export default function ProtectedRoute({ step, children }: Props) {
   console.log('ProtectedRoute - hasCV:', hasCV);
   console.log('ProtectedRoute - hasCompletedAllGames:', hasCompletedAllGames);
   console.log('ProtectedRoute - progress:', progress);
+  console.log('ProtectedRoute - game:', game);
 
   // Redirección genérica – para evitar repetir código
   const redirectToStep = (target: string) => {
@@ -49,7 +52,7 @@ export default function ProtectedRoute({ step, children }: Props) {
 
     case 'games':
       if (!hasPersonalData) return redirectToStep('/register/contact');
-      if (!hasPreferences) return redirectToStep('/preferences');
+      if (!hasPreferences) return redirectToStep('/register/preferences');
       return <>{children}</>;
 
     case 'uploadCV':

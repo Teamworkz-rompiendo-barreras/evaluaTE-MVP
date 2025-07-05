@@ -46,6 +46,8 @@ export default function PreferencesStep() {
   })
 
   const onSubmit: SubmitHandler<PrefData> = (data) => {
+    console.log('PreferencesStep - onSubmit llamado con:', data);
+    
     if (!data.jobPreferences.trim()) {
       alert('Por favor, indica el tipo de trabajo que buscas.')
       return
@@ -60,8 +62,13 @@ export default function PreferencesStep() {
       hasDisabilityCert: data.hasDisabilityCert,
     };
 
+    console.log('PreferencesStep - jobPrefObj:', jobPrefObj);
+    console.log('PreferencesStep - Guardando preferencias...');
+    
     dispatch(savePreferences({ ...data, jobPreferences: jobPrefObj }))
     dispatch(markGameComplete('preferences'))
+    
+    console.log('PreferencesStep - Navegando a /games...');
     navigate('/games')
   }
 
