@@ -17,8 +17,19 @@ export default function ProtectedRoute({ step, children }: Props) {
 
   const hasPersonalData = Boolean(personal.firstName && personal.lastName);
   const hasCV = Boolean(personal.cvFile);
-  const hasPreferences = Boolean(personal.jobPreferences);
+  const hasPreferences = personal?.jobPreferences && (
+    typeof personal.jobPreferences === 'string' 
+      ? personal.jobPreferences.trim() !== ''
+      : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0
+  );
   const hasCompletedAllGames = progress.completedGames.length >= 10;
+
+  console.log('ProtectedRoute - step:', step);
+  console.log('ProtectedRoute - personal:', personal);
+  console.log('ProtectedRoute - hasPersonalData:', hasPersonalData);
+  console.log('ProtectedRoute - hasPreferences:', hasPreferences);
+  console.log('ProtectedRoute - hasCV:', hasCV);
+  console.log('ProtectedRoute - hasCompletedAllGames:', hasCompletedAllGames);
 
   // Redirección genérica – para evitar repetir código
   const redirectToStep = (target: string) => {
