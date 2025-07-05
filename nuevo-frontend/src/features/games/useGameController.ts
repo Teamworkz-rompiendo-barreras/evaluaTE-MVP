@@ -116,7 +116,8 @@ export const useGameController = () => {
 
   // Obtener siguiente juego disponible
   const getNextAvailableGame = useCallback(() => {
-    const completedGames = gameState.completedGames;
+    // Verificar que gameState existe y tiene la propiedad completedGames
+    const completedGames = gameState?.completedGames || [];
     const currentIndex = games.findIndex(game => game.id === currentGame?.id);
     
     if (currentIndex === -1 || currentIndex >= games.length - 1) {
@@ -124,7 +125,7 @@ export const useGameController = () => {
     }
     
     return games[currentIndex + 1];
-  }, [currentGame, gameState.completedGames]);
+  }, [currentGame, gameState?.completedGames]);
 
   // Verificar si un juego está disponible
   const isGameAvailable = useCallback((gameId: string) => {
@@ -132,8 +133,9 @@ export const useGameController = () => {
     if (gameIndex === 0) return true; // El primer juego siempre está disponible
     
     const previousGame = games[gameIndex - 1];
-    return gameState.completedGames.includes(previousGame.id);
-  }, [gameState.completedGames]);
+    const completedGames = gameState?.completedGames || [];
+    return completedGames.includes(previousGame.id);
+  }, [gameState?.completedGames]);
 
   return {
     // Estado
