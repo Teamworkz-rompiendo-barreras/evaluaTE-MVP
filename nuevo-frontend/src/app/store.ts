@@ -18,6 +18,7 @@ import personalReducer, {
   generateFinalReport,
 } from '../features/personal/personalSlice';
 import progressReducer, { markGameComplete, saveCV as saveProgressCV } from '../features/progress/progressSlice';
+import gameReducer from '../features/games/gameSlice';
 import { scenesApi } from '../features/games/scenesApi';
 
 // Combina todos los reducers
@@ -25,6 +26,7 @@ const rootReducer = combineReducers({
   personal: personalReducer,
   progress: progressReducer,
   accessibility: accessibilityReducer,
+  game: gameReducer,
   [scenesApi.reducerPath]: scenesApi.reducer,
 });
 
@@ -32,7 +34,7 @@ const rootReducer = combineReducers({
 const persistConfig = {
   key: 'root',
   storage,
-  whitelist: ['personal', 'progress', 'accessibility'],
+  whitelist: ['personal', 'progress', 'accessibility', 'game'],
   version: 1,
 };
 
