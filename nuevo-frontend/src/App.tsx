@@ -15,6 +15,8 @@ import ProtectedRoute from './components/ProtectedRoute'
 import { Toaster } from 'react-hot-toast'
 import ProgressBar from './components/ProgressBar'
 import { AccessibilitySettings } from './components/AccessibilitySettings'
+import DebugState from './components/DebugState'
+import TestFlow from './components/TestFlow'
 
 // Layouts compartidos
 function AppLayout() {
@@ -35,6 +37,12 @@ function AppLayout() {
       <div className="fixed bottom-4 right-4 z-50">
         <AccessibilitySettings />
       </div>
+
+      {/* Debug State */}
+      <DebugState />
+      
+      {/* Test Flow */}
+      <TestFlow />
     </div>
   )
 }
@@ -82,15 +90,15 @@ export default function App() {
           }
         />
 
-        {/* Preferencias laborales (tras CV) */}
-        <Route
+        {/* Preferencias laborales (tras CV) - RUTA ELIMINADA PARA EVITAR CONFLICTOS */}
+        {/* <Route
           path="/preferences"
           element={
             <ProtectedRoute step="preferences">
               <PreferencesStep />
             </ProtectedRoute>
           }
-        />
+        /> */}
 
         {/* Resultados e informe final */}
         <Route

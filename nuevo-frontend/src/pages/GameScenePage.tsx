@@ -12,6 +12,7 @@ import ProgressBar from '../components/ProgressBar'
 import { RootState } from '../app/store'
 
 const GameScenePage: React.FC = () => {
+  console.log('GameScenePage - COMPONENTE CARGADO');
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
@@ -46,7 +47,9 @@ const GameScenePage: React.FC = () => {
   }, [id, currentGame, startGame])
 
   useEffect(() => {
-    console.log('GameScenePage - Estado personal:', personal)
+    console.log('🎮 GameScenePage - INICIO VALIDACIÓN');
+    console.log('🎮 GameScenePage - Estado personal:', personal);
+    console.log('🎮 GameScenePage - personal.completed:', personal.completed);
     
     // Verificar si los datos de contacto están completos
     const hasContactData = Boolean(personal?.firstName && personal?.lastName);
@@ -59,20 +62,20 @@ const GameScenePage: React.FC = () => {
     );
     
     // Los datos personales están completamente completos cuando se tienen tanto contact como preferences
-    const hasPersonalData = hasContactData && hasPreferences;
+    const hasPersonalData = hasContactData && (hasPreferences || personal.completed);
     
-    console.log('GameScenePage - hasContactData:', hasContactData);
-    console.log('GameScenePage - hasPreferences:', hasPreferences);
-    console.log('GameScenePage - hasPersonalData:', hasPersonalData);
+    console.log('🎮 GameScenePage - hasContactData:', hasContactData);
+    console.log('🎮 GameScenePage - hasPreferences:', hasPreferences);
+    console.log('🎮 GameScenePage - hasPersonalData:', hasPersonalData);
     
     if (!hasPersonalData) {
-      console.log('GameScenePage - Redirigiendo a /register/contact - datos personales no completados')
-      navigate('/register/contact')
-      return
+      console.log('🎮 GameScenePage - REDIRIGIENDO a /register/contact - datos personales no completados');
+      navigate('/register/contact');
+      return;
     }
     
-    console.log('GameScenePage - Validaciones pasadas, continuando...')
-  }, [personal, navigate])
+    console.log('🎮 GameScenePage - ✅ Validaciones pasadas, continuando...');
+  }, [personal, navigate]);
 
   const handleSceneComplete = (log: any) => {
     completeScene(log)
