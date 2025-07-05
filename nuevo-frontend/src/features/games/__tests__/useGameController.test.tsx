@@ -74,7 +74,7 @@ const createTestStore = () => {
 };
 
 const TestComponent = () => {
-  const { useGameController } = require('../../features/games/useGameController');
+  const { useGameController } = require('../useGameController');
   const gameController = useGameController();
   return <div data-testid="game-controller">Game Controller Test</div>;
 };
