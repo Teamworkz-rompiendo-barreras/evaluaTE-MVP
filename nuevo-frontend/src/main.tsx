@@ -14,7 +14,9 @@ import UploadCVPage from './pages/UploadCVPage';
 import ResultadosPage from './pages/ResultadosPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
-import AccessibilitySettings from './components/AccessibilitySettings';
+import { AccessibilitySettings } from './components/AccessibilitySettings';
+import { CookieConsent } from './components/CookieConsent';
+import { PrivacyNotice } from './components/PrivacyNotice';
 
 import './index.css';
 import './legacy.css';
@@ -26,6 +28,8 @@ root.render(
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         <AccessibilitySettings />
+        <PrivacyNotice />
+        <CookieConsent />
         <BrowserRouter>
           <Routes>
             {/* 1) Inicio → registro: datos personales */}
