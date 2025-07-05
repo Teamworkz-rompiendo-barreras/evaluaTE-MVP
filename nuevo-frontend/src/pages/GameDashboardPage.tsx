@@ -1,205 +1,136 @@
 // src/pages/GameDashboardPage.tsx
-import React from 'react'
-import { useSelector } from 'react-redux'
-import { Link } from 'react-router-dom'
+import React from 'react';
+import { useSelector } from 'react-redux';
+import { useNavigate } from 'react-router-dom';
+import { games } from '../data/games';
+import { RootState } from '../app/store';
+import GameCard from '../components/GameCard';
 
-// Lista de minijuegos con nombre, habilidad blanda y día asociado
-const GAMES = [
-  {
-    id: '1',
-    title: 'Primera llamada del día',
-    skill: 'Toma de decisiones',
-    icon: '/icons/game1.svg',
-    day: 'Lunes',
-  },
-  {
-    id: '2',
-    title: 'Algo no cuadra',
-    skill: 'Resolución de problemas',
-    icon: '/icons/game2.svg',
-    day: 'Martes',
-  },
-  {
-    id: '3',
-    title: 'El envío urgente',
-    skill: 'Trabajo en equipo',
-    icon: '/icons/game3.svg',
-    day: 'Miércoles',
-  },
-  {
-    id: '4',
-    title: 'Día de tensiones',
-    skill: 'Gestión emocional',
-    icon: '/icons/game4.svg',
-    day: 'Jueves',
-  },
-  {
-    id: '5',
-    title: 'Reunión sorpresa',
-    skill: 'Comunicación',
-    icon: '/icons/game5.svg',
-    day: 'Viernes',
-  },
-  // JUEGOS EXTRAS – Solo se desbloquean al completar Lunes a Viernes
-  {
-    id: '6',
-    title: '¿Y esto para qué sirve?',
-    skill: 'Curiosidad y aprendizaje continuo',
-    icon: '/icons/game6.svg',
-    day: 'Extra',
-  },
-  {
-    id: '7',
-    title: 'La caja rota',
-    skill: 'Creatividad',
-    icon: '/icons/game7.svg',
-    day: 'Extra',
-  },
-  {
-    id: '8',
-    title: 'Ruta equivocada',
-    skill: 'Flexibilidad',
-    icon: '/icons/game8.svg',
-    day: 'Extra',
-  },
-  {
-    id: '9',
-    title: 'Pedido duplicado',
-    skill: 'Pensamiento analítico',
-    icon: '/icons/game9.svg',
-    day: 'Extra',
-  },
-  {
-    id: '10',
-    title: 'Sistema nuevo',
-    skill: 'Autonomía',
-    icon: '/icons/game10.svg',
-    day: 'Extra',
-  },
-]
+const GameDashboardPage: React.FC = () => {
+  const navigate = useNavigate()
+  const completedGames = useSelector((state: RootState) => state.game.completedGames)
+  const accessibility = useSelector((state: RootState) => state.accessibility)
 
-export default function GameDashboardPage() {
-  const completedGames: string[] = useSelector(
-    (state: any) => state.progress.completedGames || []
-  )
-  const unlockedGames: number = useSelector(
-    (state: any) => state.personal.unlockedGames || 1
-  )
+  const handleGameClick = (gameId: string) => {
+    navigate(`/game/${gameId}`)
+  }
 
-  // Filtramos los juegos por día laboral y extra
-  const workDays = GAMES.slice(0, 5)
-  const extraGames = GAMES.slice(5)
+  const isGameAvailable = (gameId: string) => {
+    const gameIndex = games.findIndex(game => game.id === gameId)
+    if (gameIndex === 0) return true // El primer juego siempre está disponible
+    
+    const previousGame = games[gameIndex - 1]
+    return completedGames.includes(previousGame.id)
+  }
 
-  // Determinamos si los extras están disponibles
-  const allWorkDaysCompleted = workDays.every(game =>
-    completedGames.includes(game.id)
-  )
+  const getProgressPercentage = () => {
+    return (completedGames.length / games.length) * 100
+  }
 
-  // Mostramos solo los juegos básicos + extras si ya completó Lunes a Viernes
-  const availableGames = [
-    ...workDays,
-    ...(allWorkDaysCompleted ? extraGames : []),
-  ]
+  return (
+    <div className="min-h-screen bg-gray-50 py-8">
+      <div className="container mx-auto px-4 max-w-6xl">
+        {/* Header */}
+        <div className="text-center mb-8">
+          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+            🎮 EvalúaTE - Minijuegos
+          </h1>
+          <p className="text-lg text-gray-600 mb-6">
+            Evalúa tus 10 habilidades blandas clave a través de minijuegos interactivos
+          </p>
+          
+          {/* Progreso general */}
+          <div className="bg-white rounded-lg p-6 shadow-sm mb-8">
+            <div className="flex items-center justify-between mb-4">
+              <h2 className="text-xl font-semibold">Progreso General</h2>
+              <span className="text-2xl font-bold text-blue-600">
+                {completedGames.length}/{games.length}
+              </span>
+            </div>
+            <div className="w-full bg-gray-200 rounded-full h-3">
+              <div 
+                className="bg-gradient-to-r from-blue-500 to-purple-600 h-3 rounded-full transition-all duration-500"
+                style={{ width: `${getProgressPercentage()}%` }}
+              />
+            </div>
+            <p className="text-sm text-gray-600 mt-2">
+              {getProgressPercentage().toFixed(0)}% completado
+            </p>
+          </div>
+        </div>
 
-  // Si completó todos los juegos → medallero final
-  if (completedGames.length >= GAMES.length) {
-    return (
-      <div className="p-6 text-center">
-        <h1 className="text-3xl font-bold mb-6">🎉 ¡Enhorabuena!</h1>
-        <p className="mb-6">
-          Has completado los 10 minijuegos. Ahora sube tu CV para generar tu informe final.
-        </p>
-
-        {/* Medallero */}
-        <div className="grid grid-cols-5 gap-6 max-w-screen-lg mx-auto mb-8">
-          {GAMES.map((game) => {
-            const completed = completedGames.includes(game.id)
+        {/* Grid de minijuegos */}
+        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
+          {games.map((game, index) => {
+            const isCompleted = completedGames.includes(game.id)
+            const isAvailable = isGameAvailable(game.id)
+            
             return (
-              <div key={game.id} className="flex flex-col items-center">
-                <img
-                  src={completed ? game.icon : '/icons/locked.svg'}
-                  alt={game.title}
-                  className="w-16 h-16 mb-2"
-                  onError={(e) => {
-                    e.currentTarget.src = '/icons/fallback.svg'
-                  }}
-                />
-                <span className="text-sm">{game.title}</span>
-              </div>
+              <GameCard
+                key={game.id}
+                game={game}
+                isCompleted={isCompleted}
+                isAvailable={isAvailable}
+                isNext={index === completedGames.length}
+                onClick={() => isAvailable && handleGameClick(game.id)}
+                accessibility={{
+                  contrastLevel: accessibility.contrastLevel === 'alto' || accessibility.contrastLevel === 'muy-alto' ? 'high' : 'normal',
+                  fontScale: accessibility.fontScale,
+                  audioEnabled: accessibility.audioAssistiveMode,
+                  visualHelp: accessibility.showPictograms,
+                  timeExtensions: true
+                }}
+              />
             )
           })}
         </div>
 
-        {/* Botón para subir CV */}
-        <Link
-          to="/upload-cv"
-          className="inline-block bg-blue-600 text-white px-8 py-3 rounded-lg hover:bg-blue-700 transition-colors"
-        >
-          Subir tu CV
-        </Link>
-      </div>
-    )
-  }
-
-  // Muestra los juegos disponibles
-  return (
-    <div className="p-6">
-      <h1 className="text-2xl font-bold mb-6">Minijuegos</h1>
-
-      {/* Progreso visual */}
-      <div className="mb-6 text-center">
-        <p className="text-gray-600">
-          Has completado{' '}
-          <span className="font-semibold">{completedGames.length}</span> de{' '}
-          <span className="font-semibold">{availableGames.length}</span> minijuegos disponibles
-        </p>
-        <div className="w-full bg-gray-200 rounded-full h-2.5 mt-2">
-          <div
-            className="bg-green-500 h-2.5 rounded-full"
-            style={{
-              width: `${(completedGames.length / availableGames.length) * 100}%`,
-            }}
-          ></div>
-        </div>
-      </div>
-
-      {/* Juegos pendientes */}
-      <div className="grid grid-cols-5 gap-6 max-w-screen-lg mx-auto">
-        {availableGames.map((game) => {
-          const isCompleted = completedGames.includes(game.id)
-          const isUnlocked = Number(game.id) <= unlockedGames
-
-          return (
-            <div
-              key={game.id}
-              className={`flex flex-col items-center p-4 border rounded-lg transition-all ${
-                isCompleted
-                  ? 'opacity-60 cursor-not-allowed'
-                  : isUnlocked
-                  ? 'hover:bg-gray-50 cursor-pointer'
-                  : 'opacity-40 cursor-default'
-              }`}
-            >
-              <Link
-                to={isUnlocked ? `/games/${game.id}` : '#'}
-                className="w-full h-full"
-                onClick={(e) => !isUnlocked && e.preventDefault()}
-              >
-                <img
-                  src={isCompleted ? game.icon : '/icons/unlocked-game.svg'}
-                  alt={game.title}
-                  className="w-12 h-12 mb-2 mx-auto"
-                  onError={(e) => {
-                    e.currentTarget.src = '/icons/fallback.svg'
-                  }}
-                />
-                <span className="block font-medium text-center">{game.title}</span>
-                <span className="text-xs text-gray-500 text-center">{game.skill}</span>
-              </Link>
+        {/* Información adicional */}
+        <div className="mt-12 bg-white rounded-lg p-6 shadow-sm">
+          <h3 className="text-lg font-semibold mb-4">¿Cómo funcionan los minijuegos?</h3>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
+            <div className="text-center">
+              <div className="text-3xl mb-2">🎯</div>
+              <h4 className="font-semibold mb-2">Evaluación Invisible</h4>
+              <p className="text-sm text-gray-600">
+                No hay respuestas correctas o incorrectas. Solo actúa como lo harías en la vida real.
+              </p>
             </div>
-          )
-        })}
+            <div className="text-center">
+              <div className="text-3xl mb-2">🧠</div>
+              <h4 className="font-semibold mb-2">Habilidades Blandas</h4>
+              <p className="text-sm text-gray-600">
+                Cada minijuego evalúa una habilidad específica del informe WEF 2025.
+              </p>
+            </div>
+            <div className="text-center">
+              <div className="text-3xl mb-2">📊</div>
+              <h4 className="font-semibold mb-2">Análisis Inteligente</h4>
+              <p className="text-sm text-gray-600">
+                Tu comportamiento se analiza para generar un informe personalizado.
+              </p>
+            </div>
+          </div>
+        </div>
+
+        {/* Botones de acción */}
+        <div className="mt-8 flex justify-center space-x-4">
+          <button
+            onClick={() => navigate('/personal')}
+            className="px-6 py-3 bg-gray-500 text-white rounded-lg hover:bg-gray-600 transition-colors"
+          >
+            ← Datos Personales
+          </button>
+          <button
+            onClick={() => navigate('/resultados')}
+            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+          >
+            Ver Resultados →
+          </button>
+        </div>
       </div>
     </div>
   )
 }
+
+export default GameDashboardPage
