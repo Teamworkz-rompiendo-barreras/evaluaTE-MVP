@@ -1,7 +1,7 @@
 import React from 'react';
 import { render, screen } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
-import useGameController from '../useGameController';
+import { useGameController } from '../useGameController';
 import { Provider } from "react-redux";
 import { configureStore } from '@reduxjs/toolkit';
 
@@ -49,6 +49,13 @@ const testStore = configureStore({
     personal: (state = {}, action) => state,
     progress: (state = {}, action) => state,
     accessibility: (state = {}, action) => state,
+    game: (state = {
+      currentGameId: null,
+      completedGames: [],
+      gameLogs: {},
+      softSkills: [],
+      adaptations: []
+    }, action) => state,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
@@ -56,8 +63,8 @@ const testStore = configureStore({
     }),
 });
 
-const TestComponent = ({ sceneId }: { sceneId: number }) => {
-  const gameController = useGameController({ sceneId });
+const TestComponent = () => {
+  const gameController = useGameController();
   return <div data-testid="game-controller">Game Controller Test</div>;
 };
 
@@ -69,7 +76,7 @@ describe('useGameController', () => {
   it('debe inicializar el estado correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
@@ -79,7 +86,7 @@ describe('useGameController', () => {
   it('debe manejar nextStep correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
@@ -89,7 +96,7 @@ describe('useGameController', () => {
   it('debe manejar prevStep correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
@@ -99,7 +106,7 @@ describe('useGameController', () => {
   it('debe manejar makeChoice correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
@@ -109,7 +116,7 @@ describe('useGameController', () => {
   it('debe manejar resetGame correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
@@ -119,7 +126,7 @@ describe('useGameController', () => {
   it('debe manejar completar el juego correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
@@ -129,7 +136,7 @@ describe('useGameController', () => {
   it('debe manejar decisiones correctas e incorrectas', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
@@ -139,7 +146,7 @@ describe('useGameController', () => {
   it('debe manejar tiempo correctamente', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
@@ -149,7 +156,7 @@ describe('useGameController', () => {
   it('debe manejar decisiones con impactos en habilidades', () => {
     const { container } = render(
       <Provider store={testStore}>
-        <TestComponent sceneId={1} />
+        <TestComponent />
       </Provider>
     );
     
