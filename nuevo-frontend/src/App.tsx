@@ -21,7 +21,7 @@ function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Barra de progreso opcional */}
-      <ProgressBar step={1} total={1} />
+      <ProgressBar current={1} total={1} />
 
       {/* Contenido principal */}
       <main className="container mx-auto p-4">

@@ -12,7 +12,7 @@ const GameDashboardPage: React.FC = () => {
   const accessibility = useSelector((state: RootState) => state.accessibility)
 
   const handleGameClick = (gameId: string) => {
-    navigate(`/game/${gameId}`)
+    navigate(`/games/${gameId}`)
   }
 
   const isGameAvailable = (gameId: string) => {
@@ -69,9 +69,8 @@ const GameDashboardPage: React.FC = () => {
               <GameCard
                 key={game.id}
                 game={game}
-                isCompleted={isCompleted}
-                isAvailable={isAvailable}
-                isNext={index === completedGames.length}
+                isUnlocked={isCompleted}
+                isCurrent={index === completedGames.length}
                 onClick={() => isAvailable && handleGameClick(game.id)}
                 accessibility={{
                   contrastLevel: accessibility.contrastLevel === 'alto' || accessibility.contrastLevel === 'muy-alto' ? 'high' : 'normal',

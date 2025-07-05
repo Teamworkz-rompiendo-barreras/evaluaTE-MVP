@@ -16,10 +16,7 @@
     "jsx": "react-jsx",
     "forceConsistentCasingInFileNames": true,
     "types": [
-      "cypress",
-      "node",
-      "vitest/globals",
-      "jest"
+      "node"
     ],
     "typeRoots": ["./node_modules/@types", "./src/types"],
     "baseUrl": ".",
@@ -27,6 +24,13 @@
       "@/*": ["src/*"]
     }
   },
-  "include": ["src", "vitest.config.ts", "vite.config.ts", "cypress/**/*.ts", "cypress/**/*.tsx", "src/**/*.ts", "src/**/*.tsx"],
-  "exclude": ["dist", "node_modules"]
+  "include": ["src", "vitest.config.ts", "vite.config.js", "src/**/*.ts", "src/**/*.tsx"],
+  "exclude": [
+    "cypress",
+    "**/*.test.ts",
+    "**/*.test.tsx",
+    "**/__tests__",
+    "**/__fixtures__",
+    "node_modules"
+  ]
 }

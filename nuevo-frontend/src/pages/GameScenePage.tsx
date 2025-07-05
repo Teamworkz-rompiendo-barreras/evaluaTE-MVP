@@ -12,7 +12,7 @@ import ProgressBar from '../components/ProgressBar'
 import { RootState } from '../app/store'
 
 const GameScenePage: React.FC = () => {
-  const { gameId } = useParams<{ gameId: string }>()
+  const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
   // Estado del juego
@@ -28,7 +28,7 @@ const GameScenePage: React.FC = () => {
     data: scene,
     isLoading,
     isError
-  } = useGetSceneQuery(gameId ?? '', { skip: !gameId })
+  } = useGetSceneQuery(id ?? '', { skip: !id })
 
   const {
     startGame,
@@ -37,10 +37,10 @@ const GameScenePage: React.FC = () => {
   } = useGameController()
 
   useEffect(() => {
-    if (gameId && !currentGame) {
-      startGame(gameId)
+    if (id && !currentGame) {
+      startGame(id)
     }
-  }, [gameId, currentGame, startGame])
+  }, [id, currentGame, startGame])
 
   useEffect(() => {
     if (!personal?.firstName || !personal?.lastName) {

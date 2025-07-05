@@ -1,4 +1,3 @@
-// vite.config.ts
 import { defineConfig } from 'vite'
 import react from '@vitejs/plugin-react'
 import path from 'path'
@@ -11,7 +10,7 @@ export default defineConfig({
   },
   build: {
     outDir: 'dist',
-    sourcemap: false // Reduce tamaño del build
+    sourcemap: false
   },
   resolve: {
     alias: {
@@ -21,4 +20,4 @@ export default defineConfig({
       '@/types': './src/types'
     }
   }
-})
+}) 

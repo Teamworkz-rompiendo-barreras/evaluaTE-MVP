@@ -1,7 +1,7 @@
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { CvAnalysis, JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
-import type { UserDecision } from '../../types/game'; // Adjust the import path as needed
+import type { UserDecision } from '../../types/skills'; // Adjust the import path as needed
 
 // Define SceneLog type if not imported from elsewhere
 export interface SceneLog {
@@ -159,11 +159,11 @@ export const personalSlice = createSlice({
     // Registra decisiones tomadas durante escenas
     addSceneDecision(state, action: PayloadAction<UserDecision>) {
       const sceneId = action.payload.sceneId;
-      const logs = (state.report && Array.isArray((state.report as unknown).logs))
-        ? (state.report as unknown).logs as SceneLog[]
+      const logs = (state.report && Array.isArray((state.report as any).logs))
+        ? (state.report as any).logs as SceneLog[]
         : [];
 
-      const existingIndex: number = logs.findIndex((log: SceneLog) => log.sceneId === sceneId);
+      const existingIndex: number = logs.findIndex((log: SceneLog) => log.sceneId === String(sceneId));
 
       if (existingIndex > -1) {
         logs[existingIndex].decisions.push(action.payload);
@@ -209,8 +209,8 @@ export const personalSlice = createSlice({
       // Ajuste según el CV
       if (
         state.cvAnalysis &&
-        typeof (state.cvAnalysis as unknown).score === 'number' &&
-        (state.cvAnalysis as unknown).score < 60
+        typeof (state.cvAnalysis as any).score === 'number' &&
+        (state.cvAnalysis as any).score < 60
       ) {
         employabilityScore = Math.max(20, employabilityScore - 10);
       }
@@ -298,8 +298,8 @@ function getRecommendationsFromProfile(params: {
     resources.push('Microsoft Learn');
   }
 
-  if (params.cvAnalysis && Array.isArray((params.cvAnalysis as unknown).weaknesses) && (params.cvAnalysis as unknown).weaknesses.length) {
-    cvImprovements.push(...(params.cvAnalysis as unknown).weaknesses);
+  if (params.cvAnalysis && Array.isArray((params.cvAnalysis as any).weaknesses) && (params.cvAnalysis as any).weaknesses.length) {
+    cvImprovements.push(...(params.cvAnalysis as any).weaknesses);
   }
 
   nextSteps.push('Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias');

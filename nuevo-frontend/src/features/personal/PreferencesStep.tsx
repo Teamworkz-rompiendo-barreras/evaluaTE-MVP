@@ -76,7 +76,7 @@ export default function PreferencesStep() {
         <p className="text-gray-600 mb-4">Tus preferencias laborales</p>
       </div>
 
-      <ProgressBar step={2} total={2} />
+      <ProgressBar current={2} total={2} />
 
       {/* Campo: Tipo de trabajo */}
       <div>

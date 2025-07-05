@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { ResponsiveRadar } from '@nivo/radar';
+import { SoftSkillResult, CvAnalysis } from '../types/skills';
 
 // Componentes visuales
 
@@ -18,7 +19,7 @@ const ResultadosPage: React.FC = () => {
 
   // Verificamos que todo el progreso sea completo antes de mostrar resultados
   useEffect(() => {
-    if (personal?.report?.completedGames.length < 10 || !cvAnalysis || personal?.report?.softSkills.length === 0) {
+    if ((personal?.report?.completedGames?.length ?? 0) < 10 || !cvAnalysis || (personal?.report?.softSkills?.length ?? 0) === 0) {
       navigate('/games');
     }
   }, [personal?.report?.completedGames, cvAnalysis, personal?.report?.softSkills, navigate]);
@@ -31,10 +32,10 @@ const ResultadosPage: React.FC = () => {
   }
 
   // Normaliza los datos de softSkills para asegurar que cumplen el tipo SoftSkillResult
-  function normalizeSoftSkills(skills: unknown[]): SoftSkillResult[] {
+  function normalizeSoftSkills(skills: unknown[]): any[] {
     return (skills ?? []).map((skill: unknown) => ({
       skill: (skill as { skill: string }).skill,
-      level: (skill as { level: string }).level,
+      level: (skill as { level: string }).level as 'Bajo' | 'Medio' | 'Alto',
       confidence: (skill as { confidence?: number; score?: number }).confidence ?? (typeof (skill as { score?: number }).score === 'number' ? (skill as { score: number }).score / 100 : 0),
       feedback: (skill as { feedback?: string }).feedback ?? '',
       interactions: (skill as { interactions?: string[] }).interactions ?? [],
@@ -45,6 +46,7 @@ const ResultadosPage: React.FC = () => {
   const data: RadarData[] = normalizedSoftSkills.map((skill) => ({
     skill: skill.skill,
     level: skill.confidence * 100,
+    interactions: skill.interactions.map((i: any) => typeof i === 'string' ? i : JSON.stringify(i)),
   }));
 
   // Áreas a mejorar (confianza menor a 0.6)
@@ -63,6 +65,7 @@ const ResultadosPage: React.FC = () => {
       level: skill.level,
       confidence: skill.confidence,
       feedback: skill.feedback,
+      interactions: skill.interactions.map((i: any) => typeof i === 'string' ? i : JSON.stringify(i)),
     }));
 
   // Manejador para descargar informe PDF
@@ -152,17 +155,17 @@ const ResultadosPage: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium">Puntuación general:</span>
               <span className="text-2xl font-bold text-blue-600">
-                {personal.cvAnalysis.score || 'N/A'}
+                {(personal.cvAnalysis as any).score || 'N/A'}
               </span>
             </div>
           </div>
 
           {/* Fortalezas */}
-          {personal.cvAnalysis.strengths && personal.cvAnalysis.strengths.length > 0 && (
+          {(personal.cvAnalysis as any).strengths && (personal.cvAnalysis as any).strengths.length > 0 && (
             <div className="mb-6">
               <h4 className="font-semibold mb-3 text-green-700">✅ Fortalezas identificadas:</h4>
               <ul className="space-y-2">
-                {personal.cvAnalysis.strengths.map((strength: any, index: number) => (
+                {(personal.cvAnalysis as any).strengths.map((strength: any, index: number) => (
                   <li key={index} className="flex items-start">
                     <span className="text-green-500 mr-2">•</span>
                     <span className="text-gray-700">{strength}</span>
@@ -173,11 +176,11 @@ const ResultadosPage: React.FC = () => {
           )}
 
           {/* Áreas de mejora */}
-          {personal.cvAnalysis.weaknesses && personal.cvAnalysis.weaknesses.length > 0 && (
+          {(personal.cvAnalysis as any).weaknesses && (personal.cvAnalysis as any).weaknesses.length > 0 && (
             <div>
               <h4 className="font-semibold mb-3 text-orange-700">🔧 Áreas de mejora:</h4>
               <ul className="space-y-2">
-                {personal.cvAnalysis.weaknesses.map((weakness: any, index: number) => (
+                {(personal.cvAnalysis as any).weaknesses.map((weakness: any, index: number) => (
                   <li key={index} className="flex items-start">
                     <span className="text-orange-500 mr-2">•</span>
                     <span className="text-gray-700">{weakness}</span>

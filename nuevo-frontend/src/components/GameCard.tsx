@@ -5,6 +5,7 @@ interface GameCardProps {
   game: Game;
   isUnlocked: boolean;
   isCurrent: boolean;
+  onClick?: () => void;
   accessibility: {
     contrastLevel: 'normal' | 'high';
     fontScale: number;
@@ -18,6 +19,7 @@ const GameCard: React.FC<GameCardProps> = ({
   game,
   isUnlocked,
   isCurrent,
+  onClick,
   accessibility
 }) => {
   const getCardClasses = () => {
@@ -62,6 +64,7 @@ const GameCard: React.FC<GameCardProps> = ({
     <div
       className={getCardClasses()}
       style={{ fontSize: `${accessibility.fontScale}%` }}
+      onClick={onClick}
     >
       {/* Estado del juego */}
       <div className="absolute top-2 right-2">
