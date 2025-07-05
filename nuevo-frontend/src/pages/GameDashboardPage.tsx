@@ -12,7 +12,7 @@ const GameDashboardPage: React.FC = () => {
   const accessibility = useSelector((state: RootState) => state.accessibility)
 
   const handleGameClick = (gameId: string) => {
-    navigate(`/games/${gameId}`)
+    navigate(`/game/${gameId}`)
   }
 
   const isGameAvailable = (gameId: string) => {
