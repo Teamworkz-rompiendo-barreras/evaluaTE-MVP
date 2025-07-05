@@ -2,6 +2,7 @@
   "name": "nuevo-frontend",
   "version": "0.0.0",
   "private": true,
+  "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc && vite build",
@@ -45,6 +46,7 @@
     "cypress": "^14.5.1",
     "cypress-file-upload": "^5.0.8",
     "eslint": "^9.30.0",
+    "eslint-plugin-cypress": "^5.1.0",
     "eslint-plugin-react": "^7.37.5",
     "eslint-plugin-react-hooks": "^5.2.0",
     "jsdom": "^26.1.0",
