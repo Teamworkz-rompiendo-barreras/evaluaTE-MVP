@@ -92,7 +92,7 @@ export const useGameController = () => {
 
     // Guardar en el estado global
     dispatch(completeGame({ 
-      gameId: currentGame.id, 
+      gameId: currentGame.id,
       score: averageScore,
       softSkill 
     }));
@@ -116,8 +116,6 @@ export const useGameController = () => {
 
   // Obtener siguiente juego disponible
   const getNextAvailableGame = useCallback(() => {
-    // Verificar que gameState existe y tiene la propiedad completedGames
-    const completedGames = gameState?.completedGames || [];
     const currentIndex = games.findIndex(game => game.id === currentGame?.id);
     
     if (currentIndex === -1 || currentIndex >= games.length - 1) {
@@ -125,7 +123,7 @@ export const useGameController = () => {
     }
     
     return games[currentIndex + 1];
-  }, [currentGame, gameState?.completedGames]);
+  }, [currentGame]);
 
   // Verificar si un juego está disponible
   const isGameAvailable = useCallback((gameId: string) => {

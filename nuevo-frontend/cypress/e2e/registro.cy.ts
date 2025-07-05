@@ -1,3 +1,4 @@
+/* eslint-env cypress */
 // cypress/e2e/registro.cy.ts
 import { userFixture } from '../__fixtures__/user.fixtures'
 

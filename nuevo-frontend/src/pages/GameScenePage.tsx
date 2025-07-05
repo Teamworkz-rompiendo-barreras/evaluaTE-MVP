@@ -1,49 +1,36 @@
 // src/pages/GameScenePage.tsx
 import React, { useEffect } from 'react'
-import toast from 'react-hot-toast'
+
 import { useParams, useNavigate } from 'react-router-dom'
+import { useSelector } from 'react-redux'
 
 // Importamos datos del juego
 import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
-import { useAppDispatch, useAppSelector } from '../app/hooks'
-import { markGameComplete } from '../features/progress/progressSlice'
-import { unlockNextGame } from '../features/personal/personalSlice'
-import { saveSoftSkills } from '../features/personal/personalSlice'
-
-// Hook para guardar logs de usuario
-import { useLogger } from '../features/games/useLogger'
 import GameScene from '../components/GameScene'
 import ProgressBar from '../components/ProgressBar'
+import { RootState } from '../app/store'
 
 const GameScenePage: React.FC = () => {
   const { gameId } = useParams<{ gameId: string }>()
   const navigate = useNavigate()
-  const dispatch = useAppDispatch()
 
-  // Accesibilidad
-  const accessibilityState = useAppSelector((state) => state.accessibility)
+  // Estado del juego
+  const { currentGame, currentScene, gameProgress } = useGameController()
+  
+  // Estado de accesibilidad
+  const accessibility = useSelector((state: RootState) => state.accessibility)
+  
+  // Estado de personal
+  const personal = useSelector((state: RootState) => state.personal)
 
-  // Escena actual desde JSON
   const {
     data: scene,
     isLoading,
     isError
   } = useGetSceneQuery(gameId ?? '', { skip: !gameId })
 
-  const stepsCount = scene?.steps.length ?? 0
-  const { currentStep, timeLeft, nextStep, prevStep } = useGameController({ sceneId: Number(gameId) })
-  const { logStep, logSoftSkill, logFinalGame } = useLogger()
-
-  // Estado local del juego
-  const [selectedOptions, setSelectedOptions] = useState<number[]>([])
-  const [showFeedback, setShowFeedback] = useState(false)
-
   const {
-    currentGame,
-    currentScene,
-    gameProgress,
-    accessibility,
     startGame,
     completeScene,
     goToScene
@@ -54,6 +41,18 @@ const GameScenePage: React.FC = () => {
       startGame(gameId)
     }
   }, [gameId, currentGame, startGame])
+
+  useEffect(() => {
+    if (!personal?.firstName || !personal?.lastName) {
+      navigate('/datos-personales')
+      return
+    }
+    
+    if (!personal?.jobPreferences) {
+      navigate('/preferencias')
+      return
+    }
+  }, [personal, navigate])
 
   const handleSceneComplete = (log: any) => {
     completeScene(log)
@@ -86,116 +85,6 @@ const GameScenePage: React.FC = () => {
     )
   }
 
-  const gameNum = Number(gameId)
-  const currentSceneData = scene.steps[currentStep]
-
-  // Calculamos softSkills al finalizar todas las escenas
-  const handleFinishGame = () => {
-    const levelMap = {
-      'Bajo': 'bajo',
-      'Medio': 'medio',
-      'Alto': 'alto',
-    } as const;
-    const skillResults = [
-      {
-        skill: getSkillNameFromGameId(gameNum),
-        score: Math.round(calculateConfidence() * 100),
-        level: levelMap[calculateLevel()],
-      },
-    ]
-
-    // Guardamos en Redux
-    dispatch(saveSoftSkills(skillResults))
-    dispatch(markGameComplete(String(gameNum)))
-    dispatch(unlockNextGame())
-
-    // Registramos en backend
-    logFinalGame(gameNum, skillResults)
-    
-    // Navegamos al siguiente juego o resultados
-    navigate(`/games/${gameNum + 1}`) // TODO: ir a `/resultados` si es el último juego
-  }
-
-  // Mapea ID del juego a nombre de habilidad blanda
-  const getSkillNameFromGameId = (id: number): string => {
-    switch (id) {
-      case 1:
-        return 'Toma de decisiones'
-      case 2:
-        return 'Resolución de problemas'
-      case 3:
-        return 'Trabajo en equipo'
-      case 4:
-        return 'Gestión emocional'
-      case 5:
-        return 'Comunicación'
-      case 6:
-        return 'Curiosidad y aprendizaje continuo'
-      case 7:
-        return 'Creatividad'
-      case 8:
-        return 'Flexibilidad'
-      case 9:
-        return 'Pensamiento crítico'
-      case 10:
-        return 'Autonomía'
-      default:
-        return 'Habilidad desconocida'
-    }
-  }
-
-  // Calcula nivel (Alto/Medio/Bajo) según decisiones, tiempo y consistencia
-  const calculateLevel = (): 'Bajo' | 'Medio' | 'Alto' => {
-    // Aquí iría lógica real basada en decisiones + tiempo + uso de ayuda
-    // Ejemplo básico: si hay más de 2 errores → Medio / Bajo
-    const totalErrors = selectedOptions.filter((opt) =>
-      currentSceneData.options && !currentSceneData.options[opt]?.isCorrect
-    ).length
-
-    if (totalErrors === 0) return 'Alto'
-    if (totalErrors <= 2) return 'Medio'
-    return 'Bajo'
-  }
-
-  // Calcula confianza numérica (0 - 1) para gráfico radar
-  const calculateConfidence = (): number => {
-    // Por ahora usamos un cálculo simple
-    const correctAnswers = selectedOptions.filter((opt) =>
-      currentSceneData.options && currentSceneData.options[opt]?.isCorrect
-    ).length
-
-    return Math.max(0.1, correctAnswers / stepsCount)
-  }
-
-  // Manejo de selección de opción
-  const handleSelectOption = async (optionIndex: number) => {
-    const option = currentSceneData.options?.[optionIndex]
-    const timeSpent = 30 - timeLeft
-
-    // Guardamos respuesta localmente
-    const updatedSelections = [...selectedOptions]
-    updatedSelections[currentStep] = optionIndex
-    setSelectedOptions(updatedSelections)
-    setShowFeedback(true)
-
-    // Registramos log de paso en backend
-    await logStep({
-      gameId: gameNum,
-      stepIndex: currentStep,
-      optionIndex,
-      timeSpent,
-      usedHelp: false, // esto podría venir de un botón "ayuda" opcional
-      emotionalResponse: option?.feedback || null,
-    })
-
-    setTimeout(() => {
-      setShowFeedback(false)
-      if (currentStep < stepsCount - 1) {
-        nextStep()
-      }
-    }, 1000)
-  }
-
   if (!currentGame) {
     return (
       <div className="flex items-center justify-center min-h-screen">
@@ -217,7 +106,7 @@ const GameScenePage: React.FC = () => {
             onClick={() => navigate('/games')}
             className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
           >
-            Volver al dashboard
+            Volver al menú
           </button>
         </div>
       </div>
@@ -242,7 +131,7 @@ const GameScenePage: React.FC = () => {
           {/* Barra de progreso */}
           <div className="mb-4">
             <ProgressBar 
-              step={gameProgress.current} 
+              current={gameProgress.current} 
               total={gameProgress.total}
               label="Escena"
             />
@@ -263,7 +152,13 @@ const GameScenePage: React.FC = () => {
             scene={currentScene}
             onSceneComplete={handleSceneComplete}
             onNextScene={handleNextScene}
-            accessibility={accessibility}
+            accessibility={{
+              contrastLevel: accessibility.contrastLevel === 'alto' || accessibility.contrastLevel === 'muy-alto' ? 'high' : 'normal',
+              fontScale: accessibility.fontScale,
+              audioEnabled: accessibility.audioAssistiveMode,
+              visualHelp: accessibility.showPictograms,
+              timeExtensions: true
+            }}
           />
         </div>
 
@@ -273,12 +168,8 @@ const GameScenePage: React.FC = () => {
             onClick={() => navigate('/games')}
             className="px-4 py-2 text-gray-600 hover:text-gray-800"
           >
-            ← Volver al dashboard
+            ← Volver al menú
           </button>
-          
-          <div className="text-sm text-gray-500">
-            Escena {gameProgress.current} de {gameProgress.total}
-          </div>
         </div>
       </div>
     </div>

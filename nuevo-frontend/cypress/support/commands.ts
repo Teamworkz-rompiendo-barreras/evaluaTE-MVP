@@ -1,3 +1,4 @@
+/* eslint-env cypress */
 // cypress/support/commands.ts
 Cypress.Commands.add('login', () => {
   cy.visit('/register/contact')

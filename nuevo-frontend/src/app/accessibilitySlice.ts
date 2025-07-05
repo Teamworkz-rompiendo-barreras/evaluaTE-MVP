@@ -50,7 +50,6 @@ export const {
   toggleAudioAssistiveMode,
   setShowPictograms,
   setContrastLevel,
-  setFontScale,
   toggleContrast,
 } = accessibilitySlice.actions;
 

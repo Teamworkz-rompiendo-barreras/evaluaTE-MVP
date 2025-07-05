@@ -1,11 +1,8 @@
 // src/features/games/__fixtures__/user.decision.fixture.ts
 
 import type {
-  UserDecision,
-  GameScene
+  UserDecision
 } from '@/types/game-scene'
-
-import { mockScene1, mockScene3 } from '@/features/games/__fixtures__/scene.fixture'
 
 export const userDecision1: UserDecision = {
   sceneId: 1,

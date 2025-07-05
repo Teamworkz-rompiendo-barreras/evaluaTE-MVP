@@ -1,3 +1,4 @@
+/* eslint-env cypress */
 describe('Flujo de subida de CV', () => {
   it('Permite subir un PDF y redirige a resultados', () => {
     cy.clearLocalStorage();

@@ -3,7 +3,7 @@ import { GameScene, InteractiveArea } from '../../types/game';
 
 interface VisualExplorationSceneProps {
   scene: GameScene;
-  onComplete: (selectedOptionId?: string, additionalData?: any) => void;
+  onComplete: (selectedOptionId?: string, additionalData?: unknown) => void;
   onHelpRequest: () => void;
   onAdaptation: (adaptation: string) => void;
   accessibility: {
@@ -18,9 +18,9 @@ interface VisualExplorationSceneProps {
 const VisualExplorationScene: React.FC<VisualExplorationSceneProps> = ({
   scene,
   onComplete,
-  onHelpRequest,
-  onAdaptation,
-  accessibility
+  onHelpRequest: _onHelpRequest,
+  onAdaptation: _onAdaptation,
+  accessibility: _accessibility
 }) => {
   const [exploredAreas, setExploredAreas] = useState<string[]>([]);
   const [selectedArea, setSelectedArea] = useState<string | null>(null);

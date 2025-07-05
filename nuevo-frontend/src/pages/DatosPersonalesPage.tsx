@@ -14,7 +14,7 @@ type ContactForm = {
   whatsapp: string;
 };
 
-export default function DatosPersonalesPage() {
+const DatosPersonalesPage: React.FC = () => {
   const dispatch = useAppDispatch();
   const navigate = useNavigate();
   const current = useAppSelector(state => state.personal);
@@ -46,7 +46,7 @@ export default function DatosPersonalesPage() {
       </div>
 
       {/* Barra de progreso */}
-      <ProgressBar step={1} total={2} />
+      <ProgressBar current={1} total={2} />
 
       <h1 className="text-2xl font-bold text-center">
         Paso 1 de 2 – Datos de contacto
@@ -124,3 +124,5 @@ export default function DatosPersonalesPage() {
     </form>
   );
 }
+
+export default DatosPersonalesPage;

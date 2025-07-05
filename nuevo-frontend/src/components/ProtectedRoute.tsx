@@ -4,7 +4,6 @@ import { useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 
 import type { RootState } from '@/app/store';
-import type { PersonalState } from '@/features/personal/personalSlice';
 
 interface Props {
   step: 'contact' | 'preferences' | 'games' | 'uploadCV' | 'resultados';
@@ -28,9 +27,7 @@ export default function ProtectedRoute({ step, children }: Props) {
 
   switch (step) {
     case 'contact':
-      if (!hasPersonalData) return <>{children}</>;
-      // Si ya tiene datos personales, redirigimos al siguiente paso
-      return redirectToStep('/register/preferences');
+      return redirectToStep('/register/contact');
 
     case 'preferences':
       if (!hasPersonalData) return redirectToStep('/register/contact');

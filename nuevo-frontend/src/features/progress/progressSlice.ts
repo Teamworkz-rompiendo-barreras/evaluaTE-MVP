@@ -26,5 +26,8 @@ const progressSlice = createSlice({
   },
 })
 
-export const { markGameComplete, saveCV } = progressSlice.actions
+export const {
+  markGameComplete,
+  saveCV
+} = progressSlice.actions
 export default progressSlice.reducer

@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from 'react';
-import { GameScene as GameSceneType, GameOption, GameLog } from '../types/game';
+import React, { useState } from 'react';
+import { GameScene as GameSceneType, GameLog } from '../types/game';
 import ChoiceScene from './scenes/ChoiceScene';
 import DragDropScene from './scenes/DragDropScene';
 import AudioScene from './scenes/AudioScene';
@@ -28,10 +28,10 @@ const GameScene: React.FC<GameSceneProps> = ({
   const [helpUsed, setHelpUsed] = useState(false);
   const [adaptations, setAdaptations] = useState<string[]>([]);
 
-  const handleSceneComplete = (selectedOptionId?: string, additionalData?: any) => {
+  const handleSceneComplete = (selectedOptionId?: string) => {
     const timeSpent = Date.now() - startTime;
     
-    const log: GameLog = {
+    const gameLog: GameLog = {
       sceneId: scene.id,
       selectedOptionId,
       timeSpent,
@@ -40,7 +40,7 @@ const GameScene: React.FC<GameSceneProps> = ({
       timestamp: new Date()
     };
 
-    onSceneComplete(log);
+    onSceneComplete(gameLog);
 
     // Determinar la siguiente escena
     if (selectedOptionId) {

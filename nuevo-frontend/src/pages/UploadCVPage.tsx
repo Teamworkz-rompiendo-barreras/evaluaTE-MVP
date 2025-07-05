@@ -11,7 +11,7 @@ export default function UploadCVPage() {
   const navigate = useNavigate()
 
   // Seleccionamos el archivo del CV desde el estado
-  const cvFile = useSelector((state: any) => state.personal.cvFile)
+  const cvFile = useSelector((state: unknown) => (state as { personal: { cvFile: File | null } }).personal.cvFile)
 
   const [file, setFile] = useState<File | null>(null)
 

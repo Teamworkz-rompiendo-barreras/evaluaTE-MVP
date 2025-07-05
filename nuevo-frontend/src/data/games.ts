@@ -1,4 +1,4 @@
-import { Game } from '../types/game';
+import { Game, GameProgress } from '../types/game';
 
 export const games: Game[] = [
   {
@@ -1974,7 +1974,7 @@ export const getNextGame = (currentGameId: string): Game | undefined => {
   return games[currentIndex + 1];
 };
 
-export const getGameProgress = (completedGames: string[]): any => {
+export const getGameProgress = (completedGames: string[]): GameProgress => {
   return {
     totalGames: games.length,
     completedGames: completedGames.length,

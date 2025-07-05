@@ -3,7 +3,7 @@ import { GameScene } from '../../types/game';
 
 interface AudioSceneProps {
   scene: GameScene;
-  onComplete: (selectedOptionId?: string, additionalData?: any) => void;
+  onComplete: (selectedOptionId?: string) => void;
   onHelpRequest: () => void;
   onAdaptation: (adaptation: string) => void;
   accessibility: {
@@ -18,9 +18,9 @@ interface AudioSceneProps {
 const AudioScene: React.FC<AudioSceneProps> = ({
   scene,
   onComplete,
-  onHelpRequest,
-  onAdaptation,
-  accessibility
+  onHelpRequest: _onHelpRequest,
+  onAdaptation: _onAdaptation,
+  accessibility: _accessibility
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
@@ -37,7 +37,7 @@ const AudioScene: React.FC<AudioSceneProps> = ({
   const handleAnswerSelect = (questionId: string, optionId: string) => {
     setSelectedAnswer(optionId);
     setTimeout(() => {
-      onComplete(optionId, { questionId, audioUrl: audioConfig.audioUrl });
+      onComplete(optionId);
     }, 1000);
   };
 

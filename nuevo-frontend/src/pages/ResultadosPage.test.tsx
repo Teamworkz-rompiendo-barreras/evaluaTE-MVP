@@ -1,3 +1,4 @@
+/* eslint-env jest */
 // src/pages/ResultadosPage.test.tsx
 
 import { render, screen } from '@testing-library/react';

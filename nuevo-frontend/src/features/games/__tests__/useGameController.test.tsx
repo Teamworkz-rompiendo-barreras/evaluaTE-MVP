@@ -1,3 +1,4 @@
+/* eslint-env jest */
 import React from 'react';
 import { render } from '@testing-library/react';
 import { describe, it, expect, vi, beforeEach } from 'vitest';
@@ -75,7 +76,7 @@ const createTestStore = () => {
 
 const TestComponent = () => {
   const { useGameController } = require('../useGameController');
-  const gameController = useGameController();
+  useGameController();
   return <div data-testid="game-controller">Game Controller Test</div>;
 };
 

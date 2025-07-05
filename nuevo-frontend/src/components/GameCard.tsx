@@ -3,10 +3,8 @@ import { Game } from '../types/game';
 
 interface GameCardProps {
   game: Game;
-  isCompleted: boolean;
-  isAvailable: boolean;
-  isNext: boolean;
-  onClick: () => void;
+  isUnlocked: boolean;
+  isCurrent: boolean;
   accessibility: {
     contrastLevel: 'normal' | 'high';
     fontScale: number;
@@ -18,22 +16,17 @@ interface GameCardProps {
 
 const GameCard: React.FC<GameCardProps> = ({
   game,
-  isCompleted,
-  isAvailable,
-  isNext,
-  onClick,
+  isUnlocked,
+  isCurrent,
   accessibility
 }) => {
   const getCardClasses = () => {
     let baseClasses = 'relative p-4 rounded-lg border-2 transition-all duration-300 cursor-pointer';
     
-    if (isCompleted) {
+    if (isUnlocked) {
       baseClasses += ' bg-green-50 border-green-300 opacity-80';
-    } else if (isAvailable) {
+    } else if (isCurrent) {
       baseClasses += ' bg-white border-gray-300 hover:border-blue-400 hover:shadow-lg';
-      if (isNext) {
-        baseClasses += ' border-blue-500 bg-blue-50';
-      }
     } else {
       baseClasses += ' bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed';
     }
@@ -46,24 +39,20 @@ const GameCard: React.FC<GameCardProps> = ({
   };
 
   const getStatusIcon = () => {
-    if (isCompleted) {
+    if (isUnlocked) {
       return '✅';
-    } else if (isNext) {
+    } else if (isCurrent) {
       return '🎯';
-    } else if (isAvailable) {
-      return '🔓';
     } else {
       return '🔒';
     }
   };
 
   const getStatusText = () => {
-    if (isCompleted) {
+    if (isUnlocked) {
       return 'Completado';
-    } else if (isNext) {
+    } else if (isCurrent) {
       return 'Siguiente';
-    } else if (isAvailable) {
-      return 'Disponible';
     } else {
       return 'Bloqueado';
     }
@@ -72,7 +61,6 @@ const GameCard: React.FC<GameCardProps> = ({
   return (
     <div
       className={getCardClasses()}
-      onClick={isAvailable ? onClick : undefined}
       style={{ fontSize: `${accessibility.fontScale}%` }}
     >
       {/* Estado del juego */}
@@ -84,7 +72,7 @@ const GameCard: React.FC<GameCardProps> = ({
       <div className="text-center mb-3">
         <div 
           className="text-4xl mb-2"
-          style={{ color: isCompleted ? '#10B981' : game.color }}
+          style={{ color: isUnlocked ? '#10B981' : game.color }}
         >
           {game.icon}
         </div>
@@ -107,17 +95,12 @@ const GameCard: React.FC<GameCardProps> = ({
       </div>
 
       {/* Indicador de progreso si está completado */}
-      {isCompleted && (
+      {isUnlocked && (
         <div className="mt-3">
           <div className="w-full bg-gray-200 rounded-full h-1">
             <div className="bg-green-500 h-1 rounded-full" style={{ width: '100%' }} />
           </div>
         </div>
-      )}
-
-      {/* Efecto de brillo para el siguiente juego */}
-      {isNext && (
-        <div className="absolute inset-0 rounded-lg bg-gradient-to-r from-blue-400/20 to-purple-400/20 animate-pulse pointer-events-none" />
       )}
     </div>
   );

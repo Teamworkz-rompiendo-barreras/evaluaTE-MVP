@@ -3,28 +3,18 @@ import React, { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
-
-// Tipos desde Redux
-import type {
-  CvAnalysis,
-  SoftSkillResult,
-  JobPreference,
-  EmployabilityReport,
-} from '@/types/skills';
+import { ResponsiveRadar } from '@nivo/radar';
 
 // Componentes visuales
-import { ResponsiveRadar } from '@nivo/radar';
-import ProgressBar from '../components/ProgressBar';
 
-export default function ResultadosPage() {
+const ResultadosPage: React.FC = () => {
   const navigate = useNavigate();
-  const [loading, setLoading] = useState(false);
   const [toast, setToast] = useState<string | null>(null);
 
   // Accedemos al estado global tipado
   // Ajusta el selector según la estructura real de tu store
   const personal = useAppSelector((state: RootState) => state.personal);
-  const cvAnalysis = personal?.cvAnalysis as CvAnalysis | undefined;
+  const cvAnalysis = personal?.cvAnalysis;
 
   // Verificamos que todo el progreso sea completo antes de mostrar resultados
   useEffect(() => {
@@ -41,13 +31,13 @@ export default function ResultadosPage() {
   }
 
   // Normaliza los datos de softSkills para asegurar que cumplen el tipo SoftSkillResult
-  function normalizeSoftSkills(skills: any[]): SoftSkillResult[] {
-    return (skills ?? []).map((skill) => ({
-      skill: skill.skill,
-      level: skill.level,
-      confidence: skill.confidence ?? (typeof skill.score === 'number' ? skill.score / 100 : 0),
-      feedback: skill.feedback ?? '',
-      interactions: skill.interactions ?? [],
+  function normalizeSoftSkills(skills: unknown[]): SoftSkillResult[] {
+    return (skills ?? []).map((skill: unknown) => ({
+      skill: (skill as { skill: string }).skill,
+      level: (skill as { level: string }).level,
+      confidence: (skill as { confidence?: number; score?: number }).confidence ?? (typeof (skill as { score?: number }).score === 'number' ? (skill as { score: number }).score / 100 : 0),
+      feedback: (skill as { feedback?: string }).feedback ?? '',
+      interactions: (skill as { interactions?: string[] }).interactions ?? [],
     }));
   }
 
@@ -77,44 +67,36 @@ export default function ResultadosPage() {
 
   // Manejador para descargar informe PDF
   const handleDownloadReport = async () => {
-    setLoading(true);
     try {
-      const payload = {
-        softSkills: personal?.report?.softSkills,
-        cvAnalysis,
-        employabilityScore: personal?.report?.employabilityScore,
-        level: personal?.report?.level,
-        adjustedScore: personal?.report?.adjustedScore,
-        jobPreferences: personal?.jobPreferences,
-        completedGames: personal?.report?.completedGames,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      const resp = await fetch('/api/generate-report', {
+      // console.log('Descargando reporte...');
+      const response = await fetch('/api/reports/download', {
         method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(payload),
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          userId: personal.report?.userId,
+          reportData: personal.report,
+        }),
       });
 
-      if (!resp.ok) throw new Error(`HTTP ${resp.status}`);
-
-      const blob = await resp.blob();
-      const url = window.URL.createObjectURL(blob);
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = 'informe-resultados.pdf';
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      window.URL.revokeObjectURL(url);
-
-      setToast('Informe descargado correctamente');
-    } catch (err) {
-      console.error(err);
-      setToast('Error al generar el informe. Intenta más tarde.');
-    } finally {
-      setLoading(false);
+      if (response.ok) {
+        const blob = await response.blob();
+        const url = window.URL.createObjectURL(blob);
+        const a = document.createElement('a');
+        a.href = url;
+        a.download = `reporte-empleabilidad-${personal.firstName}-${personal.lastName}.pdf`;
+        document.body.appendChild(a);
+        a.click();
+        window.URL.revokeObjectURL(url);
+        document.body.removeChild(a);
+        setToast('Reporte descargado exitosamente');
+      } else {
+        setToast('Error al descargar el reporte');
+      }
+    } catch {
+      // console.log('Error descargando reporte:', error);
+      setToast('Error al descargar el reporte');
     }
   };
 
@@ -125,6 +107,28 @@ export default function ResultadosPage() {
       return () => clearTimeout(timer);
     }
   }, [toast]);
+
+  const completedGamesCount = personal.report?.completedGames?.length || 0;
+  const totalGames = 10; // Total de minijuegos disponibles
+  const completionPercentage = Math.round((completedGamesCount / totalGames) * 100);
+
+  // Datos para el gráfico de radar
+  const radarData = personal.report?.softSkills?.map((skill: any) => ({
+    skill: skill.name,
+    level: skill.confidence,
+    interactions: skill.interactions || 0
+  })) || [];
+
+  // Áreas de mejora (habilidades con menor puntuación)
+  const areasToImprove = personal.report?.softSkills
+    ?.filter((skill: any) => skill.confidence < 0.7)
+    ?.map((skill: any) => ({
+      skill: skill.name,
+      level: skill.confidence,
+      confidence: skill.confidence,
+      feedback: skill.feedback,
+      interactions: skill.interactions || 0
+    })) || [];
 
   return (
     <section className="relative max-w-4xl mx-auto p-6 space-y-8">
@@ -138,43 +142,50 @@ export default function ResultadosPage() {
         </div>
       )}
 
-      {/* A. Análisis del CV */}
-      {cvAnalysis ? (
-        <div className="bg-gray-50 p-6 rounded shadow-md">
-          <h2 className="text-2xl font-semibold mb-4">Análisis de tu CV</h2>
-          <p className="mb-4">
-            Puntuación global: <strong>{cvAnalysis.score}%</strong>
-          </p>
-
-          <div className="space-y-2 mb-6">
-            <h3 className="font-medium">Puntos fuertes:</h3>
-            <ul className="list-disc pl-5">
-              {cvAnalysis.strengths?.length > 0 ? (
-                cvAnalysis.strengths.map((strength, index) => (
-                  <li key={index}>{strength}</li>
-                ))
-              ) : (
-                <li>No se encontraron puntos fuertes.</li>
-              )}
-            </ul>
+      {/* Análisis del CV */}
+      {personal.cvAnalysis && (
+        <div className="bg-white rounded-lg p-6 shadow-sm">
+          <h3 className="text-xl font-semibold mb-4">📄 Análisis de tu CV</h3>
+          
+          {/* Puntuación general */}
+          <div className="mb-6">
+            <div className="flex items-center justify-between mb-2">
+              <span className="font-medium">Puntuación general:</span>
+              <span className="text-2xl font-bold text-blue-600">
+                {personal.cvAnalysis.score || 'N/A'}
+              </span>
+            </div>
           </div>
 
-          <div className="space-y-2">
-            <h3 className="font-medium">Áreas a mejorar:</h3>
-            <ul className="list-disc pl-5">
-              {cvAnalysis.weaknesses?.length > 0 ? (
-                cvAnalysis.weaknesses.map((weakness, index) => (
-                  <li key={index}>{weakness}</li>
-                ))
-              ) : (
-                <li>No se encontraron áreas a mejorar.</li>
-              )}
-            </ul>
-          </div>
-        </div>
-      ) : (
-        <div className="bg-yellow-50 p-4 border border-yellow-200 rounded">
-          No se ha cargado el análisis del CV.
+          {/* Fortalezas */}
+          {personal.cvAnalysis.strengths && personal.cvAnalysis.strengths.length > 0 && (
+            <div className="mb-6">
+              <h4 className="font-semibold mb-3 text-green-700">✅ Fortalezas identificadas:</h4>
+              <ul className="space-y-2">
+                {personal.cvAnalysis.strengths.map((strength: any, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <span className="text-green-500 mr-2">•</span>
+                    <span className="text-gray-700">{strength}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
+
+          {/* Áreas de mejora */}
+          {personal.cvAnalysis.weaknesses && personal.cvAnalysis.weaknesses.length > 0 && (
+            <div>
+              <h4 className="font-semibold mb-3 text-orange-700">🔧 Áreas de mejora:</h4>
+              <ul className="space-y-2">
+                {personal.cvAnalysis.weaknesses.map((weakness: any, index: number) => (
+                  <li key={index} className="flex items-start">
+                    <span className="text-orange-500 mr-2">•</span>
+                    <span className="text-gray-700">{weakness}</span>
+                  </li>
+                ))}
+              </ul>
+            </div>
+          )}
         </div>
       )}
 
@@ -244,8 +255,8 @@ export default function ResultadosPage() {
       <div className="bg-red-50 p-6 rounded shadow-md">
         <h2 className="text-2xl font-semibold mb-4">Áreas a mejorar</h2>
         <ul className="space-y-2">
-          {areasMejorar.length > 0 ? (
-            areasMejorar.map((skill, index) => (
+          {areasToImprove.length > 0 ? (
+            areasToImprove.map((skill, index) => (
               <li key={index}>
                 <strong>{skill.skill}:</strong> Nivel: <em>{skill.level}</em> ({Math.round(skill.confidence * 100)}% de confianza). Recomendación: {skill.feedback}
               </li>
@@ -279,14 +290,13 @@ export default function ResultadosPage() {
       <div className="flex justify-center mt-6">
         <button
           onClick={handleDownloadReport}
-          disabled={loading}
-          className={`py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors ${
-            loading ? 'opacity-70 cursor-not-allowed' : ''
-          }`}
+          className={`py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors`}
         >
-          {loading ? 'Generando informe...' : 'Descargar Informe PDF'}
+          Descargar Informe PDF
         </button>
       </div>
     </section>
   );
-}
+};
+
+export default ResultadosPage;

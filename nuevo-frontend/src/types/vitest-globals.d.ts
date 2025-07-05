@@ -1,6 +1,11 @@
 // src/types/vitest-globals.d.ts
 declare module 'vitest/globals' {
-  export const test: any
-  export const describe: any
-  export const expect: any
+  export const test: (name: string, fn: () => void | Promise<void>) => void
+  export const describe: (name: string, fn: () => void) => void
+  export const expect: (actual: unknown) => {
+    toBe: (expected: unknown) => void
+    toEqual: (expected: unknown) => void
+    toBeTruthy: () => void
+    toBeFalsy: () => void
+  }
 }

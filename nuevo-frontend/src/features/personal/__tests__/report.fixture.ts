@@ -1,15 +1,6 @@
 // src/features/personal/__tests__/report.fixture.ts
 
-import type {
-  EmployabilityReport,
-  CvAnalysis,
-  SoftSkillResult,
-  JobPreference,
-  GameDecisionLog
-} from '@/types/skills'
-import type { AccessibilitySettings } from '@/types/preferences'
-
-export const mockEmployabilityReport: EmployabilityReport = {
+export const mockEmployabilityReport = {
   userId: 'user-ester-2025',
   fullName: 'Ester Pérez',
 

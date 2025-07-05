@@ -1,3 +1,4 @@
+/* eslint-env jest */
 /**
  * @vitest-environment jsdom
  */

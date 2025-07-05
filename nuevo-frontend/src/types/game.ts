@@ -1,7 +1,5 @@
 // src/types/game.ts
 
-import type { SoftSkillResult } from '@/types/preferences';
-
 /**
  * Opción seleccionada por el usuario en una escena
  */
@@ -184,14 +182,6 @@ export interface GameProgress {
   currentGame?: string;
   overallScore?: number;
 }
-
-export type UserDecision = {
-  // Define the properties of UserDecision here, for example:
-  sceneId: string;
-  optionText: string;
-  skillImpacts: Record<string, number>;
-  // Add other fields as needed
-};
 
 /**
  * Respuesta del API al pedir una escena

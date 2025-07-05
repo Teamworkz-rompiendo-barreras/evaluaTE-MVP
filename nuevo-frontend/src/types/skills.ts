@@ -177,7 +177,7 @@ export interface CvAnalysis {
   /**
    * Logs técnicos del análisis del CV
    */
-  rawLog?: Record<string, any>;
+  rawLog?: Record<string, unknown>;
 }
 
 /**

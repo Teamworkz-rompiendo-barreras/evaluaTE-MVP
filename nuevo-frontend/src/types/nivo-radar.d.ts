@@ -1,8 +1,7 @@
 // src/types/nivo-radar.d.ts
-import { ComponentType } from 'react'
 
 interface RadarProps {
-  data: any[]
+  data: unknown[]
   keys: string[]
   indexBy: string
   maxValue?: number

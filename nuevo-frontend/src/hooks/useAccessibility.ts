@@ -2,33 +2,43 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../app/store";
-import { toggleContrast, setFontScale } from "../app/accessibilitySlice";
+import { toggleContrast } from "../app/accessibilitySlice";
 
-export function useAccessibility() {
+export const useAccessibility = () => {
   const dispatch = useDispatch();
-  const { contrastLevel, fontScale } = useSelector(
-    (state: RootState) => state.accessibility
-  );
+  const accessibility = useSelector((state: RootState) => state.accessibility);
 
   // Efecto: aplica la clase y la escala de fuente en <html>
   useEffect(() => {
     const html = document.documentElement;
 
     // Ajusta la clase de contraste según el nivel
-    if (contrastLevel === 'alto' || contrastLevel === 'muy-alto') {
+    if (accessibility.contrastLevel === 'alto' || accessibility.contrastLevel === 'muy-alto') {
       html.classList.add("high-contrast");
     } else {
       html.classList.remove("high-contrast");
     }
 
     // Ajusta la escala de fuente
-    html.style.fontSize = `${fontScale}%`;
-  }, [contrastLevel, fontScale]);
+    html.style.fontSize = `${accessibility.fontScale}%`;
+  }, [accessibility.contrastLevel, accessibility.fontScale]);
+
+  const setContrastLevel = (_level: 'normal' | 'high') => {
+    dispatch(toggleContrast());
+  };
+
+  const setVisualHelp = (_enabled: boolean) => {
+    // Implementation needed
+  };
+
+  const setTimeExtensions = (_enabled: boolean) => {
+    // Implementation needed
+  };
 
   return {
-    contrastLevel,
-    fontScale,
-    toggleContrast: () => dispatch(toggleContrast()),
-    setFontScale: (scale: number) => dispatch(setFontScale(scale)),
+    ...accessibility,
+    setContrastLevel,
+    setVisualHelp,
+    setTimeExtensions,
   };
-}
+};

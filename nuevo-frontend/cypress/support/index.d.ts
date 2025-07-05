@@ -1,6 +1,7 @@
 /// <reference types="cypress" />
 import 'cypress-file-upload'
 
+/* eslint-disable */
 declare global {
   namespace Cypress {
     interface Chainable<Subject> {

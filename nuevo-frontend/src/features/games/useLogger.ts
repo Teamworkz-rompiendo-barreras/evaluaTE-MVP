@@ -2,116 +2,90 @@
 import { v4 as uuidv4 } from 'uuid' // Para generar ID único de sesión
 
 // Tipos esperados para los logs
-interface BaseLog {
-  timestamp: string
+interface StepLog {
   gameId: number
-  userId?: string
-  sessionId: string
-}
-
-interface GameStepLog extends BaseLog {
   stepIndex: number
-  optionIndex: number | null
+  optionIndex: number
   timeSpent: number
   usedHelp: boolean
   emotionalResponse: string | null
 }
 
-interface SoftSkillUpdateLog extends BaseLog {
-  skill: string
-  level: 'Bajo' | 'Medio' | 'Alto'
+interface SoftSkillLog {
+  gameId: number
+  skillName: string
   confidence: number
+  level: 'Bajo' | 'Medio' | 'Alto'
 }
 
-interface FinalGameLog extends BaseLog {
-  totalScore: number
-  softSkills: SoftSkillResult[]
-  stepsCompleted: number
-  retries: number
-}
-
-// Hook principal
-export function useLogger(userId?: string) {
+export const useLogger = () => {
   const sessionId = uuidv4()
 
-  const logStep = async (payload: {
-    gameId: number
-    stepIndex: number
-    optionIndex: number
-    timeSpent: number
-    usedHelp: boolean
-    emotionalResponse: string | null
-  }) => {
-    const logData: GameStepLog = {
-      ...payload,
-      timestamp: new Date().toISOString(),
-      sessionId,
-      userId: userId || 'anonymous',
-    }
-
+  const logStep = async (stepData: StepLog) => {
     try {
-      await fetch('/api/logs/step', {
+      const response = await fetch('/api/logs/step', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(logData),
+        body: JSON.stringify({
+          ...stepData,
+          sessionId,
+          timestamp: new Date().toISOString(),
+        }),
       })
-    } catch (error) {
-      console.error('Error registrando log de paso:', error)
+
+      if (!response.ok) {
+        // console.warn('Error al guardar log de paso')
+      }
+    } catch {
+      // console.warn('Error de red al guardar log de paso')
     }
   }
 
-  const logSoftSkill = async (payload: {
-    gameId: number
-    skill: string
-    level: 'Bajo' | 'Medio' | 'Alto'
-    confidence: number
-  }) => {
-    const logData: SoftSkillUpdateLog = {
-      ...payload,
-      timestamp: new Date().toISOString(),
-      sessionId,
-      userId: userId || 'anonymous',
-    }
-
+  const logSoftSkill = async (skillData: SoftSkillLog) => {
     try {
-      await fetch('/api/logs/skill', {
+      const response = await fetch('/api/logs/soft-skill', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(logData),
+        body: JSON.stringify({
+          ...skillData,
+          sessionId,
+          timestamp: new Date().toISOString(),
+        }),
       })
-    } catch (error) {
-      console.error('Error registrando habilidad blanda:', error)
+
+      if (!response.ok) {
+        // console.warn('Error al guardar log de habilidad blanda')
+      }
+    } catch {
+      // console.warn('Error de red al guardar log de habilidad blanda')
     }
   }
 
-  const logFinalGame = async (gameId: number, softSkills: SoftSkillResult[]) => {
-    const finalLog: FinalGameLog = {
-      timestamp: new Date().toISOString(),
-      gameId,
-      sessionId,
-      userId: userId || 'anonymous',
-      softSkills: softSkills,
-      stepsCompleted: softSkills.length,
-      retries: 0, // Ajusta esto según tus datos reales
-      totalScore: Math.round(
-        softSkills.reduce((acc, s) => acc + s.confidence * 100, 0) / softSkills.length
-      ),
-    }
-
+  const logFinalGame = async (gameId: number, softSkills: unknown[]) => {
     try {
-      await fetch('/api/logs/game-complete', {
+      const response = await fetch('/api/logs/final-game', {
         method: 'POST',
         headers: {
           'Content-Type': 'application/json',
         },
-        body: JSON.stringify(finalLog),
+        body: JSON.stringify({
+          gameId,
+          softSkills,
+          totalScore: Math.round(
+            softSkills.reduce((acc: number, s: unknown) => acc + ((s as { confidence?: number }).confidence || 0) * 100, 0) / softSkills.length
+          ),
+        }),
       })
-    } catch (error) {
-      console.error('Error registrando fin del juego:', error)
+
+      if (!response.ok) {
+        // console.warn('Error al guardar resultado final del juego')
+      }
+    } catch {
+      // console.warn('Error de red al guardar resultado final del juego')
     }
   }
 

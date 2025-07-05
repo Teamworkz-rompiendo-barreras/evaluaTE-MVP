@@ -1,0 +1,31 @@
+# Archivos de build
+dist/
+build/
+
+# Archivos de configuración
+*.config.js
+*.config.ts
+cypress.config.ts
+postcss.config.js
+vite.config.ts
+.eslintrc.js
+
+# Archivos de test y mocks
+cypress/**/*
+src/**/*.test.ts
+src/**/*.test.tsx
+src/**/__tests__/**/*
+src/**/__fixtures__/**/*
+src/**/*.fixture.ts
+src/mocks/**/*
+setupTests.ts
+
+# Archivos de tipos personalizados
+src/types/*.d.ts
+
+# Node modules
+node_modules/
+
+# Archivos generados
+*.min.js
+*.bundle.js 

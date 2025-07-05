@@ -23,7 +23,7 @@ interface ImportMetaWithVitest extends ImportMeta {
 const importMeta = import.meta as ImportMetaWithVitest;
 
 if (importMeta.vitest) {
-  console.log('[MSW] Mock server is running in test mode.')
+  // console.log('[MSW] Mock server is running in test mode.')
 } else if (process.env.NODE_ENV === 'development') {
-  console.log('[MSW] Mock server is running in development mode.')
+  // console.log('[MSW] Mock server is running in development mode.')
 }

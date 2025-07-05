@@ -1,10 +1,10 @@
 // src/types/vite.d.ts
 declare module 'vite' {
   import { Plugin } from 'rollup'
-  const defineConfig: (config: { plugins?: Plugin[] }) => void
+  const defineConfig: (_config: { plugins?: Plugin[] }) => void
   export { defineConfig }
 }
 declare module 'vite/client' {
-  const value: any
+  const value: unknown
   export default value
 }

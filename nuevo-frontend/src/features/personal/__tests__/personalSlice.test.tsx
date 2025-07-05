@@ -4,72 +4,6 @@ import { personalSlice } from '../personalSlice';
 
 const initialState = personalSlice.getInitialState();
 
-// Tipos compartidos desde el proyecto
-import type {
-  JobPreference,
-  EmployabilityReport,
-  AccessibilitySettings,
-} from '../../../types/preferences';
-import type { SoftSkillResult, GameDecisionLog } from '../../../types/skills';
-import type { CvAnalysis } from '../../../types/preferences';
-
-// Mock de los tipos necesarios
-const mockJobPreference: JobPreference = {
-  areas: ['Logística', 'Atención al cliente'],
-  needs: ['Trabajo en entorno tranquilo'],
-  workMode: 'presencial',
-  availability: 'completa',
-  willingToRelocate: false,
-  hasDisabilityCert: false,
-  accessibilitySettings: {
-    easyReadingMode: true,
-    audioAssistiveMode: false,
-    showPictograms: true,
-    contrastLevel: 'normal',
-    fontScale: 120,
-  },
-};
-
-const mockCvAnalysis: CvAnalysis = {
-  structure: 'bueno',
-  coherence: 'bueno',
-  experience: 'regular',
-  skills: ['Comunicación', 'Trabajo en equipo'],
-};
-const mockSoftSkillResults: SoftSkillResult[] = [
-  { skill: 'Toma de decisiones', level: 'Alto', confidence: 0.9, feedback: 'Excelente', interactions: [] },
-  { skill: 'Resolución de problemas', level: 'Medio', confidence: 0.6, feedback: 'Bueno', interactions: [] },
-  { skill: 'Creatividad', level: 'Bajo', confidence: 0.3, feedback: 'Necesitas mejorar', interactions: [] },
-];
-
-const mockGameDecisionLog: GameDecisionLog = {
-  sceneId: 1,
-  decisions: [
-    {
-      sceneId: 1,
-      stepIndex: 0,
-      optionText: 'Opción 1',
-      isCorrect: true,
-      skillImpacts: { 'Toma de decisiones': 10 },
-      timestamp: new Date().toISOString(),
-      userAgent: navigator.userAgent,
-      screenResolution: `${window.innerWidth}x${window.innerHeight}`,
-    },
-  ],
-  totalSteps: 5,
-  totalTime: 300,
-  averageConfidence: 0.9,
-  emotionalTrend: ['positivo', 'neutro'],
-  accessibilityUsed: true,
-  accessibilitySettings: {
-    easyReadingMode: true,
-    audioAssistiveMode: false,
-    showPictograms: true,
-    contrastLevel: 'normal',
-    fontScale: 120,
-  },
-};
-
 describe('personalSlice', () => {
   it('debe inicializar con valores predeterminados', () => {
     const initialState = personalSlice.getInitialState();
@@ -123,7 +57,7 @@ describe('personalSlice', () => {
   it('debe guardar preferencias laborales correctamente', () => {
     const state = personalSlice.getInitialState();
     const action = personalSlice.actions.savePreferences({
-      jobPreferences: mockJobPreference,
+      jobPreferences: 'Logística',
       workMode: 'presencial',
       availability: 'completa',
       startDate: 'inmediata',
@@ -134,7 +68,7 @@ describe('personalSlice', () => {
     const newState = personalSlice.reducer(state, action);
     expect(newState).toEqual({
       ...initialState,
-      jobPreferences: mockJobPreference,
+      jobPreferences: 'Logística',
       workMode: 'presencial',
       availability: 'completa',
       startDate: 'inmediata',
@@ -146,8 +80,7 @@ describe('personalSlice', () => {
 
   it('debe guardar archivo del CV correctamente', () => {
     const state = personalSlice.getInitialState();
-    const mockFile = new File([''], 'example.pdf', { type: 'application/pdf' });
-    const mockFilePayload = { fileName: mockFile.name, fileContent: '' }; // Simulate empty content for test
+    const mockFilePayload = { fileName: 'example.pdf', fileContent: '' };
     const action = personalSlice.actions.saveCV(mockFilePayload);
 
     const newState = personalSlice.reducer(state, action);
@@ -160,6 +93,7 @@ describe('personalSlice', () => {
 
   it('debe guardar análisis del CV correctamente', () => {
     const state = personalSlice.getInitialState();
+    const mockCvAnalysis = { structure: 'bueno', coherence: 'bueno', experience: 'regular', skills: ['Comunicación', 'Trabajo en equipo'] };
     const action = personalSlice.actions.saveCvAnalysis(mockCvAnalysis);
 
     const newState = personalSlice.reducer(state, action);
@@ -170,14 +104,14 @@ describe('personalSlice', () => {
     });
   });
 
-    it('debe desbloquear el siguiente minijuego correctamente', () => {
-      const state = personalSlice.getInitialState();
-      const action = personalSlice.actions.unlockNextGame();
-  
-      const newState = personalSlice.reducer(state, action);
-      expect(newState).toEqual({
-        ...initialState,
-        unlockedGames: 2,
-      });
+  it('debe desbloquear el siguiente minijuego correctamente', () => {
+    const state = personalSlice.getInitialState();
+    const action = personalSlice.actions.unlockNextGame();
+
+    const newState = personalSlice.reducer(state, action);
+    expect(newState).toEqual({
+      ...initialState,
+      unlockedGames: 2,
     });
   });
+});

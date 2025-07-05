@@ -1,3 +1,4 @@
+/* eslint-env cypress */
 // cypress/e2e/gameflow.cy.ts
 import { userFixture } from '../__fixtures__/user.fixtures'
 import { mockScene1, mockScene3 } from '../../src/features/games/__fixtures__/scene.fixture'

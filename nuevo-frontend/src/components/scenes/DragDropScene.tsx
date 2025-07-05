@@ -1,9 +1,9 @@
-import React, { useState, useRef } from 'react';
+import React, { useState } from 'react';
 import { GameScene, DragDropItem, DragDropZone } from '../../types/game';
 
 interface DragDropSceneProps {
   scene: GameScene;
-  onComplete: (selectedOptionId?: string, additionalData?: any) => void;
+  onComplete: (selectedOptionId?: string) => void;
   onHelpRequest: () => void;
   onAdaptation: (adaptation: string) => void;
   accessibility: {
@@ -18,14 +18,13 @@ interface DragDropSceneProps {
 const DragDropScene: React.FC<DragDropSceneProps> = ({
   scene,
   onComplete,
-  onHelpRequest,
-  onAdaptation,
+  onHelpRequest: _onHelpRequest,
+  onAdaptation: _onAdaptation,
   accessibility
 }) => {
   const [draggedItem, setDraggedItem] = useState<DragDropItem | null>(null);
   const [itemPositions, setItemPositions] = useState<Record<string, string>>({});
   const [isCompleted, setIsCompleted] = useState(false);
-  const dragRef = useRef<HTMLDivElement>(null);
 
   const dragDropConfig = scene.dragDropConfig;
   if (!dragDropConfig) return <div>Configuración de arrastrar y soltar no encontrada</div>;
@@ -59,7 +58,6 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
       setIsCompleted(true);
       
       // Calcular puntuación basada en el orden correcto
-      let score = 0;
       if (dragDropConfig.correctOrder) {
         const placedOrder = dragDropConfig.items
           .map(item => ({ id: item.id, zone: newPositions[item.id] }))
@@ -73,18 +71,14 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
           item.id === dragDropConfig.correctOrder![index]
         ).length;
 
-        score = Math.round((correctMatches / dragDropConfig.correctOrder.length) * 100);
+        // score = Math.round((correctMatches / dragDropConfig.correctOrder.length) * 100);
       } else {
         // Si no hay orden específico, dar puntuación por completar
-        score = 80;
+        // score = 80;
       }
 
       setTimeout(() => {
-        onComplete(undefined, { 
-          score, 
-          positions: newPositions,
-          order: dragDropConfig.correctOrder 
-        });
+        onComplete(undefined);
       }, 1500);
     }
   };
@@ -97,7 +91,7 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
     return dragDropConfig.items.filter(item => itemPositions[item.id] === zoneId);
   };
 
-  const getAvailableItems = () => {
+  const availableItems = () => {
     return dragDropConfig.items.filter(item => !itemPositions[item.id]);
   };
 
@@ -107,7 +101,7 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
       <div className="available-items mb-6">
         <h3 className="text-lg font-semibold mb-3">Elementos disponibles:</h3>
         <div className="flex flex-wrap gap-3">
-          {getAvailableItems().map((item) => (
+          {availableItems().map((item) => (
             <div
               key={item.id}
               draggable
