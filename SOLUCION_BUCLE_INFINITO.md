@@ -43,35 +43,33 @@ setPersonalCompleted(state, action: PayloadAction<boolean>) {
 },
 ```
 
-### 4. Modificar savePreferences para marcar como completado
+### 4. Modificar saveContact para marcar como completado
 
 ```typescript
-savePreferences(state, action: PayloadAction<...>) {
+saveContact(state, action: PayloadAction<...>) {
   // ... lógica existente ...
   
-  const newState = {
-    ...state,
-    ...payload,
-    unlockedGames: Math.min(10, state.unlockedGames + 1),
-    completed: true, // Marcar como completado cuando se guardan las preferencias
-  };
-  
-  return newState;
+  state.firstName = action.payload.firstName;
+  state.lastName = action.payload.lastName;
+  state.email = action.payload.email;
+  state.whatsapp = action.payload.whatsapp;
+  state.unlockedGames = Math.max(state.unlockedGames, 1);
+  // Marcamos como completado cuando se guardan los datos de contacto
+  state.completed = true;
 }
 ```
 
-### 5. Actualizar PreferencesStep para usar la nueva acción
+### 5. Actualizar la lógica de validación
 
 ```typescript
-const onSubmit: SubmitHandler<PrefData> = (data) => {
-  // ... validaciones ...
-  
-  dispatch(savePreferences({ ...data, jobPreferences: jobPrefObj }))
-  dispatch(setPersonalCompleted(true)) // Marcar datos personales como completos
-  dispatch(markGameComplete('preferences'))
-  
-  navigate('/games')
-}
+// En GameScenePage y ProtectedRoute, verificar tanto datos de contacto como preferencias
+const hasContactData = Boolean(personal?.firstName && personal?.lastName);
+const hasPreferences = personal?.jobPreferences && (
+  typeof personal.jobPreferences === 'string' 
+    ? personal.jobPreferences.trim() !== ''
+    : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0
+);
+const hasPersonalData = hasContactData && hasPreferences;
 ```
 
 ### 6. Simplificar la validación en GameScenePage
@@ -101,11 +99,11 @@ const hasPersonalData = personal.completed;
 
 ## Flujo Corregido
 
-1. **Usuario completa datos personales** → Se guardan en el estado (pero `completed: false`)
-2. **Usuario completa preferencias** → Se guardan y se marca `completed: true`
-3. **Usuario navega a minijuegos** → `GameScenePage` verifica `personal.completed === true`
-4. **Si está completado** → Permite acceder al minijuego
-5. **Si no está completado** → Redirige a `/register/contact`
+1. **Usuario completa datos personales** → Se guardan en el estado y se marca `completed: true`
+2. **Usuario completa preferencias** → Se guardan (completed ya está en true)
+3. **Usuario navega a minijuegos** → `GameScenePage` verifica que tenga tanto datos de contacto como preferencias
+4. **Si tiene ambos** → Permite acceder al minijuego
+5. **Si falta alguno** → Redirige a `/register/contact`
 
 ## Beneficios de la Solución
 
