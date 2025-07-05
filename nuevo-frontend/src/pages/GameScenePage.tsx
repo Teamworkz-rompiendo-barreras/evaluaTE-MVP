@@ -15,6 +15,9 @@ const GameScenePage: React.FC = () => {
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
+  console.log('GameScenePage - id del minijuego:', id);
+  console.log('GameScenePage - ruta actual:', window.location.pathname);
+
   // Estado del juego
   const { currentGame, currentScene, gameProgress } = useGameController()
   

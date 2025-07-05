@@ -18,12 +18,17 @@ export const useGameController = () => {
 
   // Inicializar un juego
   const startGame = useCallback((gameId: string) => {
+    console.log('useGameController - startGame llamado con gameId:', gameId);
     const game = getGameById(gameId);
+    console.log('useGameController - juego encontrado:', game);
     if (game) {
       setCurrentGame(game);
       setCurrentSceneIndex(0);
       setGameLogs([]);
       dispatch(updateGameProgress({ currentGameId: gameId }));
+      console.log('useGameController - juego iniciado correctamente');
+    } else {
+      console.log('useGameController - ERROR: juego no encontrado');
     }
   }, [dispatch]);
 

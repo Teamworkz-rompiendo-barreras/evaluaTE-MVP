@@ -12,15 +12,24 @@ const GameDashboardPage: React.FC = () => {
   const accessibility = useSelector((state: RootState) => state.accessibility)
 
   const handleGameClick = (gameId: string) => {
+    console.log('GameDashboardPage - handleGameClick llamado con gameId:', gameId);
+    console.log('GameDashboardPage - navegando a:', `/game/${gameId}`);
     navigate(`/game/${gameId}`)
   }
 
   const isGameAvailable = (gameId: string) => {
     const gameIndex = games.findIndex(game => game.id === gameId)
-    if (gameIndex === 0) return true // El primer juego siempre está disponible
+    console.log('GameDashboardPage - isGameAvailable para gameId:', gameId, 'gameIndex:', gameIndex);
+    
+    if (gameIndex === 0) {
+      console.log('GameDashboardPage - Primer juego, siempre disponible');
+      return true // El primer juego siempre está disponible
+    }
     
     const previousGame = games[gameIndex - 1]
-    return completedGames.includes(previousGame.id)
+    const isAvailable = completedGames.includes(previousGame.id)
+    console.log('GameDashboardPage - Juego anterior:', previousGame.id, 'completado:', completedGames.includes(previousGame.id), 'disponible:', isAvailable);
+    return isAvailable
   }
 
   const getProgressPercentage = () => {
@@ -64,6 +73,8 @@ const GameDashboardPage: React.FC = () => {
           {games.map((game, index) => {
             const isCompleted = completedGames.includes(game.id)
             const isAvailable = isGameAvailable(game.id)
+            
+            console.log('GameDashboardPage - Renderizando juego:', game.id, 'index:', index, 'isCompleted:', isCompleted, 'isAvailable:', isAvailable, 'isCurrent:', index === completedGames.length);
             
             return (
               <GameCard

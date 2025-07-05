@@ -60,11 +60,18 @@ const GameCard: React.FC<GameCardProps> = ({
     }
   };
 
+  const handleClick = () => {
+    console.log('GameCard - Clic en juego:', game.id, game.title);
+    if (onClick) {
+      onClick();
+    }
+  };
+
   return (
     <div
       className={getCardClasses()}
       style={{ fontSize: `${accessibility.fontScale}%` }}
-      onClick={onClick}
+      onClick={handleClick}
     >
       {/* Estado del juego */}
       <div className="absolute top-2 right-2">
