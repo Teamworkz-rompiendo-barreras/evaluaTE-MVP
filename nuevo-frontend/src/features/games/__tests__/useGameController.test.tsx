@@ -5,7 +5,7 @@ import { Provider } from "react-redux";
 import { configureStore } from '@reduxjs/toolkit';
 
 // Mock del hook useGameController para evitar problemas de Redux
-vi.mock('../useGameController', () => ({
+vi.mock('../../features/games/useGameController', () => ({
   useGameController: () => ({
     currentGame: null,
     currentScene: null,
@@ -74,7 +74,7 @@ const createTestStore = () => {
 };
 
 const TestComponent = () => {
-  const { useGameController } = require('../useGameController');
+  const { useGameController } = require('../../features/games/useGameController');
   const gameController = useGameController();
   return <div data-testid="game-controller">Game Controller Test</div>;
 };
