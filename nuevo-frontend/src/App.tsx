@@ -49,6 +49,7 @@ export default function App() {
         {/* Registro inicial */}
         <Route path="/register" element={<AppLayout />}>
           <Route path="contact" element={<DatosPersonalesPage />} />
+          <Route path="preferences" element={<PreferencesStep />} />
         </Route>
 
         {/* Dashboard de minijuegos */}

@@ -16,19 +16,32 @@ export default function ProtectedRoute({ step, children }: Props) {
   const progress = useSelector((state: RootState) => state.progress);
   const game = useSelector((state: RootState) => state.game);
 
-  // Usar el nuevo campo completed para verificar si los datos personales están completos
-  const hasPersonalData = personal.completed;
-  const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
+  // Verificar si los datos de contacto están completos
+  const hasContactData = Boolean(personal.firstName && personal.lastName);
+  
+  // Verificar si las preferencias están completas
   const hasPreferences = personal?.jobPreferences && (
     typeof personal.jobPreferences === 'string' 
       ? personal.jobPreferences.trim() !== ''
       : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0
   );
+  
+  console.log('ProtectedRoute - jobPreferences type:', typeof personal?.jobPreferences);
+  console.log('ProtectedRoute - jobPreferences value:', personal?.jobPreferences);
+  if (typeof personal?.jobPreferences === 'object') {
+    console.log('ProtectedRoute - jobPreferences.areas:', personal?.jobPreferences?.areas);
+  }
+  
+  // Los datos personales están completamente completos cuando se tienen tanto contact como preferences
+  const hasPersonalData = hasContactData && hasPreferences;
+  
+  const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
   // Usar el slice de game para los juegos completados
   const hasCompletedAllGames = game.completedGames.length >= 10;
 
   console.log('ProtectedRoute - step:', step);
   console.log('ProtectedRoute - personal:', personal);
+  console.log('ProtectedRoute - hasContactData:', hasContactData);
   console.log('ProtectedRoute - hasPersonalData (completed):', hasPersonalData);
   console.log('ProtectedRoute - hasPreferences:', hasPreferences);
   console.log('ProtectedRoute - hasCV:', hasCV);
@@ -46,13 +59,13 @@ export default function ProtectedRoute({ step, children }: Props) {
       return redirectToStep('/register/contact');
 
     case 'preferences':
-      if (!hasPersonalData) return redirectToStep('/register/contact');
+      if (!hasContactData) return redirectToStep('/register/contact');
       if (!hasPreferences) return <>{children}</>;
       // Si ya tiene preferencias, redirigimos al siguiente paso
       return redirectToStep('/games');
 
     case 'games':
-      if (!hasPersonalData) return redirectToStep('/register/contact');
+      if (!hasContactData) return redirectToStep('/register/contact');
       if (!hasPreferences) return redirectToStep('/register/preferences');
       return <>{children}</>;
 

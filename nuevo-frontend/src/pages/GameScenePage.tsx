@@ -44,10 +44,25 @@ const GameScenePage: React.FC = () => {
 
   useEffect(() => {
     console.log('GameScenePage - Estado personal:', personal)
-    console.log('GameScenePage - completed:', personal?.completed)
     
-    // Usar el nuevo campo completed para validar si los datos personales están completos
-    if (!personal?.completed) {
+    // Verificar si los datos de contacto están completos
+    const hasContactData = Boolean(personal?.firstName && personal?.lastName);
+    
+    // Verificar si las preferencias están completas
+    const hasPreferences = personal?.jobPreferences && (
+      typeof personal.jobPreferences === 'string' 
+        ? personal.jobPreferences.trim() !== ''
+        : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0
+    );
+    
+    // Los datos personales están completamente completos cuando se tienen tanto contact como preferences
+    const hasPersonalData = hasContactData && hasPreferences;
+    
+    console.log('GameScenePage - hasContactData:', hasContactData);
+    console.log('GameScenePage - hasPreferences:', hasPreferences);
+    console.log('GameScenePage - hasPersonalData:', hasPersonalData);
+    
+    if (!hasPersonalData) {
       console.log('GameScenePage - Redirigiendo a /register/contact - datos personales no completados')
       navigate('/register/contact')
       return

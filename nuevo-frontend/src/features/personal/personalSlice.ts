@@ -97,7 +97,9 @@ export const personalSlice = createSlice({
       state.email = action.payload.email;
       state.whatsapp = action.payload.whatsapp;
       state.unlockedGames = Math.max(state.unlockedGames, 1);
-      // No marcamos como completado aquí, solo cuando se completan las preferencias
+      // Marcamos como completado cuando se guardan los datos de contacto
+      // (aunque técnicamente no están completamente completos hasta las preferencias)
+      state.completed = true;
     },
 
     // Guarda preferencias laborales
@@ -130,7 +132,7 @@ export const personalSlice = createSlice({
         ...state,
         ...payload,
         unlockedGames: Math.min(10, state.unlockedGames + 1),
-        completed: true, // Marcar como completado cuando se guardan las preferencias
+        // completed ya está en true desde saveContact, no necesitamos cambiarlo
       };
       
       console.log('personalSlice - Nuevo estado después de savePreferences:', newState);

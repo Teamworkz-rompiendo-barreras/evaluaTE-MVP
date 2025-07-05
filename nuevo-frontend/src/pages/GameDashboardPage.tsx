@@ -121,6 +121,18 @@ const GameDashboardPage: React.FC = () => {
             ← Datos Personales
           </button>
           <button
+            onClick={() => {
+              console.log('DEBUG - Estado completo:', {
+                personal: useSelector((state: RootState) => state.personal),
+                game: useSelector((state: RootState) => state.game),
+                progress: useSelector((state: RootState) => state.progress)
+              });
+            }}
+            className="px-6 py-3 bg-yellow-500 text-white rounded-lg hover:bg-yellow-600 transition-colors"
+          >
+            Debug Estado
+          </button>
+          <button
             onClick={() => navigate('/resultados')}
             className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
           >

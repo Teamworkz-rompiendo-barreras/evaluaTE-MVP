@@ -66,7 +66,6 @@ export default function PreferencesStep() {
     console.log('PreferencesStep - Guardando preferencias...');
     
     dispatch(savePreferences({ ...data, jobPreferences: jobPrefObj }))
-    dispatch(setPersonalCompleted(true)) // Marcar datos personales como completos
     dispatch(markGameComplete('preferences'))
     
     console.log('PreferencesStep - Navegando a /games...');
