@@ -1,5 +1,6 @@
 // src/features/games/scenesApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { games } from '../../data/games'
 
 // Tipos esperados en cada opción
 export interface GameOption {
@@ -40,16 +41,60 @@ export interface GameLog {
   }[]
 }
 
+// Función para convertir escenas de games.ts al formato esperado
+const convertGameToScene = (gameId: string): Scene | null => {
+  const game = games.find(g => g.id === gameId)
+  if (!game || !game.scenes) return null
+
+  // Convertir la primera escena del juego
+  const firstScene = game.scenes[0]
+  if (!firstScene) return null
+
+  return {
+    id: 0, // ID temporal
+    title: firstScene.title,
+    steps: [
+      {
+        text: firstScene.description,
+        type: 'multiple-choice',
+        options: firstScene.options?.map(opt => ({
+          text: opt.text,
+          skillImpact: { [game.softSkill]: opt.score / 100 },
+          feedback: opt.feedback || ''
+        })) || []
+      }
+    ]
+  }
+}
+
 // API para cargar escenas
 export const scenesApi = createApi({
   reducerPath: 'scenesApi',
   baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
   endpoints: (builder) => ({
     getScenes: builder.query<Scene[], void>({
-      query: () => 'scenes/index.json',
+      queryFn: () => {
+        // Retornar escenas convertidas de los juegos
+        const scenes = games.slice(0, 10).map((game, index) => ({
+          id: index,
+          title: game.title,
+          steps: [{
+            text: game.description,
+            type: 'multiple-choice' as const,
+            options: []
+          }]
+        }))
+        return { data: scenes }
+      },
     }),
     getScene: builder.query<Scene, string>({
-      query: (id) => `scenes/${id}.json`,
+      queryFn: (gameId) => {
+        const scene = convertGameToScene(gameId)
+        if (!scene) {
+          return { error: { status: 404, data: 'Game not found' } }
+        }
+        return { data: scene }
+      },
     }),
     sendGameLog: builder.mutation<void, GameLog>({
       query: (log) => ({
