@@ -11,7 +11,7 @@ export default function UploadCVPage() {
   const navigate = useNavigate()
 
   // Seleccionamos el archivo del CV desde el estado
-  const cvFile = useSelector((state: unknown) => (state as { personal: { cvFile: File | null } }).personal.cvFile)
+  const cvFile = useSelector((state: unknown) => (state as { personal: { cvFile: { fileName: string; fileContent: string } | null } }).personal.cvFile)
 
   const [file, setFile] = useState<File | null>(null)
 
@@ -43,10 +43,10 @@ export default function UploadCVPage() {
     return (
       <div className="p-6 max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Tu CV</h1>
-        <p className="mb-4">Ya has subido un CV. Puedes revisarlo aquí:</p>
+        <p className="mb-4">Ya has subido un CV: {cvFile.fileName}</p>
 
         {/* Vista previa del PDF */}
-        <object data={URL.createObjectURL(cvFile)} type="application/pdf" width="100%" height="600px">
+        <object data={cvFile.fileContent} type="application/pdf" width="100%" height="600px">
           <p>Tu navegador no soporta previsualización de PDFs.</p>
         </object>
 
