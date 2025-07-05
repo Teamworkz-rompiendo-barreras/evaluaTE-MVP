@@ -38,6 +38,9 @@ export interface PersonalState {
   logs: SceneLog[];
 
   accessibilitySettings?: AccessibilitySettings;
+  
+  // Campo para marcar si los datos personales están completos
+  completed: boolean;
 }
 
 // Estado inicial
@@ -71,6 +74,9 @@ const initialState: PersonalState = {
     contrastLevel: 'normal',
     fontScale: 120,
   },
+  
+  // Inicialmente los datos personales no están completos
+  completed: false,
 };
 
 // Definición del slice
@@ -91,6 +97,7 @@ export const personalSlice = createSlice({
       state.email = action.payload.email;
       state.whatsapp = action.payload.whatsapp;
       state.unlockedGames = Math.max(state.unlockedGames, 1);
+      // No marcamos como completado aquí, solo cuando se completan las preferencias
     },
 
     // Guarda preferencias laborales
@@ -123,6 +130,7 @@ export const personalSlice = createSlice({
         ...state,
         ...payload,
         unlockedGames: Math.min(10, state.unlockedGames + 1),
+        completed: true, // Marcar como completado cuando se guardan las preferencias
       };
       
       console.log('personalSlice - Nuevo estado después de savePreferences:', newState);
@@ -196,6 +204,11 @@ export const personalSlice = createSlice({
     // Guarda configuración de accesibilidad
     setAccessibilitySettings(state, action: PayloadAction<AccessibilitySettings>) {
       state.accessibilitySettings = action.payload;
+    },
+
+    // Marca los datos personales como completos
+    setPersonalCompleted(state, action: PayloadAction<boolean>) {
+      state.completed = action.payload;
     },
 
     // Genera informe final basado en todo el progreso
@@ -330,6 +343,7 @@ export const {
   addSceneDecision,
   generateFinalReport,
   resetPersonalState,
+  setPersonalCompleted,
 } = personalSlice.actions;
 
 // Exportamos el reducer

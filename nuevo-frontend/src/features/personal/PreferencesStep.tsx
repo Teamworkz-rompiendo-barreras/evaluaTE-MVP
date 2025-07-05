@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 
 // Acciones desde Redux
 import { useAppDispatch, useAppSelector } from './../../app/hooks'
-import { savePreferences } from './personalSlice'
+import { savePreferences, setPersonalCompleted } from './personalSlice'
 import { markGameComplete } from './../progress/progressSlice'
 
 // Componentes reutilizables
@@ -66,6 +66,7 @@ export default function PreferencesStep() {
     console.log('PreferencesStep - Guardando preferencias...');
     
     dispatch(savePreferences({ ...data, jobPreferences: jobPrefObj }))
+    dispatch(setPersonalCompleted(true)) // Marcar datos personales como completos
     dispatch(markGameComplete('preferences'))
     
     console.log('PreferencesStep - Navegando a /games...');

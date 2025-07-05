@@ -44,26 +44,12 @@ const GameScenePage: React.FC = () => {
 
   useEffect(() => {
     console.log('GameScenePage - Estado personal:', personal)
-    console.log('GameScenePage - firstName:', personal?.firstName)
-    console.log('GameScenePage - lastName:', personal?.lastName)
-    console.log('GameScenePage - jobPreferences:', personal?.jobPreferences)
+    console.log('GameScenePage - completed:', personal?.completed)
     
-    if (!personal?.firstName || !personal?.lastName) {
-      console.log('GameScenePage - Redirigiendo a /register/contact - faltan datos personales')
+    // Usar el nuevo campo completed para validar si los datos personales están completos
+    if (!personal?.completed) {
+      console.log('GameScenePage - Redirigiendo a /register/contact - datos personales no completados')
       navigate('/register/contact')
-      return
-    }
-    
-    // Verificar si jobPreferences es válido (puede ser string o objeto)
-    const hasValidPreferences = personal?.jobPreferences && (
-      typeof personal.jobPreferences === 'string' 
-        ? personal.jobPreferences.trim() !== ''
-        : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0
-    );
-    
-    if (!hasValidPreferences) {
-      console.log('GameScenePage - Redirigiendo a /register/preferences - faltan preferencias válidas')
-      navigate('/register/preferences')
       return
     }
     

@@ -16,7 +16,8 @@ export default function ProtectedRoute({ step, children }: Props) {
   const progress = useSelector((state: RootState) => state.progress);
   const game = useSelector((state: RootState) => state.game);
 
-  const hasPersonalData = Boolean(personal.firstName && personal.lastName);
+  // Usar el nuevo campo completed para verificar si los datos personales están completos
+  const hasPersonalData = personal.completed;
   const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
   const hasPreferences = personal?.jobPreferences && (
     typeof personal.jobPreferences === 'string' 
@@ -28,7 +29,7 @@ export default function ProtectedRoute({ step, children }: Props) {
 
   console.log('ProtectedRoute - step:', step);
   console.log('ProtectedRoute - personal:', personal);
-  console.log('ProtectedRoute - hasPersonalData:', hasPersonalData);
+  console.log('ProtectedRoute - hasPersonalData (completed):', hasPersonalData);
   console.log('ProtectedRoute - hasPreferences:', hasPreferences);
   console.log('ProtectedRoute - hasCV:', hasCV);
   console.log('ProtectedRoute - hasCompletedAllGames:', hasCompletedAllGames);
