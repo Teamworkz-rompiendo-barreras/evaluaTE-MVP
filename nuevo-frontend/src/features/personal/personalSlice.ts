@@ -85,11 +85,12 @@ export const personalSlice = createSlice({
         Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'>
       >
     ) {
-      return {
-        ...state,
-        ...action.payload,
-        unlockedGames: Math.max(state.unlockedGames, 1),
-      };
+      // Solo actualiza los campos del payload, no borra el resto del estado
+      state.firstName = action.payload.firstName;
+      state.lastName = action.payload.lastName;
+      state.email = action.payload.email;
+      state.whatsapp = action.payload.whatsapp;
+      state.unlockedGames = Math.max(state.unlockedGames, 1);
     },
 
     // Guarda preferencias laborales
