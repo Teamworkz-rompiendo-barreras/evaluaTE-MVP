@@ -75,8 +75,9 @@ const createTestStore = () => {
 };
 
 const TestComponent = () => {
+  // Usamos el mock que ya está configurado
   const { useGameController } = require('../useGameController');
-  useGameController();
+  const gameController = useGameController();
   return <div data-testid="game-controller">Game Controller Test</div>;
 };
 
