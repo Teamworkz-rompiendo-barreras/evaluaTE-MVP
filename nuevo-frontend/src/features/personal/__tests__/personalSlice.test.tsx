@@ -31,6 +31,7 @@ describe('personalSlice', () => {
         contrastLevel: 'normal',
         fontScale: 120,
       },
+      completed: false,
     });
   });
 
@@ -51,6 +52,7 @@ describe('personalSlice', () => {
       email: 'juan@example.com',
       whatsapp: '123456789',
       unlockedGames: 1,
+      completed: true,
     });
   });
 
@@ -68,13 +70,22 @@ describe('personalSlice', () => {
     const newState = personalSlice.reducer(state, action);
     expect(newState).toEqual({
       ...initialState,
-      jobPreferences: 'Logística',
+      jobPreferences: {
+        areas: ['Logística'],
+        needs: [],
+        workMode: 'presencial',
+        availability: 'completa',
+        willingToRelocate: false,
+        hasDisabilityCert: false,
+        accessibilitySettings: initialState.accessibilitySettings,
+      },
       workMode: 'presencial',
       availability: 'completa',
       startDate: 'inmediata',
       willingToRelocate: false,
       hasDisabilityCert: false,
       unlockedGames: 2,
+      completed: false,
     });
   });
 

@@ -2,6 +2,7 @@
 import { defineConfig } from 'cypress'
 
 export default defineConfig({
+  projectId: 'on8k51',
   e2e: {
     // Dirección donde corre tu frontend
     baseUrl: 'http://localhost:5173',
