@@ -6,6 +6,8 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import DatosPersonalesPage from './pages/DatosPersonalesPage'
 import PreferencesStep from './features/personal/PreferencesStep'
 import GameDashboardPage from './pages/GameDashboardPage'
+import SimpleDashboardPage from './pages/SimpleDashboardPage'
+import TestPage from './pages/TestPage'
 import GameScenePage from './pages/GameScenePage'
 import UploadCVPage from './pages/UploadCVPage'
 import ResultadosPage from './pages/ResultadosPage'
@@ -21,8 +23,8 @@ import DebugState from './components/DebugState'
 function AppLayout() {
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Barra de progreso opcional */}
-      <ProgressBar current={1} total={1} />
+      {/* Barra de progreso opcional - TEMPORALMENTE DESHABILITADO */}
+      {/* <ProgressBar current={1} total={1} /> */}
 
       {/* Contenido principal */}
       <main className="container mx-auto p-4">
@@ -32,13 +34,13 @@ function AppLayout() {
       {/* Notificaciones globales */}
       <Toaster position="top-center" />
 
-      {/* Configuración de accesibilidad */}
-      <div className="fixed bottom-4 right-4 z-50">
+      {/* Configuración de accesibilidad - TEMPORALMENTE DESHABILITADO */}
+      {/* <div className="fixed bottom-4 right-4 z-50">
         <AccessibilitySettings />
-      </div>
+      </div> */}
 
-      {/* Debug State */}
-      <DebugState />
+      {/* Debug State - TEMPORALMENTE DESHABILITADO */}
+      {/* <DebugState /> */}
     </div>
   )
 }

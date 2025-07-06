@@ -69,7 +69,7 @@ const GameCard: React.FC<GameCardProps> = ({
 
   return (
     <div
-      className={getCardClasses()}
+      className={`game-card ${getCardClasses()}`}
       style={{ fontSize: `${accessibility.fontScale}%` }}
       onClick={handleClick}
     >

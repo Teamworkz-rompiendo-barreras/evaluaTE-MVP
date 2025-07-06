@@ -39,89 +39,91 @@ const DatosPersonalesPage: React.FC = () => {
   };
 
   return (
-    <form onSubmit={handleSubmit(onSubmit)} className="max-w-md mx-auto p-6 space-y-6">
-      {/* Logo en la parte superior */}
-      <div className="flex justify-center">
-        <img src={logo} alt="Teamworkz" className="h-16" />
-      </div>
+    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 space-y-6 relative z-10">
+        {/* Logo en la parte superior */}
+        <div className="flex justify-center">
+          <img src={logo} alt="Teamworkz" className="h-16" />
+        </div>
 
-      {/* Barra de progreso */}
-      <ProgressBar current={1} total={2} />
+        {/* Barra de progreso */}
+        <ProgressBar current={1} total={2} />
 
-      <h1 className="text-2xl font-bold text-center">
-        Paso 1 de 2 – Datos de contacto
-      </h1>
+        <h1 className="text-2xl font-bold text-center">
+          Paso 1 de 2 – Datos de contacto
+        </h1>
 
-      {/* Nombre */}
-      <div>
-        <label htmlFor="firstName" className="block font-medium">
-          Nombre
-        </label>
-        <input
-          id="firstName"
-          type="text"
-          placeholder="Ej. Juan"
-          {...register('firstName', { required: 'El nombre es obligatorio' })}
-          className="input mt-1 w-full"
-        />
-        {errors.firstName && (
-          <p className="text-red-600 mt-1">{errors.firstName.message}</p>
-        )}
-      </div>
+        {/* Nombre */}
+        <div>
+          <label htmlFor="firstName" className="block font-medium">
+            Nombre
+          </label>
+          <input
+            id="firstName"
+            type="text"
+            placeholder="Ej. Juan"
+            {...register('firstName', { required: 'El nombre es obligatorio' })}
+            className="input mt-1 w-full"
+          />
+          {errors.firstName && (
+            <p className="text-red-600 mt-1">{errors.firstName.message}</p>
+          )}
+        </div>
 
-      {/* Apellidos */}
-      <div>
-        <label htmlFor="lastName" className="block font-medium">
-          Apellidos
-        </label>
-        <input
-          id="lastName"
-          type="text"
-          placeholder="Ej. García Pérez"
-          {...register('lastName', { required: 'Los apellidos son obligatorios' })}
-          className="input mt-1 w-full"
-        />
-        {errors.lastName && (
-          <p className="text-red-600 mt-1">{errors.lastName.message}</p>
-        )}
-      </div>
+        {/* Apellidos */}
+        <div>
+          <label htmlFor="lastName" className="block font-medium">
+            Apellidos
+          </label>
+          <input
+            id="lastName"
+            type="text"
+            placeholder="Ej. García Pérez"
+            {...register('lastName', { required: 'Los apellidos son obligatorios' })}
+            className="input mt-1 w-full"
+          />
+          {errors.lastName && (
+            <p className="text-red-600 mt-1">{errors.lastName.message}</p>
+          )}
+        </div>
 
-      {/* Email */}
-      <div>
-        <label htmlFor="email" className="block font-medium">
-          Email (opcional)
-        </label>
-        <input
-          id="email"
-          type="email"
-          placeholder="juan@example.com"
-          {...register('email')}
-          className="input mt-1 w-full"
-        />
-      </div>
+        {/* Email */}
+        <div>
+          <label htmlFor="email" className="block font-medium">
+            Email (opcional)
+          </label>
+          <input
+            id="email"
+            type="email"
+            placeholder="juan@example.com"
+            {...register('email')}
+            className="input mt-1 w-full"
+          />
+        </div>
 
-      {/* WhatsApp */}
-      <div>
-        <label htmlFor="whatsapp" className="block font-medium">
-          WhatsApp (opcional)
-        </label>
-        <input
-          id="whatsapp"
-          type="tel"
-          placeholder="+34123456789"
-          {...register('whatsapp')}
-          className="input mt-1 w-full"
-        />
-      </div>
+        {/* WhatsApp */}
+        <div>
+          <label htmlFor="whatsapp" className="block font-medium">
+            WhatsApp (opcional)
+          </label>
+          <input
+            id="whatsapp"
+            type="tel"
+            placeholder="+34123456789"
+            {...register('whatsapp')}
+            className="input mt-1 w-full"
+          />
+        </div>
 
-      {/* Botón Siguiente */}
-      <button
-        type="submit"
-        className="btn-primary w-full py-2 mt-4"
-      >
-        Siguiente
-      </button>
-    </form>
+        {/* Botón Siguiente */}
+        <button
+          type="submit"
+          className="btn-primary w-full py-3 mt-6 text-lg font-semibold"
+        >
+          Siguiente
+        </button>
+      </form>
+    </div>
   );
 }
 

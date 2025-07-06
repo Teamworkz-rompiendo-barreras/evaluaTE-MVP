@@ -1,8 +1,8 @@
 /* eslint-env cypress */
-// cypress/e2e/registro.cy.ts
+// cypress/e2e/test-original-debug.cy.ts
 import { userFixture } from '../__fixtures__/user.fixtures'
 
-describe('Flujo completo de registro', () => {
+describe('Test Original Debug', () => {
   beforeEach(() => {
     cy.clearLocalStorage()
     cy.clearCookies()
@@ -10,7 +10,7 @@ describe('Flujo completo de registro', () => {
     cy.url().should('include', '/register/contact')
   })
 
-  it('Completa registro → preferencias → accede al Dashboard y primer juego', () => {
+  it('Replica exactamente el test original con debug', () => {
     // 1) Paso 1 - Datos personales
     cy.get('#firstName').type(userFixture.firstName, { force: true })
     cy.get('#lastName').type(userFixture.lastName, { force: true })
@@ -41,7 +41,7 @@ describe('Flujo completo de registro', () => {
 
     // Debug: Verificar el contenido de la página
     cy.get('body').then(($body) => {
-      cy.log('Contenido de la página en test original:', $body.text())
+      cy.log('Contenido de la página en test original debug:', $body.text())
     })
 
     // 4) Clic en el primer minijuego
@@ -51,15 +51,4 @@ describe('Flujo completo de registro', () => {
     cy.url().should('match', /\/game\/\d+$/)
     cy.contains('h1', 'Minijuego').should('exist')
   })
-
-  it('Bloquea acceso directo a juegos sin haber registrado datos', () => {
-    cy.clearLocalStorage()
-    cy.clearCookies()
-    cy.visit('/games/1')
-
-    // Debe redirigir al paso 1 de registro
-    cy.url().should('include', '/register/contact')
-    cy.contains('h1', 'Paso 1 de 2 – Datos de contacto').should('exist')
-  })
-})
-
+}) 
