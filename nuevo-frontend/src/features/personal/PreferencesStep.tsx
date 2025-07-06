@@ -65,9 +65,16 @@ export default function PreferencesStep() {
     console.log('PreferencesStep - jobPrefObj:', jobPrefObj);
     console.log('PreferencesStep - Guardando preferencias...');
     
-    dispatch(savePreferences({ ...data, jobPreferences: jobPrefObj }))
+    dispatch(savePreferences({
+      jobPreferences: jobPrefObj,
+      workMode: data.workMode,
+      availability: data.availability,
+      startDate: data.startDate,
+      willingToRelocate: data.willingToRelocate,
+      hasDisabilityCert: data.hasDisabilityCert,
+    }))
+    
     dispatch(setPersonalCompleted(true))
-    dispatch(markGameComplete('preferences'))
     
     console.log('PreferencesStep - Navegando a /games...');
     navigate('/games')

@@ -6,10 +6,22 @@ declare global {
   namespace Cypress {
     interface Chainable<Subject> {
       /**
+       * Custom command to clear storage and handle modals
+       * @example cy.clearStorageAndHandleModals()
+       */
+      clearStorageAndHandleModals(): Chainable<void>
+
+      /**
        * Custom command to simulate user login and fill personal data.
        * @example cy.login()
        */
       login(): Chainable<void>
+
+      /**
+       * Custom command to complete preferences step
+       * @example cy.completePreferences()
+       */
+      completePreferences(): Chainable<void>
 
       /**
        * Custom command to attach file with metadata (name, type, encoding).

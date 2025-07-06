@@ -20,7 +20,7 @@ export default function ProtectedRoute({ step, children }: Props) {
   console.log('🔒 ProtectedRoute - personal:', personal);
   console.log('🔒 ProtectedRoute - personal.completed:', personal.completed);
 
-  // Verificaciones simplificadas
+  // Verificaciones simplificadas y más robustas
   const hasContactData = Boolean(personal.firstName && personal.lastName);
   const hasPreferences = Boolean(
     personal.jobPreferences && 
@@ -28,7 +28,7 @@ export default function ProtectedRoute({ step, children }: Props) {
       ? personal.jobPreferences.trim() !== ''
       : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0)
   );
-  const hasPersonalData = hasContactData && (hasPreferences || personal.completed);
+  const hasPersonalData = hasContactData && hasPreferences;
   const hasCompletedAllGames = game.completedGames.length >= 10;
   const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
 
@@ -61,13 +61,13 @@ export default function ProtectedRoute({ step, children }: Props) {
       return <>{children}</>;
 
     case 'games':
-      // Requiere datos personales completos
+      // Requiere datos personales completos (contacto + preferencias)
       if (!hasContactData) {
         console.log('🔒 ProtectedRoute - BLOQUEANDO games: no hay contact data');
         return redirectTo('/register/contact');
       }
-      if (!hasPersonalData) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO games: no hay personal data completo');
+      if (!hasPreferences) {
+        console.log('🔒 ProtectedRoute - BLOQUEANDO games: no hay preferences');
         return redirectTo('/register/preferences');
       }
       console.log('🔒 ProtectedRoute - PERMITIENDO acceso a games');

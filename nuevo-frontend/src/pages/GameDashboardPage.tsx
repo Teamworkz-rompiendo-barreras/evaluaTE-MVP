@@ -26,6 +26,7 @@ const GameDashboardPage: React.FC = () => {
       return true // El primer juego siempre está disponible
     }
     
+    // Para los demás juegos, verificar que el anterior esté completado
     const previousGame = games[gameIndex - 1]
     const isAvailable = completedGames.includes(previousGame.id)
     console.log('GameDashboardPage - Juego anterior:', previousGame.id, 'completado:', completedGames.includes(previousGame.id), 'disponible:', isAvailable);

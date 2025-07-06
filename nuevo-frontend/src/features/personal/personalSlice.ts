@@ -116,27 +116,18 @@ export const personalSlice = createSlice({
       
       const payload = action.payload;
 
-      if (typeof payload.jobPreferences === 'string') {
-        payload.jobPreferences = {
-          areas: [payload.jobPreferences],
-          needs: [],
-          workMode: payload.workMode || 'remoto',
-          availability: payload.availability || 'completa',
-          willingToRelocate: payload.willingToRelocate,
-          hasDisabilityCert: payload.hasDisabilityCert,
-          accessibilitySettings: state.accessibilitySettings,
-        };
-      }
-
-      const newState = {
-        ...state,
-        ...payload,
-        unlockedGames: Math.min(10, state.unlockedGames + 1),
-        // completed ya está en true desde saveContact, no necesitamos cambiarlo
-      };
+      // Actualizar directamente los campos del estado
+      state.jobPreferences = payload.jobPreferences;
+      state.workMode = payload.workMode;
+      state.availability = payload.availability;
+      state.startDate = payload.startDate;
+      state.willingToRelocate = payload.willingToRelocate;
+      state.hasDisabilityCert = payload.hasDisabilityCert;
       
-      console.log('personalSlice - Nuevo estado después de savePreferences:', newState);
-      return newState;
+      // Asegurar que completed esté en true
+      state.completed = true;
+      
+      console.log('personalSlice - Estado actualizado después de savePreferences:', state);
     },
 
     // Guarda archivo del CV

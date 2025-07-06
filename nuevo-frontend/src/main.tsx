@@ -14,9 +14,8 @@ import UploadCVPage from './pages/UploadCVPage';
 import ResultadosPage from './pages/ResultadosPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
-import { AccessibilitySettings } from './components/AccessibilitySettings';
-import { CookieConsent } from './components/CookieConsent';
-// <PrivacyNotice />
+// import { AccessibilitySettings } from './components/AccessibilitySettings';
+// import { CookieConsent } from './components/CookieConsent';
 
 import './index.css';
 import './legacy.css';
@@ -27,8 +26,8 @@ root.render(
   <React.StrictMode>
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
-        <AccessibilitySettings />
-        <CookieConsent />
+        {/* <AccessibilitySettings /> */}
+        {/* <CookieConsent /> */}
         <BrowserRouter>
           <Routes>
             {/* 1) Inicio → registro: datos personales */}

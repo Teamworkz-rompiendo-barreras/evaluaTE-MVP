@@ -16,7 +16,6 @@ import { Toaster } from 'react-hot-toast'
 import ProgressBar from './components/ProgressBar'
 import { AccessibilitySettings } from './components/AccessibilitySettings'
 import DebugState from './components/DebugState'
-import TestFlow from './components/TestFlow'
 
 // Layouts compartidos
 function AppLayout() {
@@ -40,9 +39,6 @@ function AppLayout() {
 
       {/* Debug State */}
       <DebugState />
-      
-      {/* Test Flow */}
-      <TestFlow />
     </div>
   )
 }
