@@ -12,6 +12,18 @@ describe('Flujo completo de usuario: registro → juegos → resultados', () => 
 
   it('registra al usuario, completa minijuegos y genera informe final', () => {
     // ——————————————
+    // 0) Manejar aviso de privacidad si aparece
+    // ——————————————
+    cy.get('body').then(($body) => {
+      if ($body.find('[role="dialog"]').length > 0) {
+        cy.get('#privacy-consent').check({ force: true })
+        cy.contains('button', 'Aceptar y continuar').click({ force: true })
+        // Espera a que el modal desaparezca
+        cy.get('[role="dialog"]').should('not.exist')
+      }
+    })
+
+    // ——————————————
     // 1) Registro – Paso 1: Datos personales
     // ——————————————
     cy.get('#firstName').type(userFixture.firstName)
