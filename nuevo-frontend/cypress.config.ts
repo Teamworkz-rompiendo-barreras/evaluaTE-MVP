@@ -5,7 +5,7 @@ export default defineConfig({
   projectId: 'on8k51',
   e2e: {
     // Dirección donde corre tu frontend
-    baseUrl: 'http://localhost:5173',
+    baseUrl: 'http://localhost:3005',
 
     // Rutas de tus tests end-to-end
     specPattern: 'cypress/e2e/**/*.cy.{js,ts,jsx,tsx}',

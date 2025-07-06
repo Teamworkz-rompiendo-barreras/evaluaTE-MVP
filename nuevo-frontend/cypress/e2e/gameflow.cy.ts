@@ -17,7 +17,7 @@ describe('Flujo completo de usuario: registro → juegos → resultados', () => 
     cy.get('#firstName').type(userFixture.firstName)
     cy.get('#lastName').type(userFixture.lastName)
     cy.get('#email').type(userFixture.email)
-    cy.contains('button', 'Continuar').click()
+    cy.contains('button', 'Siguiente').click()
 
     // ——————————————
     // 2) Registro – Paso 2: Preferencias laborales
@@ -26,8 +26,12 @@ describe('Flujo completo de usuario: registro → juegos → resultados', () => 
     cy.get('#jobPreferences').type(userFixture.jobPreferences.areas.join(', '))
     cy.get('#workMode').select(userFixture.jobPreferences.workMode)
     cy.get('#availability').select(userFixture.jobPreferences.availability)
-    cy.get('#relocate').check(userFixture.jobPreferences.willingToRelocate)
-    cy.get('#cert').check(userFixture.jobPreferences.hasDisabilityCert)
+    if (userFixture.jobPreferences.willingToRelocate) {
+      cy.get('#relocate').check()
+    }
+    if (userFixture.jobPreferences.hasDisabilityCert) {
+      cy.get('#cert').check()
+    }
     cy.contains('button', 'Guardar y continuar').click()
 
     // ——————————————
