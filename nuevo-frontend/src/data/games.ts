@@ -197,7 +197,7 @@ export const games: Game[] = [
       {
         id: 'intro',
         title: 'Revisión de pedidos',
-        description: 'Hoy te han asignado la tarea de revisar varios pedidos antes de que salgan de la empresa. Algo no encaja… y necesitas descubrir qué es. ¿Preparad@?',
+        description: '',
         type: 'choice',
         options: [
           {
