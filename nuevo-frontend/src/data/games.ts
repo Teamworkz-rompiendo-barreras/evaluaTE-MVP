@@ -31,7 +31,7 @@ export const games: Game[] = [
       {
         id: 'phone-call',
         title: 'La primera llamada',
-        description: 'Suena el teléfono. Una persona pregunta por tu compañera o compañero, que no está disponible.',
+        description: 'Suena el teléfono. Una persona pregunta por tu persona compañera, que no está disponible.',
         type: 'choice',
         options: [
           {
@@ -50,7 +50,7 @@ export const games: Game[] = [
           },
           {
             id: 'call-later',
-            text: 'Le dices que llame más tarde porque estás ocupada o ocupado',
+            text: 'Le dices que llame más tarde porque estás ocupado u ocupada',
             score: 40,
             feedback: 'Es importante ser honesto sobre tu disponibilidad.',
             nextSceneId: 'multiple-tasks'
@@ -139,26 +139,26 @@ export const games: Game[] = [
       {
         id: 'final-evaluation',
         title: 'Evaluación final del día',
-        description: 'Tu coordinador/a te pide feedback sobre cómo te has sentido.',
+        description: 'Tu coordinador te pide feedback sobre cómo te has sentido.',
         type: 'choice',
         options: [
           {
             id: 'curious',
-            text: 'Curios@, con ganas de aprender',
+            text: 'Persona curiosa, con ganas de aprender',
             score: 90,
             feedback: '¡Excelente actitud! La curiosidad es clave para el aprendizaje.',
             nextSceneId: 'completion'
           },
           {
             id: 'lost-but-interested',
-            text: 'Un poco perdid@ pero con interés',
+            text: 'Un poco perdido o perdida pero con interés',
             score: 75,
             feedback: 'Es normal sentirse perdido el primer día. El interés es lo importante.',
             nextSceneId: 'completion'
           },
           {
             id: 'stressed',
-            text: 'Estresad@, necesito más tiempo',
+            text: 'Estresado o estresada, necesito más tiempo',
             score: 60,
             feedback: 'Es válido pedir más tiempo. La honestidad es importante.',
             nextSceneId: 'completion'
@@ -168,7 +168,7 @@ export const games: Game[] = [
       {
         id: 'completion',
         title: '¡Buen trabajo!',
-        description: '¡Buen trabajo! Hoy has resuelto situaciones reales que pueden pasar en muchos trabajos. No importa lo que hayas elegido: lo que cuenta es cómo te enfrentas a lo que sucede. Has completado tu primer día. Mañana te espera un nuevo reto.',
+        description: 'Hoy has resuelto situaciones reales que pueden pasar en muchos trabajos. No importa lo que hayas elegido: lo que cuenta es cómo te enfrentas a lo que sucede. Has completado tu primer día. Mañana te espera un nuevo reto.',
         type: 'choice',
         options: [
           {
