@@ -31,12 +31,12 @@ const root = ReactDOM.createRoot(document.getElementById('root')!);
 root.render(
   <React.StrictMode>
     <ErrorBoundary>
-      <Provider store={store}>
-        <PersistGate loading={null} persistor={persistor}>
-          {/* <AccessibilitySettings /> */}
-          {/* <CookieConsent /> */}
-          <BrowserRouter>
-            <Routes>
+    <Provider store={store}>
+      <PersistGate loading={null} persistor={persistor}>
+        {/* <AccessibilitySettings /> */}
+        {/* <CookieConsent /> */}
+        <BrowserRouter>
+          <Routes>
             {/* 1) Inicio → registro: datos personales */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
             <Route path="/register/contact" element={<DatosPersonalesPage />} />

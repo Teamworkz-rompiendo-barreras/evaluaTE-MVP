@@ -16,8 +16,8 @@ export const games: Game[] = [
     scenes: [
       {
         id: 'intro',
-        title: 'Bienvenida a tu primer día',
-        description: 'Hoy es tu primer día en la empresa. Vas a estar en el área de apoyo. Te irás encontrando con situaciones reales. No hay respuestas correctas o incorrectas. Solo actúa como lo harías en la vida real.',
+        title: '¡Comienza el reto!',
+        description: 'Pulsa para empezar.',
         type: 'choice',
         options: [
           {
@@ -185,7 +185,7 @@ export const games: Game[] = [
     id: 'problem-solving',
     title: 'Algo no cuadra',
     subtitle: 'Resolución de problemas',
-    description: 'Hoy te han asignado la tarea de revisar varios pedidos antes de que salgan de la empresa. Algo no encaja… y necesitas descubrir qué es. ¿Preparad@?',
+    description: 'Hoy te han asignado la tarea de revisar varios pedidos antes de que salgan de la empresa. Algo no encaja… y necesitas descubrir qué es. ¿Preparado o preparada?',
     softSkill: 'Resolución de problemas',
     day: 'Martes',
     scenario: 'Segundo día en la empresa de logística. Hoy te asignan una tarea concreta en el área de control y revisión de pedidos.',
@@ -211,18 +211,16 @@ export const games: Game[] = [
       {
         id: 'incomplete-order',
         title: 'El pedido incompleto',
-        description: 'Te llega una lista con tres pedidos. Uno de ellos está incompleto.',
-        type: 'visual-exploration',
-        visualConfig: {
-          imageUrl: '/api/scenes/1.json',
-          interactiveAreas: [
-            { id: 'order1', x: 50, y: 100, width: 200, height: 80, action: 'click' },
-            { id: 'order2', x: 300, y: 100, width: 200, height: 80, action: 'click' },
-            { id: 'order3', x: 550, y: 100, width: 200, height: 80, action: 'click' }
-          ],
-          explorationMode: true
-        },
-        nextSceneId: 'paper-mixed'
+        description: 'Te llega una lista con tres pedidos. Uno de ellos está incompleto. ¿Qué harías para identificarlo?',
+        type: 'choice',
+        options: [
+          {
+            id: 'explore',
+            text: 'Revisar los pedidos y buscar el que falta información',
+            score: 0,
+            nextSceneId: 'paper-mixed'
+          }
+        ]
       },
       {
         id: 'paper-mixed',
@@ -251,7 +249,7 @@ export const games: Game[] = [
         options: [
           {
             id: 'solve-alone',
-            text: 'Intentas solucionarlo tú sol@ aunque tardes un poco más',
+            text: 'Intentas solucionarlo tú mismo o misma aunque tardes un poco más',
             score: 70,
             feedback: 'Iniciativa positiva, pero considera el tiempo disponible.',
             nextSceneId: 'hidden-error'
@@ -265,7 +263,7 @@ export const games: Game[] = [
           },
           {
             id: 'send-as-is',
-            text: 'Envíalo como está para no retrasar el camión',
+            text: 'Envías el pedido como está para no retrasar el camión',
             score: 40,
             feedback: 'Considera las consecuencias de enviar un pedido incorrecto.',
             nextSceneId: 'hidden-error'
@@ -275,18 +273,17 @@ export const games: Game[] = [
       {
         id: 'hidden-error',
         title: 'El fallo oculto',
-        description: 'Todos los papeles parecen estar bien, pero sientes que algo no encaja. ¿Qué haces?',
-        type: 'visual-exploration',
-        visualConfig: {
-          imageUrl: '/api/scenes/2.json',
-          interactiveAreas: [
-            { id: 'box1', x: 100, y: 150, width: 100, height: 100, action: 'click' },
-            { id: 'box2', x: 250, y: 150, width: 100, height: 100, action: 'click' },
-            { id: 'box3', x: 400, y: 150, width: 100, height: 100, action: 'click' }
-          ],
-          explorationMode: true
-        },
-        nextSceneId: 'improvement-report'
+        description: 'Todos los papeles parecen estar bien, pero sientes que algo no encaja. ¿Qué haces? Puedes explorar la imagen para buscar pistas.',
+        type: 'choice',
+        options: [
+          {
+            id: 'explore-image',
+            text: 'Explorar la imagen en busca de errores',
+            score: 80,
+            feedback: '¡Bien! Buscar pistas visuales es clave para detectar errores.',
+            nextSceneId: 'improvement-report'
+          }
+        ]
       },
       {
         id: 'improvement-report',
@@ -337,7 +334,7 @@ export const games: Game[] = [
     id: 'teamwork',
     title: 'El envío urgente',
     subtitle: 'Trabajo en equipo',
-    description: 'Hoy vas a trabajar con dos compañer@s. Juntos tenéis que preparar un envío especial. Habrá momentos de coordinación, confusión y decisiones compartidas. ¿List@ para colaborar?',
+    description: 'Hoy vas a trabajar con dos compañeras y compañeros. Juntas y juntos tenéis que preparar un envío especial. Habrá momentos de coordinación, confusión y decisiones compartidas. ¿Preparada o preparado para colaborar?',
     softSkill: 'Trabajo en equipo',
     day: 'Miércoles',
     scenario: 'Hoy formas parte de un pequeño equipo encargado de preparar un envío que debe salir antes de las 14:00.',
@@ -349,7 +346,7 @@ export const games: Game[] = [
       {
         id: 'intro',
         title: 'Trabajo en equipo',
-        description: 'Hoy vas a trabajar con dos compañer@s. Juntos tenéis que preparar un envío especial. Habrá momentos de coordinación, confusión y decisiones compartidas. ¿List@ para colaborar?',
+        description: 'Hoy vas a trabajar con dos compañeras y compañeros. Juntas y juntos tenéis que preparar un envío especial. Habrá momentos de coordinación, confusión y decisiones compartidas. ¿Preparada o preparado para colaborar?',
         type: 'choice',
         options: [
           {
@@ -363,7 +360,7 @@ export const games: Game[] = [
       {
         id: 'task-distribution',
         title: 'Reparto de tareas',
-        description: 'Tu supervisor te presenta a tus compañer@s: Alex y Carmen. Te dan una lista con 3 tareas y os dicen que os las repartáis. Alex prefiere el ordenador. Carmen tiene experiencia empaquetando. Tú eliges primero.',
+        description: 'Tu supervisor te presenta a tus compañeras y compañeros: Alex y Carmen. Te dan una lista con 3 tareas y os dicen que os las repartáis. Alex prefiere el ordenador. Carmen tiene experiencia empaquetando. Tú eliges primero.',
         type: 'drag-drop',
         dragDropConfig: {
           items: [
@@ -726,24 +723,31 @@ export const games: Game[] = [
       {
         id: 'listening-turn',
         title: 'Turno de escucha',
-        description: 'Escuchas a tus dos compañer@s hablar de su experiencia. Te hacen una pregunta de comprensión: ¿Qué dijo Carmen que le costó más esta semana?',
-        type: 'audio',
-        audioConfig: {
-          audioUrl: '/api/audio/carmen-experience.mp3',
-          transcript: 'Carmen: "Esta semana me costó mucho el ruido en el almacén. Me distraía y me hacía cometer errores. Pero aprendí a pedir ayuda cuando lo necesitaba."',
-          questions: [
-            {
-              id: 'carmen-difficulty',
-              question: '¿Qué dijo Carmen que le costó más esta semana?',
-              options: [
-                { id: 'noise', text: 'El ruido', score: 100 },
-                { id: 'computer', text: 'El ordenador', score: 0 },
-                { id: 'nothing', text: 'No lo dijo', score: 0 }
-              ]
-            }
-          ]
-        },
-        nextSceneId: 'speaking-turn'
+        description: 'Escuchas a tus dos compañeras y compañeros hablar de su experiencia. Te hacen una pregunta de comprensión: ¿Qué dijo Carmen que le costó más esta semana?\n\nTranscripción: Carmen: "Esta semana me costó mucho el ruido en el almacén. Me distraía y me hacía cometer errores. Pero aprendí a pedir ayuda cuando lo necesitaba."',
+        type: 'choice',
+        options: [
+          {
+            id: 'noise',
+            text: 'El ruido',
+            score: 100,
+            feedback: '¡Correcto! Carmen dijo que el ruido en el almacén le costó mucho esta semana.',
+            nextSceneId: 'speaking-turn'
+          },
+          {
+            id: 'computer',
+            text: 'El ordenador',
+            score: 0,
+            feedback: 'No es correcto. Carmen mencionó el ruido, no el ordenador.',
+            nextSceneId: 'speaking-turn'
+          },
+          {
+            id: 'nothing',
+            text: 'No lo dijo',
+            score: 0,
+            feedback: 'No es correcto. Carmen sí mencionó una dificultad.',
+            nextSceneId: 'speaking-turn'
+          }
+        ]
       },
       {
         id: 'speaking-turn',
@@ -1096,7 +1100,7 @@ export const games: Game[] = [
       {
         id: 'adaptation',
         title: 'Adaptándose a la situación',
-        description: 'Decides trabajar manualmente. Pero luego te enteras de que dos compañeros están ausentes por enfermedad.',
+        description: 'Decides trabajar manualmente. Pero luego te enteras de que dos compañeras están ausentes por enfermedad.',
         type: 'choice',
         options: [
           {
@@ -1513,7 +1517,7 @@ export const games: Game[] = [
     description: 'Hoy vas a encontrarte con situaciones donde necesitarás entender cómo se sienten otras personas. La empatía es clave para trabajar bien en equipo.',
     softSkill: 'Empatía',
     day: 'Jueves (Semana 2)',
-    scenario: 'Diferentes situaciones donde debes mostrar comprensión hacia compañeros y clientes.',
+    scenario: 'Diferentes situaciones donde debes mostrar comprensión hacia compañeras y clientes.',
     icon: '❤️',
     color: '#FF8A80',
     completed: false,
@@ -1521,8 +1525,8 @@ export const games: Game[] = [
     scenes: [
       {
         id: 'intro',
-        title: 'Compañero estresado',
-        description: 'Tu compañero Alex llega tarde y parece muy estresado. Te dice que ha tenido problemas personales. ¿Qué haces?',
+        title: 'Compañera estresada',
+        description: 'Tu compañera Alex llega tarde y parece muy estresada. Te dice que ha tenido problemas personales. ¿Qué haces?',
         type: 'choice',
         options: [
           {
@@ -1837,7 +1841,7 @@ export const games: Game[] = [
         options: [
           {
             id: 'ask-help',
-            text: 'Pides ayuda a compañeros',
+            text: 'Pides ayuda a compañeras',
             score: 90,
             feedback: '¡Excelente! Saber pedir ayuda es una fortaleza.',
             nextSceneId: 'deadline-pressure'
