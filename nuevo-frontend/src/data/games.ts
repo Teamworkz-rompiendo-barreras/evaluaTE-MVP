@@ -16,7 +16,7 @@ export const games: Game[] = [
     scenes: [
       {
         id: 'intro',
-        title: 'Bienvenido a tu primer día',
+        title: 'Bienvenida a tu primer día',
         description: 'Hoy es tu primer día en la empresa. Vas a estar en el área de apoyo. Te irás encontrando con situaciones reales. No hay respuestas correctas o incorrectas. Solo actúa como lo harías en la vida real.',
         type: 'choice',
         options: [
@@ -31,7 +31,7 @@ export const games: Game[] = [
       {
         id: 'phone-call',
         title: 'La primera llamada',
-        description: 'Suena el teléfono. Una persona pregunta por tu compañer@, que no está disponible.',
+        description: 'Suena el teléfono. Una persona pregunta por tu compañera o compañero, que no está disponible.',
         type: 'choice',
         options: [
           {
@@ -50,7 +50,7 @@ export const games: Game[] = [
           },
           {
             id: 'call-later',
-            text: 'Le dices que llame más tarde porque estás ocupad@',
+            text: 'Le dices que llame más tarde porque estás ocupada o ocupado',
             score: 40,
             feedback: 'Es importante ser honesto sobre tu disponibilidad.',
             nextSceneId: 'multiple-tasks'
@@ -401,7 +401,7 @@ export const games: Game[] = [
           },
           {
             id: 'ignore',
-            text: 'Le dices que lo intente otra vez, que tú también estás ocupad@',
+            text: 'Le dices que lo intente otra vez, que tú también estás ocupada o ocupada',
             score: 40,
             feedback: 'Recuerda que el trabajo en equipo requiere apoyo mutuo.',
             nextSceneId: 'alex-mistake'
@@ -1786,7 +1786,7 @@ export const games: Game[] = [
           },
           {
             id: 'refuse-emergency',
-            text: 'Le dices que estás muy ocupado',
+            text: 'Le dices que estás muy ocupada o ocupada',
             score: 40,
             feedback: 'Las emergencias son prioritarias. Aprende a adaptarte.',
             nextSceneId: 'efficiency'

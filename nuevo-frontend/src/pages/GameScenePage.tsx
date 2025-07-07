@@ -85,6 +85,9 @@ const GameScenePage: React.FC = () => {
     goToScene(sceneId)
   }
 
+  // Detectar si es la primera escena
+  const isFirstScene = currentGame && currentScene && currentGame.scenes[0].id === currentScene.id;
+
   if (isLoading) {
     return (
       <main className="flex items-center justify-center min-h-screen">
@@ -160,13 +163,15 @@ const GameScenePage: React.FC = () => {
             />
           </div>
           
-          {/* Información del día */}
-          <div className="bg-white rounded-lg p-4 shadow-sm">
-            <p className="text-sm text-gray-600 mb-2">
-              <strong>Día:</strong> {currentGame.day} | <strong>Escenario:</strong> {currentGame.scenario}
-            </p>
-            <p className="text-gray-700">{currentGame.description}</p>
-          </div>
+          {/* Información general solo en la primera escena */}
+          {isFirstScene && (
+            <div className="bg-white rounded-lg p-4 shadow-sm">
+              <p className="text-sm text-gray-600 mb-2">
+                <strong>Día:</strong> {currentGame.day} | <strong>Escenario:</strong> {currentGame.scenario}
+              </p>
+              <p className="text-gray-700">{currentGame.description}</p>
+            </div>
+          )}
         </div>
 
         {/* Escena actual */}
