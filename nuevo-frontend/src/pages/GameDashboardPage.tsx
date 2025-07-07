@@ -77,6 +77,16 @@ const GameDashboardPage: React.FC = () => {
           ))}
         </div>
 
+        {/* Botón de prueba para Sentry */}
+        <div className="flex justify-center my-6">
+          <button
+            onClick={() => { throw new Error('¡Esto es una prueba de Sentry!'); }}
+            className="px-4 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700"
+          >
+            Probar Sentry (lanzar error)
+          </button>
+        </div>
+
         {/* Botones de acción */}
         <div className="mt-8 flex justify-center space-x-4">
           <button
