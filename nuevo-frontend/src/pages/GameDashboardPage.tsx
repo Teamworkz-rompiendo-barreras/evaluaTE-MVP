@@ -2,13 +2,27 @@
 import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { games } from '../data/games';
+import GameCard from '../components/GameCard';
 
 const GameDashboardPage: React.FC = () => {
-  const navigate = useNavigate()
+  const navigate = useNavigate();
 
-  console.log('GameDashboardPage - Renderizando versión con games importado')
-  console.log('GameDashboardPage - Total de juegos:', games.length)
-  console.log('GameDashboardPage - Componente montado correctamente')
+  console.log('GameDashboardPage - Renderizando versión con games importado');
+  console.log('GameDashboardPage - Total de juegos:', games.length);
+  console.log('GameDashboardPage - Componente montado correctamente');
+
+  // Simulación de estado de desbloqueo y accesibilidad (ajustar según tu lógica real)
+  const accessibility = {
+    contrastLevel: 'normal' as const,
+    fontScale: 100,
+    audioEnabled: true,
+    visualHelp: false,
+    timeExtensions: false,
+  };
+
+  // Simulación: desbloquear todos los juegos para la demo
+  const isUnlocked = (index: number) => true;
+  const isCurrent = (index: number) => false;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -31,76 +45,18 @@ const GameDashboardPage: React.FC = () => {
           <p>✅ Primer juego: {games[0]?.title}</p>
         </div>
 
-        {/* Grid de minijuegos - VERSIÓN ESTÁTICA */}
+        {/* Grid de minijuegos - DINÁMICO */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {/* Tarjeta estática 1 */}
-          <div className="game-card bg-white border-2 border-gray-300 p-4 rounded-lg cursor-pointer hover:border-blue-400 hover:shadow-lg">
-            <div className="text-center mb-3">
-              <div className="text-4xl mb-2" style={{ color: '#F2D680' }}>
-                📞
-              </div>
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-sm mb-1">
-                Primera llamada del día
-              </h3>
-              <p className="text-xs text-gray-600 mb-2">
-                Toma de decisiones
-              </p>
-              <p className="text-xs text-gray-500 mb-2">
-                Lunes
-              </p>
-              <span className="text-xs px-2 py-1 rounded-full bg-blue-200 text-blue-700">
-                Disponible
-              </span>
-            </div>
-          </div>
-
-          {/* Tarjeta estática 2 */}
-          <div className="game-card bg-white border-2 border-gray-300 p-4 rounded-lg cursor-pointer hover:border-blue-400 hover:shadow-lg">
-            <div className="text-center mb-3">
-              <div className="text-4xl mb-2" style={{ color: '#374BA6' }}>
-                🧩
-              </div>
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-sm mb-1">
-                Algo no cuadra
-              </h3>
-              <p className="text-xs text-gray-600 mb-2">
-                Resolución de problemas
-              </p>
-              <p className="text-xs text-gray-500 mb-2">
-                Martes
-              </p>
-              <span className="text-xs px-2 py-1 rounded-full bg-blue-200 text-blue-700">
-                Disponible
-              </span>
-            </div>
-          </div>
-
-          {/* Tarjeta estática 3 */}
-          <div className="game-card bg-white border-2 border-gray-300 p-4 rounded-lg cursor-pointer hover:border-blue-400 hover:shadow-lg">
-            <div className="text-center mb-3">
-              <div className="text-4xl mb-2" style={{ color: '#FF6B6B' }}>
-                🤝
-              </div>
-            </div>
-            <div className="text-center">
-              <h3 className="font-semibold text-sm mb-1">
-                Trabajo en equipo
-              </h3>
-              <p className="text-xs text-gray-600 mb-2">
-                Colaboración
-              </p>
-              <p className="text-xs text-gray-500 mb-2">
-                Miércoles
-              </p>
-              <span className="text-xs px-2 py-1 rounded-full bg-blue-200 text-blue-700">
-                Disponible
-              </span>
-            </div>
-          </div>
+          {games.map((game, idx) => (
+            <GameCard
+              key={game.id}
+              game={game}
+              isUnlocked={isUnlocked(idx)}
+              isCurrent={isCurrent(idx)}
+              accessibility={accessibility}
+              onClick={() => navigate(`/games/${game.id}`)}
+            />
+          ))}
         </div>
 
         {/* Botones de acción */}
@@ -120,7 +76,7 @@ const GameDashboardPage: React.FC = () => {
         </div>
       </div>
     </div>
-  )
-}
+  );
+};
 
-export default GameDashboardPage
+export default GameDashboardPage;
