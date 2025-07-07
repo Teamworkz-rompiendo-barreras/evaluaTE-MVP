@@ -171,7 +171,7 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
       {isCompleted && (
         <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded text-center">
           <p className="text-green-800 font-semibold">
-            ¡Perfecto! Has organizado todos los elementos correctamente.
+            Gracias por colocar todas las tareas en su sitio.
           </p>
         </div>
       )}

@@ -133,8 +133,8 @@ const GameScenePage: React.FC = () => {
             />
           </div>
           
-          {/* Información general solo si NO es la primera escena */}
-          {!isFirstScene && (
+          {/* Información general solo en la PRIMERA escena */}
+          {isFirstScene && (
             <div className="bg-white rounded-lg p-4 shadow-sm">
               <p className="text-sm text-gray-600 mb-2">
                 <strong>Día:</strong> {currentGame.day} | <strong>Escenario:</strong> {currentGame.scenario}

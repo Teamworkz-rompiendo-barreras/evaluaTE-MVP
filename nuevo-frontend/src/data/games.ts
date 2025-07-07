@@ -144,7 +144,7 @@ export const games: Game[] = [
         options: [
           {
             id: 'curious',
-            text: 'Persona curiosa, con ganas de aprender',
+            text: 'Con ganas de seguir aprendiendo',
             score: 90,
             feedback: '¡Excelente actitud! La curiosidad es clave para el aprendizaje.',
             nextSceneId: 'completion'

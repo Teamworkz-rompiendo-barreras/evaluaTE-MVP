@@ -69,6 +69,10 @@ const gameSlice = createSlice({
       state.gameLogs = {};
       state.softSkills = [];
       state.adaptations = [];
+    },
+    
+    clearCurrentGame: (state) => {
+      state.currentGameId = null;
     }
   }
 });
@@ -78,7 +82,8 @@ export const {
   addGameLog, 
   completeGame, 
   addAdaptation, 
-  resetGameState 
+  resetGameState, 
+  clearCurrentGame 
 } = gameSlice.actions;
 
 export default gameSlice.reducer; 

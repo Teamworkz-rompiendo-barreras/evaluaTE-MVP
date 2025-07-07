@@ -3,13 +3,15 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { games } from '../data/games';
 import GameCard from '../components/GameCard';
-import { useAppSelector } from '../app/hooks';
+import { useAppSelector, useAppDispatch } from '../app/hooks';
 import { useGameController } from '../features/games/useGameController';
+import { clearCurrentGame } from '../features/games/gameSlice';
 
 const GameDashboardPage: React.FC = () => {
   const navigate = useNavigate();
   const game = useAppSelector((state) => state.game);
   const { isGameAvailable } = useGameController();
+  const dispatch = useAppDispatch();
 
   console.log('GameDashboardPage - Renderizando versión con games importado');
   console.log('GameDashboardPage - Total de juegos:', games.length);
@@ -71,7 +73,10 @@ const GameDashboardPage: React.FC = () => {
               isCompleted={isCompleted(g.id)}
               accessibility={accessibility}
               onClick={() => {
-                if (isUnlocked(g.id, idx)) navigate(`/games/${g.id}`);
+                if (isUnlocked(g.id, idx)) {
+                  dispatch(clearCurrentGame());
+                  navigate(`/games/${g.id}`);
+                }
               }}
             />
           ))}
