@@ -5,7 +5,7 @@ export function initSentry() {
   // Solo inicializar en producción o cuando tengas un DSN real
   if (import.meta.env.PROD) {
     Sentry.init({
-      dsn: import.meta.env.VITE_SENTRY_DSN || "https://tu-dsn-de-sentry@sentry.io/project-id",
+      dsn: import.meta.env.VITE_SENTRY_DSN || "https://4bc2054992970095c8fb4f001ba65579@o4509625810812928.ingest.de.sentry.io/4509625846267984",
       
       // Configuración de performance
       integrations: [
