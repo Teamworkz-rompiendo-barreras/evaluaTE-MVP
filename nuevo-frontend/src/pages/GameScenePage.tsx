@@ -5,7 +5,6 @@ import { useParams, useNavigate } from 'react-router-dom'
 import { useSelector } from 'react-redux'
 
 // Importamos datos del juego
-import { useGetSceneQuery } from '../features/games/scenesApi'
 import { useGameController } from '../features/games/useGameController'
 import GameScene from '../components/GameScene'
 import ProgressBar from '../components/ProgressBar'
@@ -27,12 +26,6 @@ const GameScenePage: React.FC = () => {
   
   // Estado de personal
   const personal = useSelector((state: RootState) => state.personal)
-
-  const {
-    data: scene,
-    isLoading,
-    isError
-  } = useGetSceneQuery(id ?? '', { skip: !id })
 
   const {
     startGame,
@@ -87,29 +80,6 @@ const GameScenePage: React.FC = () => {
 
   // Detectar si es la primera escena
   const isFirstScene = currentGame && currentScene && currentGame.scenes[0].id === currentScene.id;
-
-  if (isLoading) {
-    return (
-      <main className="flex items-center justify-center min-h-screen">
-        <p>Cargando escena…</p>
-      </main>
-    )
-  }
-
-  if (isError || !scene) {
-    return (
-      <main className="flex flex-col items-center justify-center min-h-screen gap-6">
-        <p className="text-lg font-semibold text-red-600">Error al cargar la escena.</p>
-        <p>Este minijuego aún no está disponible. Vuelve al menú de minijuegos.</p>
-        <button
-          className="py-2 px-4 bg-blue-600 text-white rounded hover:bg-blue-700 transition"
-          onClick={() => navigate('/games')}
-        >
-          Volver al menú de minijuegos
-        </button>
-      </main>
-    )
-  }
 
   if (!currentGame) {
     return (
