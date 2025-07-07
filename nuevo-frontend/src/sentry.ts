@@ -2,39 +2,26 @@ import * as Sentry from '@sentry/react';
 
 // Inicializar Sentry
 export function initSentry() {
-  // Solo inicializar en producción o cuando tengas un DSN real
-  if (import.meta.env.PROD) {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (dsn) {
     Sentry.init({
-      dsn: import.meta.env.VITE_SENTRY_DSN || "https://4bc2054992970095c8fb4f001ba65579@o4509625810812928.ingest.de.sentry.io/4509625846267984",
-      
-      // Configuración de performance
+      dsn,
       integrations: [
         Sentry.browserTracingIntegration(),
         Sentry.replayIntegration(),
       ],
-      
-      // Configuración de muestreo
-      tracesSampleRate: 0.2, // 20% de las transacciones
-      
-      // Configuración de errores
+      tracesSampleRate: 0.2,
       beforeSend(event) {
-        // Filtrar errores que no queremos reportar
         if (event.exception) {
           const exception = event.exception.values?.[0];
           if (exception?.type === 'ChunkLoadError') {
-            return null; // No reportar errores de carga de chunks
+            return null;
           }
         }
         return event;
       },
-      
-      // Configuración del entorno
       environment: import.meta.env.MODE,
-      
-      // Configuración de release
       release: import.meta.env.VITE_APP_VERSION || '1.0.0',
-      
-      // Configuración de debug (solo en desarrollo)
       debug: import.meta.env.DEV,
     });
   }
@@ -42,7 +29,8 @@ export function initSentry() {
 
 // Función para reportar errores manualmente
 export function reportError(error: Error, context?: Record<string, any>) {
-  if (import.meta.env.PROD) {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (dsn) {
     Sentry.captureException(error, {
       extra: context,
     });
@@ -53,7 +41,8 @@ export function reportError(error: Error, context?: Record<string, any>) {
 
 // Función para reportar mensajes informativos
 export function reportMessage(message: string, level: Sentry.SeverityLevel = 'info') {
-  if (import.meta.env.PROD) {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (dsn) {
     Sentry.captureMessage(message, level);
   } else {
     console.log(`[Sentry ${level}]:`, message);
@@ -62,14 +51,16 @@ export function reportMessage(message: string, level: Sentry.SeverityLevel = 'in
 
 // Función para agregar contexto del usuario
 export function setUserContext(user: { id: string; email?: string; name?: string }) {
-  if (import.meta.env.PROD) {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (dsn) {
     Sentry.setUser(user);
   }
 }
 
 // Función para limpiar contexto del usuario
 export function clearUserContext() {
-  if (import.meta.env.PROD) {
+  const dsn = import.meta.env.VITE_SENTRY_DSN;
+  if (dsn) {
     Sentry.setUser(null);
   }
 } 
