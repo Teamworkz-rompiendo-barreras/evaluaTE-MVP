@@ -3,6 +3,7 @@ import React from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 import type { RootState } from '@/app/store';
+import { useSentry } from '../hooks/useSentry';
 
 interface Props {
   step: 'contact' | 'preferences' | 'games' | 'uploadCV' | 'resultados';
@@ -13,6 +14,7 @@ export default function ProtectedRoute({ step, children }: Props) {
   const location = useLocation();
   const personal = useSelector((state: RootState) => state.personal);
   const game = useSelector((state: RootState) => state.game);
+  const { captureMessage, addContext } = useSentry();
 
   console.log('🔒 ProtectedRoute - INICIO');
   console.log('🔒 ProtectedRoute - step:', step);
@@ -38,9 +40,22 @@ export default function ProtectedRoute({ step, children }: Props) {
   console.log('🔒 ProtectedRoute - hasCompletedAllGames:', hasCompletedAllGames);
   console.log('🔒 ProtectedRoute - hasCV:', hasCV);
 
+  // Agregar contexto a Sentry
+  addContext('protectedRoute', {
+    step,
+    pathname: location.pathname,
+    hasContactData,
+    hasPreferences,
+    hasPersonalData,
+    hasCompletedAllGames,
+    hasCV,
+    completedGames: game.completedGames.length,
+  });
+
   // Función de redirección
   const redirectTo = (path: string) => {
     console.log('🔒 ProtectedRoute - REDIRIGIENDO a:', path);
+    captureMessage(`Redirección de acceso: ${step} → ${path}`, 'info');
     return <Navigate to={path} replace state={{ from: location }} />;
   };
 

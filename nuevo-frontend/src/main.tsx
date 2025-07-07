@@ -14,22 +14,29 @@ import UploadCVPage from './pages/UploadCVPage';
 import ResultadosPage from './pages/ResultadosPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
+import ErrorBoundary from './components/ErrorBoundary';
 // import { AccessibilitySettings } from './components/AccessibilitySettings';
 // import { CookieConsent } from './components/CookieConsent';
 
+import { initSentry } from './sentry';
+
 import './index.css';
 import './legacy.css';
+
+// Inicializar Sentry
+initSentry();
 
 const root = ReactDOM.createRoot(document.getElementById('root')!);
 
 root.render(
   <React.StrictMode>
-    <Provider store={store}>
-      <PersistGate loading={null} persistor={persistor}>
-        {/* <AccessibilitySettings /> */}
-        {/* <CookieConsent /> */}
-        <BrowserRouter>
-          <Routes>
+    <ErrorBoundary>
+      <Provider store={store}>
+        <PersistGate loading={null} persistor={persistor}>
+          {/* <AccessibilitySettings /> */}
+          {/* <CookieConsent /> */}
+          <BrowserRouter>
+            <Routes>
             {/* 1) Inicio → registro: datos personales */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
@@ -90,5 +97,6 @@ root.render(
         </BrowserRouter>
       </PersistGate>
     </Provider>
+    </ErrorBoundary>
   </React.StrictMode>
 );
