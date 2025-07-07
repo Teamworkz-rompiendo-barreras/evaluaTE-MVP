@@ -3,15 +3,19 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { games } from '../data/games';
 import GameCard from '../components/GameCard';
+import { useAppSelector } from '../app/hooks';
+import { useGameController } from '../features/games/useGameController';
 
 const GameDashboardPage: React.FC = () => {
   const navigate = useNavigate();
+  const game = useAppSelector((state) => state.game);
+  const { isGameAvailable } = useGameController();
 
   console.log('GameDashboardPage - Renderizando versión con games importado');
   console.log('GameDashboardPage - Total de juegos:', games.length);
   console.log('GameDashboardPage - Componente montado correctamente');
 
-  // Simulación de estado de desbloqueo y accesibilidad (ajustar según tu lógica real)
+  // Accesibilidad (puedes adaptar según tu lógica real)
   const accessibility = {
     contrastLevel: 'normal' as const,
     fontScale: 100,
@@ -20,9 +24,20 @@ const GameDashboardPage: React.FC = () => {
     timeExtensions: false,
   };
 
-  // Simulación: desbloquear todos los juegos para la demo
-  const isUnlocked = (index: number) => true;
-  const isCurrent = (index: number) => false;
+  // Lógica real de desbloqueo y completado
+  const isUnlocked = (gameId: string, idx: number) => {
+    if (idx === 0) return true;
+    return isGameAvailable(gameId);
+  };
+  const isCompleted = (gameId: string) => game.completedGames.includes(gameId);
+  const isCurrent = (gameId: string, idx: number) => {
+    // El primer juego no completado y desbloqueado es el actual
+    if (!isCompleted(gameId) && isUnlocked(gameId, idx)) return true;
+    return false;
+  };
+
+  // El botón de resultados solo está activo si todos los juegos están completados
+  const allCompleted = game.completedGames.length === games.length;
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -42,19 +57,22 @@ const GameDashboardPage: React.FC = () => {
           <h3 className="font-semibold mb-2">Debug Info:</h3>
           <p>✅ Componente GameDashboardPage cargado correctamente</p>
           <p>✅ Games importado: {games.length} juegos disponibles</p>
-          <p>✅ Primer juego: {games[0]?.title}</p>
+          <p>✅ Juegos completados: {game.completedGames.length}</p>
         </div>
 
         {/* Grid de minijuegos - DINÁMICO */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {games.map((game, idx) => (
+          {games.map((g, idx) => (
             <GameCard
-              key={game.id}
-              game={game}
-              isUnlocked={isUnlocked(idx)}
-              isCurrent={isCurrent(idx)}
+              key={g.id}
+              game={g}
+              isUnlocked={isUnlocked(g.id, idx)}
+              isCurrent={isCurrent(g.id, idx)}
+              isCompleted={isCompleted(g.id)}
               accessibility={accessibility}
-              onClick={() => navigate(`/games/${game.id}`)}
+              onClick={() => {
+                if (isUnlocked(g.id, idx)) navigate(`/games/${g.id}`);
+              }}
             />
           ))}
         </div>
@@ -68,8 +86,9 @@ const GameDashboardPage: React.FC = () => {
             ← Datos Personales
           </button>
           <button
-            onClick={() => navigate('/resultados')}
-            className="px-6 py-3 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
+            onClick={() => allCompleted && navigate('/resultados')}
+            className={`px-6 py-3 rounded-lg transition-colors text-white ${allCompleted ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 cursor-not-allowed'}`}
+            disabled={!allCompleted}
           >
             Ver Resultados →
           </button>
