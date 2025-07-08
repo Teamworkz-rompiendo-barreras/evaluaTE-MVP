@@ -4,6 +4,7 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { ResponsiveRadar } from '@nivo/radar';
+import type { SoftSkillResult, UserDecision } from '../types/skills';
 
 // Componentes visuales
 
@@ -31,40 +32,40 @@ const ResultadosPage: React.FC = () => {
   }
 
   // Normaliza los datos de softSkills para asegurar que cumplen el tipo SoftSkillResult
-  function normalizeSoftSkills(skills: unknown[]): any[] {
+  function normalizeSoftSkills(skills: unknown[]): SoftSkillResult[] {
     return (skills ?? []).map((skill: unknown) => ({
       skill: (skill as { skill: string }).skill,
       level: (skill as { level: string }).level as 'Bajo' | 'Medio' | 'Alto',
       confidence: (skill as { confidence?: number; score?: number }).confidence ?? (typeof (skill as { score?: number }).score === 'number' ? (skill as { score: number }).score / 100 : 0),
       feedback: (skill as { feedback?: string }).feedback ?? '',
-      interactions: (skill as { interactions?: string[] }).interactions ?? [],
+      interactions: (skill as { interactions?: UserDecision[] }).interactions ?? [],
     }));
   }
 
-  const normalizedSoftSkills = normalizeSoftSkills(personal?.report?.softSkills ?? []);
+  const normalizedSoftSkills: SoftSkillResult[] = normalizeSoftSkills(personal?.report?.softSkills ?? []);
   const data: RadarData[] = normalizedSoftSkills.map((skill) => ({
     skill: skill.skill,
     level: skill.confidence * 100,
-    interactions: skill.interactions.map((i: any) => typeof i === 'string' ? i : JSON.stringify(i)),
+    interactions: skill.interactions.map((i) => i.optionText ?? ''),
   }));
 
-  // Áreas a mejorar (confianza menor a 0.6)
+  // Áreas a mejorar (habilidades con menor puntuación)
   interface AreaMejorar {
     skill: string;
     level: string;
     confidence: number;
     feedback?: string;
-    interactions: string[];
+    interactions: UserDecision[];
   }
 
-  const areasMejorar: AreaMejorar[] = normalizedSoftSkills
-    .filter((skill) => skill.confidence < 0.6)
+  const areasToImprove: AreaMejorar[] = normalizedSoftSkills
+    .filter((skill) => skill.confidence < 0.7)
     .map((skill) => ({
       skill: skill.skill,
       level: skill.level,
       confidence: skill.confidence,
       feedback: skill.feedback,
-      interactions: skill.interactions.map((i: any) => typeof i === 'string' ? i : JSON.stringify(i)),
+      interactions: skill.interactions
     }));
 
   // Manejador para descargar informe PDF
@@ -114,17 +115,6 @@ const ResultadosPage: React.FC = () => {
   const totalGames = 10; // Total de minijuegos disponibles
   const completionPercentage = Math.round((completedGamesCount / totalGames) * 100);
 
-  // Áreas de mejora (habilidades con menor puntuación)
-  const areasToImprove = personal.report?.softSkills
-    ?.filter((skill: any) => skill.confidence < 0.7)
-    ?.map((skill: any) => ({
-      skill: skill.name,
-      level: skill.confidence,
-      confidence: skill.confidence,
-      feedback: skill.feedback,
-      interactions: skill.interactions || 0
-    })) || [];
-
   return (
     <section className="relative max-w-4xl mx-auto p-6 space-y-8">
       {/* Título */}
@@ -157,7 +147,7 @@ const ResultadosPage: React.FC = () => {
             <div className="mb-6">
               <h4 className="font-semibold mb-3 text-green-700">✅ Fortalezas identificadas:</h4>
               <ul className="space-y-2">
-                {(personal.cvAnalysis as any).strengths.map((strength: any, index: number) => (
+                {(personal.cvAnalysis as any).strengths.map((strength: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <span className="text-green-500 mr-2">•</span>
                     <span className="text-gray-700">{strength}</span>
@@ -172,7 +162,7 @@ const ResultadosPage: React.FC = () => {
             <div>
               <h4 className="font-semibold mb-3 text-orange-700">🔧 Áreas de mejora:</h4>
               <ul className="space-y-2">
-                {(personal.cvAnalysis as any).weaknesses.map((weakness: any, index: number) => (
+                {(personal.cvAnalysis as any).weaknesses.map((weakness: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <span className="text-orange-500 mr-2">•</span>
                     <span className="text-gray-700">{weakness}</span>
@@ -222,8 +212,8 @@ const ResultadosPage: React.FC = () => {
       <div className="bg-blue-50 p-6 rounded shadow-md">
         <h2 className="text-2xl font-semibold mb-4">Recomendaciones de mejora</h2>
         <ul className="space-y-2">
-          {areasMejorar.length > 0 ? (
-            areasMejorar.map((skill, index) => (
+          {areasToImprove.length > 0 ? (
+            areasToImprove.map((skill, index) => (
               <li key={index}>
                 <strong>{skill.skill}:</strong> Tu nivel es <em>{skill.level}</em>. Recomendación: {skill.feedback}
               </li>

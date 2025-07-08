@@ -1,6 +1,6 @@
 // nuevo-frontend/src/features/games/useGameController.ts
 
-import { useCallback } from 'react';
+import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
 import { Game, GameScene, GameLog, SoftSkill } from '../../types/game';
 import { games, getGameById } from '../../data/games';
@@ -16,7 +16,7 @@ export const useGameController = () => {
   const currentGame = gameState.currentGameId ? getGameById(gameState.currentGameId) : null;
   const currentSceneIndex = gameState.currentGameId && currentGame ? (gameState.gameLogs[currentGame.id]?.length || 0) : 0;
   const currentScene = currentGame && currentSceneIndex < currentGame.scenes.length ? currentGame.scenes[currentSceneIndex] : null;
-  const gameLogs = currentGame ? (gameState.gameLogs[currentGame.id] || []) : [];
+  const gameLogs = useMemo(() => currentGame ? (gameState.gameLogs[currentGame.id] || []) : [], [currentGame, gameState.gameLogs]);
 
   // Inicializar un juego
   const startGame = useCallback((gameId: string) => {
@@ -25,21 +25,6 @@ export const useGameController = () => {
       dispatch(updateGameProgress({ currentGameId: gameId }));
     }
   }, [dispatch]);
-
-  // Completar una escena
-  const completeScene = useCallback((log: GameLog) => {
-    if (!currentGame) return;
-    dispatch(addGameLog({ gameId: currentGame.id, log }));
-    // Si es la última escena, completar el juego
-    if (currentSceneIndex >= currentGame.scenes.length - 1) {
-      handleCompleteGame();
-    }
-  }, [currentGame, currentSceneIndex, dispatch]);
-
-  // Ir a una escena específica
-  const goToScene = useCallback((_sceneId: string) => {
-    // No es necesario con el nuevo enfoque, ya que el avance es secuencial
-  }, []);
 
   // Completar el juego actual
   const handleCompleteGame = useCallback(() => {
@@ -73,6 +58,20 @@ export const useGameController = () => {
       softSkill 
     }));
   }, [currentGame, gameLogs, dispatch]);
+
+  // Completar una escena
+  const completeScene = useCallback((log: GameLog) => {
+    if (!currentGame) return;
+    dispatch(addGameLog({ gameId: currentGame.id, log }));
+    if (currentSceneIndex >= currentGame.scenes.length - 1) {
+      handleCompleteGame();
+    }
+  }, [currentGame, currentSceneIndex, dispatch, handleCompleteGame]);
+
+  // Ir a una escena específica
+  const goToScene = useCallback((_sceneId: string) => {
+    // No es necesario con el nuevo enfoque, ya que el avance es secuencial
+  }, []);
 
   // Obtener progreso del juego
   const getGameProgress = useCallback(() => {

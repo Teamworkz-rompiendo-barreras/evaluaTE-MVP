@@ -18,8 +18,6 @@ interface ChoiceSceneProps {
 const ChoiceScene: React.FC<ChoiceSceneProps> = ({
   scene,
   onComplete,
-  onHelpRequest: _onHelpRequest,
-  onAdaptation: _onAdaptation,
   accessibility
 }) => {
   const [_selectedOption, setSelectedOption] = useState<string | null>(null);

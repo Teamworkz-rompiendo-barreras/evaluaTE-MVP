@@ -168,8 +168,8 @@ export const personalSlice = createSlice({
     // Registra decisiones tomadas durante escenas
     addSceneDecision(state, action: PayloadAction<UserDecision>) {
       const sceneId = action.payload.sceneId;
-      const logs = (state.report && Array.isArray((state.report as unknown) as any))
-        ? (state.report as unknown) as SceneLog[]
+      const logs = (state.report && Array.isArray(state.report as unknown))
+        ? (state.report as unknown as SceneLog[])
         : [];
 
       const existingIndex: number = logs.findIndex((log: SceneLog) => log.sceneId === String(sceneId));
@@ -312,8 +312,8 @@ function getRecommendationsFromProfile(params: {
     resources.push('Microsoft Learn');
   }
 
-  if (params.cvAnalysis && Array.isArray((params.cvAnalysis as unknown) as any) && (params.cvAnalysis as unknown) as any.length) {
-    cvImprovements.push(...(params.cvAnalysis as unknown) as any);
+  if (params.cvAnalysis && Array.isArray(params.cvAnalysis) && params.cvAnalysis.length) {
+    cvImprovements.push(...params.cvAnalysis);
   }
 
   nextSteps.push('Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias');

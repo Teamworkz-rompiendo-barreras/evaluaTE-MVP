@@ -30,7 +30,7 @@ describe('Debug Dashboard', () => {
     cy.contains('h1', 'EvalúaTE - Minijuegos').should('exist')
 
     // 4) Debug: Verificar qué elementos están presentes
-    cy.get('body').then(($body) => {
+    cy.get('body').then(() => {
       // Verificar si hay algún div con clase que contenga "game"
       cy.log('Buscando elementos con clase que contenga "game"')
       cy.get('[class*="game"]').then(($elements) => {

@@ -3,7 +3,7 @@ import { reportError, reportMessage, setUserContext, clearUserContext } from '..
 
 export const useSentry = () => {
   // Función para reportar errores
-  const captureError = useCallback((error: Error, context?: Record<string, any>) => {
+  const captureError = useCallback((error: Error, context?: Record<string, unknown>) => {
     reportError(error, context);
   }, []);
 
@@ -27,22 +27,19 @@ export const useSentry = () => {
     if (import.meta.env.PROD) {
       // En producción, usar Sentry.setContext
       import('@sentry/react').then(({ setContext }) => {
-        setContext(key, value);
+        setContext(key, value as Record<string, unknown>);
       });
     } else {
-      // console.log(`[Sentry Context] ${key}:`, value);
-    }
+      // console.log(`
+    });
   }, []);
 
   // Función para agregar tags
   const addTag = useCallback((key: string, value: string) => {
     if (import.meta.env.PROD) {
-      // En producción, usar Sentry.setTag
       import('@sentry/react').then(({ setTag }) => {
         setTag(key, value);
       });
-    } else {
-      // console.log(`[Sentry Tag] ${key}: ${value}`);
     }
   }, []);
 
@@ -54,4 +51,4 @@ export const useSentry = () => {
     addContext,
     addTag,
   };
-}; 
+};

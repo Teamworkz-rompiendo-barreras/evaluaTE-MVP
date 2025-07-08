@@ -17,10 +17,7 @@ interface AudioSceneProps {
 
 const AudioScene: React.FC<AudioSceneProps> = ({
   scene,
-  onComplete,
-  onHelpRequest: _onHelpRequest,
-  onAdaptation: _onAdaptation,
-  accessibility: _accessibility
+  onComplete
 }) => {
   const [isPlaying, setIsPlaying] = useState(false);
   const [selectedAnswer, setSelectedAnswer] = useState<string | null>(null);
