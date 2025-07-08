@@ -13,9 +13,9 @@ import PreferencesStep from '../PreferencesStep'
 // Store de prueba simple
 const testStore = configureStore({
   reducer: {
-    personal: (state = {}, action) => state,
-    progress: (state = {}, action) => state,
-    accessibility: (state = {}, action) => state,
+    personal: (state = {}, _action) => state,
+    progress: (state = {}, _action) => state,
+    accessibility: (state = {}, _action) => state,
   },
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({

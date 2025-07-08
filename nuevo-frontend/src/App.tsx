@@ -6,8 +6,6 @@ import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom
 import DatosPersonalesPage from './pages/DatosPersonalesPage'
 import PreferencesStep from './features/personal/PreferencesStep'
 import GameDashboardPage from './pages/GameDashboardPage'
-import SimpleDashboardPage from './pages/SimpleDashboardPage'
-import TestPage from './pages/TestPage'
 import GameScenePage from './pages/GameScenePage'
 import UploadCVPage from './pages/UploadCVPage'
 import ResultadosPage from './pages/ResultadosPage'
@@ -15,9 +13,6 @@ import ResultadosPage from './pages/ResultadosPage'
 // Componentes visuales
 import ProtectedRoute from './components/ProtectedRoute'
 import { Toaster } from 'react-hot-toast'
-import ProgressBar from './components/ProgressBar'
-import { AccessibilitySettings } from './components/AccessibilitySettings'
-import DebugState from './components/DebugState'
 
 // Layouts compartidos
 function AppLayout() {

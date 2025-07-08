@@ -4,7 +4,6 @@ import { useNavigate } from 'react-router-dom';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { ResponsiveRadar } from '@nivo/radar';
-import { SoftSkillResult, CvAnalysis } from '../types/skills';
 
 // Componentes visuales
 
@@ -114,13 +113,6 @@ const ResultadosPage: React.FC = () => {
   const completedGamesCount = personal.report?.completedGames?.length || 0;
   const totalGames = 10; // Total de minijuegos disponibles
   const completionPercentage = Math.round((completedGamesCount / totalGames) * 100);
-
-  // Datos para el gráfico de radar
-  const radarData = personal.report?.softSkills?.map((skill: any) => ({
-    skill: skill.name,
-    level: skill.confidence,
-    interactions: skill.interactions || 0
-  })) || [];
 
   // Áreas de mejora (habilidades con menor puntuación)
   const areasToImprove = personal.report?.softSkills

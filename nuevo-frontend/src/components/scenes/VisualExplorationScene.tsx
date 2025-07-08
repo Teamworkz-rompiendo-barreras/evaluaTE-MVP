@@ -18,8 +18,6 @@ interface VisualExplorationSceneProps {
 const VisualExplorationScene: React.FC<VisualExplorationSceneProps> = ({
   scene,
   onComplete,
-  onHelpRequest: _onHelpRequest,
-  onAdaptation: _onAdaptation,
   accessibility: _accessibility
 }) => {
   const [exploredAreas, setExploredAreas] = useState<string[]>([]);

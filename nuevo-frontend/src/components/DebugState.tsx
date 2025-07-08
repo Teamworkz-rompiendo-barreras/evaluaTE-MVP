@@ -5,7 +5,6 @@ import { RootState } from '../app/store';
 const DebugState: React.FC = () => {
   const personal = useSelector((state: RootState) => state.personal);
   const game = useSelector((state: RootState) => state.game);
-  const progress = useSelector((state: RootState) => state.progress);
 
   const hasContactData = Boolean(personal.firstName && personal.lastName);
   const hasPreferences = personal?.jobPreferences && (

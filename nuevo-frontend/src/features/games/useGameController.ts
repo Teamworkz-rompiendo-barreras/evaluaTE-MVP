@@ -37,7 +37,7 @@ export const useGameController = () => {
   }, [currentGame, currentSceneIndex, dispatch]);
 
   // Ir a una escena específica
-  const goToScene = useCallback((sceneId: string) => {
+  const goToScene = useCallback((_sceneId: string) => {
     // No es necesario con el nuevo enfoque, ya que el avance es secuencial
   }, []);
 

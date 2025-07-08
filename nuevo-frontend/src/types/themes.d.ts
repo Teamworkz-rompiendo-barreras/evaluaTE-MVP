@@ -4,19 +4,19 @@
  * Paleta de colores personalizada
  */
 export type ColorPalette = {
-  primary: string
-  secondary: string
-  accent: string
+  primary: string;
+  secondary: string;
+  accent: string;
   neutral: {
-    light: string
-    DEFAULT: string
-    dark: string
-  }
-  success: string
-  warning: string
-  error: string
-  info: string
-}
+    light: string;
+    DEFAULT: string;
+    dark: string;
+  };
+  success: string;
+  warning: string;
+  error: string;
+  info: string;
+};
 
 /**
  * Tipos de tamaño de texto

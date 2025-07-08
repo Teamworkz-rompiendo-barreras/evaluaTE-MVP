@@ -84,7 +84,6 @@ module.exports = {
     // Variables globales de Node.js
     __dirname: 'readonly',
     __filename: 'readonly',
-    module: 'readonly',
     require: 'readonly',
     process: 'readonly',
     Buffer: 'readonly',
@@ -112,7 +111,6 @@ module.exports = {
     interface: 'readonly',
     type: 'readonly',
     namespace: 'readonly',
-    module: 'readonly',
     // Variables globales de Web APIs
     SpeechSynthesisUtterance: 'readonly',
     speechSynthesis: 'readonly',
