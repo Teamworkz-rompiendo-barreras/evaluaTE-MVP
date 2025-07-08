@@ -19,7 +19,7 @@ const SimpleDashboardPage: React.FC = () => {
 
         {/* Grid de minijuegos SIMPLE */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {games.map((game, index) => {
+          {games.map((game) => {
             // console.log('SimpleDashboardPage - Renderizando juego:', game.id, 'index:', index);
             
             return (

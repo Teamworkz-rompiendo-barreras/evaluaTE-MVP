@@ -1,6 +1,6 @@
 // src/types/nivo-radar.d.ts
 
-interface RadarProps {
+export interface RadarProps {
   data: unknown[]
   keys: string[]
   indexBy: string
@@ -15,7 +15,4 @@ interface RadarProps {
   animate?: boolean
 }
 
-declare module '@nivo/radar' {
-  import { ComponentType } from 'react'
-  export const ResponsiveRadar: ComponentType<RadarProps>
-}
+export const ResponsiveRadar: React.ComponentType<RadarProps>

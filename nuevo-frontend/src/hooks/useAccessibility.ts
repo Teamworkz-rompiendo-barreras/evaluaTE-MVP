@@ -23,7 +23,7 @@ export const useAccessibility = () => {
     html.style.fontSize = `${accessibility.fontScale}%`;
   }, [accessibility.contrastLevel, accessibility.fontScale]);
 
-  const setContrastLevel = (_level: 'normal' | 'high') => {
+  const setContrastLevel = (level: 'normal' | 'high') => {
     dispatch(toggleContrast());
   };
 
@@ -35,11 +35,11 @@ export const useAccessibility = () => {
     dispatch(setFontScale(scale));
   };
 
-  const setVisualHelp = (_enabled: boolean) => {
+  const setVisualHelp = (enabled: boolean) => {
     // Implementation needed
   };
 
-  const setTimeExtensions = (_enabled: boolean) => {
+  const setTimeExtensions = (enabled: boolean) => {
     // Implementation needed
   };
 
