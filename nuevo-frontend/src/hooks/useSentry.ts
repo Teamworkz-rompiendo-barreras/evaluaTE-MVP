@@ -30,8 +30,9 @@ export const useSentry = () => {
         setContext(key, value as Record<string, unknown>);
       });
     } else {
-      // console.log(`
-    });
+      // Aquí podrías agregar un log para desarrollo si lo necesitas
+      // console.log('addContext:', key, value);
+    }
   }, []);
 
   // Función para agregar tags

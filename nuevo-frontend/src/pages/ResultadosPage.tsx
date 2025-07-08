@@ -137,17 +137,19 @@ const ResultadosPage: React.FC = () => {
             <div className="flex items-center justify-between mb-2">
               <span className="font-medium">Puntuación general:</span>
               <span className="text-2xl font-bold text-blue-600">
-                {(personal.cvAnalysis as any).score || 'N/A'}
+                {typeof personal.cvAnalysis === 'object' && personal.cvAnalysis && 'score' in personal.cvAnalysis
+                  ? (personal.cvAnalysis as { score?: number }).score ?? 'N/A'
+                  : 'N/A'}
               </span>
             </div>
           </div>
 
           {/* Fortalezas */}
-          {(personal.cvAnalysis as any).strengths && (personal.cvAnalysis as any).strengths.length > 0 && (
+          {typeof personal.cvAnalysis === 'object' && personal.cvAnalysis && 'strengths' in personal.cvAnalysis && Array.isArray((personal.cvAnalysis as { strengths?: string[] }).strengths) && ((personal.cvAnalysis as { strengths?: string[] }).strengths.length > 0) && (
             <div className="mb-6">
               <h4 className="font-semibold mb-3 text-green-700">✅ Fortalezas identificadas:</h4>
               <ul className="space-y-2">
-                {(personal.cvAnalysis as any).strengths.map((strength: string, index: number) => (
+                {(personal.cvAnalysis as { strengths?: string[] }).strengths!.map((strength: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <span className="text-green-500 mr-2">•</span>
                     <span className="text-gray-700">{strength}</span>
@@ -158,11 +160,11 @@ const ResultadosPage: React.FC = () => {
           )}
 
           {/* Áreas de mejora */}
-          {(personal.cvAnalysis as any).weaknesses && (personal.cvAnalysis as any).weaknesses.length > 0 && (
+          {typeof personal.cvAnalysis === 'object' && personal.cvAnalysis && 'weaknesses' in personal.cvAnalysis && Array.isArray((personal.cvAnalysis as { weaknesses?: string[] }).weaknesses) && ((personal.cvAnalysis as { weaknesses?: string[] }).weaknesses.length > 0) && (
             <div>
               <h4 className="font-semibold mb-3 text-orange-700">🔧 Áreas de mejora:</h4>
               <ul className="space-y-2">
-                {(personal.cvAnalysis as any).weaknesses.map((weakness: string, index: number) => (
+                {(personal.cvAnalysis as { weaknesses?: string[] }).weaknesses!.map((weakness: string, index: number) => (
                   <li key={index} className="flex items-start">
                     <span className="text-orange-500 mr-2">•</span>
                     <span className="text-gray-700">{weakness}</span>

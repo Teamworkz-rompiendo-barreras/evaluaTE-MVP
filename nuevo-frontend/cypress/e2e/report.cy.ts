@@ -54,9 +54,9 @@ describe('Informe de Resultados', () => {
 
     // Comprobamos la petición y su respuesta
     cy.wait('@generateReport').then(({ response }) => {
-      expect(response!.statusCode).to.equal(200)
-      expect(response!.headers['content-type']).to.include('application/pdf')
-      expect(response!.body.length).to.be.greaterThan(1000)
+      expect(response && response.statusCode).to.equal(200)
+      expect(response && response.headers['content-type']).to.include('application/pdf')
+      expect(response && response.body.length).to.be.greaterThan(1000)
     })
   })
 })

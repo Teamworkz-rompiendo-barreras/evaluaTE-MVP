@@ -1,5 +1,4 @@
 /// <reference types="cypress" />
-import 'cypress-file-upload'
 
 /* eslint-env cypress */
 /* eslint-disable */

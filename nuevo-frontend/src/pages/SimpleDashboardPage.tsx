@@ -26,7 +26,7 @@ const SimpleDashboardPage: React.FC = () => {
               <div
                 key={game.id}
                 className="game-card bg-white border-2 border-gray-300 p-4 rounded-lg cursor-pointer hover:border-blue-400 hover:shadow-lg"
-                onClick={() => console.log('Clic en juego:', game.id)}
+                // onClick={() => console.log('Clic en juego:', game.id)}
               >
                 {/* Icono del juego */}
                 <div className="text-center mb-3">
