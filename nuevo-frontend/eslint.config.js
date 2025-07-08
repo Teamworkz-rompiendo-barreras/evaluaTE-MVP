@@ -105,6 +105,18 @@ export default [
   },
   {
     files: ['cypress/**/*.ts', 'cypress/**/*.js'],
-    env: { cypress: true },
+    languageOptions: {
+      globals: {
+        Cypress: 'readonly',
+        cy: 'readonly',
+        describe: 'readonly',
+        it: 'readonly',
+        beforeEach: 'readonly',
+        afterEach: 'readonly',
+        beforeAll: 'readonly',
+        afterAll: 'readonly',
+        expect: 'readonly',
+      },
+    },
   },
 ]; 
