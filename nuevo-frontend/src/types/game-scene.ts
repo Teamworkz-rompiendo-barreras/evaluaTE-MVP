@@ -1,6 +1,4 @@
 // src/types/game-scene.ts
-import type { SoftSkillResult } from '@/types/skills'
-import type { JobPreference } from '@/types/preferences'
 
 /**
  * Opción seleccionada por el usuario en una escena
@@ -70,7 +68,27 @@ export interface UserDecisionHistory {
   createdAt: string
   updatedAt: string
   completedGames: number[]
-  preferencesAtStart: JobPreference // Preferencias laborales iniciales
-  softSkillsAtEnd: SoftSkillResult[] // Evaluación final de habilidades blandas
+  preferencesAtStart: {
+    areas: string[];
+    needs: string[];
+    workMode?: 'remoto' | 'presencial' | 'híbrido';
+    availability?: 'mañana' | 'tarde' | 'completa';
+    willingToRelocate: boolean;
+    hasDisabilityCert: boolean;
+    languages?: string[];
+    scheduleType?: 'media' | 'completa' | 'adaptativa';
+    accessibilitySettings?: {
+      easyReadingMode: boolean;
+      audioAssistiveMode: boolean;
+      showPictograms: boolean;
+      contrastLevel: 'normal' | 'alto' | 'muy-alto';
+      fontScale: number;
+    };
+  };
+  softSkillsAtEnd: Array<{
+    skill: string;
+    score: number;
+    level: 'bajo' | 'medio' | 'alto';
+  }>;
   employabilityScore: number // Puntaje global calculado
 }

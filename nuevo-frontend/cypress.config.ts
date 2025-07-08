@@ -1,4 +1,4 @@
-/* eslint-env node */
+/* eslint-disable no-undef */
 // cypress.config.ts
 const { defineConfig } = require('cypress')
 

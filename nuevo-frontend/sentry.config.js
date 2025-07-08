@@ -1,4 +1,4 @@
-/* eslint-env node */
+/* eslint-disable no-undef */
 // Configuración de Sentry para el proyecto EvaluaTE
 // Para obtener tu DSN: https://sentry.io/settings/projects/[tu-proyecto]/keys/
 
