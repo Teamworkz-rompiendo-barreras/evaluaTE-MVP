@@ -2,14 +2,7 @@
 import { v4 as uuidv4 } from 'uuid' // Para generar ID único de sesión
 
 // Tipos esperados para los logs
-interface StepLog {
-  gameId: number
-  stepIndex: number
-  optionIndex: number
-  timeSpent: number
-  usedHelp: boolean
-  emotionalResponse: string | null
-}
+// (Si StepLog no se usa, eliminarlo)
 
 interface SoftSkillLog {
   gameId: number
@@ -21,7 +14,14 @@ interface SoftSkillLog {
 export const useLogger = () => {
   const sessionId = uuidv4()
 
-  const logStep = async (stepData: StepLog) => {
+  const logStep = async (stepData: {
+    gameId: number;
+    stepIndex: number;
+    optionIndex: number;
+    timeSpent: number;
+    usedHelp: boolean;
+    emotionalResponse: string | null;
+  }) => {
     try {
       const response = await fetch('/api/logs/step', {
         method: 'POST',

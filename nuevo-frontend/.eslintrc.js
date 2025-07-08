@@ -4,6 +4,9 @@ module.exports = {
     browser: true,
     es2021: true,
     node: true,
+    'vitest-globals/env': true,
+    jest: true,
+    cypress: true,
   },
   extends: [
     'eslint:recommended',
