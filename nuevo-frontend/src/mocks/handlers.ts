@@ -1,6 +1,7 @@
 // src/mocks/handlers.ts
 
 import { http, HttpResponse } from 'msw'
+import { Blob } from 'buffer'
 // Si Blob no está definido y se usa en Node, importar:
 // import { Blob } from 'buffer';
 

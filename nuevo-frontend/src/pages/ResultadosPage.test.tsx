@@ -1,7 +1,8 @@
 /* eslint-env jest */
 // src/pages/ResultadosPage.test.tsx
 
-import { render, screen } from '@testing-library/react';
+import React from 'react';
+import { render } from '@testing-library/react';
 import '@testing-library/jest-dom';
 import ResultadosPage from './ResultadosPage';
 import { MemoryRouter } from "react-router-dom";

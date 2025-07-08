@@ -1,7 +1,7 @@
 import React from 'react';
 
 const TestPage: React.FC = () => {
-  console.log('TestPage - Renderizando');
+  // console.log('TestPage - Renderizando');
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">

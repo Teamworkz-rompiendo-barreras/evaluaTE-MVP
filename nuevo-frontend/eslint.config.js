@@ -103,4 +103,8 @@ export default [
       'no-undef': 'off',
     },
   },
+  {
+    files: ['cypress/**/*.ts', 'cypress/**/*.js'],
+    env: { cypress: true },
+  },
 ]; 

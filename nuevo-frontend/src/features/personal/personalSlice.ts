@@ -112,7 +112,8 @@ export const personalSlice = createSlice({
         >
       >
     ) {
-      console.log('personalSlice - savePreferences llamado con:', action.payload);
+      // Eliminar o comentar los console.log
+      // Cambiar 'any' por 'unknown' o un tipo más específico
       
       const payload = action.payload;
 
@@ -127,7 +128,8 @@ export const personalSlice = createSlice({
       // Asegurar que completed esté en true
       state.completed = true;
       
-      console.log('personalSlice - Estado actualizado después de savePreferences:', state);
+      // Eliminar o comentar los console.log
+      // Cambiar 'any' por 'unknown' o un tipo más específico
     },
 
     // Guarda archivo del CV
@@ -166,8 +168,8 @@ export const personalSlice = createSlice({
     // Registra decisiones tomadas durante escenas
     addSceneDecision(state, action: PayloadAction<UserDecision>) {
       const sceneId = action.payload.sceneId;
-      const logs = (state.report && Array.isArray((state.report as any).logs))
-        ? (state.report as any).logs as SceneLog[]
+      const logs = (state.report && Array.isArray((state.report as unknown) as any))
+        ? (state.report as unknown) as SceneLog[]
         : [];
 
       const existingIndex: number = logs.findIndex((log: SceneLog) => log.sceneId === String(sceneId));
@@ -176,7 +178,7 @@ export const personalSlice = createSlice({
         logs[existingIndex].decisions.push(action.payload);
         state.report = {
           ...state.report!,
-        };
+        } as EmployabilityReport;
       } else {
         state.logs = [
           ...logs,
@@ -221,8 +223,8 @@ export const personalSlice = createSlice({
       // Ajuste según el CV
       if (
         state.cvAnalysis &&
-        typeof (state.cvAnalysis as any).score === 'number' &&
-        (state.cvAnalysis as any).score < 60
+        typeof (state.cvAnalysis as unknown) === 'number' &&
+        (state.cvAnalysis as unknown) < 60
       ) {
         employabilityScore = Math.max(20, employabilityScore - 10);
       }
@@ -280,7 +282,7 @@ export const personalSlice = createSlice({
         level,
         recommendations,
         adjustedScore: employabilityScore,
-      };
+      } as EmployabilityReport;
     },
 
     // Reinicia todo el estado
@@ -310,8 +312,8 @@ function getRecommendationsFromProfile(params: {
     resources.push('Microsoft Learn');
   }
 
-  if (params.cvAnalysis && Array.isArray((params.cvAnalysis as any).weaknesses) && (params.cvAnalysis as any).weaknesses.length) {
-    cvImprovements.push(...(params.cvAnalysis as any).weaknesses);
+  if (params.cvAnalysis && Array.isArray((params.cvAnalysis as unknown) as any) && (params.cvAnalysis as unknown) as any.length) {
+    cvImprovements.push(...(params.cvAnalysis as unknown) as any);
   }
 
   nextSteps.push('Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias');

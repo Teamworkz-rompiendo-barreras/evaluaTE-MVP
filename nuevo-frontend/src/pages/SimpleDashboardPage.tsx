@@ -2,7 +2,7 @@ import React from 'react';
 import { games } from '../data/games';
 
 const SimpleDashboardPage: React.FC = () => {
-  console.log('SimpleDashboardPage - Renderizando con', games.length, 'juegos');
+  // console.log('SimpleDashboardPage - Renderizando con', games.length, 'juegos');
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
@@ -20,7 +20,7 @@ const SimpleDashboardPage: React.FC = () => {
         {/* Grid de minijuegos SIMPLE */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
           {games.map((game, index) => {
-            console.log('SimpleDashboardPage - Renderizando juego:', game.id, 'index:', index);
+            // console.log('SimpleDashboardPage - Renderizando juego:', game.id, 'index:', index);
             
             return (
               <div

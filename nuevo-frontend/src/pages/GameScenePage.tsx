@@ -11,12 +11,13 @@ import ProgressBar from '../components/ProgressBar'
 import { RootState } from '../app/store'
 
 const GameScenePage: React.FC = () => {
-  console.log('GameScenePage - COMPONENTE CARGADO');
+  // Eliminar o comentar los console.log
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  console.log('GameScenePage - id del minijuego:', id);
-  console.log('GameScenePage - ruta actual:', window.location.pathname);
+  // Eliminar o comentar los console.log
+  // console.log('GameScenePage - id del minijuego:', id);
+  // console.log('GameScenePage - ruta actual:', window.location.pathname);
 
   // Estado del juego
   const { currentGame, currentScene, gameProgress } = useGameController()
@@ -40,9 +41,10 @@ const GameScenePage: React.FC = () => {
   }, [id, currentGame, startGame])
 
   useEffect(() => {
-    console.log('🎮 GameScenePage - INICIO VALIDACIÓN');
-    console.log('🎮 GameScenePage - Estado personal:', personal);
-    console.log('🎮 GameScenePage - personal.completed:', personal.completed);
+    // Eliminar o comentar los console.log
+    // console.log('🎮 GameScenePage - INICIO VALIDACIÓN');
+    // console.log('🎮 GameScenePage - Estado personal:', personal);
+    // console.log('🎮 GameScenePage - personal.completed:', personal.completed);
     
     // Verificar si los datos de contacto están completos
     const hasContactData = Boolean(personal?.firstName && personal?.lastName);
@@ -57,20 +59,23 @@ const GameScenePage: React.FC = () => {
     // Los datos personales están completamente completos cuando se tienen tanto contact como preferences
     const hasPersonalData = hasContactData && (hasPreferences || personal.completed);
     
-    console.log('🎮 GameScenePage - hasContactData:', hasContactData);
-    console.log('🎮 GameScenePage - hasPreferences:', hasPreferences);
-    console.log('🎮 GameScenePage - hasPersonalData:', hasPersonalData);
+    // Eliminar o comentar los console.log
+    // console.log('🎮 GameScenePage - hasContactData:', hasContactData);
+    // console.log('🎮 GameScenePage - hasPreferences:', hasPreferences);
+    // console.log('🎮 GameScenePage - hasPersonalData:', hasPersonalData);
     
     if (!hasPersonalData) {
-      console.log('🎮 GameScenePage - REDIRIGIENDO a /register/contact - datos personales no completados');
+      // Eliminar o comentar los console.log
+      // console.log('🎮 GameScenePage - REDIRIGIENDO a /register/contact - datos personales no completados');
       navigate('/register/contact');
       return;
     }
     
-    console.log('🎮 GameScenePage - ✅ Validaciones pasadas, continuando...');
+    // Eliminar o comentar los console.log
+    // console.log('🎮 GameScenePage - ✅ Validaciones pasadas, continuando...');
   }, [personal, navigate]);
 
-  const handleSceneComplete = (log: any) => {
+  const handleSceneComplete = (log: unknown) => {
     completeScene(log)
   }
 

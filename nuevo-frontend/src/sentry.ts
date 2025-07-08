@@ -28,14 +28,14 @@ export function initSentry() {
 }
 
 // Función para reportar errores manualmente
-export function reportError(error: Error, context?: Record<string, any>) {
+export function reportError(error: Error, context?: Record<string, unknown>) {
   const dsn = import.meta.env.VITE_SENTRY_DSN;
   if (dsn) {
     Sentry.captureException(error, {
       extra: context,
     });
   } else {
-    console.error('Error reportado a Sentry:', error, context);
+    // console.error('Error reportado a Sentry:', error, context);
   }
 }
 
@@ -45,7 +45,7 @@ export function reportMessage(message: string, level: Sentry.SeverityLevel = 'in
   if (dsn) {
     Sentry.captureMessage(message, level);
   } else {
-    console.log(`[Sentry ${level}]:`, message);
+    // console.log(`[Sentry ${level}]:`, message);
   }
 }
 

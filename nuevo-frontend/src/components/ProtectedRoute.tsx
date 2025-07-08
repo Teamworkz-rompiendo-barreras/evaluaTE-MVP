@@ -16,12 +16,6 @@ export default function ProtectedRoute({ step, children }: Props) {
   const game = useSelector((state: RootState) => state.game);
   const { captureMessage, addContext } = useSentry();
 
-  console.log('🔒 ProtectedRoute - INICIO');
-  console.log('🔒 ProtectedRoute - step:', step);
-  console.log('🔒 ProtectedRoute - location.pathname:', location.pathname);
-  console.log('🔒 ProtectedRoute - personal:', personal);
-  console.log('🔒 ProtectedRoute - personal.completed:', personal.completed);
-
   // Verificaciones simplificadas y más robustas
   const hasContactData = Boolean(personal.firstName && personal.lastName);
   const hasPreferences = Boolean(
@@ -33,12 +27,6 @@ export default function ProtectedRoute({ step, children }: Props) {
   const hasPersonalData = hasContactData && hasPreferences;
   const hasCompletedAllGames = game.completedGames.length >= 10;
   const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
-
-  console.log('🔒 ProtectedRoute - hasContactData:', hasContactData);
-  console.log('🔒 ProtectedRoute - hasPreferences:', hasPreferences);
-  console.log('🔒 ProtectedRoute - hasPersonalData:', hasPersonalData);
-  console.log('🔒 ProtectedRoute - hasCompletedAllGames:', hasCompletedAllGames);
-  console.log('🔒 ProtectedRoute - hasCV:', hasCV);
 
   // Agregar contexto a Sentry
   addContext('protectedRoute', {
@@ -54,7 +42,6 @@ export default function ProtectedRoute({ step, children }: Props) {
 
   // Función de redirección
   const redirectTo = (path: string) => {
-    console.log('🔒 ProtectedRoute - REDIRIGIENDO a:', path);
     captureMessage(`Redirección de acceso: ${step} → ${path}`, 'info');
     return <Navigate to={path} replace state={{ from: location }} />;
   };
@@ -63,67 +50,52 @@ export default function ProtectedRoute({ step, children }: Props) {
   switch (step) {
     case 'contact':
       // Siempre permitir acceso a contact
-      console.log('🔒 ProtectedRoute - PERMITIENDO acceso a contact');
       return <>{children}</>;
 
     case 'preferences':
       // Requiere datos de contacto
       if (!hasContactData) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO preferences: no hay contact data');
         return redirectTo('/register/contact');
       }
-      console.log('🔒 ProtectedRoute - PERMITIENDO acceso a preferences');
       return <>{children}</>;
 
     case 'games':
       // Requiere datos personales completos (contacto + preferencias)
       if (!hasContactData) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO games: no hay contact data');
         return redirectTo('/register/contact');
       }
       if (!hasPreferences) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO games: no hay preferences');
         return redirectTo('/register/preferences');
       }
-      console.log('🔒 ProtectedRoute - PERMITIENDO acceso a games');
       return <>{children}</>;
 
     case 'uploadCV':
       // Requiere datos personales y juegos completados
       if (!hasPersonalData) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO uploadCV: no hay personal data');
         return redirectTo('/register/contact');
       }
       if (!hasCompletedAllGames) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO uploadCV: no hay juegos completados');
         return redirectTo('/games');
       }
       if (hasCV) {
-        console.log('🔒 ProtectedRoute - REDIRIGIENDO uploadCV: ya tiene CV');
         return redirectTo('/resultados');
       }
-      console.log('🔒 ProtectedRoute - PERMITIENDO acceso a uploadCV');
       return <>{children}</>;
 
     case 'resultados':
       // Requiere todo completo
       if (!hasPersonalData) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO resultados: no hay personal data');
         return redirectTo('/register/contact');
       }
       if (!hasCompletedAllGames) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO resultados: no hay juegos completados');
         return redirectTo('/games');
       }
       if (!hasCV) {
-        console.log('🔒 ProtectedRoute - BLOQUEANDO resultados: no hay CV');
         return redirectTo('/upload-cv');
       }
-      console.log('🔒 ProtectedRoute - PERMITIENDO acceso a resultados');
       return <>{children}</>;
 
     default:
-      console.log('🔒 ProtectedRoute - PASO DESCONOCIDO, redirigiendo a contact');
       return redirectTo('/register/contact');
   }
 }

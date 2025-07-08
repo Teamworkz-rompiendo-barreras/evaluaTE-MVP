@@ -13,9 +13,10 @@ const GameDashboardPage: React.FC = () => {
   const { isGameAvailable } = useGameController();
   const dispatch = useAppDispatch();
 
-  console.log('GameDashboardPage - Renderizando versión con games importado');
-  console.log('GameDashboardPage - Total de juegos:', games.length);
-  console.log('GameDashboardPage - Componente montado correctamente');
+  // Eliminar o comentar los console.log
+  // console.log('GameDashboardPage - Renderizando versión con games importado');
+  // console.log('GameDashboardPage - Total de juegos:', games.length);
+  // console.log('GameDashboardPage - Componente montado correctamente');
 
   // Accesibilidad (puedes adaptar según tu lógica real)
   const accessibility = {

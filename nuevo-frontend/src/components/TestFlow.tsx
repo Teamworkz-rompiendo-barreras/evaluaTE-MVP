@@ -10,10 +10,8 @@ const TestFlow: React.FC = () => {
   const personal = useSelector((state: RootState) => state.personal);
 
   const testCompleteFlow = () => {
-    console.log('=== INICIANDO TEST COMPLETO ===');
-    
     // Paso 1: Simular datos de contacto
-    console.log('1. Guardando datos de contacto...');
+    // console.log('1. Guardando datos de contacto...');
     dispatch(saveContact({
       firstName: 'Test',
       lastName: 'User',
@@ -21,10 +19,10 @@ const TestFlow: React.FC = () => {
       whatsapp: '123456789'
     }));
     
-    console.log('Estado después de saveContact:', personal);
+    // console.log('Estado después de saveContact:', personal);
     
     // Paso 2: Simular preferencias
-    console.log('2. Guardando preferencias...');
+    // console.log('2. Guardando preferencias...');
     const jobPrefObj = {
       areas: ['Desarrollo web'],
       needs: [],
@@ -45,21 +43,21 @@ const TestFlow: React.FC = () => {
     
     dispatch(setPersonalCompleted(true));
     
-    console.log('Estado después de savePreferences:', personal);
+    // console.log('Estado después de savePreferences:', personal);
     
     // Paso 3: Navegar al dashboard
-    console.log('3. Navegando a /games...');
+    // console.log('3. Navegando a /games...');
     navigate('/games');
   };
 
   const testNavigation = () => {
-    console.log('=== TEST DE NAVEGACIÓN ===');
-    console.log('Navegando a /game/decision-making...');
+    // console.log('=== TEST DE NAVEGACIÓN ===');
+    // console.log('Navegando a /game/decision-making...');
     navigate('/game/decision-making');
   };
 
   const clearState = () => {
-    console.log('=== LIMPIANDO ESTADO ===');
+    // console.log('=== LIMPIANDO ESTADO ===');
     // Aquí podrías dispatch una acción para resetear el estado
     window.location.reload();
   };

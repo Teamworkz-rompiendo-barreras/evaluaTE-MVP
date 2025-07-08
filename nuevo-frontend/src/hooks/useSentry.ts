@@ -23,14 +23,14 @@ export const useSentry = () => {
   }, []);
 
   // Función para agregar contexto adicional
-  const addContext = useCallback((key: string, value: any) => {
+  const addContext = useCallback((key: string, value: unknown) => {
     if (import.meta.env.PROD) {
       // En producción, usar Sentry.setContext
       import('@sentry/react').then(({ setContext }) => {
         setContext(key, value);
       });
     } else {
-      console.log(`[Sentry Context] ${key}:`, value);
+      // console.log(`[Sentry Context] ${key}:`, value);
     }
   }, []);
 
@@ -42,7 +42,7 @@ export const useSentry = () => {
         setTag(key, value);
       });
     } else {
-      console.log(`[Sentry Tag] ${key}: ${value}`);
+      // console.log(`[Sentry Tag] ${key}: ${value}`);
     }
   }, []);
 

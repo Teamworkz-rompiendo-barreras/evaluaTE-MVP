@@ -29,7 +29,7 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
       componentStack: errorInfo.componentStack,
     });
 
-    console.error('Error capturado por ErrorBoundary:', error, errorInfo);
+    // console.error('Error capturado por ErrorBoundary:', error, errorInfo);
   }
 
   resetError = () => {
@@ -106,7 +106,7 @@ const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> 
 };
 
 // HOC de Sentry para envolver componentes
-export const withSentry = (Component: React.ComponentType<any>) => {
+export const withSentry = (Component: React.ComponentType<unknown>) => {
   return Sentry.withProfiler(Component);
 };
 

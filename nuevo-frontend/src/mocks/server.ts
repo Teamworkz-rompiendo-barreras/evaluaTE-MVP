@@ -16,13 +16,7 @@ server.listen({
 })
 
 // Opcional: log de inicio (útil para debug)
-interface ImportMetaWithVitest extends ImportMeta {
-  vitest?: unknown;
-}
-
-const importMeta = import.meta as ImportMetaWithVitest;
-
-if (importMeta.vitest) {
+if (import.meta.env.mode === 'test') {
   // console.log('[MSW] Mock server is running in test mode.')
 } else if (process.env.NODE_ENV === 'development') {
   // console.log('[MSW] Mock server is running in development mode.')
