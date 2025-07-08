@@ -22,7 +22,7 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
   onAdaptation: _onAdaptation,
   accessibility
 }) => {
-  const [selectedOption, setSelectedOption] = useState<string | null>(null);
+  const [_selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
   const handleOptionSelect = (optionId: string) => {
@@ -51,7 +51,7 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
           <div
             key={option.id}
             className={`option-card p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
-              selectedOption === option.id
+              _selectedOption === option.id
                 ? 'border-blue-500 bg-blue-50'
                 : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'
             } ${
@@ -94,7 +94,7 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
             </div>
 
             {/* Feedback que aparece cuando se selecciona */}
-            {showFeedback && selectedOption === option.id && option.feedback && (
+            {showFeedback && _selectedOption === option.id && option.feedback && (
               <div className="mt-3 p-3 bg-green-100 border border-green-300 rounded">
                 <p className="text-green-800">{option.feedback}</p>
               </div>

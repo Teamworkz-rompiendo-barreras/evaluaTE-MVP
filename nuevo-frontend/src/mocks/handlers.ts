@@ -1,6 +1,8 @@
 // src/mocks/handlers.ts
 
 import { http, HttpResponse } from 'msw'
+// Si Blob no está definido y se usa en Node, importar:
+// import { Blob } from 'buffer';
 
 export const handlers = [
   // Minijuego 1 - Toma de decisiones

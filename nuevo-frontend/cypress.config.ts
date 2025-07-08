@@ -1,3 +1,4 @@
+/* eslint-env node */
 // cypress.config.ts
 const { defineConfig } = require('cypress')
 
