@@ -70,22 +70,14 @@ describe('personalSlice', () => {
     const newState = personalSlice.reducer(state, action);
     expect(newState).toEqual({
       ...initialState,
-      jobPreferences: {
-        areas: ['Logística'],
-        needs: [],
-        workMode: 'presencial',
-        availability: 'completa',
-        willingToRelocate: false,
-        hasDisabilityCert: false,
-        accessibilitySettings: initialState.accessibilitySettings,
-      },
+      jobPreferences: 'Logística',
       workMode: 'presencial',
       availability: 'completa',
       startDate: 'inmediata',
       willingToRelocate: false,
       hasDisabilityCert: false,
-      unlockedGames: 2,
-      completed: false,
+      unlockedGames: 1,
+      completed: true,
     });
   });
 
