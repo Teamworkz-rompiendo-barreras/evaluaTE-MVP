@@ -42,7 +42,7 @@ function AppLayout() {
 }
 
 export default function App() {
-  const [welcomeSeen, setWelcomeSeen] = React.useState(() => localStorage.getItem('welcomeSeen') === 'true');
+  const [welcomeSeen] = React.useState(() => localStorage.getItem('welcomeSeen') === 'true');
 
   if (!welcomeSeen) {
     return <WelcomePage />;
