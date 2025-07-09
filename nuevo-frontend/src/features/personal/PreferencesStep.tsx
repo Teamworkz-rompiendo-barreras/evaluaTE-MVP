@@ -75,6 +75,16 @@ export default function PreferencesStep() {
     
     dispatch(setPersonalCompleted(true))
     
+    // Log de depuración
+    console.log('Estado personal tras guardar preferencias:', {
+      jobPreferences: jobPrefObj,
+      workMode: data.workMode,
+      availability: data.availability,
+      startDate: data.startDate,
+      willingToRelocate: data.willingToRelocate,
+      hasDisabilityCert: data.hasDisabilityCert,
+    });
+    
     // console.log('PreferencesStep - Navegando a /games...');
     navigate('/welcome')
   }
