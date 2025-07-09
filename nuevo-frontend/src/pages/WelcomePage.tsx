@@ -1,8 +1,15 @@
-import React from 'react';
+import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 
 const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
+
+  useEffect(() => {
+    console.log('WelcomePage MONTADO');
+    return () => {
+      console.log('WelcomePage DESMONTADO');
+    };
+  }, []);
 
   const handleStart = () => {
     localStorage.setItem('welcomeSeen', 'true');
