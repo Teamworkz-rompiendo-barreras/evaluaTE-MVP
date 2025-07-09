@@ -241,7 +241,7 @@ export default function PreferencesStep() {
           </button>
           <button
             type="submit"
-            className="py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors text-lg font-semibold"
+            className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
           >
             Finalizar y empezar minijuegos
           </button>
