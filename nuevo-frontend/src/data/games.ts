@@ -2,46 +2,6 @@ import { Game, GameProgress } from '../types/game';
 
 export const games: Game[] = [
   {
-    id: 'intro-general',
-    title: '¡Bienvenida!',
-    subtitle: '',
-    description: `¡Bienvenido/a a tu primera semana en “IntegraPro”!
-
-Una empresa que apuesta por el talento y la diversidad! Durante estos días, vivirás distintas situaciones laborales reales que pondrán a prueba tus habilidades. No hay respuestas incorrectas: solo formas diferentes de enfrentarse al día a día. Reflexiona, responde con sinceridad y avanza a tu ritmo.
-
-¡Empezamos!`,
-
-    softSkill: '',
-    day: '',
-    scenario: '',
-    icon: '',
-    color: '',
-    completed: false,
-    logs: [],
-    scenes: [
-      {
-        id: 'intro-general',
-        title: '¡Bienvenida!',
-        description: `¡Bienvenido/a a tu primer trabajo!
-
-Acabas de incorporarte a una empresa moderna y diversa, donde cada persona es valorada por sus fortalezas y estilo único. Durante tu primera semana vas a vivir diferentes situaciones reales que se dan en cualquier trabajo: colaborar con el equipo, organizar tu tiempo, tomar decisiones, resolver conflictos…
-
-Cada día tendrás que afrontar pequeños retos relacionados con las habilidades clave que buscan las empresas. No hay respuestas correctas ni incorrectas, solo distintas formas de actuar.
-
-Lee cada situación con calma, elige la opción que mejor encaje contigo y recuerda: ¡cada paso suma!`,
-        type: 'choice',
-        options: [
-          {
-            id: 'start',
-            text: 'Comenzar',
-            score: 0,
-            nextSceneId: '' // Aquí puedes redirigir al primer minijuego real
-          }
-        ]
-      }
-    ]
-  },
-  {
     id: 'decision-making',
     title: 'Toma de decisiones',
     subtitle: 'Día 1',

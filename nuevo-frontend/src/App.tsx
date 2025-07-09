@@ -9,6 +9,7 @@ import GameDashboardPage from './pages/GameDashboardPage'
 import GameScenePage from './pages/GameScenePage'
 import UploadCVPage from './pages/UploadCVPage'
 import ResultadosPage from './pages/ResultadosPage'
+import WelcomePage from './pages/WelcomePage';
 
 // Componentes visuales
 import ProtectedRoute from './components/ProtectedRoute'
@@ -41,6 +42,12 @@ function AppLayout() {
 }
 
 export default function App() {
+  const [welcomeSeen, setWelcomeSeen] = React.useState(() => localStorage.getItem('welcomeSeen') === 'true');
+
+  if (!welcomeSeen) {
+    return <WelcomePage />;
+  }
+
   return (
     <BrowserRouter>
       <Routes>
