@@ -222,9 +222,8 @@ export const personalSlice = createSlice({
 
       // Ajuste según el CV
       if (
-        state.cvAnalysis &&
-        typeof (state.cvAnalysis as unknown) === 'number' &&
-        (state.cvAnalysis as unknown) < 60
+        typeof state.cvAnalysis === 'number' &&
+        state.cvAnalysis < 60
       ) {
         employabilityScore = Math.max(20, employabilityScore - 10);
       }

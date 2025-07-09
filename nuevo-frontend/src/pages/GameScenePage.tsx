@@ -9,6 +9,7 @@ import { useGameController } from '../features/games/useGameController'
 import GameScene from '../components/GameScene'
 import ProgressBar from '../components/ProgressBar'
 import { RootState } from '../app/store'
+import { GameLog } from '../types/game';
 
 const GameScenePage: React.FC = () => {
   // Eliminar o comentar los console.log
@@ -75,7 +76,7 @@ const GameScenePage: React.FC = () => {
     // console.log('🎮 GameScenePage - ✅ Validaciones pasadas, continuando...');
   }, [personal, navigate]);
 
-  const handleSceneComplete = (log: unknown) => {
+  const handleSceneComplete = (log: GameLog) => {
     completeScene(log)
   }
 
