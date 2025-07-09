@@ -1,15 +1,36 @@
 import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
+import { useSelector } from 'react-redux';
+import type { RootState } from '@/app/store';
 
 const WelcomePage: React.FC = () => {
   const navigate = useNavigate();
+  const personal = useSelector((state: RootState) => state.personal);
+  const game = useSelector((state: RootState) => state.game);
 
   useEffect(() => {
     console.log('WelcomePage MONTADO');
+    console.log('WelcomePage - Estado personal:', personal);
+    console.log('WelcomePage - Estado juego:', game);
+    console.log('WelcomePage - Datos de contacto:', {
+      firstName: personal.firstName,
+      lastName: personal.lastName,
+      hasContactData: Boolean(personal.firstName && personal.lastName)
+    });
+    console.log('WelcomePage - Preferencias:', {
+      jobPreferences: personal.jobPreferences,
+      hasPreferences: Boolean(
+        personal.jobPreferences && 
+        (typeof personal.jobPreferences === 'string' 
+          ? personal.jobPreferences.trim() !== ''
+          : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0)
+      )
+    });
+    
     return () => {
       console.log('WelcomePage DESMONTADO');
     };
-  }, []);
+  }, [personal, game]);
 
   const handleStart = () => {
     localStorage.setItem('welcomeSeen', 'true');
