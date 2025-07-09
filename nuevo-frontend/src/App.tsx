@@ -42,12 +42,6 @@ function AppLayout() {
 }
 
 export default function App() {
-  const [welcomeSeen] = React.useState(() => localStorage.getItem('welcomeSeen') === 'true');
-
-  if (!welcomeSeen) {
-    return <WelcomePage />;
-  }
-
   return (
     <BrowserRouter>
       <Routes>
@@ -59,6 +53,9 @@ export default function App() {
           <Route path="contact" element={<DatosPersonalesPage />} />
           <Route path="preferences" element={<PreferencesStep />} />
         </Route>
+
+        {/* Pantalla de bienvenida a los minijuegos */}
+        <Route path="/welcome" element={<WelcomePage />} />
 
         {/* Dashboard de minijuegos */}
         <Route
@@ -90,16 +87,6 @@ export default function App() {
           }
         />
 
-        {/* Preferencias laborales (tras CV) - RUTA ELIMINADA PARA EVITAR CONFLICTOS */}
-        {/* <Route
-          path="/preferences"
-          element={
-            <ProtectedRoute step="preferences">
-              <PreferencesStep />
-            </ProtectedRoute>
-          }
-        /> */}
-
         {/* Resultados e informe final */}
         <Route
           path="/resultados"
@@ -114,5 +101,5 @@ export default function App() {
         <Route path="*" element={<Navigate to="/register/contact" replace />} />
       </Routes>
     </BrowserRouter>
-  )
+  );
 }

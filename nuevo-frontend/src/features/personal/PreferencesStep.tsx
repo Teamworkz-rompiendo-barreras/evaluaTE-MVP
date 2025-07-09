@@ -76,7 +76,7 @@ export default function PreferencesStep() {
     dispatch(setPersonalCompleted(true))
     
     // console.log('PreferencesStep - Navegando a /games...');
-    navigate('/games')
+    navigate('/welcome')
   }
 
   return (

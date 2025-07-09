@@ -6,7 +6,7 @@ const WelcomePage: React.FC = () => {
 
   const handleStart = () => {
     localStorage.setItem('welcomeSeen', 'true');
-    navigate('/'); // Ajusta la ruta según tu dashboard o primer minijuego
+    navigate('/games');
   };
 
   return (
