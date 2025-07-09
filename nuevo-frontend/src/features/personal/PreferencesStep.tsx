@@ -1,5 +1,5 @@
 // src/features/personal/components/PreferencesStep.tsx
-import React from 'react'
+import React, { useEffect, useRef } from 'react'
 import { useForm, SubmitHandler } from 'react-hook-form'
 import { useNavigate } from 'react-router-dom'
 
@@ -23,9 +23,10 @@ type PrefData = {
 export default function PreferencesStep() {
   const dispatch = useAppDispatch()
   const navigate = useNavigate()
-
-  // Obtenemos datos actuales
   const current = useAppSelector((state) => state.personal)
+
+  // Nuevo: referencia para saber si se ha enviado el formulario
+  const submittedRef = useRef(false);
 
   const {
     register,
@@ -74,6 +75,7 @@ export default function PreferencesStep() {
     }))
     
     dispatch(setPersonalCompleted(true))
+    submittedRef.current = true;
     
     // Log de depuración
     console.log('Estado personal tras guardar preferencias:', {
@@ -86,8 +88,21 @@ export default function PreferencesStep() {
     });
     
     // console.log('PreferencesStep - Navegando a /games...');
-    navigate('/welcome')
+    // No navegamos aquí, esperamos a que Redux actualice el estado
   }
+
+  // Nuevo: useEffect para navegar solo cuando el estado esté listo
+  useEffect(() => {
+    if (
+      submittedRef.current &&
+      typeof current.jobPreferences === 'object' &&
+      Array.isArray(current.jobPreferences.areas) &&
+      current.jobPreferences.areas.length > 0
+    ) {
+      navigate('/welcome');
+      submittedRef.current = false;
+    }
+  }, [current.jobPreferences, navigate]);
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
