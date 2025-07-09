@@ -75,3 +75,30 @@ jobs:
           start: npm run cypress:run
           wait-on: 'http://localhost:5173'
           wait-on-timeout: 60
+
+          name: Lint (ESLint)
+
+on:
+  push:
+    branches: [ main ]
+  pull_request:
+    branches: [ main ]
+
+jobs:
+  lint:
+    runs-on: ubuntu-latest
+
+    steps:
+      - name: Clona el repositorio
+        uses: actions/checkout@v3
+
+      - name: Instala Node.js
+        uses: actions/setup-node@v3
+        with:
+          node-version: '18'
+
+      - name: Instala dependencias
+        run: npm install
+
+      - name: Ejecuta ESLint
+        run: npx eslint . --ext .ts,.tsx,.js,.jsx
