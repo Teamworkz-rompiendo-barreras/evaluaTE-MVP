@@ -99,6 +99,7 @@ export default function PreferencesStep() {
       Array.isArray(current.jobPreferences.areas) &&
       current.jobPreferences.areas.length > 0
     ) {
+      console.log('>>> NAVEGANDO A /welcome desde PreferencesStep');
       navigate('/welcome');
       submittedRef.current = false;
     }
