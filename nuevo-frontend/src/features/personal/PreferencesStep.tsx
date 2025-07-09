@@ -46,10 +46,7 @@ export default function PreferencesStep() {
   })
 
   const onSubmit: SubmitHandler<PrefData> = (data) => {
-    // console.log('PreferencesStep - onSubmit llamado con:', data);
-    
-    if (!data.jobPreferences.trim()) {
-      alert('Por favor, indica el tipo de trabajo que buscas.')
+    if (submittedRef.current) {
       return
     }
 
@@ -87,23 +84,12 @@ export default function PreferencesStep() {
       hasDisabilityCert: data.hasDisabilityCert,
     });
     
-    // console.log('PreferencesStep - Navegando a /games...');
-    // No navegamos aquí, esperamos a que Redux actualice el estado
+    // Navegar directamente a /welcome después de guardar
+    console.log('>>> NAVEGANDO A /welcome desde PreferencesStep onSubmit');
+    navigate('/welcome');
   }
 
-  // Nuevo: useEffect para navegar solo cuando el estado esté listo
-  useEffect(() => {
-    if (
-      submittedRef.current &&
-      typeof current.jobPreferences === 'object' &&
-      Array.isArray(current.jobPreferences.areas) &&
-      current.jobPreferences.areas.length > 0
-    ) {
-      console.log('>>> NAVEGANDO A /welcome desde PreferencesStep');
-      navigate('/welcome');
-      submittedRef.current = false;
-    }
-  }, [current.jobPreferences, navigate]);
+  // Eliminamos el useEffect problemático que causaba redirecciones automáticas
 
   return (
     <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
