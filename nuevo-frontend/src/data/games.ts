@@ -2,10 +2,50 @@ import { Game, GameProgress } from '../types/game';
 
 export const games: Game[] = [
   {
+    id: 'intro-general',
+    title: '¡Bienvenida!',
+    subtitle: '',
+    description: `¡Bienvenido/a a tu primera semana en “IntegraPro”!
+
+Una empresa que apuesta por el talento y la diversidad! Durante estos días, vivirás distintas situaciones laborales reales que pondrán a prueba tus habilidades. No hay respuestas incorrectas: solo formas diferentes de enfrentarse al día a día. Reflexiona, responde con sinceridad y avanza a tu ritmo.
+
+¡Empezamos!`,
+
+    softSkill: '',
+    day: '',
+    scenario: '',
+    icon: '',
+    color: '',
+    completed: false,
+    logs: [],
+    scenes: [
+      {
+        id: 'intro-general',
+        title: '¡Bienvenida!',
+        description: `¡Bienvenido/a a tu primer trabajo!
+
+Acabas de incorporarte a una empresa moderna y diversa, donde cada persona es valorada por sus fortalezas y estilo único. Durante tu primera semana vas a vivir diferentes situaciones reales que se dan en cualquier trabajo: colaborar con el equipo, organizar tu tiempo, tomar decisiones, resolver conflictos…
+
+Cada día tendrás que afrontar pequeños retos relacionados con las habilidades clave que buscan las empresas. No hay respuestas correctas ni incorrectas, solo distintas formas de actuar.
+
+Lee cada situación con calma, elige la opción que mejor encaje contigo y recuerda: ¡cada paso suma!`,
+        type: 'choice',
+        options: [
+          {
+            id: 'start',
+            text: 'Comenzar',
+            score: 0,
+            nextSceneId: '' // Aquí puedes redirigir al primer minijuego real
+          }
+        ]
+      }
+    ]
+  },
+  {
     id: 'decision-making',
-    title: 'Primera llamada del día',
-    subtitle: 'Toma de decisiones',
-    description: 'Hoy es tu primer día en la empresa. Vas a estar en el área de apoyo. Te irás encontrando con situaciones reales. No hay respuestas correctas o incorrectas. Solo actúa como lo harías en la vida real.',
+    title: 'Toma de decisiones',
+    subtitle: 'Día 1',
+    description: 'Tu primer día en IntegraPro. Tendrás que tomar decisiones en situaciones reales del trabajo.',
     softSkill: 'Toma de decisiones',
     day: 'Lunes',
     scenario: 'Primer día en un puesto de apoyo en una empresa de logística',
@@ -15,168 +55,72 @@ export const games: Game[] = [
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: '¡Comienza el reto!',
-        description: 'Pulsa para empezar.',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Te asignan tres tareas para empezar: archivar documentos, ayudar a una compañera con un informe, o revisar materiales nuevos.',
         type: 'choice',
         options: [
-          {
-            id: 'start',
-            text: 'Empezar el día',
-            score: 0,
-            nextSceneId: 'phone-call'
-          }
-        ]
+          { id: 'archivar', text: 'Archivas documentos porque te resulta sencillo. 🗄️', score: 50 },
+          { id: 'ayudar', text: 'Ayudas a tu compañera, así os conocéis y colaboras. 🧑‍🤝‍🧑', score: 100 },
+          { id: 'revisar', text: 'Revisas materiales nuevos porque te apetece aprender algo distinto. 🔍', score: 20 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'phone-call',
-        title: 'La primera llamada',
-        description: 'Suena el teléfono. Una persona pregunta por tu persona compañera, que no está disponible.',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Te proponen ir a una reunión o acabar una tarea pendiente.',
         type: 'choice',
         options: [
-          {
-            id: 'take-note',
-            text: 'Tomas nota del recado y se lo pasas después',
-            score: 80,
-            feedback: 'Buena decisión. Tomar nota es una práctica profesional.',
-            nextSceneId: 'multiple-tasks'
-          },
-          {
-            id: 'try-help',
-            text: 'Intentas ayudar aunque no entiendes bien lo que necesita',
-            score: 60,
-            feedback: 'Iniciativa positiva, pero asegúrate de entender bien antes de actuar.',
-            nextSceneId: 'multiple-tasks'
-          },
-          {
-            id: 'call-later',
-            text: 'Le dices que llame más tarde porque estás ocupado u ocupada',
-            score: 40,
-            feedback: 'Es importante ser honesto sobre tu disponibilidad.',
-            nextSceneId: 'multiple-tasks'
-          }
-        ]
+          { id: 'reunion', text: 'Prefieres ir a la reunión, aunque la tarea espere. 📅', score: 20 },
+          { id: 'tarea', text: 'Terminas la tarea antes y luego, si puedes, vas a la reunión. ☑️', score: 100 },
+          { id: 'ayuda', text: 'Pides ayuda para decidir porque ambas cosas parecen importantes. ✋', score: 50 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'multiple-tasks',
-        title: 'Demasiadas tareas',
-        description: 'Te han dado cuatro tareas para esta mañana. Una persona del equipo te dice que una de ellas es urgente.',
-        type: 'drag-drop',
-        dragDropConfig: {
-          items: [
-            { id: 'task1', text: 'Revisar inventario', category: 'urgent' },
-            { id: 'task2', text: 'Preparar documentación', category: 'normal' },
-            { id: 'task3', text: 'Responder emails', category: 'normal' },
-            { id: 'task4', text: 'Organizar archivos', category: 'low' }
-          ],
-          targetZones: [
-            { id: 'priority1', title: 'Prioridad Alta', accepts: ['urgent'] },
-            { id: 'priority2', title: 'Prioridad Media', accepts: ['normal'] },
-            { id: 'priority3', title: 'Prioridad Baja', accepts: ['low'] }
-          ],
-          correctOrder: ['task1', 'task2', 'task3', 'task4']
-        },
-        nextSceneId: 'technical-problem'
-      },
-      {
-        id: 'technical-problem',
-        title: 'Problema técnico',
-        description: 'El sistema informático se congela mientras estás introduciendo datos.',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Llega un cliente con una petición urgente.',
         type: 'choice',
         options: [
-          {
-            id: 'wait',
-            text: 'Esperas unos minutos a ver si vuelve',
-            score: 70,
-            feedback: 'Paciencia es una virtud, pero no esperes demasiado.',
-            nextSceneId: 'tension'
-          },
-          {
-            id: 'call-support',
-            text: 'Llamas a soporte técnico',
-            score: 90,
-            feedback: 'Excelente decisión. Pedir ayuda cuando es necesario es profesional.',
-            nextSceneId: 'tension'
-          },
-          {
-            id: 'restart',
-            text: 'Reinicias el equipo por tu cuenta',
-            score: 50,
-            feedback: 'Iniciativa, pero asegúrate de que es seguro hacerlo.',
-            nextSceneId: 'tension'
-          }
-        ]
+          { id: 'atender', text: 'Le atiendes enseguida, aunque dejas tu tarea a medias. 🧑', score: 100 },
+          { id: 'esperar', text: 'Le dices que le ayudas en cuanto termines lo que tienes. ⏰', score: 50 },
+          { id: 'compañero', text: 'Buscas a otro compañero/a para que le atienda mientras tú acabas lo tuyo. 👥', score: 20 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'tension',
-        title: 'Tensión inesperada',
-        description: 'Un cliente entra a la oficina nervioso y empieza a levantar la voz.',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'Hay un problema técnico con la impresora.',
         type: 'choice',
         options: [
-          {
-            id: 'call-experienced',
-            text: 'Llamas a alguien con más experiencia',
-            score: 85,
-            feedback: 'Buena decisión. Reconocer cuándo necesitas apoyo es importante.',
-            nextSceneId: 'final-evaluation'
-          },
-          {
-            id: 'calm-client',
-            text: 'Intentas calmarlo y ver qué necesita',
-            score: 75,
-            feedback: 'Valiente intento, pero asegúrate de que es seguro.',
-            nextSceneId: 'final-evaluation'
-          },
-          {
-            id: 'walk-away',
-            text: 'Te alejas discretamente',
-            score: 60,
-            feedback: 'A veces es mejor evitar conflictos.',
-            nextSceneId: 'final-evaluation'
-          }
-        ]
+          { id: 'solucionar', text: 'Lo intentas solucionar tú mismo/a. 🛠️', score: 100 },
+          { id: 'mantenimiento', text: 'Buscas a alguien de mantenimiento. ☎️', score: 50 },
+          { id: 'otra', text: 'Propones usar otra impresora y avisar después. 🖨️➡️', score: 20 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'final-evaluation',
-        title: 'Evaluación final del día',
-        description: 'Tu coordinador te pide feedback sobre cómo te has sentido.',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Tu responsable te pide opinión para organizar una actividad.',
         type: 'choice',
         options: [
-          {
-            id: 'curious',
-            text: 'Con ganas de seguir aprendiendo',
-            score: 90,
-            feedback: '¡Excelente actitud! La curiosidad es clave para el aprendizaje.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'lost-but-interested',
-            text: 'Un poco perdido o perdida pero con interés',
-            score: 75,
-            feedback: 'Es normal sentirse perdido el primer día. El interés es lo importante.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'stressed',
-            text: 'Estresado o estresada, necesito más tiempo',
-            score: 60,
-            feedback: 'Es válido pedir más tiempo. La honestidad es importante.',
-            nextSceneId: 'completion'
-          }
-        ]
+          { id: 'opinion', text: 'Das tu opinión, aunque no estés seguro/a. 💬', score: 100 },
+          { id: 'preguntar', text: 'Preguntas antes a tus compañeros/as. 👥', score: 50 },
+          { id: 'no-opinar', text: 'Prefieres no opinar hasta tener más información. 📖', score: 20 }
+        ],
+        nextSceneId: 'feedback-final'
       },
       {
-        id: 'completion',
-        title: '¡Buen trabajo!',
-        description: 'Hoy has resuelto situaciones reales que pueden pasar en muchos trabajos. No importa lo que hayas elegido: lo que cuenta es cómo te enfrentas a lo que sucede. Has completado tu primer día. Mañana te espera un nuevo reto.',
+        id: 'feedback-final',
+        title: '¡Bravo!',
+        description: '¡Bravo! Hoy has demostrado tu capacidad para tomar decisiones en situaciones reales de trabajo. Cada forma de decidir suma valor.',
         type: 'choice',
         options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Toma de decisiones!'
-          }
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
       }
     ]
