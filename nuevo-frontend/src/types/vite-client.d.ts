@@ -1,2 +1,3 @@
 // src/types/vite-client.d.ts
-export const value: unknown;
+declare const value: unknown;
+export { value };

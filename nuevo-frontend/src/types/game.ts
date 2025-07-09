@@ -182,8 +182,3 @@ export interface GameProgress {
   currentGame?: string;
   overallScore?: number;
 }
-
-/**
- * Respuesta del API al pedir una escena
- */
-export interface GameSceneResponse extends GameScene {}

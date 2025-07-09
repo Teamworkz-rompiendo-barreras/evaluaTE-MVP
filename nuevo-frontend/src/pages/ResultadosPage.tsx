@@ -111,10 +111,6 @@ const ResultadosPage: React.FC = () => {
     }
   }, [toast]);
 
-  const completedGamesCount = personal.report?.completedGames?.length || 0;
-  const totalGames = 10; // Total de minijuegos disponibles
-  const completionPercentage = Math.round((completedGamesCount / totalGames) * 100);
-
   return (
     <section className="relative max-w-4xl mx-auto p-6 space-y-8">
       {/* Título */}
@@ -149,12 +145,14 @@ const ResultadosPage: React.FC = () => {
             <div className="mb-6">
               <h4 className="font-semibold mb-3 text-green-700">✅ Fortalezas identificadas:</h4>
               <ul className="space-y-2">
-                {(personal.cvAnalysis as { strengths?: string[] }).strengths!.map((strength: string, index: number) => (
-                  <li key={index} className="flex items-start">
-                    <span className="text-green-500 mr-2">•</span>
-                    <span className="text-gray-700">{strength}</span>
-                  </li>
-                ))}
+                {Array.isArray((personal.cvAnalysis as { strengths?: string[] }).strengths)
+                  ? (personal.cvAnalysis as { strengths?: string[] }).strengths.map((strength: string, index: number) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-green-500 mr-2">•</span>
+                        <span className="text-gray-700">{strength}</span>
+                      </li>
+                    ))
+                  : null}
               </ul>
             </div>
           )}
@@ -164,12 +162,14 @@ const ResultadosPage: React.FC = () => {
             <div>
               <h4 className="font-semibold mb-3 text-orange-700">🔧 Áreas de mejora:</h4>
               <ul className="space-y-2">
-                {(personal.cvAnalysis as { weaknesses?: string[] }).weaknesses!.map((weakness: string, index: number) => (
-                  <li key={index} className="flex items-start">
-                    <span className="text-orange-500 mr-2">•</span>
-                    <span className="text-gray-700">{weakness}</span>
-                  </li>
-                ))}
+                {Array.isArray((personal.cvAnalysis as { weaknesses?: string[] }).weaknesses)
+                  ? (personal.cvAnalysis as { weaknesses?: string[] }).weaknesses.map((weakness: string, index: number) => (
+                      <li key={index} className="flex items-start">
+                        <span className="text-orange-500 mr-2">•</span>
+                        <span className="text-gray-700">{weakness}</span>
+                      </li>
+                    ))
+                  : null}
               </ul>
             </div>
           )}
@@ -197,7 +197,7 @@ const ResultadosPage: React.FC = () => {
       {/* C. Gráfico Radar */}
       <div className="w-full h-96">
         <ResponsiveRadar
-          data={data}
+          data={data as unknown as Record<string, unknown>[]}
           keys={['level']}
           indexBy="skill"
           margin={{ top: 70, right: 80, bottom: 70, left: 80 }}

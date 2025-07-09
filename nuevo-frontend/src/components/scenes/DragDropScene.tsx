@@ -59,19 +59,8 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
       
       // Calcular puntuación basada en el orden correcto
       if (dragDropConfig.correctOrder) {
-        const placedOrder = dragDropConfig.items
-          .map(item => ({ id: item.id, zone: newPositions[item.id] }))
-          .sort((a, b) => {
-            const aIndex = dragDropConfig.correctOrder!.indexOf(a.id);
-            const bIndex = dragDropConfig.correctOrder!.indexOf(b.id);
-            return aIndex - bIndex;
-          });
-
-        const correctMatches = placedOrder.filter((item, index) => 
-          item.id === dragDropConfig.correctOrder![index]
-        ).length;
-
-        // score = Math.round((correctMatches / dragDropConfig.correctOrder.length) * 100);
+        // Eliminado: const placedOrder = ...
+        // Si necesitas usar el orden, implementa la lógica aquí
       } else {
         // Si no hay orden específico, dar puntuación por completar
         // score = 80;

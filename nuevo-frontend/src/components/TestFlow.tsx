@@ -90,8 +90,8 @@ const TestFlow: React.FC = () => {
       </div>
       
       <div className="mt-2 text-xs">
-        <div>firstName: "{personal.firstName}"</div>
-        <div>lastName: "{personal.lastName}"</div>
+        <div>firstName: {'"'}{personal.firstName}{'"'}</div>
+        <div>lastName: {'"'}{personal.lastName}{'"'}</div>
         <div>completed: {personal.completed ? 'true' : 'false'}</div>
         <div>jobPreferences: {JSON.stringify(personal.jobPreferences)}</div>
       </div>

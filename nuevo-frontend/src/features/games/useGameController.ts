@@ -2,7 +2,7 @@
 
 import { useCallback, useMemo } from 'react';
 import { useDispatch, useSelector } from 'react-redux';
-import { Game, GameScene, GameLog, SoftSkill } from '../../types/game';
+import { GameLog, SoftSkill } from '../../types/game';
 import { games, getGameById } from '../../data/games';
 import { RootState } from '../../app/store';
 import { updateGameProgress, addGameLog, completeGame } from './gameSlice';

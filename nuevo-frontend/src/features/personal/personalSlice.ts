@@ -177,7 +177,7 @@ export const personalSlice = createSlice({
       if (existingIndex > -1) {
         logs[existingIndex].decisions.push(action.payload);
         state.report = {
-          ...state.report!,
+          ...((state.report ?? {}) as EmployabilityReport),
         } as EmployabilityReport;
       } else {
         state.logs = [

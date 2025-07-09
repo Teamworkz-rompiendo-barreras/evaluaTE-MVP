@@ -1,2 +1,3 @@
 // src/types/uuid.d.ts
-export function v4(): string;
+declare function v4(): string;
+export { v4 };

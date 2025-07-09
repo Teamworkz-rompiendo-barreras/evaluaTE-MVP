@@ -22,9 +22,9 @@ const DebugState: React.FC = () => {
         <div>
           <strong>Contact Data:</strong> {hasContactData ? '✅' : '❌'}
           <br />
-          firstName: "{personal.firstName}"
+          firstName: {'"'}{personal.firstName}{'"'}
           <br />
-          lastName: "{personal.lastName}"
+          lastName: {'"'}{personal.lastName}{'"'}
         </div>
         
         <div>

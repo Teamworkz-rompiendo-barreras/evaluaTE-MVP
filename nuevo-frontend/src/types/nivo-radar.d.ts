@@ -15,4 +15,4 @@ export interface RadarProps {
   animate?: boolean
 }
 
-export const ResponsiveRadar: React.ComponentType<RadarProps>
+declare const ResponsiveRadar: React.ComponentType<RadarProps>;

@@ -41,11 +41,6 @@ export interface GameScene {
 }
 
 /**
- * Respuesta del API al pedir una escena
- */
-export interface GameSceneResponse extends GameScene {}
-
-/**
  * Registro de decisión tomada por el usuario
  */
 export interface UserDecision {
