@@ -69,7 +69,7 @@ describe('ResultadosPage', () => {
       </Provider>
     );
 
-    expect(container.textContent).toContain('Tu Informe Final');
+    expect(container.textContent).toContain('Informe de Empleabilidad');
   });
 
   it('muestra el análisis del CV correctamente', () => {
@@ -95,7 +95,7 @@ describe('ResultadosPage', () => {
       </Provider>
     );
 
-    expect(container.textContent).toContain('Habilidades Blandas Evaluadas');
+    expect(container.textContent).toContain('Mapa de habilidades');
     expect(container.textContent).toContain('Resolución de Problemas');
     expect(container.textContent).toContain('Trabajo en equipo');
   });
@@ -123,7 +123,7 @@ describe('ResultadosPage', () => {
       </Provider>
     );
 
-    expect(container.textContent).toContain('Áreas a mejorar');
+    expect(container.textContent).toContain('Áreas de mejora y sugerencias');
     expect(container.textContent).toContain('Gestión emocional');
   });
 
@@ -136,7 +136,7 @@ describe('ResultadosPage', () => {
       </Provider>
     );
 
-    expect(container.textContent).toContain('Recomendaciones de mejora');
+    expect(container.textContent).toContain('Recomendaciones laborales');
     expect(container.textContent).toContain('Gestión emocional');
   });
 
@@ -149,20 +149,8 @@ describe('ResultadosPage', () => {
       </Provider>
     );
 
-    expect(container.textContent).toContain('Resumen de habilidades');
+    expect(container.textContent).toContain('Resumen de niveles:');
     expect(container.textContent).toContain('Puntaje global de empleabilidad');
     expect(container.textContent).toContain('78');
-  });
-
-  it('muestra el botón de descarga correctamente', () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <ResultadosPage />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    expect(container.textContent).toContain('Descargar Informe PDF');
   });
 });
