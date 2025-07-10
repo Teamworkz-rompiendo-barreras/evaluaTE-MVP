@@ -12,9 +12,12 @@ import { configureStore } from '@reduxjs/toolkit';
 // Store de prueba con datos mockeados que coinciden con el componente real
 const mockPersonalState = {
   cvAnalysis: {
-    score: 85,
-    strengths: ['CV bien estructurado', 'Experiencia relevante'],
-    weaknesses: ['Falta de habilidades duras', 'Necesita más proyectos']
+    structure: 'CV bien estructurado',
+    coherence: 'Buena coherencia',
+    experience: 'Experiencia relevante',
+    skills: ['JavaScript', 'React'],
+    education: ['Universidad X'],
+    alerts: ['Falta de habilidades duras', 'Necesita más proyectos']
   },
   report: {
     softSkills: [
@@ -82,7 +85,7 @@ describe('ResultadosPage', () => {
     );
 
     expect(container.textContent).toContain('Análisis de tu CV');
-    expect(container.textContent).toContain('CV bien estructurado');
+    expect(container.textContent).toContain('Estructura: CV bien estructurado');
     expect(container.textContent).toContain('Falta de habilidades duras');
   });
 

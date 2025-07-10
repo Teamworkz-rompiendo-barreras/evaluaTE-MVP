@@ -61,6 +61,9 @@ const ResultadosPage: React.FC = () => {
               </li>
             ))}
           </ul>
+          <p className="font-semibold mt-2">
+            Puntaje global de empleabilidad: {report?.employabilityScore ?? '-'}
+          </p>
         </div>
       </div>
     </div>
