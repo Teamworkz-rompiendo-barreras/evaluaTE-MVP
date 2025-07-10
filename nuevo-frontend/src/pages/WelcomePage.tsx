@@ -8,10 +8,7 @@ const WelcomePage: React.FC = () => {
   const personal = useSelector((state: RootState) => state.personal);
   const game = useSelector((state: RootState) => state.game);
 
-  useEffect(() => {
-    return () => {
-    };
-  }, [personal, game]);
+  // El useEffect ha sido eliminado porque no realiza ninguna acción
 
   const handleStart = () => {
     localStorage.setItem('welcomeSeen', 'true');
