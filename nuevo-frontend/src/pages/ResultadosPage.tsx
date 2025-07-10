@@ -1,5 +1,5 @@
 // src/pages/ResultadosPage.tsx
-import React from 'react';
+import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { ResponsiveRadar } from '@nivo/radar';
@@ -10,6 +10,73 @@ const ResultadosPage: React.FC = () => {
   const cvAnalysis = personal?.cvAnalysis;
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
+
+  // Estado para el informe IA
+  const [iaReport, setIaReport] = useState<string>('');
+  const [loadingIa, setLoadingIa] = useState<boolean>(false);
+  const [errorIa, setErrorIa] = useState<string>('');
+
+  // Llamar al endpoint de IA al cargar la página
+  useEffect(() => {
+    const fetchIaReport = async () => {
+      setLoadingIa(true);
+      setErrorIa('');
+      try {
+        const res = await fetch('/api/informe-ia', {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({
+            preferences: report?.jobPreferences,
+            minigames: report?.softSkills,
+            cvAnalysis: cvAnalysis,
+          }),
+        });
+        const data = await res.json();
+        if (res.ok && data.informe) {
+          setIaReport(data.informe);
+        } else {
+          setErrorIa('No se pudo generar el informe IA.');
+        }
+      } catch (err) {
+        setErrorIa('Error de conexión con el servicio de IA.');
+      } finally {
+        setLoadingIa(false);
+      }
+    };
+    // Solo llamar si hay datos suficientes
+    if (report?.jobPreferences && report?.softSkills && cvAnalysis) {
+      fetchIaReport();
+    }
+  }, [report?.jobPreferences, report?.softSkills, cvAnalysis]);
+
+  // Estado para feedback
+  const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
+  const [feedbackSent, setFeedbackSent] = useState(false);
+  const [feedbackError, setFeedbackError] = useState('');
+
+  const handleFeedbackSubmit = async (e: React.FormEvent) => {
+    e.preventDefault();
+    setFeedbackError('');
+    try {
+      const res = await fetch('/api/informe-ia/feedback', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          informe: iaReport,
+          rating: feedback.rating,
+          comment: feedback.comment,
+          userData: { preferences: report?.jobPreferences, minigames: report?.softSkills, cvAnalysis },
+        }),
+      });
+      if (res.ok) {
+        setFeedbackSent(true);
+      } else {
+        setFeedbackError('No se pudo enviar el feedback.');
+      }
+    } catch {
+      setFeedbackError('Error de conexión al enviar feedback.');
+    }
+  };
 
   // 1. Portada
   const portada = (
@@ -170,6 +237,34 @@ const ResultadosPage: React.FC = () => {
   // Renderizado final
   return (
     <section className="max-w-4xl mx-auto p-4">
+      {/* Informe IA generado */}
+      <div className="bg-blue-100 rounded-lg shadow-md p-6 mb-8">
+        <h2 className="text-2xl font-bold mb-4">Informe personalizado generado por IA</h2>
+        {loadingIa && <p>Generando informe con IA...</p>}
+        {errorIa && <p className="text-red-600">{errorIa}</p>}
+        {iaReport && <pre className="whitespace-pre-wrap text-gray-800">{iaReport}</pre>}
+        {/* Formulario de feedback */}
+        {iaReport && !feedbackSent && (
+          <form className="mt-6" onSubmit={handleFeedbackSubmit}>
+            <label className="block mb-2 font-semibold">¿Te resultó útil este informe?</label>
+            <div className="flex gap-4 mb-4">
+              <label className="flex items-center gap-1">
+                <input type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                Útil
+              </label>
+              <label className="flex items-center gap-1">
+                <input type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                No útil
+              </label>
+            </div>
+            <label className="block mb-1">¿Algún comentario o sugerencia?</label>
+            <textarea className="w-full border rounded p-2 mb-2" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({...f, comment: e.target.value}))} />
+            {feedbackError && <p className="text-red-600 mb-2">{feedbackError}</p>}
+            <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Enviar feedback</button>
+          </form>
+        )}
+        {feedbackSent && <p className="text-green-700 mt-4">¡Gracias por tu feedback!</p>}
+      </div>
       {portada}
       {radar}
       {fortalezasSection}

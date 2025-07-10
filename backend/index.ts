@@ -3,10 +3,12 @@ import express, { Request, Response } from 'express'
 import path from 'path'
 import fs from 'fs'
 import puppeteer from 'puppeteer'
+import iaReportRoute from './src/routes/iaReportRoute';
 
 const app = express()
 app.use(express.json())
 app.use(express.static(path.join(__dirname, '../templates')))
+app.use('/api/informe-ia', iaReportRoute);
 
 app.post('/api/generate-report', async (req: Request, res: Response) => {
   const { gameData, cvAnalysis } = req.body
