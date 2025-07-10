@@ -47,6 +47,15 @@ const WelcomePage: React.FC = () => {
       <button onClick={handleStart} style={{ padding: '12px 32px', fontSize: 18, borderRadius: 8, background: '#374BA6', color: '#fff', border: 'none', cursor: 'pointer' }}>
         Comenzar
       </button>
+      {/* Bloque de depuración solo visible en desarrollo */}
+      {process.env.NODE_ENV !== 'production' && (
+        <div style={{ marginTop: 32, textAlign: 'left', background: '#f5f5f5', padding: 16, borderRadius: 8, fontSize: 14 }}>
+          <strong>Depuración (solo desarrollo):</strong>
+          <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
+            {JSON.stringify({ personal, game }, null, 2)}
+          </pre>
+        </div>
+      )}
     </div>
   );
 };

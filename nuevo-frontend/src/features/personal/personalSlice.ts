@@ -91,15 +91,19 @@ export const personalSlice = createSlice({
         Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'>
       >
     ) {
-      // Solo actualiza los campos del payload, no borra el resto del estado
       state.firstName = action.payload.firstName;
       state.lastName = action.payload.lastName;
       state.email = action.payload.email;
       state.whatsapp = action.payload.whatsapp;
       state.unlockedGames = Math.max(state.unlockedGames, 1);
-      // Marcamos como completado cuando se guardan los datos de contacto
-      // (aunque técnicamente no están completamente completos hasta las preferencias)
-      state.completed = true;
+      // Solo marcamos como completado si también hay preferencias laborales
+      state.completed = Boolean(
+        state.firstName && state.lastName &&
+        state.jobPreferences &&
+        (typeof state.jobPreferences === 'string'
+          ? state.jobPreferences.trim() !== ''
+          : state.jobPreferences.areas && state.jobPreferences.areas.length > 0)
+      );
     },
 
     // Guarda preferencias laborales
@@ -112,24 +116,21 @@ export const personalSlice = createSlice({
         >
       >
     ) {
-      // Eliminar o comentar los console.log
-      // Cambiar 'any' por 'unknown' o un tipo más específico
-      
       const payload = action.payload;
-
-      // Actualizar directamente los campos del estado
       state.jobPreferences = payload.jobPreferences;
       state.workMode = payload.workMode;
       state.availability = payload.availability;
       state.startDate = payload.startDate;
       state.willingToRelocate = payload.willingToRelocate;
       state.hasDisabilityCert = payload.hasDisabilityCert;
-      
-      // Asegurar que completed esté en true
-      state.completed = true;
-      
-      // Eliminar o comentar los console.log
-      // Cambiar 'any' por 'unknown' o un tipo más específico
+      // Solo marcamos como completado si también hay datos de contacto
+      state.completed = Boolean(
+        state.firstName && state.lastName &&
+        payload.jobPreferences &&
+        (typeof payload.jobPreferences === 'string'
+          ? payload.jobPreferences.trim() !== ''
+          : payload.jobPreferences.areas && payload.jobPreferences.areas.length > 0)
+      );
     },
 
     // Guarda archivo del CV
