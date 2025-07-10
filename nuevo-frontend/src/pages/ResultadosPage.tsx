@@ -1,373 +1,179 @@
 // src/pages/ResultadosPage.tsx
-import React, { useState, useEffect } from 'react';
-import { useNavigate } from 'react-router-dom';
+import React from 'react';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { ResponsiveRadar } from '@nivo/radar';
-import type { SoftSkillResult, UserDecision } from '../types/skills';
-
-// Componentes visuales
+import logo from '../assets/Logo_teamworkz.png';
 
 const ResultadosPage: React.FC = () => {
-  const navigate = useNavigate();
-  const [toast, setToast] = useState<string | null>(null);
-
-  // Accedemos al estado global tipado
-  // Ajusta el selector según la estructura real de tu store
   const personal = useAppSelector((state: RootState) => state.personal);
   const cvAnalysis = personal?.cvAnalysis;
+  const report = personal?.report;
+  const fecha = new Date().toLocaleDateString();
 
-  // FUNCIÓN DE DEPURACIÓN COMPLETA
-  const debugStoreState = () => {
-    console.log("🔍 DEBUG COMPLETO DEL STORE:");
-    console.log("Personal state:", personal);
-    console.log("CV Analysis:", cvAnalysis);
-    console.log("Report:", personal?.report);
-    console.log("Soft Skills:", personal?.softSkills);
-    console.log("Report Soft Skills:", personal?.report?.softSkills);
-    console.log("Completed Games:", personal?.report?.completedGames);
-    console.log("Unlocked Games:", personal?.unlockedGames);
-    
-    // Verificar estructura del report
-    if (personal?.report) {
-      console.log("Report structure:", {
-        userId: personal.report.userId,
-        firstName: personal.report.firstName,
-        lastName: personal.report.lastName,
-        softSkillsLength: personal.report.softSkills?.length,
-        employabilityScore: personal.report.employabilityScore,
-        level: personal.report.level,
-        completedGamesLength: personal.report.completedGames?.length,
-        adjustedScore: personal.report.adjustedScore,
-        recommendations: personal.report.recommendations
-      });
-    }
-  };
+  // 1. Portada
+  const portada = (
+    <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center mb-8">
+      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4" />
+      <h1 className="text-4xl font-bold mb-2">Informe de Empleabilidad</h1>
+      <h2 className="text-2xl font-semibold mb-1">{report?.firstName} {report?.lastName}</h2>
+      <p className="text-gray-600">{fecha}</p>
+    </div>
+  );
 
-  // Ejecutar depuración al montar el componente
-  useEffect(() => {
-    debugStoreState();
-  }, []);
-
-  // LOGS DE DEPURACIÓN - Verificar qué datos llegan
-  console.log("🔍 DEBUG ResultadosPage - personal:", personal);
-  console.log("🔍 DEBUG ResultadosPage - cvAnalysis:", cvAnalysis);
-  console.log("🔍 DEBUG ResultadosPage - completedGames:", personal?.report?.completedGames);
-  console.log("🔍 DEBUG ResultadosPage - softSkills:", personal?.report?.softSkills);
-  console.log("🔍 DEBUG ResultadosPage - completedGames length:", personal?.report?.completedGames?.length ?? 0);
-  console.log("🔍 DEBUG ResultadosPage - softSkills length:", personal?.report?.softSkills?.length ?? 0);
-
-  // Verificamos que todo el progreso sea completo antes de mostrar resultados
-  useEffect(() => {
-    const completedGamesCount = personal?.report?.completedGames?.length ?? 0;
-    const hasCvAnalysis = !!cvAnalysis;
-    const hasSoftSkills = (personal?.report?.softSkills?.length ?? 0) > 0;
-
-    console.log("🔍 DEBUG useEffect - completedGamesCount:", completedGamesCount);
-    console.log("🔍 DEBUG useEffect - hasCvAnalysis:", hasCvAnalysis);
-    console.log("🔍 DEBUG useEffect - hasSoftSkills:", hasSoftSkills);
-
-    // TEMPORALMENTE COMENTADO PARA DEPURACIÓN
-    // if (completedGamesCount < 10 || !hasCvAnalysis || !hasSoftSkills) {
-    //   console.log("🔍 DEBUG - Redirigiendo a /games porque faltan datos");
-    //   navigate('/games');
-    // }
-  }, [personal?.report?.completedGames, cvAnalysis, personal?.report?.softSkills, navigate]);
-
-  // Datos para gráfico radar
-  interface RadarData {
-    skill: string;
-    level: number;
-    interactions: string[];
-  }
-
-  // Normaliza los datos de softSkills para asegurar que cumplen el tipo SoftSkillResult
-  function normalizeSoftSkills(skills: unknown[]): SoftSkillResult[] {
-    return (skills ?? []).map((skill: unknown) => ({
-      skill: (skill as { skill: string }).skill,
-      level: (skill as { level: string }).level as 'Bajo' | 'Medio' | 'Alto',
-      confidence: (skill as { confidence?: number; score?: number }).confidence ?? (typeof (skill as { score?: number }).score === 'number' ? (skill as { score: number }).score / 100 : 0),
-      feedback: (skill as { feedback?: string }).feedback ?? '',
-      interactions: (skill as { interactions?: UserDecision[] }).interactions ?? [],
-    }));
-  }
-
-  const normalizedSoftSkills: SoftSkillResult[] = normalizeSoftSkills(personal?.report?.softSkills ?? []);
-  const data: RadarData[] = normalizedSoftSkills.map((skill) => ({
-    skill: skill.skill,
-    level: skill.confidence * 100,
-    interactions: skill.interactions.map((i) => i.optionText ?? ''),
+  // 2. Mapa de habilidades (Radar + resumen)
+  const radarData = (report?.softSkills ?? []).map(skill => ({
+    softskill: skill.skill,
+    nivel: skill.level,
+    confianza: skill.score,
+    score: skill.score,
   }));
-
-  // LOGS DE DEPURACIÓN - Radar chart
-  console.log("🔍 DEBUG Radar - normalizedSoftSkills:", normalizedSoftSkills);
-  console.log("🔍 DEBUG Radar - data:", data);
-  console.log("🔍 DEBUG Radar - data length:", data.length);
-
-  // Áreas a mejorar (habilidades con menor puntuación)
-  interface AreaMejorar {
-    skill: string;
-    level: string;
-    confidence: number;
-    feedback?: string;
-    interactions: UserDecision[];
-  }
-
-  const areasToImprove: AreaMejorar[] = normalizedSoftSkills
-    .filter((skill) => skill.confidence < 0.7)
-    .map((skill) => ({
-      skill: skill.skill,
-      level: skill.level,
-      confidence: skill.confidence,
-      feedback: skill.feedback,
-      interactions: skill.interactions
-    }));
-
-  // Manejador para descargar informe PDF
-  const handleDownloadReport = async () => {
-    try {
-      // console.log('Descargando reporte...');
-      const response = await fetch('/api/reports/download', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-          userId: personal.report?.userId,
-          reportData: personal.report,
-        }),
-      });
-
-      if (response.ok) {
-        const blob = await response.blob();
-        const url = window.URL.createObjectURL(blob);
-        const a = document.createElement('a');
-        a.href = url;
-        a.download = `reporte-empleabilidad-${personal.firstName}-${personal.lastName}.pdf`;
-        document.body.appendChild(a);
-        a.click();
-        window.URL.revokeObjectURL(url);
-        document.body.removeChild(a);
-        setToast('Reporte descargado exitosamente');
-      } else {
-        setToast('Error al descargar el reporte');
-      }
-    } catch {
-      // console.log('Error descargando reporte:', error);
-      setToast('Error al descargar el reporte');
-    }
-  };
-
-  // Autoocultar notificaciones tras 3s
-  useEffect(() => {
-    if (toast) {
-      const timer = setTimeout(() => setToast(null), 3000);
-      return () => clearTimeout(timer);
-    }
-  }, [toast]);
-
-  const strengths = (personal.cvAnalysis as { strengths?: string[] })?.strengths ?? [];
-  const weaknesses = (personal.cvAnalysis as { weaknesses?: string[] })?.weaknesses ?? [];
-
-  return (
-    <section className="relative max-w-4xl mx-auto p-6 space-y-8">
-      {/* Título */}
-      <h1 className="text-3xl font-bold text-center">Tu Informe Final</h1>
-
-      {/* SECCIÓN DE DEPURACIÓN TEMPORAL */}
-      <div className="bg-gray-100 p-4 rounded border-2 border-dashed border-gray-400">
-        <h3 className="font-bold text-red-600 mb-2">🔧 DEPURACIÓN TEMPORAL</h3>
-        <div className="text-sm space-y-1">
-          <p><strong>Completed Games:</strong> {personal?.report?.completedGames?.length ?? 0}/10</p>
-          <p><strong>CV Analysis:</strong> {cvAnalysis ? '✅ Presente' : '❌ Ausente'}</p>
-          <p><strong>Soft Skills:</strong> {personal?.report?.softSkills?.length ?? 0} habilidades</p>
-          <p><strong>Report:</strong> {personal?.report ? '✅ Presente' : '❌ Ausente'}</p>
-          <p><strong>User ID:</strong> {personal?.report?.userId ?? 'No definido'}</p>
-          <p><strong>Unlocked Games:</strong> {personal?.unlockedGames ?? 0}</p>
+  const radar = (
+    <div className="bg-white rounded-lg shadow-md p-8 mb-8">
+      <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>
+      <div className="flex flex-col md:flex-row gap-8 items-center">
+        <div className="w-full md:w-1/2 h-96">
+          <ResponsiveRadar
+            data={radarData}
+            keys={["score"]}
+            indexBy="softskill"
+            margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
+            borderColor={{ from: 'color' }}
+            gridLabelOffset={20}
+            dotSize={12}
+            dotColor={{ theme: 'background' }}
+            dotBorderWidth={2}
+            dotBorderColor={{ from: 'color' }}
+            colors={{ scheme: 'nivo' }}
+            fillOpacity={0.25}
+            blendMode="multiply"
+            animate={true}
+            isInteractive={false}
+            legends={[]}
+          />
         </div>
-        <button
-          onClick={debugStoreState}
-          className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
-        >
-          Debug Store en Consola
-        </button>
-      </div>
-
-      {/* Notificación tipo Toast */}
-      {toast && (
-        <div className="fixed bottom-6 right-6 bg-black bg-opacity-75 text-white px-4 py-2 rounded shadow-lg">
-          {toast}
-        </div>
-      )}
-
-      {/* Análisis del CV */}
-      {personal.cvAnalysis && (
-        <div className="bg-white rounded-lg p-6 shadow-sm">
-          <h3 className="text-xl font-semibold mb-4">📄 Análisis de tu CV</h3>
-          
-          {/* Puntuación general */}
-          <div className="mb-6">
-            <div className="flex items-center justify-between mb-2">
-              <span className="font-medium">Puntuación general:</span>
-              <span className="text-2xl font-bold text-blue-600">
-                {typeof personal.cvAnalysis === 'object' && personal.cvAnalysis && 'score' in personal.cvAnalysis
-                  ? (personal.cvAnalysis as { score?: number }).score ?? 'N/A'
-                  : 'N/A'}
-              </span>
-            </div>
-          </div>
-
-          {/* Fortalezas */}
-          {strengths.length > 0 && (
-            <div className="mb-6">
-              <h4 className="font-semibold mb-3 text-green-700">✅ Fortalezas identificadas:</h4>
-              <ul className="space-y-2">
-                {strengths.map((strength, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="text-green-500 mr-2">•</span>
-                        <span className="text-gray-700">{strength}</span>
-                      </li>
-                    ))}
-              </ul>
-            </div>
-          )}
-
-          {/* Áreas de mejora */}
-          {weaknesses.length > 0 && (
-            <div>
-              <h4 className="font-semibold mb-3 text-orange-700">🔧 Áreas de mejora:</h4>
-              <ul className="space-y-2">
-                {weaknesses.map((weakness, idx) => (
-                      <li key={idx} className="flex items-start">
-                        <span className="text-orange-500 mr-2">•</span>
-                        <span className="text-gray-700">{weakness}</span>
-                      </li>
-                    ))}
-              </ul>
-            </div>
-          )}
-        </div>
-      )}
-
-      {/* B. Habilidades blandas evaluadas */}
-      {normalizedSoftSkills.length > 0 ? (
-        <div className="bg-white p-6 rounded shadow-md">
-          <h2 className="text-2xl font-semibold mb-4">Habilidades Blandas Evaluadas</h2>
-          <ul className="space-y-2">
-            {normalizedSoftSkills.map((skill, index) => (
-              <li key={index}>
-                <span className="font-medium">{skill.skill}:</span> Nivel: {skill.level} ({Math.round(skill.confidence * 100)}% de confianza)
+        <div className="w-full md:w-1/2">
+          <h3 className="font-semibold mb-2">Resumen de niveles:</h3>
+          <ul className="space-y-1">
+            {(report?.softSkills ?? []).map((skill, idx) => (
+              <li key={idx}>
+                <span className="font-medium">{skill.skill}:</span> {skill.level} ({skill.score}% confianza)
               </li>
             ))}
           </ul>
         </div>
-      ) : (
-        <div className="bg-yellow-50 p-4 border border-yellow-200 rounded">
-          No se han evaluado habilidades blandas aún.
-        </div>
-      )}
-
-      {/* C. Gráfico Radar */}
-      {data.length > 0 ? (
-        <div className="w-full h-96">
-          <ResponsiveRadar
-            data={data as unknown as Record<string, unknown>[]}
-            keys={['level']}
-            indexBy="skill"
-            margin={{ top: 70, right: 80, bottom: 70, left: 80 }}
-            borderColor="#3182eb"
-            dotSize={10}
-            dotColor="#2563eb"
-            dotBorderWidth={2}
-            enableDots={true}
-            animate={true}
-          />
-        </div>
-      ) : (
-        <div className="bg-yellow-50 p-4 border border-yellow-200 rounded">
-          <p>No hay datos suficientes para mostrar el gráfico radar.</p>
-          <p className="text-sm text-gray-600">Datos disponibles: {JSON.stringify(data)}</p>
-        </div>
-      )}
-
-      {/* D. Recomendaciones */}
-      <div className="bg-blue-50 p-6 rounded shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Recomendaciones de mejora</h2>
-        <ul className="space-y-2">
-          {areasToImprove.length > 0 ? (
-            areasToImprove.map((skill, index) => (
-              <li key={index}>
-                <strong>{skill.skill}:</strong> Tu nivel es <em>{skill.level}</em>. Recomendación: {skill.feedback}
-              </li>
-            ))
-          ) : (
-            <li>No hay recomendaciones disponibles aún.</li>
-          )}
-        </ul>
       </div>
+    </div>
+  );
 
-      {/* E. Fortalezas más destacadas */}
-      <div className="bg-green-50 p-6 rounded shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Fortalezas más destacadas</h2>
+  // 3. Fortalezas más destacadas
+  const fortalezas = (report?.softSkills ?? []).filter(s => s.score >= 80);
+  const fortalezasSection = (
+    <div className="bg-green-50 rounded-lg shadow-md p-8 mb-8">
+      <h2 className="text-2xl font-bold mb-4">Fortalezas más destacadas</h2>
+      {fortalezas.length > 0 ? (
         <ul className="space-y-2">
-          {normalizedSoftSkills.filter((skill) => skill.confidence >= 0.8).map((skill, index) => (
-            <li key={index}>
-              <strong>{skill.skill}:</strong> Nivel: <em>{skill.level}</em> ({Math.round(skill.confidence * 100)}% de confianza)
+          {fortalezas.map((skill, idx) => (
+            <li key={idx}>
+              <strong>{skill.skill}:</strong> {skill.level} ({skill.score}% confianza)
             </li>
           ))}
         </ul>
-      </div>
+      ) : (
+        <p>No se han identificado fortalezas destacadas aún.</p>
+      )}
+    </div>
+  );
 
-      {/* F. Áreas a mejorar */}
-      <div className="bg-red-50 p-6 rounded shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Áreas a mejorar</h2>
+  // 4. Áreas de mejora + sugerencias prácticas
+  const areasMejora = (report?.softSkills ?? []).filter(s => s.score < 70);
+  const areasMejoraSection = (
+    <div className="bg-red-50 rounded-lg shadow-md p-8 mb-8">
+      <h2 className="text-2xl font-bold mb-4">Áreas de mejora y sugerencias</h2>
+      {areasMejora.length > 0 ? (
         <ul className="space-y-2">
-          {areasToImprove.length > 0 ? (
-            areasToImprove.map((skill, index) => (
-              <li key={index}>
-                <strong>{skill.skill}:</strong> Nivel: <em>{skill.level}</em> ({Math.round(skill.confidence * 100)}% de confianza). Recomendación: {skill.feedback}
-              </li>
-            ))
-          ) : (
-            <li>No hay áreas a mejorar según el análisis.</li>
-          )}
+          {areasMejora.map((skill, idx) => (
+            <li key={idx}>
+              <strong>{skill.skill}:</strong> {skill.level} ({skill.score}% confianza). <br />
+              <span className="text-sm">Sugerencia: Practica situaciones reales y pide feedback para mejorar esta habilidad.</span>
+            </li>
+          ))}
         </ul>
-      </div>
+      ) : (
+        <p>No hay áreas de mejora destacadas según el análisis actual.</p>
+      )}
+    </div>
+  );
 
-      {/* G. Resumen de habilidades */}
-      <div className="bg-white p-6 rounded shadow-md">
-        <h2 className="text-2xl font-semibold mb-4">Resumen de habilidades</h2>
-        <div className="grid grid-cols-2 gap-4">
-          <div>
-            <h3 className="font-medium">Puntaje global de empleabilidad:</h3>
-            <p className="text-xl font-bold">{personal?.report?.employabilityScore ?? 0}</p>
-          </div>
-          <div>
-            <h3 className="font-medium">Nivel de empleabilidad:</h3>
-            <p className="text-xl font-bold">{personal?.report?.level ?? ''}</p>
-          </div>
-          <div>
-            <h3 className="font-medium">Puntaje ajustado:</h3>
-            <p className="text-xl font-bold">{personal?.report?.adjustedScore ?? 0}</p>
-          </div>
+  // 5. Recomendaciones laborales (puestos, sectores, entorno)
+  const recomendaciones = report?.recommendations ?? [];
+  const recomendacionesSection = (
+    <div className="bg-blue-50 rounded-lg shadow-md p-8 mb-8">
+      <h2 className="text-2xl font-bold mb-4">Recomendaciones laborales</h2>
+      {recomendaciones.length > 0 ? (
+        <ul className="space-y-2">
+          {recomendaciones.map((rec, idx) => (
+            <li key={idx}>{rec}</li>
+          ))}
+        </ul>
+      ) : (
+        <p>No hay recomendaciones laborales específicas aún.</p>
+      )}
+    </div>
+  );
+
+  // 6. Análisis del CV (breve y amable)
+  const cvSection = (
+    <div className="bg-white rounded-lg shadow-md p-8 mb-8">
+      <h2 className="text-2xl font-bold mb-4">Análisis de tu CV</h2>
+      {cvAnalysis ? (
+        <div>
+          <p className="mb-2">¡Gracias por compartir tu CV! Hemos detectado los siguientes puntos:</p>
+          <ul className="list-disc ml-6 mb-2">
+            <li><strong>Estructura:</strong> {cvAnalysis.structure}</li>
+            <li><strong>Coherencia:</strong> {cvAnalysis.coherence}</li>
+            <li><strong>Experiencia:</strong> {cvAnalysis.experience}</li>
+            <li><strong>Habilidades técnicas:</strong> {(cvAnalysis.skills ?? []).join(', ')}</li>
+            {cvAnalysis.education && <li><strong>Formación:</strong> {cvAnalysis.education.join(', ')}</li>}
+            {cvAnalysis.alerts && <li><strong>Áreas de mejora:</strong> {cvAnalysis.alerts.join(', ')}</li>}
+          </ul>
+          <p className="text-green-700">Recuerda que tu CV es una herramienta viva: actualízalo con tus logros y aprendizajes.</p>
         </div>
-      </div>
+      ) : (
+        <p>No se ha podido analizar el CV en este momento.</p>
+      )}
+    </div>
+  );
 
-      {/* H. Botones de acción */}
-      <div className="flex justify-center gap-4 mt-6">
-        <button
-          onClick={handleDownloadReport}
-          className={`py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors`}
-        >
-          Descargar Informe PDF
-        </button>
-        <button
-          onClick={() => window.print()}
-          className="py-3 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
-        >
-          Imprimir Informe
-        </button>
-      </div>
+  // 7. Próximos pasos sugeridos
+  const pasos = [
+    'Completa todos los minijuegos para mejorar tu perfil.',
+    'Actualiza tu CV con los nuevos logros y habilidades.',
+    'Solicita feedback a personas de confianza.',
+    'Explora formaciones y recursos recomendados.',
+    'Revisa tus preferencias laborales y adáptalas a tus intereses.'
+  ];
+  const pasosSection = (
+    <div className="bg-yellow-50 rounded-lg shadow-md p-8 mb-8">
+      <h2 className="text-2xl font-bold mb-4">Próximos pasos sugeridos</h2>
+      <ul className="list-disc ml-6">
+        {pasos.map((p, idx) => (
+          <li key={idx}>{p}</li>
+        ))}
+      </ul>
+    </div>
+  );
+
+  // Renderizado final
+  return (
+    <section className="max-w-4xl mx-auto p-4">
+      {portada}
+      {radar}
+      {fortalezasSection}
+      {areasMejoraSection}
+      {recomendacionesSection}
+      {cvSection}
+      {pasosSection}
     </section>
   );
 };
