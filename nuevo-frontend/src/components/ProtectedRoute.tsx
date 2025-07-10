@@ -44,18 +44,7 @@ export default function ProtectedRoute({ step, children }: Props) {
     completedGames: game.completedGames.length,
   });
 
-  // Log de depuración
-  console.log('ProtectedRoute - Estado personal:', {
-    step,
-    pathname: location.pathname,
-    personal,
-    hasContactData,
-    hasPreferences,
-    hasPersonalData,
-    hasCompletedAllGames,
-    hasCV,
-    completedGames: game.completedGames.length,
-  });
+  // (console.log eliminado para evitar advertencias de lint)
 
   // Función de redirección
   const redirectTo = (path: string) => {
