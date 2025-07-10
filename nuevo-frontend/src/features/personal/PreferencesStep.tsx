@@ -31,8 +31,9 @@ export default function PreferencesStep() {
   const {
     register,
     handleSubmit,
-    formState: { errors },
+    formState: { errors, isValid },
   } = useForm<PrefData>({
+    mode: 'onChange', // Validación en tiempo real
     defaultValues: {
       jobPreferences: typeof current.jobPreferences === 'string'
         ? current.jobPreferences
@@ -49,6 +50,11 @@ export default function PreferencesStep() {
     if (submittedRef.current) {
       return
     }
+    // Validación extra por seguridad
+    if (!data.jobPreferences || data.jobPreferences.trim().length < 3) return;
+    if (!data.workMode) return;
+    if (!data.availability) return;
+    if (!data.startDate) return;
 
     const jobPrefObj = {
       areas: [data.jobPreferences],
@@ -59,9 +65,6 @@ export default function PreferencesStep() {
       hasDisabilityCert: data.hasDisabilityCert,
     };
 
-    // console.log('PreferencesStep - jobPrefObj:', jobPrefObj);
-    // console.log('PreferencesStep - Guardando preferencias...');
-    
     dispatch(savePreferences({
       jobPreferences: jobPrefObj,
       workMode: data.workMode,
@@ -70,22 +73,7 @@ export default function PreferencesStep() {
       willingToRelocate: data.willingToRelocate,
       hasDisabilityCert: data.hasDisabilityCert,
     }))
-    
-    dispatch(setPersonalCompleted(true))
     submittedRef.current = true;
-    
-    // Log de depuración
-    console.log('Estado personal tras guardar preferencias:', {
-      jobPreferences: jobPrefObj,
-      workMode: data.workMode,
-      availability: data.availability,
-      startDate: data.startDate,
-      willingToRelocate: data.willingToRelocate,
-      hasDisabilityCert: data.hasDisabilityCert,
-    });
-    
-    // Navegar directamente a /welcome después de guardar
-    console.log('>>> NAVEGANDO A /welcome desde PreferencesStep onSubmit');
     navigate('/welcome');
   }
 
@@ -228,6 +216,7 @@ export default function PreferencesStep() {
           <button
             type="submit"
             className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
+            disabled={!isValid}
           >
             Finalizar y empezar minijuegos
           </button>
