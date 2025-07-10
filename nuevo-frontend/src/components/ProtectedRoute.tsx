@@ -16,16 +16,20 @@ export default function ProtectedRoute({ step, children }: Props) {
   const game = useSelector((state: RootState) => state.game);
   const { captureMessage, addContext } = useSentry();
 
-  // Verificaciones simplificadas y más robustas
+  // Verificaciones robustas y tolerantes a formatos
   const hasContactData = Boolean(personal.firstName && personal.lastName);
   const hasPreferences = Boolean(
-    personal.jobPreferences && 
-    (typeof personal.jobPreferences === 'string' 
-      ? personal.jobPreferences.trim() !== ''
-      : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0)
+    personal.jobPreferences &&
+    (
+      typeof personal.jobPreferences === 'string'
+        ? personal.jobPreferences.trim() !== ''
+        : Array.isArray(personal.jobPreferences.areas)
+          ? personal.jobPreferences.areas.length > 0 && personal.jobPreferences.areas[0].trim() !== ''
+          : false
+    )
   );
   const hasPersonalData = hasContactData && hasPreferences;
-  const hasCompletedAllGames = game.completedGames.length >= 10;
+  const hasCompletedAllGames = game.completedGames && game.completedGames.length >= 10;
   const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
 
   // Agregar contexto a Sentry
@@ -66,14 +70,14 @@ export default function ProtectedRoute({ step, children }: Props) {
       return <>{children}</>;
 
     case 'preferences':
-      // Requiere datos de contacto
+      // Solo redirigir si realmente faltan datos de contacto
       if (!hasContactData) {
         return redirectTo('/register/contact');
       }
       return <>{children}</>;
 
     case 'games':
-      // Requiere datos personales completos (contacto + preferencias)
+      // Solo redirigir si realmente faltan datos personales completos
       if (!hasContactData) {
         return redirectTo('/register/contact');
       }
@@ -83,7 +87,7 @@ export default function ProtectedRoute({ step, children }: Props) {
       return <>{children}</>;
 
     case 'uploadCV':
-      // Requiere datos personales y juegos completados
+      // Solo redirigir si realmente faltan datos personales completos o juegos
       if (!hasPersonalData) {
         return redirectTo('/register/contact');
       }
@@ -96,7 +100,7 @@ export default function ProtectedRoute({ step, children }: Props) {
       return <>{children}</>;
 
     case 'resultados':
-      // Requiere todo completo
+      // Solo redirigir si realmente falta algo
       if (!hasPersonalData) {
         return redirectTo('/register/contact');
       }
