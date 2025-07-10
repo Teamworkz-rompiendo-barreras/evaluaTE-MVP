@@ -77,7 +77,7 @@ export const games: Game[] = [
       {
         id: 'feedback-final',
         title: '¡Bravo!',
-        description: '¡Bravo! Hoy has demostrado tu capacidad para tomar decisiones en situaciones reales de trabajo. Cada forma de decidir suma valor.',
+        description: 'Hoy has demostrado tu capacidad para tomar decisiones en situaciones reales de trabajo. Cada forma de decidir suma valor.',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -86,1785 +86,757 @@ export const games: Game[] = [
     ]
   },
   {
-    id: 'problem-solving',
-    title: 'Algo no cuadra',
-    subtitle: 'Resolución de problemas',
-    description: 'Hoy te han asignado la tarea de revisar varios pedidos antes de que salgan de la empresa. Algo no encaja… y necesitas descubrir qué es. ¿Preparado o preparada?',
-    softSkill: 'Resolución de problemas',
+    id: 'analytical-thinking',
+    title: 'Pensamiento Analítico',
+    subtitle: 'Día 2',
+    description: 'Hoy te piden analizar información, detectar problemas y organizar materiales.',
+    softSkill: 'Pensamiento analítico',
     day: 'Martes',
-    scenario: 'Segundo día en la empresa de logística. Hoy te asignan una tarea concreta en el área de control y revisión de pedidos.',
-    icon: '🧩',
-    color: '#374BA6',
+    scenario: 'Segundo día en IntegraPro. Analizas información y resuelves problemas.',
+    icon: '📊',
+    color: '#A6D1F2',
     completed: false,
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: 'Revisión de pedidos',
-        description: '',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Te entregan una lista de tareas con plazos distintos.',
         type: 'choice',
         options: [
-          {
-            id: 'start',
-            text: 'Empezar revisión',
-            score: 0,
-            nextSceneId: 'incomplete-order'
-          }
-        ]
+          { id: 'calendario', text: 'Ordenas las tareas según la fecha de entrega. 📅', score: 100 },
+          { id: 'facil', text: 'Haces las que te parecen más fáciles primero. 👍', score: 20 },
+          { id: 'ayuda', text: 'Pides ayuda para organizarte. ✋', score: 50 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'incomplete-order',
-        title: 'El pedido incompleto',
-        description: 'Te llega una lista con tres pedidos. Uno de ellos está incompleto. ¿Qué harías para identificarlo?',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Encuentras un error en unos datos.',
         type: 'choice',
         options: [
-          {
-            id: 'explore',
-            text: 'Revisar los pedidos y buscar el que falta información',
-            score: 0,
-            nextSceneId: 'paper-mixed'
-          }
-        ]
+          { id: 'lupa', text: 'Lo revisas y buscas dónde está el fallo. 🔍', score: 100 },
+          { id: 'bocadillo', text: 'Informas del error pero dejas que lo revise otra persona. 💬', score: 50 },
+          { id: 'interrogacion', text: 'Sigues adelante sin revisar, porque no tienes claro qué hacer. ❓', score: 20 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'paper-mixed',
-        title: 'El papel cambiado',
-        description: 'Te das cuenta de que uno de los albaranes no corresponde con el pedido al que está asignado.',
-        type: 'drag-drop',
-        dragDropConfig: {
-          items: [
-            { id: 'albaran1', text: 'Albarán A-001', category: 'order1' },
-            { id: 'albaran2', text: 'Albarán A-002', category: 'order2' },
-            { id: 'albaran3', text: 'Albarán A-003', category: 'order3' }
-          ],
-          targetZones: [
-            { id: 'order1', title: 'Pedido 1', accepts: ['order1'] },
-            { id: 'order2', title: 'Pedido 2', accepts: ['order2'] },
-            { id: 'order3', title: 'Pedido 3', accepts: ['order3'] }
-          ]
-        },
-        nextSceneId: 'time-pressure'
-      },
-      {
-        id: 'time-pressure',
-        title: 'Revisión contra reloj',
-        description: 'Te indican que el camión sale en 10 minutos y hay un pedido con tres discrepancias.',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Te dan instrucciones poco claras para un trabajo.',
         type: 'choice',
         options: [
-          {
-            id: 'solve-alone',
-            text: 'Intentas solucionarlo tú mismo o misma aunque tardes un poco más',
-            score: 70,
-            feedback: 'Iniciativa positiva, pero considera el tiempo disponible.',
-            nextSceneId: 'hidden-error'
-          },
-          {
-            id: 'ask-help',
-            text: 'Pides ayuda al momento',
-            score: 85,
-            feedback: 'Buena decisión. Saber cuándo pedir ayuda es importante.',
-            nextSceneId: 'hidden-error'
-          },
-          {
-            id: 'send-as-is',
-            text: 'Envías el pedido como está para no retrasar el camión',
-            score: 40,
-            feedback: 'Considera las consecuencias de enviar un pedido incorrecto.',
-            nextSceneId: 'hidden-error'
-          }
-        ]
+          { id: 'pregunta', text: 'Pides aclaraciones hasta entenderlo. ❔', score: 100 },
+          { id: 'ojo', text: 'Haces lo que crees que piden aunque no estés seguro/a. 👁️', score: 20 },
+          { id: 'grupo', text: 'Esperas a ver qué hacen otros/as para copiar. 👥', score: 50 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'hidden-error',
-        title: 'El fallo oculto',
-        description: 'Todos los papeles parecen estar bien, pero sientes que algo no encaja. ¿Qué haces? Puedes explorar la imagen para buscar pistas.',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'Te piden que agrupes materiales similares.',
         type: 'choice',
         options: [
-          {
-            id: 'explore-image',
-            text: 'Explorar la imagen en busca de errores',
-            score: 80,
-            feedback: '¡Bien! Buscar pistas visuales es clave para detectar errores.',
-            nextSceneId: 'improvement-report'
-          }
-        ]
+          { id: 'clasificacion', text: 'Analizas bien las características y creas grupos lógicos. 🗂️', score: 100 },
+          { id: 'colores', text: 'Agrupas por colores o tamaño, aunque no sea lo más útil. 🎨', score: 20 },
+          { id: 'ejemplo', text: 'Pides que te muestren un ejemplo antes. ✋', score: 50 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'improvement-report',
-        title: 'Informe de mejoras',
-        description: 'Te piden que completes un informe de mejora rápida.',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Te dan dos soluciones para un problema.',
         type: 'choice',
         options: [
-          {
-            id: 'details',
-            text: 'He aprendido a fijarme mejor en los detalles',
-            score: 80,
-            feedback: 'Excelente observación. Los detalles son importantes.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'help-timing',
-            text: 'Pedir ayuda en el momento adecuado evita errores',
-            score: 85,
-            feedback: 'Muy buena reflexión. El timing es clave.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'think-first',
-            text: 'A veces hay que parar y pensar antes de actuar',
-            score: 90,
-            feedback: '¡Excelente! La reflexión es fundamental.',
-            nextSceneId: 'completion'
-          }
-        ]
+          { id: 'balanza', text: 'Comparas ventajas e inconvenientes de cada opción. ⚖️', score: 100 },
+          { id: 'dedo', text: 'Eliges la que te suena mejor. ☝️', score: 20 },
+          { id: 'responsable', text: 'Pides la opinión del responsable antes de decidir. 👔', score: 50 }
+        ],
+        nextSceneId: 'feedback-final'
       },
       {
-        id: 'completion',
-        title: '¡Buen trabajo!',
-        description: '¡Buen trabajo! Detectar errores no es fácil, y hoy lo has hecho de maravilla. Resolver problemas requiere lógica, pero también intuición. Has desbloqueado una nueva habilidad: Resolución de problemas. Nos vemos mañana para un nuevo reto.',
+        id: 'feedback-final',
+        title: '¡Genial!',
+        description: '¡Genial! Has puesto en práctica tu pensamiento analítico para encontrar soluciones. ¡Sigue observando y razonando con detalle!',
         type: 'choice',
         options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Resolución de problemas!'
-          }
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
       }
     ]
   },
   {
-    id: 'teamwork',
-    title: 'El envío urgente',
-    subtitle: 'Trabajo en equipo',
-    description: 'Hoy vas a trabajar con dos compañeras y compañeros. Juntas y juntos tenéis que preparar un envío especial. Habrá momentos de coordinación, confusión y decisiones compartidas. ¿Preparada o preparado para colaborar?',
-    softSkill: 'Trabajo en equipo',
+    id: 'creativity',
+    title: 'Creatividad',
+    subtitle: 'Día 3',
+    description: 'Hoy te toca aportar ideas y buscar nuevas formas de resolver problemas.',
+    softSkill: 'Creatividad',
     day: 'Miércoles',
-    scenario: 'Hoy formas parte de un pequeño equipo encargado de preparar un envío que debe salir antes de las 14:00.',
-    icon: '🤝',
-    color: '#4CAF50',
+    scenario: 'Tercer día en IntegraPro. Es momento de innovar y proponer ideas.',
+    icon: '💡',
+    color: '#F2B6A6',
     completed: false,
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: 'Trabajo en equipo',
-        description: 'Hoy vas a trabajar con dos compañeras y compañeros. Juntas y juntos tenéis que preparar un envío especial. Habrá momentos de coordinación, confusión y decisiones compartidas. ¿Preparada o preparado para colaborar?',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Surge un problema nuevo en el almacén/oficina.',
         type: 'choice',
         options: [
-          {
-            id: 'start',
-            text: 'Comenzar trabajo en equipo',
-            score: 0,
-            nextSceneId: 'task-distribution'
-          }
-        ]
+          { id: 'bombilla', text: 'Propones una idea original para resolverlo. 💡', score: 100 },
+          { id: 'check', text: 'Aplicas una solución que ya se ha hecho antes. ✔️', score: 50 },
+          { id: 'reloj', text: 'Esperas instrucciones para actuar. ⏰', score: 20 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'task-distribution',
-        title: 'Reparto de tareas',
-        description: 'Tu supervisor te presenta a tus compañeras y compañeros: Alex y Carmen. Te dan una lista con 3 tareas y os dicen que os las repartáis. Alex prefiere el ordenador. Carmen tiene experiencia empaquetando. Tú eliges primero.',
-        type: 'drag-drop',
-        dragDropConfig: {
-          items: [
-            { id: 'computer-task', text: 'Introducir datos en el sistema', category: 'alex' },
-            { id: 'packaging-task', text: 'Empaquetar productos', category: 'carmen' },
-            { id: 'coordination-task', text: 'Coordinar el proceso', category: 'me' }
-          ],
-          targetZones: [
-            { id: 'alex', title: 'Alex (ordenador)', accepts: ['alex'] },
-            { id: 'carmen', title: 'Carmen (empaquetado)', accepts: ['carmen'] },
-            { id: 'me', title: 'Tú', accepts: ['me'] }
-          ]
-        },
-        nextSceneId: 'carmen-needs-help'
-      },
-      {
-        id: 'carmen-needs-help',
-        title: 'Carmen necesita ayuda',
-        description: 'Carmen está teniendo problemas para cerrar las cajas y pide ayuda.',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Hay que decorar una zona para un evento.',
         type: 'choice',
         options: [
-          {
-            id: 'help-directly',
-            text: 'Le ayudas directamente, aunque dejas tu tarea a medias',
-            score: 85,
-            feedback: 'Excelente espíritu de equipo. La colaboración es importante.',
-            nextSceneId: 'alex-mistake'
-          },
-          {
-            id: 'help-later',
-            text: 'Le ofreces ayuda solo cuando termines tu parte',
-            score: 70,
-            feedback: 'Buena planificación, pero considera la urgencia.',
-            nextSceneId: 'alex-mistake'
-          },
-          {
-            id: 'ignore',
-            text: 'Le dices que lo intente otra vez, que tú también estás ocupada o ocupada',
-            score: 40,
-            feedback: 'Recuerda que el trabajo en equipo requiere apoyo mutuo.',
-            nextSceneId: 'alex-mistake'
-          }
-        ]
+          { id: 'pincel', text: 'Propones algo diferente y creativo. 🖌️', score: 100 },
+          { id: 'repeticion', text: 'Repites la decoración de siempre. 🔁', score: 20 },
+          { id: 'grupo', text: 'Pides ideas a tus compañeros/as. 👥', score: 50 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'alex-mistake',
-        title: 'Alex comete un error',
-        description: 'Alex introduce mal una dirección en el sistema, y no se da cuenta. Tú lo ves desde tu pantalla.',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Falta material de oficina y hay que improvisar.',
         type: 'choice',
         options: [
-          {
-            id: 'correct-respectfully',
-            text: 'Le corriges con respeto',
-            score: 90,
-            feedback: 'Excelente comunicación. La corrección respetuosa es clave.',
-            nextSceneId: 'time-limit'
-          },
-          {
-            id: 'ignore-mistake',
-            text: 'No dices nada porque no es tu trabajo',
-            score: 50,
-            feedback: 'Considera que el éxito del equipo depende de todos.',
-            nextSceneId: 'time-limit'
-          },
-          {
-            id: 'report-supervisor',
-            text: 'Informas al supervisor directamente',
-            score: 60,
-            feedback: 'A veces es mejor intentar resolver entre compañeros primero.',
-            nextSceneId: 'time-limit'
-          }
-        ]
+          { id: 'herramientas', text: 'Buscas un objeto alternativo para salir del paso. 🧰', score: 100 },
+          { id: 'espera', text: 'Esperas a que lo repongan para seguir trabajando. ⏳', score: 20 },
+          { id: 'manos', text: 'Usas lo que tienes aunque no sea perfecto. 👐', score: 50 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'time-limit',
-        title: 'Tiempo límite',
-        description: 'Faltan 10 minutos y aún queda por cerrar el paquete final.',
-        type: 'drag-drop',
-        dragDropConfig: {
-          items: [
-            { id: 'final-package', text: 'Cerrar paquete final', category: 'urgent' },
-            { id: 'check-system', text: 'Verificar sistema', category: 'important' },
-            { id: 'clean-area', text: 'Limpiar área', category: 'low' }
-          ],
-          targetZones: [
-            { id: 'alex', title: 'Alex', accepts: ['important'] },
-            { id: 'carmen', title: 'Carmen', accepts: ['urgent'] },
-            { id: 'me', title: 'Tú', accepts: ['low'] }
-          ]
-        },
-        nextSceneId: 'final-conversation'
-      },
-      {
-        id: 'final-conversation',
-        title: 'Conversación final',
-        description: 'Alex dice que le costó el trabajo en grupo. Carmen dice que se sintió valorada.',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'El equipo se atasca en una reunión.',
         type: 'choice',
         options: [
-          {
-            id: 'positive-collaboration',
-            text: 'Me gustó que nos ayudamos cuando fue necesario',
-            score: 90,
-            feedback: 'Excelente reflexión. El apoyo mutuo es fundamental.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'prefer-solo',
-            text: 'Prefiero trabajar sol@, fue un poco caótico',
-            score: 60,
-            feedback: 'Es válido tener preferencias, pero el trabajo en equipo es una habilidad valiosa.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'could-improve',
-            text: 'Estuvo bien, pero creo que podríamos organizarnos mejor',
-            score: 80,
-            feedback: 'Buena observación. La mejora continua es importante.',
-            nextSceneId: 'completion'
-          }
-        ]
+          { id: 'flecha', text: 'Sugieres cambiar la forma de pensar para ver nuevas soluciones. 🔄', score: 100 },
+          { id: 'oido', text: 'Te limitas a escuchar. 👂', score: 20 },
+          { id: 'bloc', text: 'Intentas resumir lo que se ha dicho. 🗒️', score: 50 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'completion',
-        title: '¡Gran trabajo en equipo!',
-        description: '¡Gran trabajo en equipo! A veces colaborar no es fácil, pero encontrar la forma de hacerlo es una habilidad muy valiosa. Hoy has demostrado cómo aportar sin perder tu lugar. Has desbloqueado una nueva habilidad: Trabajo en equipo.',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Te piden ideas para mejorar el ambiente en el trabajo.',
         type: 'choice',
         options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Trabajo en equipo!'
-          }
+          { id: 'fiesta', text: 'Propones una actividad distinta y divertida. 🎉', score: 100 },
+          { id: 'ok', text: 'Dices que está bien como está. 👍', score: 20 },
+          { id: 'bocadillo', text: 'Preguntas qué le gustaría a los demás. 💬', score: 50 }
+        ],
+        nextSceneId: 'feedback-final'
+      },
+      {
+        id: 'feedback-final',
+        title: '¡Muy bien!',
+        description: '¡Muy bien! Has demostrado que tu creatividad puede marcar la diferencia en el trabajo diario. No dejes de aportar nuevas ideas.',
+        type: 'choice',
+        options: [
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
       }
     ]
   },
   {
-    id: 'emotional-management',
-    title: 'Día de tensiones',
-    subtitle: 'Gestión emocional',
-    description: 'Hoy todo parece que va a ir mal. Personas nerviosas, tareas cambiantes, imprevistos… Pero tú puedes con esto. No se trata de hacerlo perfecto, sino de cómo lo vives.',
-    softSkill: 'Gestión emocional',
+    id: 'social-influence',
+    title: 'Influencia Social',
+    subtitle: 'Día 4',
+    description: 'Hoy tienes que interactuar, motivar, convencer y resolver desacuerdos.',
+    softSkill: 'Influencia social',
     day: 'Jueves',
-    scenario: 'Una jornada con imprevistos, personas nerviosas, tareas que cambian, y un poco de presión… como en la vida real.',
-    icon: '😤',
-    color: '#FF9800',
+    scenario: 'Cuarto día en IntegraPro. Interactúas y resuelves desacuerdos en el equipo.',
+    icon: '🤝',
+    color: '#F2E2A6',
     completed: false,
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: 'Día de tensiones',
-        description: 'Hoy todo parece que va a ir mal. Personas nerviosas, tareas cambiantes, imprevistos… Pero tú puedes con esto. No se trata de hacerlo perfecto, sino de cómo lo vives.',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Un compañero/a está desmotivado/a.',
         type: 'choice',
         options: [
-          {
-            id: 'start',
-            text: 'Enfrentar el día',
-            score: 0,
-            nextSceneId: 'plan-change'
-          }
-        ]
+          { id: 'corazon', text: 'Le animas y le propones apoyaros mutuamente. ❤️', score: 100 },
+          { id: 'mano', text: 'Le dices que cada cual tiene que hacer su trabajo. ✋', score: 20 },
+          { id: 'oido', text: 'Le escuchas y le ofreces ayuda si la necesita. 👂', score: 50 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'plan-change',
-        title: 'Cambio de planes',
-        description: 'Al llegar, te informan de que vas a hacer una tarea diferente a la que te habían dicho ayer.',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Debes explicar una idea nueva al equipo.',
         type: 'choice',
         options: [
-          {
-            id: 'accept-silently',
-            text: 'Aceptas el cambio sin decir nada',
-            score: 60,
-            feedback: 'Es importante expresar tus sentimientos de forma constructiva.',
-            nextSceneId: 'noisy-environment'
-          },
-          {
-            id: 'ask-reason',
-            text: 'Preguntas si hay una razón para el cambio',
-            score: 80,
-            feedback: 'Buena comunicación. Preguntar ayuda a entender.',
-            nextSceneId: 'noisy-environment'
-          },
-          {
-            id: 'protest-slowly',
-            text: 'Te molesta y decides ir más despacio como forma de protesta',
-            score: 40,
-            feedback: 'La comunicación directa es mejor que la resistencia pasiva.',
-            nextSceneId: 'noisy-environment'
-          }
-        ]
+          { id: 'megafono', text: 'Argumentas con ejemplos y entusiasmo. 📣', score: 100 },
+          { id: 'documento', text: 'Lo explicas de forma breve y sin insistir. 📄', score: 50 },
+          { id: 'persona', text: 'Prefieres que lo explique otra persona. 👤', score: 20 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'noisy-environment',
-        title: 'Ambiente ruidoso',
-        description: 'Hay mucho ruido en el almacén hoy. Te cuesta concentrarte.',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Hay un desacuerdo sobre una tarea.',
         type: 'choice',
         options: [
-          {
-            id: 'use-headphones',
-            text: 'Te pones cascos con cancelación de ruido (si tienes)',
-            score: 85,
-            feedback: 'Excelente solución. Buscar adaptaciones es importante.',
-            nextSceneId: 'unpleasant-comment'
-          },
-          {
-            id: 'ask-change-place',
-            text: 'Pides cambiar de sitio',
-            score: 75,
-            feedback: 'Buena iniciativa. Pedir lo que necesitas es válido.',
-            nextSceneId: 'unpleasant-comment'
-          },
-          {
-            id: 'endure-errors',
-            text: 'Aguantas, pero empiezas a cometer errores',
-            score: 50,
-            feedback: 'Es importante buscar soluciones antes de que afecte tu trabajo.',
-            nextSceneId: 'unpleasant-comment'
-          }
-        ]
+          { id: 'manos', text: 'Propones un acuerdo intermedio para resolverlo. 🤝', score: 100 },
+          { id: 'puno', text: 'Te mantienes en tu posición y no cedes. ✊', score: 20 },
+          { id: 'corbata', text: 'Preguntas a una persona responsable para que decida. 👔', score: 50 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'unpleasant-comment',
-        title: 'Comentario desagradable',
-        description: 'Un compañero hace una broma sobre cómo haces las cosas. No parece con mala intención, pero te incomoda.',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'Debes pedir ayuda a alguien ocupado/a.',
         type: 'choice',
         options: [
-          {
-            id: 'ignore',
-            text: 'Ignoras el comentario y sigues',
-            score: 60,
-            feedback: 'A veces ignorar es una estrategia válida.',
-            nextSceneId: 'own-mistake'
-          },
-          {
-            id: 'express-respectfully',
-            text: 'Le dices que no te ha hecho gracia, con respeto',
-            score: 90,
-            feedback: 'Excelente asertividad. La comunicación respetuosa es clave.',
-            nextSceneId: 'own-mistake'
-          },
-          {
-            id: 'walk-away',
-            text: 'Te vas un rato sin decir nada',
-            score: 70,
-            feedback: 'Tomar un respiro puede ser útil, pero considera comunicar.',
-            nextSceneId: 'own-mistake'
-          }
-        ]
+          { id: 'bocadillo', text: 'Explicas claramente por qué necesitas ayuda. 💬', score: 100 },
+          { id: 'reloj', text: 'Esperas a que esté libre aunque tardes más. ⏰', score: 50 },
+          { id: 'solo', text: 'No lo pides y sigues solo/a. 🧑‍🦰', score: 20 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'own-mistake',
-        title: 'Error propio',
-        description: 'Cometes un error y lo ve tu coordinador. No te dice nada, pero tú lo has notado.',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Tienes una buena idea y quieres que te apoyen.',
         type: 'choice',
         options: [
-          {
-            id: 'recognize-correct',
-            text: 'Lo reconoces y lo corriges',
-            score: 90,
-            feedback: 'Excelente responsabilidad. Reconocer errores es madurez.',
-            nextSceneId: 'emotional-evaluation'
-          },
-          {
-            id: 'correct-silently',
-            text: 'Lo corriges sin decir nada',
-            score: 75,
-            feedback: 'Bien por corregir, pero la comunicación es importante.',
-            nextSceneId: 'emotional-evaluation'
-          },
-          {
-            id: 'freeze',
-            text: 'Te bloqueas y dejas de hacer la tarea',
-            score: 40,
-            feedback: 'Es normal sentirse mal, pero intenta no paralizarte.',
-            nextSceneId: 'emotional-evaluation'
-          }
-        ]
+          { id: 'grupo-estrella', text: 'Buscas aliados/as y explicas los beneficios para el equipo. 🌟', score: 100 },
+          { id: 'puerta', text: 'Esperas a que surja la oportunidad. 🚪', score: 20 },
+          { id: 'susurro', text: 'Se lo cuentas solo a una persona de confianza. 🤫', score: 50 }
+        ],
+        nextSceneId: 'feedback-final'
       },
       {
-        id: 'emotional-evaluation',
-        title: 'Autoevaluación emocional',
-        description: 'Al final del día, te preguntan cómo te sentiste.',
-        type: 'choice',
-        options: [
-          {
-            id: 'managed-well',
-            text: 'Me sentí incómod@, pero lo gestioné',
-            score: 85,
-            feedback: 'Excelente autoconciencia. Gestionar las emociones es una habilidad.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'difficult-adapt',
-            text: 'Fue difícil adaptarme hoy',
-            score: 70,
-            feedback: 'Es válido reconocer las dificultades.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'could-pause',
-            text: 'Pude parar y respirar cuando lo necesité',
-            score: 90,
-            feedback: '¡Excelente! La autorregulación es fundamental.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'didnt-know-how',
-            text: 'No supe cómo manejar algunas cosas',
-            score: 60,
-            feedback: 'Es normal no saberlo todo. El aprendizaje es continuo.',
-            nextSceneId: 'completion'
-          }
-        ]
-      },
-      {
-        id: 'completion',
-        title: '¡Gran avance!',
-        description: 'Sentir cosas no es un problema. Gestionarlas de forma saludable es una habilidad que mejora con el tiempo. Hoy has enfrentado situaciones reales y has sabido responder desde ti mism@. ¡Gran avance! Has desbloqueado una nueva habilidad: Gestión emocional.',
-        type: 'choice',
-        options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Gestión emocional!'
-          }
-        ]
-      }
-    ]
-  },
-  {
-    id: 'communication',
-    title: 'Reunión sorpresa',
-    subtitle: 'Comunicación',
-    description: 'Hoy no esperabas una reunión, pero te han invitado a participar en una breve puesta en común. No es un examen. Solo quieren saber cómo fue tu semana. ¿Te animas a participar?',
-    softSkill: 'Comunicación',
-    day: 'Viernes',
-    scenario: 'Un coordinador ha convocado una reunión informal para repasar la semana. No esperabas tener que hablar en grupo, pero tu voz también importa.',
-    icon: '🗣️',
-    color: '#9C27B0',
-    completed: false,
-    logs: [],
-    scenes: [
-      {
-        id: 'intro',
-        title: 'Reunión sorpresa',
-        description: 'Hoy no esperabas una reunión, pero te han invitado a participar en una breve puesta en común. No es un examen. Solo quieren saber cómo fue tu semana. ¿Te animas a participar?',
-        type: 'choice',
-        options: [
-          {
-            id: 'start',
-            text: 'Entrar a la reunión',
-            score: 0,
-            nextSceneId: 'listening-turn'
-          }
-        ]
-      },
-      {
-        id: 'listening-turn',
-        title: 'Turno de escucha',
-        description: 'Escuchas a tus dos compañeras y compañeros hablar de su experiencia. Te hacen una pregunta de comprensión: ¿Qué dijo Carmen que le costó más esta semana?\n\nTranscripción: Carmen: "Esta semana me costó mucho el ruido en el almacén. Me distraía y me hacía cometer errores. Pero aprendí a pedir ayuda cuando lo necesitaba."',
-        type: 'choice',
-        options: [
-          {
-            id: 'noise',
-            text: 'El ruido',
-            score: 100,
-            feedback: '¡Correcto! Carmen dijo que el ruido en el almacén le costó mucho esta semana.',
-            nextSceneId: 'speaking-turn'
-          },
-          {
-            id: 'computer',
-            text: 'El ordenador',
-            score: 0,
-            feedback: 'No es correcto. Carmen mencionó el ruido, no el ordenador.',
-            nextSceneId: 'speaking-turn'
-          },
-          {
-            id: 'nothing',
-            text: 'No lo dijo',
-            score: 0,
-            feedback: 'No es correcto. Carmen sí mencionó una dificultad.',
-            nextSceneId: 'speaking-turn'
-          }
-        ]
-      },
-      {
-        id: 'speaking-turn',
-        title: 'Tu turno para hablar',
-        description: 'El coordinador te pregunta directamente cómo te has sentido esta semana.',
-        type: 'choice',
-        options: [
-          {
-            id: 'brief-response',
-            text: 'Bien, ha sido interesante',
-            score: 60,
-            feedback: 'Respuesta válida, pero podrías ser más específico.',
-            nextSceneId: 'interruption'
-          },
-          {
-            id: 'detailed-response',
-            text: 'Me costó adaptarme el primer día, pero cada vez mejor',
-            score: 85,
-            feedback: 'Excelente comunicación. Específico y honesto.',
-            nextSceneId: 'interruption'
-          },
-          {
-            id: 'learning-response',
-            text: 'He aprendido mucho, aunque aún tengo dudas',
-            score: 80,
-            feedback: 'Buena reflexión. Mostrar vulnerabilidad es valiente.',
-            nextSceneId: 'interruption'
-          }
-        ]
-      },
-      {
-        id: 'interruption',
-        title: 'Momento de interrupción',
-        description: 'Alex interrumpe mientras estás hablando.',
-        type: 'choice',
-        options: [
-          {
-            id: 'stop-let-talk',
-            text: 'Te detienes y le dejas hablar',
-            score: 70,
-            feedback: 'Buena cortesía, pero puedes ser asertivo.',
-            nextSceneId: 'explanation'
-          },
-          {
-            id: 'assertive-response',
-            text: 'Le dices amablemente que estabas hablando tú',
-            score: 90,
-            feedback: 'Excelente asertividad. La comunicación respetuosa es clave.',
-            nextSceneId: 'explanation'
-          },
-          {
-            id: 'stop-talking',
-            text: 'No reaccionas, pero ya no quieres seguir hablando',
-            score: 50,
-            feedback: 'Es importante mantener tu voz en la conversación.',
-            nextSceneId: 'explanation'
-          }
-        ]
-      },
-      {
-        id: 'explanation',
-        title: 'Explicación práctica',
-        description: 'Te piden que expliques cómo hiciste una tarea esta semana.',
-        type: 'choice',
-        options: [
-          {
-            id: 'step-by-step',
-            text: 'Primero recogí los materiales, luego preparé las cajas y finalmente las etiqueté',
-            score: 90,
-            feedback: 'Excelente explicación estructurada. Muy clara.',
-            nextSceneId: 'closing-message'
-          },
-          {
-            id: 'vague-explanation',
-            text: 'Lo hice como me explicaron el primer día, más o menos',
-            score: 60,
-            feedback: 'Podrías ser más específico en tu explicación.',
-            nextSceneId: 'closing-message'
-          },
-          {
-            id: 'unsure-explanation',
-            text: 'No estoy segur@ de cómo explicarlo',
-            score: 50,
-            feedback: 'Es válido no estar seguro, pero intenta explicar lo que recuerdes.',
-            nextSceneId: 'closing-message'
-          }
-        ]
-      },
-      {
-        id: 'closing-message',
-        title: 'Mensaje de cierre',
-        description: 'Antes de salir, debes escribir (o seleccionar) un mensaje para dejar constancia de cómo te sientes al terminar tu primera semana.',
-        type: 'choice',
-        options: [
-          {
-            id: 'gratitude',
-            text: 'Gracias por el apoyo. He aprendido mucho',
-            score: 85,
-            feedback: 'Excelente mensaje. Agradecer es importante.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'progress',
-            text: 'Todavía tengo dudas, pero me siento mejor que el lunes',
-            score: 80,
-            feedback: 'Buena reflexión sobre el progreso.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'intense-week',
-            text: 'Ha sido una semana intensa. Me gustaría seguir mejorando',
-            score: 90,
-            feedback: 'Excelente actitud de mejora continua.',
-            nextSceneId: 'completion'
-          }
-        ]
-      },
-      {
-        id: 'completion',
+        id: 'feedback-final',
         title: '¡Enhorabuena!',
-        description: 'Hablar, escuchar, explicar, preguntar… Todo eso forma parte del trabajo. Y lo has hecho a tu manera, con tu ritmo y tus palabras. Hoy has demostrado tu capacidad para comunicar. ¡Enhorabuena! Has desbloqueado una nueva habilidad: Comunicación.',
+        description: '¡Enhorabuena! Has puesto en práctica tu capacidad de influencia social y tu forma de comunicar en el entorno laboral.',
         type: 'choice',
         options: [
-          {
-            id: 'continue',
-            text: 'Fin de la semana laboral',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Comunicación!'
-          }
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
       }
     ]
   },
   {
     id: 'curiosity-learning',
-    title: '¿Y esto para qué sirve?',
-    subtitle: 'Curiosidad y aprendizaje continuo',
-    description: 'Hoy te han asignado una tarea nueva que nunca habías hecho. En lugar de seguir las instrucciones al pie de la letra, decides explorar y entender por qué se hace así.',
-    softSkill: 'Curiosidad y aprendizaje continuo',
-    day: 'Lunes (Semana 2)',
-    scenario: 'Nueva tarea en el área de inventario. Te dan una lista de productos para contar, pero decides investigar más.',
-    icon: '🔍',
-    color: '#FF6B6B',
+    title: 'Curiosidad y Aprendizaje',
+    subtitle: 'Día 5',
+    description: 'Hoy tienes oportunidad de aprender algo nuevo o mejorar.',
+    softSkill: 'Curiosidad y aprendizaje',
+    day: 'Viernes',
+    scenario: 'Quinto día en IntegraPro. Se presentan oportunidades para aprender y mejorar.',
+    icon: '📚',
+    color: '#A6F2C2',
     completed: false,
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: 'Nueva tarea desconocida',
-        description: 'Te han dado una lista de productos para contar en el almacén. Es una tarea nueva para ti. ¿Qué haces?',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Te ofrecen apuntarte a una formación voluntaria.',
         type: 'choice',
         options: [
-          {
-            id: 'start-counting',
-            text: 'Empiezas a contar directamente',
-            score: 60,
-            feedback: 'Eficiente, pero podrías aprender más sobre el proceso.',
-            nextSceneId: 'discovery'
-          },
-          {
-            id: 'ask-questions',
-            text: 'Preguntas por qué se hace así y si hay otras formas',
-            score: 90,
-            feedback: '¡Excelente curiosidad! Preguntar es la base del aprendizaje.',
-            nextSceneId: 'discovery'
-          },
-          {
-            id: 'observe-first',
-            text: 'Observas cómo lo hacen otros antes de empezar',
-            score: 80,
-            feedback: 'Buena estrategia. Observar es una forma de aprender.',
-            nextSceneId: 'discovery'
-          }
-        ]
+          { id: 'libro-abierto', text: 'Aceptas y te apuntas enseguida. 📖', score: 100 },
+          { id: 'agenda-cerrada', text: 'Prefieres no apuntarte, ya que tienes otras cosas. 📔', score: 20 },
+          { id: 'grupo', text: 'Preguntas a tus compañeros/as antes de decidir. 👥', score: 50 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'discovery',
-        title: 'Descubriendo el proceso',
-        description: 'Tu supervisor te explica que el conteo sirve para detectar discrepancias entre el inventario real y el registrado. ¿Qué más quieres saber?',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Te cambian una tarea y tienes que aprender a usar una herramienta nueva.',
         type: 'choice',
         options: [
-          {
-            id: 'ask-why-discrepancies',
-            text: '¿Por qué hay discrepancias?',
-            score: 85,
-            feedback: 'Excelente pregunta. Entender las causas es fundamental.',
-            nextSceneId: 'investigation'
-          },
-          {
-            id: 'ask-frequency',
-            text: '¿Con qué frecuencia se hace esto?',
-            score: 75,
-            feedback: 'Buena pregunta sobre la periodicidad del proceso.',
-            nextSceneId: 'investigation'
-          },
-          {
-            id: 'ask-consequences',
-            text: '¿Qué pasa si no se hace bien?',
-            score: 80,
-            feedback: 'Importante considerar las consecuencias.',
-            nextSceneId: 'investigation'
-          }
-        ]
+          { id: 'pantalla-play', text: 'Buscas tutoriales o manuales para aprender por tu cuenta. ▶️', score: 100 },
+          { id: 'persona-explicando', text: 'Pides a alguien que te lo explique todo antes de empezar. 🧑‍🏫', score: 50 },
+          { id: 'brazos-cruzados', text: 'Te frustras y prefieres que te lo asignen a otra persona. 🙅‍♂️', score: 20 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'investigation',
-        title: 'Investigación activa',
-        description: 'Mientras cuentas, notas que algunos productos están mal organizados. ¿Qué haces?',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Escuchas una conversación sobre un tema que no conoces.',
         type: 'choice',
         options: [
-          {
-            id: 'just-count',
-            text: 'Solo cuentas, no es tu problema',
-            score: 50,
-            feedback: 'Cumples tu tarea, pero podrías contribuir más.',
-            nextSceneId: 'improvement'
-          },
-          {
-            id: 'suggest-improvement',
-            text: 'Sugieres una mejor organización',
-            score: 90,
-            feedback: '¡Excelente iniciativa! Proponer mejoras es valioso.',
-            nextSceneId: 'improvement'
-          },
-          {
-            id: 'reorganize-while-counting',
-            text: 'Reorganizas mientras cuentas',
-            score: 85,
-            feedback: 'Buena iniciativa, pero asegúrate de que es apropiado.',
-            nextSceneId: 'improvement'
-          }
-        ]
+          { id: 'interrogacion', text: 'Preguntas y muestras interés. ❓', score: 100 },
+          { id: 'bloc', text: 'Tomas nota para buscar información después. 🗒️', score: 50 },
+          { id: 'cara-indiferente', text: 'No prestas atención porque no te afecta. 😐', score: 20 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'improvement',
-        title: 'Mejora del proceso',
-        description: 'Tu supervisor está impresionado con tu curiosidad. Te pregunta si tienes ideas para mejorar el proceso.',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'Te piden ideas para mejorar un proceso.',
         type: 'choice',
         options: [
-          {
-            id: 'digital-suggestion',
-            text: 'Sugieres un sistema digital',
-            score: 90,
-            feedback: 'Excelente visión de futuro. La digitalización es clave.',
-            nextSceneId: 'learning-reflection'
-          },
-          {
-            id: 'training-suggestion',
-            text: 'Propones más entrenamiento',
-            score: 80,
-            feedback: 'Buena idea. El conocimiento es poder.',
-            nextSceneId: 'learning-reflection'
-          },
-          {
-            id: 'no-ideas',
-            text: 'No se te ocurre nada',
-            score: 60,
-            feedback: 'Es normal no tener ideas inmediatas.',
-            nextSceneId: 'learning-reflection'
-          }
-        ]
+          { id: 'mapa', text: 'Propones explorar opciones nuevas aunque lleve tiempo. 🗺️', score: 100 },
+          { id: 'libros-cerrados', text: 'Usas solo lo que ya sabes bien. 📚', score: 20 },
+          { id: 'grupo', text: 'Preguntas a otros cómo lo harían. 👥', score: 50 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'learning-reflection',
-        title: 'Reflexión sobre el aprendizaje',
-        description: 'Al final del día, reflexionas sobre lo que has aprendido.',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Te dan feedback sobre cómo haces una tarea.',
         type: 'choice',
         options: [
-          {
-            id: 'process-understanding',
-            text: 'Ahora entiendo mejor el proceso completo',
-            score: 85,
-            feedback: 'Excelente comprensión holística.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'question-importance',
-            text: 'Preguntar es más importante de lo que pensaba',
-            score: 90,
-            feedback: '¡Exacto! La curiosidad es la base del aprendizaje.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'improvement-value',
-            text: 'Siempre hay espacio para mejorar',
-            score: 85,
-            feedback: 'Excelente mentalidad de mejora continua.',
-            nextSceneId: 'completion'
-          }
-        ]
+          { id: 'pulgar-arriba', text: 'Lo agradeces y preguntas cómo mejorar. 👍', score: 100 },
+          { id: 'cara-neutra', text: 'Lo aceptas pero no cambias nada. 😐', score: 50 },
+          { id: 'cruz', text: 'Te molesta y te cierras al comentario. ❌', score: 20 }
+        ],
+        nextSceneId: 'feedback-final'
       },
       {
-        id: 'completion',
-        title: '¡Curiosidad satisfecha!',
-        description: '¡Excelente trabajo! Has demostrado que la curiosidad no es solo hacer preguntas, sino buscar entender el "por qué" detrás de todo. Esta actitud te llevará lejos en cualquier trabajo. Has desbloqueado una nueva habilidad: Curiosidad y aprendizaje continuo.',
+        id: 'feedback-final',
+        title: '¡Excelente!',
+        description: '¡Excelente! Tu curiosidad y tus ganas de aprender son clave para avanzar en cualquier trabajo. Sigue buscando nuevas oportunidades para crecer.',
         type: 'choice',
         options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Curiosidad y aprendizaje continuo!'
-          }
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
       }
     ]
   },
   {
     id: 'resilience-flexibility',
-    title: 'No todo va como esperabas',
-    subtitle: 'Resiliencia y flexibilidad',
-    description: 'Hoy todo parece que va a salir mal. Los planes cambian, las cosas no funcionan como esperabas, pero tú mantienes la calma y te adaptas.',
+    title: 'Resiliencia y Flexibilidad',
+    subtitle: 'Día 6',
+    description: 'Hoy surgen cambios inesperados, errores y tareas nuevas de última hora. ¿Cómo te adaptas?',
     softSkill: 'Resiliencia y flexibilidad',
-    day: 'Martes (Semana 2)',
-    scenario: 'Día lleno de imprevistos en el almacén. El sistema falla, los compañeros están ausentes, pero sigues adelante.',
+    day: 'Lunes',
+    scenario: 'Sexto día en IntegraPro. Te enfrentas a cambios y retos imprevistos.',
     icon: '🔄',
-    color: '#4ECDC4',
+    color: '#F2A6D1',
     completed: false,
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: 'Plan A falla',
-        description: 'Llegas al trabajo y te enteras de que el sistema informático está caído. Tu plan del día se va al traste. ¿Cómo reaccionas?',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Te avisan de que han cambiado una tarea que ya tenías casi terminada.',
         type: 'choice',
         options: [
-          {
-            id: 'frustrated',
-            text: 'Te frustras y esperas a que se arregle',
-            score: 40,
-            feedback: 'Es normal frustrarse, pero intenta buscar alternativas.',
-            nextSceneId: 'adaptation'
-          },
-          {
-            id: 'find-alternatives',
-            text: 'Buscas otras tareas que puedas hacer sin el sistema',
-            score: 90,
-            feedback: '¡Excelente flexibilidad! Adaptarte es una habilidad valiosa.',
-            nextSceneId: 'adaptation'
-          },
-          {
-            id: 'help-others',
-            text: 'Ofreces ayuda a otros mientras esperas',
-            score: 85,
-            feedback: 'Buena iniciativa. Ayudar a otros es siempre positivo.',
-            nextSceneId: 'adaptation'
-          }
-        ]
+          { id: 'flecha-circulo', text: 'Te adaptas, revisas lo hecho y lo modificas sin problema. 🔄', score: 100 },
+          { id: 'interrogacion', text: 'Preguntas por qué han hecho el cambio y te cuesta aceptarlo. ❓', score: 50 },
+          { id: 'cara-triste', text: 'Te frustras y prefieres que lo haga otra persona. 😞', score: 20 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'adaptation',
-        title: 'Adaptándose a la situación',
-        description: 'Decides trabajar manualmente. Pero luego te enteras de que dos compañeras están ausentes por enfermedad.',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Cometes un error y lo detectas tú mismo/a.',
         type: 'choice',
         options: [
-          {
-            id: 'overwhelmed',
-            text: 'Te sientes abrumad@ con tanto trabajo',
-            score: 50,
-            feedback: 'Es normal sentirse así, pero intenta mantener la calma.',
-            nextSceneId: 'prioritization'
-          },
-          {
-            id: 'prioritize-tasks',
-            text: 'Priorizas las tareas más importantes',
-            score: 90,
-            feedback: '¡Excelente! Priorizar es clave en situaciones difíciles.',
-            nextSceneId: 'prioritization'
-          },
-          {
-            id: 'ask-for-help',
-            text: 'Pides ayuda a otros departamentos',
-            score: 85,
-            feedback: 'Buena iniciativa. Pedir ayuda es una fortaleza.',
-            nextSceneId: 'prioritization'
-          }
-        ]
+          { id: 'mano-levantada', text: 'Lo reconoces, buscas cómo solucionarlo y avisas. ✋', score: 100 },
+          { id: 'telefono', text: 'Lo avisas pero dejas que lo corrija otro/a. ☎️', score: 50 },
+          { id: 'manos-cara', text: 'Intentas ocultarlo o te bloqueas. 🙈', score: 20 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'prioritization',
-        title: 'Priorización inteligente',
-        description: 'Tienes que decidir qué tareas hacer primero con recursos limitados.',
-        type: 'drag-drop',
-        dragDropConfig: {
-          items: [
-            { id: 'urgent1', text: 'Envío urgente de cliente VIP', category: 'critical' },
-            { id: 'urgent2', text: 'Inventario semanal', category: 'important' },
-            { id: 'urgent3', text: 'Limpieza del área', category: 'low' },
-            { id: 'urgent4', text: 'Preparar reporte mensual', category: 'important' }
-          ],
-          targetZones: [
-            { id: 'morning', title: 'Mañana (Crítico)', accepts: ['critical'] },
-            { id: 'afternoon', title: 'Tarde (Importante)', accepts: ['important'] },
-            { id: 'end-day', title: 'Final del día (Bajo)', accepts: ['low'] }
-          ]
-        },
-        nextSceneId: 'unexpected-challenge'
-      },
-      {
-        id: 'unexpected-challenge',
-        title: 'Desafío inesperado',
-        description: 'Un cliente llama furioso porque su pedido no llegó. El sistema está caído y no puedes verificar el estado.',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Te piden hacer una tarea urgente que nunca has hecho.',
         type: 'choice',
         options: [
-          {
-            id: 'apologize-explain',
-            text: 'Te disculpas y explicas la situación',
-            score: 85,
-            feedback: 'Buena comunicación. La honestidad es importante.',
-            nextSceneId: 'creative-solution'
-          },
-          {
-            id: 'promise-immediate',
-            text: 'Le prometes resolverlo inmediatamente',
-            score: 60,
-            feedback: 'Cuidado con promesas que no puedes cumplir.',
-            nextSceneId: 'creative-solution'
-          },
-          {
-            id: 'transfer-supervisor',
-            text: 'Lo transfieres a tu supervisor',
-            score: 70,
-            feedback: 'A veces es necesario escalar, pero intenta primero.',
-            nextSceneId: 'creative-solution'
-          }
-        ]
+          { id: 'libro-abierto', text: 'Lo intentas, pides instrucciones y te adaptas. 📖', score: 100 },
+          { id: 'dos-personas', text: 'Prefieres que alguien con experiencia lo haga. 👥', score: 50 },
+          { id: 'cruz', text: 'Dices que no puedes y te retiras. ❌', score: 20 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'creative-solution',
-        title: 'Solución creativa',
-        description: 'Decides llamar al almacén manualmente para verificar el pedido. ¿Qué más haces?',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'Hoy hay mucho más trabajo de lo habitual.',
         type: 'choice',
         options: [
-          {
-            id: 'just-check',
-            text: 'Solo verificas el pedido',
-            score: 70,
-            feedback: 'Cumples tu deber, pero podrías ir más allá.',
-            nextSceneId: 'recovery'
-          },
-          {
-            id: 'offer-alternative',
-            text: 'Ofreces una alternativa si no está disponible',
-            score: 95,
-            feedback: '¡Excelente servicio al cliente!',
-            nextSceneId: 'recovery'
-          },
-          {
-            id: 'follow-up-plan',
-            text: 'Creas un plan de seguimiento',
-            score: 90,
-            feedback: 'Buena planificación. La proactividad es valiosa.',
-            nextSceneId: 'recovery'
-          }
-        ]
+          { id: 'lista-check', text: 'Priorizar, organizar y mantener la calma. ✅', score: 100 },
+          { id: 'mano-levantada', text: 'Haces lo que puedes y pides ayuda si te desbordas. ✋', score: 50 },
+          { id: 'exclamacion', text: 'Te agobias y no sabes por dónde empezar. ❗', score: 20 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'recovery',
-        title: 'Recuperación del día',
-        description: 'Al final del día, el sistema vuelve a funcionar. ¿Cómo manejas el trabajo acumulado?',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'El plan del día cambia varias veces por causas externas.',
         type: 'choice',
         options: [
-          {
-            id: 'work-overtime',
-            text: 'Te quedas más tiempo para ponerte al día',
-            score: 80,
-            feedback: 'Buena dedicación, pero cuida tu bienestar.',
-            nextSceneId: 'reflection'
-          },
-          {
-            id: 'plan-tomorrow',
-            text: 'Planificas mejor para mañana',
-            score: 90,
-            feedback: 'Excelente. Aprender de las dificultades es clave.',
-            nextSceneId: 'reflection'
-          },
-          {
-            id: 'delegate-tasks',
-            text: 'Delegas algunas tareas',
-            score: 85,
-            feedback: 'Buena gestión. Saber delegar es importante.',
-            nextSceneId: 'reflection'
-          }
-        ]
+          { id: 'puente', text: 'Te adaptas y buscas soluciones alternativas. 🌉', score: 100 },
+          { id: 'cara-neutra', text: 'Te adaptas, aunque te molesta. 😐', score: 50 },
+          { id: 'pausa', text: 'Te bloqueas y necesitas parar. ⏸️', score: 20 }
+        ],
+        nextSceneId: 'feedback-final'
       },
       {
-        id: 'reflection',
-        title: 'Reflexión sobre la resiliencia',
-        description: 'Reflexionas sobre cómo manejaste un día tan difícil.',
+        id: 'feedback-final',
+        title: '¡Estupendo!',
+        description: '¡Estupendo! Has demostrado resiliencia y flexibilidad ante los cambios. Estas cualidades te ayudarán a afrontar cualquier reto laboral.',
         type: 'choice',
         options: [
-          {
-            id: 'stayed-calm',
-            text: 'Mantuve la calma y busqué soluciones',
-            score: 90,
-            feedback: '¡Excelente! La resiliencia es una habilidad valiosa.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'learned-adapt',
-            text: 'Aprendí a adaptarme mejor',
-            score: 85,
-            feedback: 'El aprendizaje es parte del crecimiento.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'team-support',
-            text: 'El apoyo del equipo fue fundamental',
-            score: 80,
-            feedback: 'Reconocer el valor del trabajo en equipo es importante.',
-            nextSceneId: 'completion'
-          }
-        ]
-      },
-      {
-        id: 'completion',
-        title: '¡Resiliencia demostrada!',
-        description: '¡Increíble trabajo! Has demostrado que la resiliencia no es solo aguantar, sino adaptarse, buscar soluciones y mantener la calma ante la adversidad. Esta habilidad es invaluable en cualquier trabajo. Has desbloqueado una nueva habilidad: Resiliencia y flexibilidad.',
-        type: 'choice',
-        options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Resiliencia y flexibilidad!'
-          }
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
       }
     ]
   },
   {
     id: 'self-awareness',
-    title: '¿Cómo me siento hoy?',
-    subtitle: 'Autoconciencia',
-    description: 'Hoy es un día para reflexionar sobre cómo te sientes, qué te motiva y cómo puedes mejorar. No hay respuestas correctas, solo honestidad contigo mism@.',
+    title: 'Autoconciencia',
+    subtitle: 'Día 7',
+    description: 'Hoy toca reflexionar sobre tus puntos fuertes, límites y emociones en el trabajo.',
     softSkill: 'Autoconciencia',
-    day: 'Miércoles (Semana 2)',
-    scenario: 'Día de autoevaluación y reflexión personal en el trabajo.',
-    icon: '🧘',
-    color: '#A8E6CF',
+    day: 'Martes',
+    scenario: 'Séptimo día en IntegraPro. Reflexionas sobre tus emociones y capacidades.',
+    icon: '🧠',
+    color: '#A6C2F2',
     completed: false,
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: 'Momento de reflexión',
-        description: 'Tu supervisor te pide que reflexiones sobre tu experiencia hasta ahora. ¿Cómo te sientes realmente?',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Te cuesta terminar una tarea.',
         type: 'choice',
         options: [
-          {
-            id: 'confident',
-            text: 'Me siento confiad@ y cómod@ con las tareas',
-            score: 85,
-            feedback: 'Es genial que te sientas seguro. ¿Qué te ha ayudado a llegar aquí?',
-            nextSceneId: 'strengths'
-          },
-          {
-            id: 'uncertain',
-            text: 'A veces me siento insegur@, pero estoy aprendiendo',
-            score: 90,
-            feedback: 'La honestidad sobre las dudas es muy valiosa. Es parte del crecimiento.',
-            nextSceneId: 'strengths'
-          },
-          {
-            id: 'overwhelmed',
-            text: 'Me siento un poco abrumad@ con todo lo nuevo',
-            score: 75,
-            feedback: 'Es normal sentirse así. ¿Qué te ayudaría a sentirte mejor?',
-            nextSceneId: 'strengths'
-          }
-        ]
+          { id: 'mano-levantada', text: 'Reconoces que necesitas ayuda y la pides. ✋', score: 100 },
+          { id: 'persona-sola', text: 'Insistes en hacerlo tú solo/a aunque tardes mucho. 🧑‍🦰', score: 50 },
+          { id: 'cruz', text: 'Lo dejas sin hacer y no avisas. ❌', score: 20 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'strengths',
-        title: 'Identificando fortalezas',
-        description: 'Tu supervisor te pregunta: "¿En qué crees que eres bueno/a en este trabajo?"',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Recibes un elogio por tu trabajo.',
         type: 'choice',
         options: [
-          {
-            id: 'organization',
-            text: 'Soy organizad@ y metódic@',
-            score: 85,
-            feedback: 'Excelente autoconocimiento. La organización es muy valiosa.',
-            nextSceneId: 'challenges'
-          },
-          {
-            id: 'communication',
-            text: 'Me comunico bien con otros',
-            score: 80,
-            feedback: 'Buena autoevaluación. La comunicación es fundamental.',
-            nextSceneId: 'challenges'
-          },
-          {
-            id: 'learning',
-            text: 'Aprendo rápido las cosas nuevas',
-            score: 90,
-            feedback: '¡Excelente! El aprendizaje rápido es muy valorado.',
-            nextSceneId: 'challenges'
-          }
-        ]
+          { id: 'pulgar-arriba', text: 'Lo agradeces y reconoces tu propio esfuerzo. 👍', score: 100 },
+          { id: 'mano-moviendo', text: 'Le quitas importancia ("no es para tanto"). 👋', score: 50 },
+          { id: 'cara-avergonzada', text: 'Te incomoda y no sabes qué decir. 😳', score: 20 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'challenges',
-        title: 'Reconociendo desafíos',
-        description: 'Ahora te pregunta: "¿Qué te resulta más difícil o te gustaría mejorar?"',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Sientes que te estás estresando.',
         type: 'choice',
         options: [
-          {
-            id: 'time-management',
-            text: 'Gestionar mi tiempo eficientemente',
-            score: 85,
-            feedback: 'Reconocer áreas de mejora es muy maduro.',
-            nextSceneId: 'motivation'
-          },
-          {
-            id: 'confidence',
-            text: 'Tener más confianza en mis decisiones',
-            score: 90,
-            feedback: 'La autoconciencia sobre la confianza es valiosa.',
-            nextSceneId: 'motivation'
-          },
-          {
-            id: 'technical-skills',
-            text: 'Algunas habilidades técnicas',
-            score: 80,
-            feedback: 'Es normal querer mejorar habilidades técnicas.',
-            nextSceneId: 'motivation'
-          }
-        ]
+          { id: 'taza-cafe', text: 'Te das cuenta y tomas un descanso corto. ☕', score: 100 },
+          { id: 'reloj', text: 'Sigues trabajando aunque te cueste concentrarte. ⏰', score: 50 },
+          { id: 'cara-cansada', text: 'Ignoras el malestar y te bloqueas. 😩', score: 20 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'motivation',
-        title: '¿Qué te motiva?',
-        description: 'Te preguntan qué te motiva más en el trabajo.',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'Notas que una tarea te motiva especialmente.',
         type: 'choice',
         options: [
-          {
-            id: 'helping-others',
-            text: 'Ayudar a otros y trabajar en equipo',
-            score: 90,
-            feedback: 'Excelente motivación. El trabajo en equipo es fundamental.',
-            nextSceneId: 'emotional-awareness'
-          },
-          {
-            id: 'learning-growth',
-            text: 'Aprender cosas nuevas y crecer',
-            score: 95,
-            feedback: '¡Perfecto! La motivación por aprender es muy valiosa.',
-            nextSceneId: 'emotional-awareness'
-          },
-          {
-            id: 'achievement',
-            text: 'Completar tareas y ver resultados',
-            score: 85,
-            feedback: 'Buena motivación. Los logros son importantes.',
-            nextSceneId: 'emotional-awareness'
-          }
-        ]
+          { id: 'lupa-corazon', text: 'Analizas por qué te motiva y pides más de ese tipo. 🔍❤️', score: 100 },
+          { id: 'cara-sonriente', text: 'Te alegras, pero no lo comunicas. 🙂', score: 50 },
+          { id: 'cara-neutra', text: 'No prestas atención a cómo te sientes. 😐', score: 20 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'emotional-awareness',
-        title: 'Conciencia emocional',
-        description: 'Durante el día, te sientes frustrad@ por un error que cometiste. ¿Cómo manejas esta emoción?',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Te equivocas en algo delante de otras personas.',
         type: 'choice',
         options: [
-          {
-            id: 'acknowledge-feel',
-            text: 'Reconozco que me siento frustrad@ y busco aprender',
-            score: 95,
-            feedback: '¡Excelente! Reconocer emociones es autoconciencia pura.',
-            nextSceneId: 'growth-mindset'
-          },
-          {
-            id: 'ignore-feeling',
-            text: 'Intento ignorar la frustración y seguir trabajando',
-            score: 60,
-            feedback: 'Es importante reconocer las emociones para manejarlas.',
-            nextSceneId: 'growth-mindset'
-          },
-          {
-            id: 'blame-others',
-            text: 'Me enfado y busco a quién culpar',
-            score: 40,
-            feedback: 'La responsabilidad personal es parte del crecimiento.',
-            nextSceneId: 'growth-mindset'
-          }
-        ]
+          { id: 'bocadillo-ups', text: 'Reconoces el error con naturalidad. 💬', score: 100 },
+          { id: 'dedo-senalando', text: 'Te justificas o echas la culpa a otra cosa. 👉', score: 50 },
+          { id: 'cara-sonrojada', text: 'Te avergüenzas y no vuelves a hablar en público. 😳', score: 20 }
+        ],
+        nextSceneId: 'feedback-final'
       },
       {
-        id: 'growth-mindset',
-        title: 'Mentalidad de crecimiento',
-        description: 'Tu supervisor te dice que todos cometemos errores. ¿Cómo respondes?',
+        id: 'feedback-final',
+        title: '¡Muy bien!',
+        description: '¡Muy bien! Tener autoconciencia te permite trabajar mejor contigo mismo/a y con el equipo. Un gran paso hacia el éxito.',
         type: 'choice',
         options: [
-          {
-            id: 'learn-from-mistake',
-            text: 'Agradezco el feedback y pienso en cómo mejorar',
-            score: 95,
-            feedback: '¡Excelente mentalidad de crecimiento!',
-            nextSceneId: 'self-improvement'
-          },
-          {
-            id: 'defensive',
-            text: 'Me pongo a la defensiva y justifico el error',
-            score: 50,
-            feedback: 'Es normal, pero la apertura al feedback es importante.',
-            nextSceneId: 'self-improvement'
-          },
-          {
-            id: 'apologize-excessively',
-            text: 'Me disculpo repetidamente',
-            score: 70,
-            feedback: 'La responsabilidad es buena, pero no te castigues.',
-            nextSceneId: 'self-improvement'
-          }
-        ]
-      },
-      {
-        id: 'self-improvement',
-        title: 'Plan de mejora personal',
-        description: 'Basándote en esta reflexión, ¿qué te gustaría trabajar más?',
-        type: 'choice',
-        options: [
-          {
-            id: 'communication-skills',
-            text: 'Mejorar mis habilidades de comunicación',
-            score: 85,
-            feedback: 'Excelente elección. La comunicación es clave.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'technical-skills',
-            text: 'Desarrollar más habilidades técnicas',
-            score: 80,
-            feedback: 'Buena decisión. El desarrollo técnico es valioso.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'emotional-intelligence',
-            text: 'Trabajar en mi inteligencia emocional',
-            score: 90,
-            feedback: '¡Excelente! La IE es fundamental en el trabajo.',
-            nextSceneId: 'completion'
-          }
-        ]
-      },
-      {
-        id: 'completion',
-        title: '¡Autoconciencia desarrollada!',
-        description: '¡Fantástico trabajo! Has demostrado que la autoconciencia no es solo conocerse, sino ser honesto con uno mismo, reconocer fortalezas y áreas de mejora, y tener la voluntad de crecer. Esta habilidad es la base de todo desarrollo personal y profesional. Has desbloqueado una nueva habilidad: Autoconciencia.',
-        type: 'choice',
-        options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Autoconciencia!'
-          }
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
       }
     ]
   },
   {
     id: 'empathy',
-    title: 'Ponte en sus zapatos',
-    subtitle: 'Empatía',
-    description: 'Hoy vas a encontrarte con situaciones donde necesitarás entender cómo se sienten otras personas. La empatía es clave para trabajar bien en equipo.',
+    title: 'Empatía',
+    subtitle: 'Día 8',
+    description: 'Hoy tus compañeros/as te cuentan situaciones personales y profesionales. ¿Cómo respondes?',
     softSkill: 'Empatía',
-    day: 'Jueves (Semana 2)',
-    scenario: 'Diferentes situaciones donde debes mostrar comprensión hacia compañeras y clientes.',
-    icon: '❤️',
-    color: '#FF8A80',
+    day: 'Miércoles',
+    scenario: 'Octavo día en IntegraPro. Escuchas y apoyas a tus compañeros/as.',
+    icon: '💞',
+    color: '#F2A6A6',
     completed: false,
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: 'Compañera estresada',
-        description: 'Tu compañera Alex llega tarde y parece muy estresada. Te dice que ha tenido problemas personales. ¿Qué haces?',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Un compañero/a se muestra preocupado/a por un familiar enfermo.',
         type: 'choice',
         options: [
-          {
-            id: 'ignore',
-            text: 'Sigues con tu trabajo sin decir nada',
-            score: 40,
-            feedback: 'Considera que un pequeño gesto puede ayudar mucho.',
-            nextSceneId: 'understanding'
-          },
-          {
-            id: 'offer-help',
-            text: 'Le ofreces ayuda con sus tareas',
-            score: 90,
-            feedback: '¡Excelente empatía! Ofrecer ayuda es muy valioso.',
-            nextSceneId: 'understanding'
-          },
-          {
-            id: 'listen',
-            text: 'Le preguntas si quiere hablar sobre ello',
-            score: 85,
-            feedback: 'Buena iniciativa. A veces solo necesitamos ser escuchados.',
-            nextSceneId: 'understanding'
-          }
-        ]
+          { id: 'oido-corazon', text: 'Le escuchas y te interesas sinceramente. 👂❤️', score: 100 },
+          { id: 'pulgar-arriba', text: 'Le animas, pero cambias de tema. 👍', score: 50 },
+          { id: 'cara-seria', text: 'Dices que "todos tenemos problemas" y sigues a lo tuyo. 😐', score: 20 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'understanding',
-        title: 'Entendiendo perspectivas',
-        description: 'Alex te cuenta que su madre está enferma y tiene que cuidarla. ¿Cómo respondes?',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Una persona del equipo está sobrecargada de trabajo.',
         type: 'choice',
         options: [
-          {
-            id: 'express-concern',
-            text: 'Expresas tu preocupación y comprensión',
-            score: 95,
-            feedback: '¡Perfecto! Mostrar preocupación genuina es empatía pura.',
-            nextSceneId: 'practical-support'
-          },
-          {
-            id: 'give-advice',
-            text: 'Le das consejos sobre cómo manejar la situación',
-            score: 70,
-            feedback: 'Es bienintencionado, pero a veces solo necesitamos comprensión.',
-            nextSceneId: 'practical-support'
-          },
-          {
-            id: 'change-subject',
-            text: 'Cambias de tema para distraerlo',
-            score: 50,
-            feedback: 'Evitar el tema puede hacer que se sienta peor.',
-            nextSceneId: 'practical-support'
-          }
-        ]
+          { id: 'manos-ayuda', text: 'Te ofreces a ayudar si puedes. 🤲', score: 100 },
+          { id: 'bocadillo', text: 'Le das ánimos, pero no cambias tu rutina. 💬', score: 50 },
+          { id: 'cara-neutra', text: 'Ignoras la situación, no es tu problema. 😐', score: 20 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'practical-support',
-        title: 'Apoyo práctico',
-        description: 'Alex parece más tranquilo después de hablar. ¿Qué más puedes hacer?',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Un/a compañero/a comete un error y se siente mal.',
         type: 'choice',
         options: [
-          {
-            id: 'flexible-schedule',
-            text: 'Te ofreces a ser más flexible con horarios',
-            score: 90,
-            feedback: '¡Excelente! El apoyo práctico es muy valioso.',
-            nextSceneId: 'client-empathy'
-          },
-          {
-            id: 'emotional-support',
-            text: 'Le dices que puede contar contigo',
-            score: 85,
-            feedback: 'Buena oferta de apoyo emocional.',
-            nextSceneId: 'client-empathy'
-          },
-          {
-            id: 'professional-distance',
-            text: 'Mantienes distancia profesional',
-            score: 60,
-            feedback: 'Es importante mantener límites, pero el apoyo es valioso.',
-            nextSceneId: 'client-empathy'
-          }
-        ]
+          { id: 'manos-hombro', text: 'Le apoyas y le cuentas que tú también te equivocas a veces. 🤝', score: 100 },
+          { id: 'pulgar-arriba', text: 'Le dices que no pasa nada y cambias de tema. 👍', score: 50 },
+          { id: 'carcajada', text: 'Te ríes o haces un comentario sarcástico. 😂', score: 20 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'client-empathy',
-        title: 'Empatía con clientes',
-        description: 'Más tarde, un cliente llama muy molesto porque su pedido llegó tarde. ¿Cómo manejas la situación?',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'Alguien del equipo se muestra callado/a y distante.',
         type: 'choice',
         options: [
-          {
-            id: 'acknowledge-feeling',
-            text: 'Reconoces su frustración y te disculpas',
-            score: 90,
-            feedback: '¡Excelente! Reconocer emociones es clave.',
-            nextSceneId: 'perspective-taking'
-          },
-          {
-            id: 'explain-reasons',
-            text: 'Le explicas por qué se retrasó',
-            score: 75,
-            feedback: 'La explicación es importante, pero primero reconoce la emoción.',
-            nextSceneId: 'perspective-taking'
-          },
-          {
-            id: 'defend-company',
-            text: 'Defiendes a la empresa',
-            score: 40,
-            feedback: 'Defender no resuelve la frustración del cliente.',
-            nextSceneId: 'perspective-taking'
-          }
-        ]
+          { id: 'mano-hombro', text: 'Te acercas y le preguntas si necesita algo. 🤲', score: 100 },
+          { id: 'cara-amable', text: 'Respetas su silencio pero estás disponible. 🙂', score: 50 },
+          { id: 'cara-otro-lado', text: 'No te das cuenta o prefieres no intervenir. 🙄', score: 20 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'perspective-taking',
-        title: 'Tomar perspectiva',
-        description: 'Piensas en por qué el cliente está tan molesto. ¿Qué consideras?',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Un cliente se queja por un error leve.',
         type: 'choice',
         options: [
-          {
-            id: 'business-impact',
-            text: 'El retraso puede haber afectado su negocio',
-            score: 95,
-            feedback: '¡Excelente! Considerar el impacto en otros es empatía avanzada.',
-            nextSceneId: 'emotional-regulation'
-          },
-          {
-            id: 'personal-stress',
-            text: 'Puede estar pasando por un momento difícil',
-            score: 85,
-            feedback: 'Buena consideración de factores personales.',
-            nextSceneId: 'emotional-regulation'
-          },
-          {
-            id: 'expectations',
-            text: 'Tenía expectativas altas del servicio',
-            score: 80,
-            feedback: 'Entender expectativas es importante.',
-            nextSceneId: 'emotional-regulation'
-          }
-        ]
+          { id: 'oido-bocadillo', text: 'Escuchas su queja y reconoces su molestia. 👂💬', score: 100 },
+          { id: 'bocadillo', text: 'Le explicas que no es grave y que tenga paciencia. 💬', score: 50 },
+          { id: 'cruz', text: 'Le dices que no tienes la culpa y te molestas. ❌', score: 20 }
+        ],
+        nextSceneId: 'feedback-final'
       },
       {
-        id: 'emotional-regulation',
-        title: 'Regulación emocional',
-        description: 'El cliente sigue molesto y te habla de manera grosera. ¿Cómo manejas tu propia emoción?',
+        id: 'feedback-final',
+        title: '¡Enhorabuena!',
+        description: '¡Enhorabuena! Tu empatía ayuda a crear un ambiente laboral sano y colaborativo. Sigue cuidando las relaciones en tu entorno.',
         type: 'choice',
         options: [
-          {
-            id: 'stay-calm',
-            text: 'Mantienes la calma y sigues siendo empático',
-            score: 95,
-            feedback: '¡Perfecto! La regulación emocional es fundamental.',
-            nextSceneId: 'team-empathy'
-          },
-          {
-            id: 'get-defensive',
-            text: 'Te pones a la defensiva',
-            score: 40,
-            feedback: 'La defensividad no ayuda a resolver conflictos.',
-            nextSceneId: 'team-empathy'
-          },
-          {
-            id: 'transfer-call',
-            text: 'Transfieres la llamada a tu supervisor',
-            score: 70,
-            feedback: 'A veces es necesario, pero intenta primero.',
-            nextSceneId: 'team-empathy'
-          }
-        ]
-      },
-      {
-        id: 'team-empathy',
-        title: 'Empatía en equipo',
-        description: 'Al final del día, tu equipo está cansado. ¿Cómo contribuyes al ambiente?',
-        type: 'choice',
-        options: [
-          {
-            id: 'positive-energy',
-            text: 'Traes energía positiva y motivación',
-            score: 90,
-            feedback: '¡Excelente! La empatía también es levantar el ánimo.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'acknowledge-effort',
-            text: 'Reconoces el esfuerzo de todos',
-            score: 85,
-            feedback: 'Buena manera de mostrar aprecio.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'focus-work',
-            text: 'Te enfocas solo en terminar el trabajo',
-            score: 60,
-            feedback: 'El trabajo es importante, pero el equipo también.',
-            nextSceneId: 'completion'
-          }
-        ]
-      },
-      {
-        id: 'completion',
-        title: '¡Empatía desarrollada!',
-        description: '¡Fantástico trabajo! Has demostrado que la empatía no es solo sentir pena por otros, sino entender sus perspectivas, mostrar compasión genuina y ofrecer apoyo tanto emocional como práctico. Esta habilidad es fundamental para crear relaciones laborales saludables y un ambiente de trabajo positivo. Has desbloqueado una nueva habilidad: Empatía.',
-        type: 'choice',
-        options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Empatía!'
-          }
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
       }
     ]
   },
   {
-    id: 'time-management',
-    title: 'Tiempo al tiempo',
-    subtitle: 'Gestión del tiempo',
-    description: 'Hoy tienes muchas tareas y poco tiempo. Necesitarás priorizar, organizarte y ser eficiente. ¿Puedes manejar la presión?',
-    softSkill: 'Gestión del tiempo',
-    day: 'Viernes (Semana 2)',
-    scenario: 'Día con múltiples tareas urgentes y tiempo limitado para completarlas.',
-    icon: '⏰',
-    color: '#6C5CE7',
+    id: 'critical-thinking',
+    title: 'Pensamiento Crítico',
+    subtitle: 'Día 9',
+    description: 'Hoy te enfrentas a información contradictoria y problemas complejos. ¿Cómo analizas y decides?',
+    softSkill: 'Pensamiento Crítico',
+    day: 'Jueves',
+    scenario: 'Noveno día en IntegraPro. Tienes que tomar decisiones informadas y objetivas.',
+    icon: '🧠',
+    color: '#A6C8F2',
     completed: false,
     logs: [],
     scenes: [
       {
-        id: 'intro',
-        title: 'Muchas tareas, poco tiempo',
-        description: 'Te han dado 5 tareas para completar antes de las 5 de la tarde. Son las 9 de la mañana. ¿Cómo te organizas?',
-        type: 'drag-drop',
-        dragDropConfig: {
-          items: [
-            { id: 'task1', text: 'Revisar inventario urgente', category: 'high' },
-            { id: 'task2', text: 'Preparar informe semanal', category: 'medium' },
-            { id: 'task3', text: 'Responder emails pendientes', category: 'medium' },
-            { id: 'task4', text: 'Organizar archivos', category: 'low' },
-            { id: 'task5', text: 'Reunión de equipo', category: 'high' }
-          ],
-          targetZones: [
-            { id: 'morning', title: 'Mañana (9-12)', accepts: ['high'] },
-            { id: 'afternoon', title: 'Tarde (12-5)', accepts: ['medium', 'low'] }
-          ]
-        },
-        nextSceneId: 'interruption'
-      },
-      {
-        id: 'interruption',
-        title: 'Interrupción inesperada',
-        description: 'A las 10:30, tu supervisor te pide que atiendas una emergencia. ¿Qué haces con tu plan?',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'Recibes dos informes con datos opuestos sobre un proyecto.',
         type: 'choice',
         options: [
-          {
-            id: 'adapt-plan',
-            text: 'Adaptas tu plan para incluir la emergencia',
-            score: 90,
-            feedback: '¡Excelente! La flexibilidad es clave en la gestión del tiempo.',
-            nextSceneId: 'efficiency'
-          },
-          {
-            id: 'refuse-emergency',
-            text: 'Le dices que estás muy ocupada o ocupada',
-            score: 40,
-            feedback: 'Las emergencias son prioritarias. Aprende a adaptarte.',
-            nextSceneId: 'efficiency'
-          },
-          {
-            id: 'panic',
-            text: 'Te estresas y no sabes qué hacer',
-            score: 50,
-            feedback: 'Mantén la calma y reorganiza tus prioridades.',
-            nextSceneId: 'efficiency'
-          }
+          { id: 'analizas', text: 'Analizas ambos informes y buscas fuentes adicionales. 🔍', score: 100 },
+          { id: 'eliges-rapido', text: 'Eliges el que te parece más convincente sin profundizar. ⚡', score: 50 },
+          { id: 'ignoras', text: 'Ignoras la contradicción y sigues como si nada. 🙈', score: 20 }
+        ],
+        nextSceneId: 'prueba-2'
+      },
+      {
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Un compañero/a propone una solución poco habitual.',
+        type: 'choice',
+        options: [
+          { id: 'escuchas', text: 'Escuchas y evalúas objetivamente la propuesta. 👂', score: 100 },
+          { id: 'dudas', text: 'Dudas porque es diferente, pero no investigas más. 🤔', score: 50 },
+          { id: 'rechazas', text: 'La rechazas sin analizarla. ❌', score: 20 }
+        ],
+        nextSceneId: 'prueba-3'
+      },
+      {
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Debes priorizar tareas con información incompleta.',
+        type: 'choice',
+        options: [
+          { id: 'preguntas', text: 'Preguntas y recopilas más datos antes de decidir. 📝', score: 100 },
+          { id: 'decides-intuicion', text: 'Decides por intuición, sin buscar más información. 🎲', score: 50 },
+          { id: 'azar', text: 'Eliges al azar. 🎯', score: 20 }
+        ],
+        nextSceneId: 'prueba-4'
+      },
+      {
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'Te enfrentas a un rumor sobre cambios en la empresa.',
+        type: 'choice',
+        options: [
+          { id: 'verificas', text: 'Verificas la información antes de reaccionar. ✅', score: 100 },
+          { id: 'difundes', text: 'Comentas el rumor sin comprobarlo. 🗣️', score: 50 },
+          { id: 'ignoras', text: 'Ignoras el tema y no te informas. 🙈', score: 20 }
+        ],
+        nextSceneId: 'prueba-5'
+      },
+      {
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Debes elegir entre dos proveedores con ventajas y desventajas.',
+        type: 'choice',
+        options: [
+          { id: 'comparacion', text: 'Haces una tabla comparativa y decides objetivamente. 📊', score: 100 },
+          { id: 'elige-rapido', text: 'Eliges el más barato sin analizar más. 💸', score: 50 },
+          { id: 'amigo', text: 'Eliges al que te cae mejor. 🤝', score: 20 }
+        ],
+        nextSceneId: 'feedback-final'
+      },
+      {
+        id: 'feedback-final',
+        title: '¡Enhorabuena!',
+        description: '¡Enhorabuena! Tu pensamiento crítico te permite tomar decisiones informadas y responsables. Sigue cuestionando y analizando.',
+        type: 'choice',
+        options: [
+          { id: 'continuar', text: 'Continuar', score: 0 }
         ]
-      },
+      }
+    ]
+  },
+  {
+    id: 'leadership',
+    title: 'Liderazgo',
+    subtitle: 'Día 10',
+    description: 'Hoy te asignan coordinar un pequeño equipo para un reto especial. ¿Cómo lideras?',
+    softSkill: 'Liderazgo',
+    day: 'Viernes',
+    scenario: 'Décimo día en IntegraPro. Es tu oportunidad de guiar y motivar a tu equipo.',
+    icon: '🌟',
+    color: '#F2E2A6',
+    completed: false,
+    logs: [],
+    scenes: [
       {
-        id: 'efficiency',
-        title: 'Trabajando eficientemente',
-        description: 'Para ser más eficiente, ¿qué estrategia usas?',
+        id: 'prueba-1',
+        title: 'Prueba 1',
+        description: 'El equipo está desmotivado por un reto difícil.',
         type: 'choice',
         options: [
-          {
-            id: 'time-blocks',
-            text: 'Trabajas en bloques de tiempo concentrado',
-            score: 95,
-            feedback: '¡Excelente! Los bloques de tiempo aumentan la productividad.',
-            nextSceneId: 'delegation'
-          },
-          {
-            id: 'multitask',
-            text: 'Intentas hacer varias cosas a la vez',
-            score: 60,
-            feedback: 'El multitasking puede reducir la calidad del trabajo.',
-            nextSceneId: 'delegation'
-          },
-          {
-            id: 'take-breaks',
-            text: 'Tomas descansos regulares para mantener energía',
-            score: 85,
-            feedback: 'Buena estrategia. Los descansos mejoran la productividad.',
-            nextSceneId: 'delegation'
-          }
-        ]
+          { id: 'motivas', text: 'Motivas al equipo y reconoces sus logros. 💪', score: 100 },
+          { id: 'presionas', text: 'Presionas para que trabajen más rápido. ⏩', score: 50 },
+          { id: 'ignoras', text: 'Ignoras el ánimo del equipo. 🙈', score: 20 }
+        ],
+        nextSceneId: 'prueba-2'
       },
       {
-        id: 'delegation',
-        title: 'Delegación inteligente',
-        description: 'Te das cuenta de que no vas a poder completar todo. ¿Qué haces?',
+        id: 'prueba-2',
+        title: 'Prueba 2',
+        description: 'Debes delegar tareas para cumplir el objetivo.',
         type: 'choice',
         options: [
-          {
-            id: 'ask-help',
-            text: 'Pides ayuda a compañeras',
-            score: 90,
-            feedback: '¡Excelente! Saber pedir ayuda es una fortaleza.',
-            nextSceneId: 'deadline-pressure'
-          },
-          {
-            id: 'work-overtime',
-            text: 'Te quedas más tiempo para completar todo',
-            score: 70,
-            feedback: 'A veces es necesario, pero no debe ser la norma.',
-            nextSceneId: 'deadline-pressure'
-          },
-          {
-            id: 'prioritize-again',
-            text: 'Reevalúas y dejas algunas tareas para mañana',
-            score: 85,
-            feedback: 'Buena decisión. Es mejor hacer bien lo prioritario.',
-            nextSceneId: 'deadline-pressure'
-          }
-        ]
+          { id: 'delegas', text: 'Delegas según las fortalezas de cada persona. 🧩', score: 100 },
+          { id: 'aleatorio', text: 'Repartes tareas al azar. 🎲', score: 50 },
+          { id: 'haces-todo', text: 'Prefieres hacerlo todo tú. 🏃', score: 20 }
+        ],
+        nextSceneId: 'prueba-3'
       },
       {
-        id: 'deadline-pressure',
-        title: 'Presión de deadline',
-        description: 'Son las 4:30 y aún tienes 2 tareas pendientes. ¿Cómo manejas la presión?',
+        id: 'prueba-3',
+        title: 'Prueba 3',
+        description: 'Surge un conflicto entre dos miembros del equipo.',
         type: 'choice',
         options: [
-          {
-            id: 'stay-focused',
-            text: 'Mantienes la calma y te enfocas en completar lo posible',
-            score: 95,
-            feedback: '¡Perfecto! Mantener la calma bajo presión es invaluable.',
-            nextSceneId: 'quality-vs-speed'
-          },
-          {
-            id: 'rush-work',
-            text: 'Trabajas muy rápido sacrificando calidad',
-            score: 60,
-            feedback: 'La calidad es importante. Busca un balance.',
-            nextSceneId: 'quality-vs-speed'
-          },
-          {
-            id: 'communicate-delay',
-            text: 'Comunicas el retraso y pides más tiempo',
-            score: 80,
-            feedback: 'Buena comunicación. Es mejor ser honesto.',
-            nextSceneId: 'quality-vs-speed'
-          }
-        ]
+          { id: 'medias', text: 'Medias y facilitas el diálogo. 🤝', score: 100 },
+          { id: 'ignoras', text: 'Ignoras el conflicto esperando que se resuelva solo. 🙈', score: 50 },
+          { id: 'tomas-parte', text: 'Tomas partido por uno de ellos. ⚖️', score: 20 }
+        ],
+        nextSceneId: 'prueba-4'
       },
       {
-        id: 'quality-vs-speed',
-        title: 'Calidad vs velocidad',
-        description: 'Tu supervisor te pregunta si prefieres entregar todo a tiempo o con mejor calidad. ¿Qué respondes?',
+        id: 'prueba-4',
+        title: 'Prueba 4',
+        description: 'El equipo logra un avance importante.',
         type: 'choice',
         options: [
-          {
-            id: 'quality-first',
-            text: 'Prefiero calidad sobre velocidad',
-            score: 85,
-            feedback: 'Buena priorización. La calidad es importante.',
-            nextSceneId: 'reflection'
-          },
-          {
-            id: 'balance-approach',
-            text: 'Busco un balance entre calidad y velocidad',
-            score: 95,
-            feedback: '¡Excelente! El balance es la clave del éxito.',
-            nextSceneId: 'reflection'
-          },
-          {
-            id: 'speed-first',
-            text: 'Prefiero velocidad para cumplir deadlines',
-            score: 70,
-            feedback: 'Los deadlines son importantes, pero la calidad también.',
-            nextSceneId: 'reflection'
-          }
-        ]
+          { id: 'celebras', text: 'Celebras el logro y agradeces el esfuerzo. 🎉', score: 100 },
+          { id: 'sigues', text: 'Sigues trabajando sin reconocerlo. 🏃', score: 50 },
+          { id: 'te-apropias', text: 'Te atribuyes el mérito solo tú. 🧍', score: 20 }
+        ],
+        nextSceneId: 'prueba-5'
       },
       {
-        id: 'reflection',
-        title: 'Reflexión sobre el tiempo',
-        description: 'Al final del día, reflexionas sobre tu gestión del tiempo. ¿Qué aprendiste?',
+        id: 'prueba-5',
+        title: 'Prueba 5',
+        description: 'Debes tomar una decisión difícil para el grupo.',
         type: 'choice',
         options: [
-          {
-            id: 'planning-importance',
-            text: 'La planificación es fundamental',
-            score: 90,
-            feedback: '¡Exacto! La planificación es la base de la gestión del tiempo.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'flexibility-value',
-            text: 'La flexibilidad es tan importante como la planificación',
-            score: 95,
-            feedback: '¡Perfecto! El balance entre planificación y flexibilidad es clave.',
-            nextSceneId: 'completion'
-          },
-          {
-            id: 'teamwork-helps',
-            text: 'El trabajo en equipo ayuda a gestionar mejor el tiempo',
-            score: 85,
-            feedback: 'Excelente observación. La colaboración es valiosa.',
-            nextSceneId: 'completion'
-          }
-        ]
+          { id: 'escuchas', text: 'Escuchas las opiniones del equipo antes de decidir. 👂', score: 100 },
+          { id: 'decides-solo', text: 'Decides sin consultar a nadie. 🗣️', score: 50 },
+          { id: 'evitas', text: 'Evitas decidir y dejas el problema sin resolver. ⏸️', score: 20 }
+        ],
+        nextSceneId: 'feedback-final'
       },
       {
-        id: 'completion',
-        title: '¡Gestión del tiempo dominada!',
-        description: '¡Increíble trabajo! Has demostrado que la gestión del tiempo no es solo hacer listas, sino priorizar inteligentemente, adaptarse a cambios, trabajar eficientemente y mantener la calma bajo presión. Esta habilidad es fundamental para el éxito en cualquier trabajo. Has desbloqueado una nueva habilidad: Gestión del tiempo.',
+        id: 'feedback-final',
+        title: '¡Enhorabuena!',
+        description: '¡Enhorabuena! Has demostrado habilidades de liderazgo, motivando y guiando a tu equipo hacia el éxito. Sigue desarrollando tu capacidad de inspirar a otros.',
         type: 'choice',
         options: [
-          {
-            id: 'continue',
-            text: 'Continuar al siguiente día',
-            score: 100,
-            feedback: '¡Has desbloqueado la habilidad: Gestión del tiempo!'
-          }
+          { id: 'finalizar', text: 'Finalizar', score: 0 }
         ]
       }
     ]
