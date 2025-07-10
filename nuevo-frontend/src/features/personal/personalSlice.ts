@@ -117,19 +117,19 @@ export const personalSlice = createSlice({
       >
     ) {
       const payload = action.payload;
+      // Solo actualiza los campos de preferencias, nunca borra los de contacto
       state.jobPreferences = payload.jobPreferences;
       state.workMode = payload.workMode;
       state.availability = payload.availability;
       state.startDate = payload.startDate;
       state.willingToRelocate = payload.willingToRelocate;
       state.hasDisabilityCert = payload.hasDisabilityCert;
-      // Solo marcamos como completado si también hay datos de contacto
+      // completed solo si hay datos de contacto y preferencias
       state.completed = Boolean(
         state.firstName && state.lastName &&
-        payload.jobPreferences &&
-        (typeof payload.jobPreferences === 'string'
-          ? payload.jobPreferences.trim() !== ''
-          : payload.jobPreferences.areas && payload.jobPreferences.areas.length > 0)
+        (typeof state.jobPreferences === 'string'
+          ? state.jobPreferences.trim() !== ''
+          : state.jobPreferences.areas && state.jobPreferences.areas.length > 0)
       );
     },
 
