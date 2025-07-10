@@ -31,7 +31,7 @@ export default function PreferencesStep() {
   const {
     register,
     handleSubmit,
-    formState: { errors, isValid },
+    formState: { errors },
   } = useForm<PrefData>({
     mode: 'onChange', // Validación en tiempo real
     defaultValues: {
