@@ -5,7 +5,7 @@ import { useNavigate } from 'react-router-dom'
 
 // Acciones desde Redux
 import { useAppDispatch, useAppSelector } from './../../app/hooks'
-import { savePreferences, setPersonalCompleted } from './personalSlice'
+import { savePreferences } from './personalSlice'
 
 // Componentes reutilizables
 // import ProgressBar from './../../components/ProgressBar'
