@@ -3,8 +3,8 @@ import React, { useState } from 'react'
 import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate, Link } from 'react-router-dom'
 
-// Importamos la acción saveCV desde personalSlice
-import { saveCV } from '../features/personal/personalSlice'
+// Importamos las acciones desde personalSlice
+import { saveCV, saveCvAnalysis, saveSoftSkills, generateFinalReport } from '../features/personal/personalSlice'
 
 export default function UploadCVPage() {
   const dispatch = useDispatch()
@@ -35,6 +35,109 @@ export default function UploadCVPage() {
 
     const fileContent = await toBase64(file)
     dispatch(saveCV({ fileName: file.name, fileContent }))
+    
+    // Simular análisis del CV (temporal para depuración)
+    const mockCvAnalysis = {
+      structure: 'bueno' as const,
+      coherence: 'bueno' as const,
+      experience: 'regular' as const,
+      skills: ['JavaScript', 'React', 'TypeScript', 'HTML', 'CSS'],
+      education: ['Grado en Informática'],
+      alerts: ['Considerar agregar más proyectos personales']
+    }
+    
+    dispatch(saveCvAnalysis(mockCvAnalysis))
+    
+    // Simular soft skills evaluadas (temporal para depuración)
+    const mockSoftSkills = [
+      {
+        skill: 'Toma de decisiones',
+        level: 'alto' as const,
+        score: 85,
+        confidence: 0.85,
+        feedback: 'Excelente capacidad para tomar decisiones informadas',
+        interactions: []
+      },
+      {
+        skill: 'Pensamiento analítico',
+        level: 'medio' as const,
+        score: 65,
+        confidence: 0.65,
+        feedback: 'Buen pensamiento analítico, con espacio para mejorar',
+        interactions: []
+      },
+      {
+        skill: 'Creatividad',
+        level: 'alto' as const,
+        score: 90,
+        confidence: 0.90,
+        feedback: 'Muy creativo/a en la resolución de problemas',
+        interactions: []
+      },
+      {
+        skill: 'Trabajo en equipo',
+        level: 'medio' as const,
+        score: 70,
+        confidence: 0.70,
+        feedback: 'Buen trabajo en equipo, mejora en comunicación',
+        interactions: []
+      },
+      {
+        skill: 'Curiosidad y aprendizaje',
+        level: 'alto' as const,
+        score: 88,
+        confidence: 0.88,
+        feedback: 'Excelente disposición para aprender',
+        interactions: []
+      },
+      {
+        skill: 'Resiliencia y flexibilidad',
+        level: 'medio' as const,
+        score: 60,
+        confidence: 0.60,
+        feedback: 'Buena adaptabilidad, puede mejorar bajo presión',
+        interactions: []
+      },
+      {
+        skill: 'Autoconciencia',
+        level: 'alto' as const,
+        score: 82,
+        confidence: 0.82,
+        feedback: 'Excelente autoconciencia y reflexión',
+        interactions: []
+      },
+      {
+        skill: 'Empatía',
+        level: 'medio' as const,
+        score: 75,
+        confidence: 0.75,
+        feedback: 'Buena empatía, puede mejorar en situaciones difíciles',
+        interactions: []
+      },
+      {
+        skill: 'Comunicación',
+        level: 'medio' as const,
+        score: 68,
+        confidence: 0.68,
+        feedback: 'Comunicación clara, mejora en presentaciones',
+        interactions: []
+      },
+      {
+        skill: 'Gestión del tiempo',
+        level: 'bajo' as const,
+        score: 45,
+        confidence: 0.45,
+        feedback: 'Necesita mejorar la gestión del tiempo',
+        interactions: []
+      }
+    ]
+    
+    dispatch(saveSoftSkills(mockSoftSkills))
+    
+    // Generar reporte final después de subir el CV
+    dispatch(generateFinalReport())
+    
+    console.log("🔍 DEBUG UploadCVPage - CV subido, análisis simulado, soft skills y reporte generado")
     navigate('/resultados')
   }
 
@@ -56,7 +159,13 @@ export default function UploadCVPage() {
             Volver a juegos
           </Link>
           <button
-            onClick={() => navigate('/resultados')}
+            onClick={() => {
+              // Generar reporte si no existe
+              if (!cvFile) {
+                dispatch(generateFinalReport())
+              }
+              navigate('/resultados')
+            }}
             className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"
           >
             Ver informe completo

@@ -17,11 +17,61 @@ const ResultadosPage: React.FC = () => {
   const personal = useAppSelector((state: RootState) => state.personal);
   const cvAnalysis = personal?.cvAnalysis;
 
+  // FUNCIÓN DE DEPURACIÓN COMPLETA
+  const debugStoreState = () => {
+    console.log("🔍 DEBUG COMPLETO DEL STORE:");
+    console.log("Personal state:", personal);
+    console.log("CV Analysis:", cvAnalysis);
+    console.log("Report:", personal?.report);
+    console.log("Soft Skills:", personal?.softSkills);
+    console.log("Report Soft Skills:", personal?.report?.softSkills);
+    console.log("Completed Games:", personal?.report?.completedGames);
+    console.log("Unlocked Games:", personal?.unlockedGames);
+    
+    // Verificar estructura del report
+    if (personal?.report) {
+      console.log("Report structure:", {
+        userId: personal.report.userId,
+        firstName: personal.report.firstName,
+        lastName: personal.report.lastName,
+        softSkillsLength: personal.report.softSkills?.length,
+        employabilityScore: personal.report.employabilityScore,
+        level: personal.report.level,
+        completedGamesLength: personal.report.completedGames?.length,
+        adjustedScore: personal.report.adjustedScore,
+        recommendations: personal.report.recommendations
+      });
+    }
+  };
+
+  // Ejecutar depuración al montar el componente
+  useEffect(() => {
+    debugStoreState();
+  }, []);
+
+  // LOGS DE DEPURACIÓN - Verificar qué datos llegan
+  console.log("🔍 DEBUG ResultadosPage - personal:", personal);
+  console.log("🔍 DEBUG ResultadosPage - cvAnalysis:", cvAnalysis);
+  console.log("🔍 DEBUG ResultadosPage - completedGames:", personal?.report?.completedGames);
+  console.log("🔍 DEBUG ResultadosPage - softSkills:", personal?.report?.softSkills);
+  console.log("🔍 DEBUG ResultadosPage - completedGames length:", personal?.report?.completedGames?.length ?? 0);
+  console.log("🔍 DEBUG ResultadosPage - softSkills length:", personal?.report?.softSkills?.length ?? 0);
+
   // Verificamos que todo el progreso sea completo antes de mostrar resultados
   useEffect(() => {
-    if ((personal?.report?.completedGames?.length ?? 0) < 10 || !cvAnalysis || (personal?.report?.softSkills?.length ?? 0) === 0) {
-      navigate('/games');
-    }
+    const completedGamesCount = personal?.report?.completedGames?.length ?? 0;
+    const hasCvAnalysis = !!cvAnalysis;
+    const hasSoftSkills = (personal?.report?.softSkills?.length ?? 0) > 0;
+
+    console.log("🔍 DEBUG useEffect - completedGamesCount:", completedGamesCount);
+    console.log("🔍 DEBUG useEffect - hasCvAnalysis:", hasCvAnalysis);
+    console.log("🔍 DEBUG useEffect - hasSoftSkills:", hasSoftSkills);
+
+    // TEMPORALMENTE COMENTADO PARA DEPURACIÓN
+    // if (completedGamesCount < 10 || !hasCvAnalysis || !hasSoftSkills) {
+    //   console.log("🔍 DEBUG - Redirigiendo a /games porque faltan datos");
+    //   navigate('/games');
+    // }
   }, [personal?.report?.completedGames, cvAnalysis, personal?.report?.softSkills, navigate]);
 
   // Datos para gráfico radar
@@ -48,6 +98,11 @@ const ResultadosPage: React.FC = () => {
     level: skill.confidence * 100,
     interactions: skill.interactions.map((i) => i.optionText ?? ''),
   }));
+
+  // LOGS DE DEPURACIÓN - Radar chart
+  console.log("🔍 DEBUG Radar - normalizedSoftSkills:", normalizedSoftSkills);
+  console.log("🔍 DEBUG Radar - data:", data);
+  console.log("🔍 DEBUG Radar - data length:", data.length);
 
   // Áreas a mejorar (habilidades con menor puntuación)
   interface AreaMejorar {
@@ -118,6 +173,25 @@ const ResultadosPage: React.FC = () => {
     <section className="relative max-w-4xl mx-auto p-6 space-y-8">
       {/* Título */}
       <h1 className="text-3xl font-bold text-center">Tu Informe Final</h1>
+
+      {/* SECCIÓN DE DEPURACIÓN TEMPORAL */}
+      <div className="bg-gray-100 p-4 rounded border-2 border-dashed border-gray-400">
+        <h3 className="font-bold text-red-600 mb-2">🔧 DEPURACIÓN TEMPORAL</h3>
+        <div className="text-sm space-y-1">
+          <p><strong>Completed Games:</strong> {personal?.report?.completedGames?.length ?? 0}/10</p>
+          <p><strong>CV Analysis:</strong> {cvAnalysis ? '✅ Presente' : '❌ Ausente'}</p>
+          <p><strong>Soft Skills:</strong> {personal?.report?.softSkills?.length ?? 0} habilidades</p>
+          <p><strong>Report:</strong> {personal?.report ? '✅ Presente' : '❌ Ausente'}</p>
+          <p><strong>User ID:</strong> {personal?.report?.userId ?? 'No definido'}</p>
+          <p><strong>Unlocked Games:</strong> {personal?.unlockedGames ?? 0}</p>
+        </div>
+        <button
+          onClick={debugStoreState}
+          className="mt-2 px-3 py-1 bg-red-600 text-white text-xs rounded hover:bg-red-700"
+        >
+          Debug Store en Consola
+        </button>
+      </div>
 
       {/* Notificación tipo Toast */}
       {toast && (
@@ -194,20 +268,27 @@ const ResultadosPage: React.FC = () => {
       )}
 
       {/* C. Gráfico Radar */}
-      <div className="w-full h-96">
-        <ResponsiveRadar
-          data={data as unknown as Record<string, unknown>[]}
-          keys={['level']}
-          indexBy="skill"
-          margin={{ top: 70, right: 80, bottom: 70, left: 80 }}
-          borderColor="#3182eb"
-          dotSize={10}
-          dotColor="#2563eb"
-          dotBorderWidth={2}
-          enableDots={true}
-          animate={true}
-        />
-      </div>
+      {data.length > 0 ? (
+        <div className="w-full h-96">
+          <ResponsiveRadar
+            data={data as unknown as Record<string, unknown>[]}
+            keys={['level']}
+            indexBy="skill"
+            margin={{ top: 70, right: 80, bottom: 70, left: 80 }}
+            borderColor="#3182eb"
+            dotSize={10}
+            dotColor="#2563eb"
+            dotBorderWidth={2}
+            enableDots={true}
+            animate={true}
+          />
+        </div>
+      ) : (
+        <div className="bg-yellow-50 p-4 border border-yellow-200 rounded">
+          <p>No hay datos suficientes para mostrar el gráfico radar.</p>
+          <p className="text-sm text-gray-600">Datos disponibles: {JSON.stringify(data)}</p>
+        </div>
+      )}
 
       {/* D. Recomendaciones */}
       <div className="bg-blue-50 p-6 rounded shadow-md">
@@ -272,13 +353,19 @@ const ResultadosPage: React.FC = () => {
         </div>
       </div>
 
-      {/* H. Botón de descarga */}
-      <div className="flex justify-center mt-6">
+      {/* H. Botones de acción */}
+      <div className="flex justify-center gap-4 mt-6">
         <button
           onClick={handleDownloadReport}
           className={`py-3 px-6 bg-green-600 text-white rounded hover:bg-green-700 transition-colors`}
         >
           Descargar Informe PDF
+        </button>
+        <button
+          onClick={() => window.print()}
+          className="py-3 px-6 bg-blue-600 text-white rounded hover:bg-blue-700 transition-colors"
+        >
+          Imprimir Informe
         </button>
       </div>
     </section>
