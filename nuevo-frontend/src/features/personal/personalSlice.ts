@@ -124,12 +124,14 @@ export const personalSlice = createSlice({
       state.startDate = payload.startDate;
       state.willingToRelocate = payload.willingToRelocate;
       state.hasDisabilityCert = payload.hasDisabilityCert;
-      // completed solo si hay datos de contacto y preferencias
+      // completed solo si hay datos de contacto Y preferencias (más robusto)
       state.completed = Boolean(
         state.firstName && state.lastName &&
-        (typeof state.jobPreferences === 'string'
-          ? state.jobPreferences.trim() !== ''
-          : state.jobPreferences.areas && state.jobPreferences.areas.length > 0)
+        (
+          typeof state.jobPreferences === 'string'
+            ? state.jobPreferences.trim() !== ''
+            : Array.isArray(state.jobPreferences.areas) && state.jobPreferences.areas.length > 0 && state.jobPreferences.areas[0].trim() !== ''
+        )
       );
     },
 

@@ -47,9 +47,7 @@ export default function PreferencesStep() {
   })
 
   const onSubmit: SubmitHandler<PrefData> = (data) => {
-    if (submittedRef.current) {
-      return
-    }
+    if (submittedRef.current) return;
     // Validación extra por seguridad
     if (!data.jobPreferences || data.jobPreferences.trim().length < 3) return;
     if (!data.workMode) return;
@@ -72,9 +70,10 @@ export default function PreferencesStep() {
       startDate: data.startDate,
       willingToRelocate: data.willingToRelocate,
       hasDisabilityCert: data.hasDisabilityCert,
-    }))
+    }));
     submittedRef.current = true;
-    navigate('/welcome');
+    // Navega a /games tras guardar preferencias
+    navigate('/games');
   }
 
   // Eliminamos el useEffect problemático que causaba redirecciones automáticas

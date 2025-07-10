@@ -28,7 +28,8 @@ export default function ProtectedRoute({ step, children }: Props) {
           : false
     )
   );
-  const hasPersonalData = hasContactData && hasPreferences;
+  // Usar el flag completed para la protección
+  const hasPersonalData = personal.completed;
   const hasCompletedAllGames = game.completedGames && game.completedGames.length >= 10;
   const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
 
@@ -66,12 +67,8 @@ export default function ProtectedRoute({ step, children }: Props) {
       return <>{children}</>;
 
     case 'games':
-      // Solo redirigir si realmente faltan datos personales completos
-      if (!hasContactData) {
+      if (!hasPersonalData) {
         return redirectTo('/register/contact');
-      }
-      if (!hasPreferences) {
-        return redirectTo('/register/preferences');
       }
       return <>{children}</>;
 
