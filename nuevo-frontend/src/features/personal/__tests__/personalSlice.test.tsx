@@ -52,7 +52,7 @@ describe('personalSlice', () => {
       email: 'juan@example.com',
       whatsapp: '123456789',
       unlockedGames: 1,
-      completed: true,
+      completed: false, // Solo será true si también hay preferencias laborales
     });
   });
 
@@ -77,7 +77,7 @@ describe('personalSlice', () => {
       willingToRelocate: false,
       hasDisabilityCert: false,
       unlockedGames: 1,
-      completed: true,
+      completed: false, // Solo será true si también hay datos de contacto
     });
   });
 
