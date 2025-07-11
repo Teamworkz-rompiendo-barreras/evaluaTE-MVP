@@ -42,7 +42,7 @@ export default function CookieConsent() {
             <li>Proporcionar funcionalidades de redes sociales</li>
           </ul>
           <p className="text-xs text-gray-600">
-            Al hacer clic en "Aceptar", consientes el uso de todas las cookies. 
+            Al hacer clic en &quot;Aceptar&quot;, consientes el uso de todas las cookies. 
             Puedes consultar nuestra política de cookies para más información.
           </p>
         </div>

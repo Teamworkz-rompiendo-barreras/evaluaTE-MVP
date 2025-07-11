@@ -137,7 +137,6 @@ export default function UploadCVPage() {
     // Generar reporte final después de subir el CV
     dispatch(generateFinalReport())
     
-    console.log("🔍 DEBUG UploadCVPage - CV subido, análisis simulado, soft skills y reporte generado")
     navigate('/resultados')
   }
 
