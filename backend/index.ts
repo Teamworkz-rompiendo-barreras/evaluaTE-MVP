@@ -7,7 +7,11 @@ import iaReportRoute from './src/routes/iaReportRoute';
 import cors from 'cors'
 
 const app = express()
-app.use(cors({ origin: 'http://localhost:3005' }))
+app.use(cors({
+  origin: 'http://localhost:3005',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  credentials: true // Permite el envío de cookies/autenticación si es necesario
+}))
 app.use(express.json())
 app.use(express.static(path.join(__dirname, '../templates')))
 app.use('/api/informe-ia', iaReportRoute);
