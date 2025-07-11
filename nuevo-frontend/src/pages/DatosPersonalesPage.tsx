@@ -7,11 +7,14 @@ import { saveContact } from '../features/personal/personalSlice';
 import { useNavigate } from 'react-router-dom';
 import ProgressBar from '../components/ProgressBar';
 
+// Agregar campo para el consentimiento
+
 type ContactForm = {
   firstName: string;
-  lastName: string;    // aquí escribirá los dos apellidos
+  lastName: string;
   email: string;
   whatsapp: string;
+  dataConsent: boolean; // nuevo campo
 };
 
 const DatosPersonalesPage: React.FC = () => {
@@ -25,6 +28,7 @@ const DatosPersonalesPage: React.FC = () => {
       lastName:  current.lastName,
       email:     current.email,
       whatsapp:  current.whatsapp,
+      dataConsent: false,
     }
   });
 
@@ -32,6 +36,11 @@ const DatosPersonalesPage: React.FC = () => {
     // Validamos que al menos email o WhatsApp tenga contenido
     if (!data.email.trim() && !data.whatsapp.trim()) {
       alert('Debes indicar email o WhatsApp.');
+      return;
+    }
+    // Validar consentimiento
+    if (!data.dataConsent) {
+      alert('Debes aceptar la política de privacidad y el uso de tus datos personales.');
       return;
     }
     dispatch(saveContact(data));
@@ -114,6 +123,30 @@ const DatosPersonalesPage: React.FC = () => {
             className="input mt-1 w-full"
           />
         </div>
+
+        {/* Consentimiento de datos */}
+        <div className="flex items-start mt-2">
+          <input
+            id="dataConsent"
+            type="checkbox"
+            {...register('dataConsent', { required: 'Debes aceptar la política de privacidad.' })}
+            className="mt-1 mr-2"
+          />
+          <label htmlFor="dataConsent" className="text-sm select-none">
+            He leído y acepto la{' '}
+            <a
+              href="/privacidad.pdf"
+              target="_blank"
+              rel="noopener noreferrer"
+              className="text-blue-600 underline hover:text-blue-800"
+            >
+              política de privacidad y el uso de mis datos personales
+            </a>.
+          </label>
+        </div>
+        {errors.dataConsent && (
+          <p className="text-red-600 text-xs mt-1">{errors.dataConsent.message}</p>
+        )}
 
         {/* Botón Siguiente */}
         <button

@@ -15,8 +15,8 @@ import ResultadosPage from './pages/ResultadosPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
+import CookieConsent from './components/CookieConsent';
 // import { AccessibilitySettings } from './components/AccessibilitySettings';
-// import { CookieConsent } from './components/CookieConsent';
 
 import { initSentry } from './sentry';
 
@@ -36,7 +36,6 @@ root.render(
     <Provider store={store}>
       <PersistGate loading={null} persistor={persistor}>
         {/* <AccessibilitySettings /> */}
-        {/* <CookieConsent /> */}
         <BrowserRouter>
           <Routes>
             {/* 1) Inicio → registro: datos personales */}
@@ -96,6 +95,9 @@ root.render(
             {/* Cualquier otra ruta → vuelta al registro */}
             <Route path="*" element={<Navigate to="/register/contact" replace />} />
           </Routes>
+          
+          {/* Aviso de cookies - aparece en todas las pantallas */}
+          <CookieConsent />
         </BrowserRouter>
       </PersistGate>
     </Provider>
