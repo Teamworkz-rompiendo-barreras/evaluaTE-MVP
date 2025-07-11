@@ -5,15 +5,19 @@ import fs from 'fs'
 import puppeteer from 'puppeteer'
 import iaReportRoute from './src/routes/iaReportRoute';
 import cors from 'cors'
+import cookieParser from 'cookie-parser'
 
 const app = express()
 app.use(cors({
   origin: 'http://localhost:3005',
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  credentials: true // Permite el envío de cookies/autenticación si es necesario
+  allowedHeaders: ['Content-Type', 'Authorization'], // Añade headers personalizados si usas
+  credentials: true // Solo si usas cookies/autenticación
 }))
 app.use(express.json())
+app.use(express.urlencoded({ extended: true }))
 app.use(express.static(path.join(__dirname, '../templates')))
+app.use(cookieParser())
 app.use('/api/informe-ia', iaReportRoute);
 
 app.post('/api/generate-report', async (req: Request, res: Response) => {
