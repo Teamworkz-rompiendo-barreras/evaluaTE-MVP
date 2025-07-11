@@ -4,8 +4,10 @@ import path from 'path'
 import fs from 'fs'
 import puppeteer from 'puppeteer'
 import iaReportRoute from './src/routes/iaReportRoute';
+import cors from 'cors'
 
 const app = express()
+app.use(cors({ origin: 'http://localhost:3005' }))
 app.use(express.json())
 app.use(express.static(path.join(__dirname, '../templates')))
 app.use('/api/informe-ia', iaReportRoute);
