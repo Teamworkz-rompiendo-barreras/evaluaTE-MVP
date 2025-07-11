@@ -9,8 +9,11 @@
     "test": "vitest"
   },
   "dependencies": {
+    "@types/cors": "^2.8.19",
     "canvas": "^3.1.2",
+    "cors": "^2.8.5",
     "express": "^5.1.0",
+    "openai": "^5.9.0",
     "puppeteer": "^24.10.1"
   },
   "devDependencies": {
