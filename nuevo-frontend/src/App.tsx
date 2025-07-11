@@ -14,6 +14,7 @@ import WelcomePage from './pages/WelcomePage';
 // Componentes visuales
 import ProtectedRoute from './components/ProtectedRoute'
 import { Toaster } from 'react-hot-toast'
+import CookieConsent from './components/CookieConsent';
 
 // Layouts compartidos
 function AppLayout() {
@@ -29,6 +30,9 @@ function AppLayout() {
 
       {/* Notificaciones globales */}
       <Toaster position="top-center" />
+
+      {/* Aviso de cookies */}
+      <CookieConsent />
 
       {/* Configuración de accesibilidad - TEMPORALMENTE DESHABILITADO */}
       {/* <div className="fixed bottom-4 right-4 z-50">
