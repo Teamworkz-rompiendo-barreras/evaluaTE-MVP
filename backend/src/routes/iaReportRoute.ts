@@ -1,15 +1,30 @@
 import express from 'express';
-import { Configuration, OpenAIApi } from 'openai';
+import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
+import cors from 'cors'
 dotenv.config();
 
 const router = express.Router();
 
-const openai = new OpenAIApi(new Configuration({
+// Aplica cors solo a este router, por si el global no lo detecta
+router.use(cors({
+  origin: [
+    'http://localhost:3005',
+    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net'
+  ],
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}))
+
+// Responde a preflight OPTIONS
+router.options('*', cors());
+
+const openai = new OpenAI({
   apiKey: process.env.OPENAI_API_KEY,
-}));
+});
 
 // POST /api/informe-ia
 router.post('/', async (req, res) => {
@@ -36,7 +51,7 @@ El informe debe incluir:
 Usa un tono motivador, claro y profesional. No repitas los datos en bruto, interpreta y personaliza el texto para la persona candidata.`;
 
     // Llamada a OpenAI
-    const completion = await openai.createChatCompletion({
+    const completion = await openai.chat.completions.create({
       model: 'gpt-3.5-turbo',
       messages: [
         { role: 'system', content: 'Eres un orientador laboral experto en empleabilidad.' },
@@ -46,7 +61,7 @@ Usa un tono motivador, claro y profesional. No repitas los datos en bruto, inter
       temperature: 0.7,
     });
 
-    const informe = completion.data.choices[0]?.message?.content || 'No se pudo generar el informe.';
+    const informe = completion.choices[0]?.message?.content || 'No se pudo generar el informe.';
     res.json({ informe });
   } catch (error) {
     console.error('Error generando informe IA:', error);
