@@ -9,7 +9,10 @@ import cookieParser from 'cookie-parser'
 
 const app = express()
 app.use(cors({
-  origin: 'http://localhost:3005',
+  origin: [
+    'http://localhost:3005',
+    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization'], // Añade headers personalizados si usas
   credentials: true // Solo si usas cookies/autenticación
