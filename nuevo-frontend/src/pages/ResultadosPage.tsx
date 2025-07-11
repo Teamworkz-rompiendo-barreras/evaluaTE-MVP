@@ -22,7 +22,8 @@ const ResultadosPage: React.FC = () => {
       setLoadingIa(true);
       setErrorIa('');
       try {
-        const res = await fetch('http://localhost:3001/api/informe-ia', {
+        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+        const res = await fetch(`${API_URL}/api/informe-ia`, {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -58,7 +59,8 @@ const ResultadosPage: React.FC = () => {
     e.preventDefault();
     setFeedbackError('');
     try {
-      const res = await fetch('http://localhost:3001/api/informe-ia/feedback', {
+      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
+      const res = await fetch(`${API_URL}/api/informe-ia/feedback`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
