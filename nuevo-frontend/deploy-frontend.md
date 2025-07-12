@@ -13,7 +13,7 @@ El frontend ya está configurado para usar la variable de entorno `VITE_API_URL`
 3. Ve a **Configuration > Application settings**
 4. Agrega la variable:
    - **Name**: `VITE_API_URL`
-   - **Value**: `https://evaluate-backend.azurewebsites.net`
+   - **Value**: `https://evaluador-backend.azurewebsites.net`
 
 ### 2. Desplegar desde GitHub
 
@@ -43,4 +43,4 @@ Si las variables de entorno no se están aplicando:
 ## URLs de Referencia
 
 - **Frontend**: `https://yellow-mud-0b6281c1e.6.azurestaticapps.net`
-- **Backend**: `https://evaluate-backend.azurewebsites.net` 
+- **Backend**: `https://evaluador-backend.azurewebsites.net` 

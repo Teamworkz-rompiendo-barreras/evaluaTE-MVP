@@ -15,7 +15,7 @@ Este documento explica cómo desplegar el backend de EvaluaTE en Azure App Servi
 1. Ve al [Portal de Azure](https://portal.azure.com)
 2. Crea un nuevo **App Service**
 3. Configuración recomendada:
-   - **Nombre**: `evaluate-backend`
+   - **Nombre**: `evaluador-backend`
    - **Runtime stack**: `Node.js 18 LTS`
    - **Operating System**: `Linux`
    - **Region**: Cerca de tus usuarios
@@ -62,7 +62,7 @@ Una vez configurado, cada vez que hagas push a la rama principal, GitHub Actions
 ## Verificación
 
 1. Ve a tu App Service en Azure
-2. Verifica que esté funcionando en la URL: `https://evaluate-backend.azurewebsites.net`
+2. Verifica que esté funcionando en la URL: `https://evaluador-backend.azurewebsites.net`
 3. Revisa los logs en **Log stream** si hay problemas
 
 ## Solución de Problemas
