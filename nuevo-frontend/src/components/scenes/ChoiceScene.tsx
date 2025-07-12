@@ -27,6 +27,12 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
     setSelectedOption(optionId);
     setShowFeedback(true);
 
+    // Si es la opción "volver-menu", navegar directamente sin delay
+    if (optionId === 'volver-menu') {
+      window.location.href = '/games';
+      return;
+    }
+
     // Mostrar feedback por un momento antes de continuar
     setTimeout(() => {
       onComplete(optionId);

@@ -165,6 +165,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Resolución de problemas. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]
@@ -249,6 +259,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Creatividad. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]
@@ -333,6 +353,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Influencia Social. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]
@@ -417,6 +447,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Curiosidad y Aprendizaje. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]
@@ -501,6 +541,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Resiliencia y Flexibilidad. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]
@@ -669,6 +719,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Empatía. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]
@@ -753,6 +813,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Pensamiento Crítico. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]
@@ -837,6 +907,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'finalizar', text: 'Finalizar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Liderazgo. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]

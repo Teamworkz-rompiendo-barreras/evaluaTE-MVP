@@ -63,7 +63,12 @@ export const useGameController = () => {
   const completeScene = useCallback((log: GameLog) => {
     if (!currentGame) return;
     dispatch(addGameLog({ gameId: currentGame.id, log }));
-    if (currentSceneIndex >= currentGame.scenes.length - 1) {
+    
+    // Solo marcar como completo cuando se llega a la escena game-complete
+    const currentScene = currentGame.scenes[currentSceneIndex];
+    const isGameComplete = currentScene?.id === 'game-complete';
+    
+    if (isGameComplete) {
       handleCompleteGame();
     }
   }, [currentGame, currentSceneIndex, dispatch, handleCompleteGame]);
