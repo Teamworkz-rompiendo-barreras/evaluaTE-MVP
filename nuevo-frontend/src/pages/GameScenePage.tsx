@@ -8,6 +8,7 @@ import { useSelector } from 'react-redux'
 import { useGameController } from '../features/games/useGameController'
 import GameScene from '../components/GameScene'
 import ProgressBar from '../components/ProgressBar'
+import GameDebug from '../components/GameDebug'
 import { RootState } from '../app/store'
 import { GameLog } from '../types/game';
 
@@ -36,7 +37,9 @@ const GameScenePage: React.FC = () => {
   } = useGameController()
 
   useEffect(() => {
+    console.log('🎮 GameScenePage - useEffect startGame:', { id, currentGame: currentGame?.title });
     if (id && !currentGame) {
+      console.log('🎮 GameScenePage - Iniciando juego:', id);
       startGame(id)
     }
   }, [id, currentGame, startGame])
@@ -117,6 +120,7 @@ const GameScenePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
+      <GameDebug />
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header del juego */}
         <div className="mb-8 text-center">

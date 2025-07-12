@@ -24,17 +24,20 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
   const [showFeedback, setShowFeedback] = useState(false);
 
   const handleOptionSelect = (optionId: string) => {
+    console.log('🎮 ChoiceScene - Opción seleccionada:', optionId);
     setSelectedOption(optionId);
     setShowFeedback(true);
 
     // Si es la opción "volver-menu", navegar directamente sin delay
     if (optionId === 'volver-menu') {
+      console.log('🎮 ChoiceScene - Navegando al menú principal');
       window.location.href = '/games';
       return;
     }
 
     // Mostrar feedback por un momento antes de continuar
     setTimeout(() => {
+      console.log('🎮 ChoiceScene - Completando escena con opción:', optionId);
       onComplete(optionId);
     }, 2000);
   };
