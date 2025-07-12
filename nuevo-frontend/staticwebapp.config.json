@@ -1,0 +1,19 @@
+{
+  "routes": [
+    {
+      "route": "/*",
+      "serve": "/index.html",
+      "statusCode": 200
+    }
+  ],
+  "navigationFallback": {
+    "rewrite": "/index.html",
+    "exclude": ["/images/*", "/css/*", "/js/*", "/api/*"]
+  },
+  "platform": {
+    "apiRuntime": "node:18"
+  },
+  "environmentVariables": {
+    "VITE_API_URL": "https://evaluate-backend.azurewebsites.net"
+  }
+} 
