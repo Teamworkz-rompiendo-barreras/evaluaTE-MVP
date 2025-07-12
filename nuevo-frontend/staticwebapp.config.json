@@ -14,6 +14,6 @@
     "apiRuntime": "node:18"
   },
   "environmentVariables": {
-    "VITE_API_URL": "https://evaluador-backend.azurewebsites.net"
+    "VITE_API_URL": "https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net"
   }
 } 
