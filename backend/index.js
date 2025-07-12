@@ -14,10 +14,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 // backend/index.ts
 const express_1 = __importDefault(require("express"));
+const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const app = (0, express_1.default)();
+
+// Configuración CORS para permitir solo el origen de Azure
+app.use((0, cors_1.default)({
+  origin: 'https://yellow-mud-0b6281c1e.6.azurestaticapps.net',
+  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
+  allowedHeaders: ['Content-Type', 'Authorization'],
+  credentials: true
+}));
 app.use(express_1.default.json());
 // Sirve los archivos estáticos de templates (si quieres exponer report.html o assets)
 app.use(express_1.default.static(path_1.default.join(__dirname, '../templates')));
