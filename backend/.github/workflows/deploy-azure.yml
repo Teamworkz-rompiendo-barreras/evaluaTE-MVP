@@ -60,11 +60,22 @@ jobs:
         cp db.py deploy/
         cp -r uploads deploy/ 2>/dev/null || mkdir deploy/uploads
 
+    # Opción 1: Usar Azure Login (más seguro)
+    - name: Login to Azure
+      uses: azure/login@v1
+      with:
+        creds: ${{ secrets.AZURE_CREDENTIALS }}
+
     - name: Deploy to Azure App Service
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
         package: ./backend/deploy
-      # Nota: El secret AZURE_WEBAPP_PUBLISH_PROFILE debe configurarse en GitHub
-      # Settings > Secrets and variables > Actions 
+
+    # Opción 2: Usar Publish Profile (alternativa)
+    # - name: Deploy to Azure App Service
+    #   uses: azure/webapps-deploy@v3
+    #   with:
+    #     app-name: ${{ env.AZURE_WEBAPP_NAME }}
+    #     publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+    #     package: ./backend/deploy 
