@@ -645,6 +645,16 @@ export const games: Game[] = [
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
+        ],
+        nextSceneId: 'game-complete'
+      },
+      {
+        id: 'game-complete',
+        title: 'Minijuego Completado',
+        description: 'Has completado exitosamente el minijuego de Autoconciencia. ¡Bien hecho!',
+        type: 'choice',
+        options: [
+          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       }
     ]
