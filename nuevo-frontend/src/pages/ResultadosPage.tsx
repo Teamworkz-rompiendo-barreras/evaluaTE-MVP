@@ -4,6 +4,7 @@ import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { ResponsiveRadar } from '@nivo/radar';
 import logo from '../assets/Logo_teamworkz.png';
+import { buildApiUrl, API_CONFIG } from '../config/api';
 
 const ResultadosPage: React.FC = () => {
   const personal = useAppSelector((state: RootState) => state.personal);
@@ -22,8 +23,7 @@ const ResultadosPage: React.FC = () => {
       setLoadingIa(true);
       setErrorIa('');
       try {
-        const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-        const res = await fetch(`${API_URL}/api/informe-ia`, {
+        const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
@@ -59,8 +59,7 @@ const ResultadosPage: React.FC = () => {
     e.preventDefault();
     setFeedbackError('');
     try {
-      const API_URL = import.meta.env.VITE_API_URL || 'http://localhost:3001';
-      const res = await fetch(`${API_URL}/api/informe-ia/feedback`, {
+      const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.IA_FEEDBACK), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({
