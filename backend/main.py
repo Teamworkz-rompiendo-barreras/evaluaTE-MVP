@@ -63,6 +63,11 @@ class ReportResponse(BaseModel):
 
 app = FastAPI(title="EvaluaTE Backend", version="1.0.0")
 
+@app.get("/")
+async def root():
+    """Endpoint raíz"""
+    return {"message": "Bienvenida/o a EvaluaTE MVP", "status": "running"}
+
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
