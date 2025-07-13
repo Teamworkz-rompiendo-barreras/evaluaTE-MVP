@@ -1,31 +1,37 @@
 // backend/index.ts
-import express, { Request, Response } from 'express';
+import express, { Request, Response, NextFunction } from 'express';
 import path from 'path';
 import fs from 'fs';
 import puppeteer from 'puppeteer';
 import iaReportRoute from './src/routes/iaReportRoute';
 import pdfRoute from './src/routes/pdfRoute';
-import cors from 'cors';
 import cookieParser from 'cookie-parser';
 
 const app = express();
 
-// Configuración CORS global
-app.use(cors({
-  origin: [
-    'http://localhost:3005',
-    'http://localhost:5173',
-    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net'
-  ],
-  methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
-  credentials: true,
-  optionsSuccessStatus: 200,
-  preflightContinue: false
-}));
+// Lista de orígenes permitidos (ajusta aquí si cambias de dominio)
+const allowedOrigins = [
+  'http://localhost:3005',
+  'http://localhost:5173',
+  'https://yellow-mud-0b6281c1e.6.azurestaticapps.net'
+];
 
-// Responder a preflight OPTIONS para todas las rutas
-app.options('*', cors());
+// Middleware CORS profesional y robusto
+app.use(function (req: Request, res: Response, next: NextFunction) {
+  const origin = req.headers.origin;
+  if (origin && allowedOrigins.includes(origin)) {
+    res.header('Access-Control-Allow-Origin', origin);
+    res.header('Vary', 'Origin'); // Para proxies y caches
+  }
+  res.header('Access-Control-Allow-Methods', 'GET,POST,PUT,DELETE,OPTIONS');
+  res.header('Access-Control-Allow-Headers', 'Content-Type, Authorization, X-Requested-With, Origin, Accept');
+  res.header('Access-Control-Allow-Credentials', 'true');
+  if (req.method === 'OPTIONS') {
+    res.sendStatus(200);
+    return;
+  }
+  next();
+});
 
 app.use(express.json());
 app.use(cookieParser());
