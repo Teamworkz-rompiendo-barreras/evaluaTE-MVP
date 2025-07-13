@@ -105,5 +105,8 @@ export const createPdf = async (data: any) => {
   ctx.fillText('Formación sugerida:', 50, 1160);
   ctx.fillText('Portales de empleo recomendados:', 50, 1190);
 
-  return canvas.toBuffer('application/pdf');
+  console.log('Datos recibidos para PDF:', data);
+  const pdfBuffer = canvas.toBuffer('application/pdf');
+  console.log('Tamaño del buffer PDF:', pdfBuffer.length);
+  return pdfBuffer;
 };
