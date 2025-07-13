@@ -1,4 +1,4 @@
-name: Deploy to Azure App Service
+name: Deploy Backend to Azure App Service
 
 on:
   push:
@@ -8,14 +8,12 @@ on:
 
 env:
   AZURE_WEBAPP_NAME: evaluador-backend
-  AZURE_WEBAPP_PACKAGE_PATH: '.'
+  AZURE_WEBAPP_PACKAGE_PATH: './backend-deploy'
   NODE_VERSION: '18.x'
-  PYTHON_VERSION: '3.11'
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
-    
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
@@ -27,55 +25,25 @@ jobs:
         cache: 'npm'
         cache-dependency-path: backend/package-lock.json
 
-    - name: Set up Python
-      uses: actions/setup-python@v4
-      with:
-        python-version: ${{ env.PYTHON_VERSION }}
-
-    - name: Install Node.js dependencies
+    - name: Install backend dependencies
       working-directory: ./backend
       run: npm ci
 
-    - name: Build TypeScript
+    - name: Build backend (TypeScript)
       working-directory: ./backend
       run: npm run build
 
-    - name: Install Python dependencies
-      working-directory: ./backend
+    - name: Prepare deployment package
       run: |
-        python -m pip install --upgrade pip
-        pip install -r requirements.txt
-
-    - name: Create deployment package
-      run: |
-        cd backend
-        mkdir -p deploy
-        cp -r dist/* deploy/
-        cp -r src/* deploy/
-        cp package.json deploy/
-        cp requirements.txt deploy/
-        cp main.py deploy/
-        cp generate_report.py deploy/
-        cp models.py deploy/
-        cp db.py deploy/
-        cp -r uploads deploy/ 2>/dev/null || mkdir deploy/uploads
-
-    # Opción 1: Usar Azure Login (más seguro)
-    - name: Login to Azure
-      uses: azure/login@v1
-      with:
-        creds: ${{ secrets.AZURE_CREDENTIALS }}
+        mkdir -p backend-deploy
+        cp -r backend/dist backend-deploy/
+        cp backend/package.json backend-deploy/
+        cp backend/web.config backend-deploy/
+        # Agrega aquí otros archivos necesarios si los usas (por ejemplo, uploads, templates, etc.)
 
     - name: Deploy to Azure App Service
       uses: azure/webapps-deploy@v3
       with:
         app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        package: ./backend/deploy
-
-    # Opción 2: Usar Publish Profile (alternativa)
-    # - name: Deploy to Azure App Service
-    #   uses: azure/webapps-deploy@v3
-    #   with:
-    #     app-name: ${{ env.AZURE_WEBAPP_NAME }}
-    #     publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-    #     package: ./backend/deploy 
+        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
+        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }} 
