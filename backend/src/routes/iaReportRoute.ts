@@ -1,9 +1,9 @@
 import express from 'express';
-import OpenAI from 'openai';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
-import cors from 'cors'
+import cors from 'cors';
+import axios from 'axios';
 dotenv.config();
 
 const router = express.Router();
@@ -27,9 +27,11 @@ router.use(cors({
 // Responde a preflight OPTIONS
 router.options('*', cors());
 
-const openai = new OpenAI({
-  apiKey: process.env.OPENAI_API_KEY,
-});
+// Variables de entorno para Azure OpenAI
+const AZURE_OPENAI_API_KEY = process.env.AZURE_OPENAI_API_KEY;
+const AZURE_OPENAI_ENDPOINT = process.env.AZURE_OPENAI_ENDPOINT;
+const AZURE_OPENAI_DEPLOYMENT = process.env.AZURE_OPENAI_DEPLOYMENT;
+const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION;
 
 // POST /api/informe-ia
 router.post('/', async (req, res) => {
@@ -55,21 +57,29 @@ El informe debe incluir:
 
 Usa un tono motivador, claro y profesional. No repitas los datos en bruto, interpreta y personaliza el texto para la persona candidata.`;
 
-    // Llamada a OpenAI
-    const completion = await openai.chat.completions.create({
-      model: 'gpt-3.5-turbo',
-      messages: [
-        { role: 'system', content: 'Eres un orientador laboral experto en empleabilidad.' },
-        { role: 'user', content: prompt }
-      ],
-      max_tokens: 900,
-      temperature: 0.7,
-    });
+    // Llamada a Azure OpenAI
+    const response = await axios.post(
+      `${AZURE_OPENAI_ENDPOINT}openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=${AZURE_OPENAI_API_VERSION}`,
+      {
+        messages: [
+          { role: 'system', content: 'Eres un orientador laboral experto en empleabilidad.' },
+          { role: 'user', content: prompt }
+        ],
+        max_tokens: 900,
+        temperature: 0.7,
+      },
+      {
+        headers: {
+          'Content-Type': 'application/json',
+          'api-key': AZURE_OPENAI_API_KEY,
+        },
+      }
+    );
 
-    const informe = completion.choices[0]?.message?.content || 'No se pudo generar el informe.';
+    const informe = response.data.choices[0]?.message?.content || 'No se pudo generar el informe.';
     res.json({ informe });
-  } catch (error) {
-    console.error('Error generando informe IA:', error);
+  } catch (error: any) {
+    console.error('Error generando informe IA:', error?.response?.data || error.message || error);
     res.status(500).json({ error: 'Error generando informe IA' });
   }
 });
