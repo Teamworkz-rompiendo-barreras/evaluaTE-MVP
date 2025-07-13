@@ -66,7 +66,13 @@ app = FastAPI(title="EvaluaTE Backend", version="1.0.0")
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=[
+        "http://localhost:3005",
+        "http://localhost:5173",
+        "https://yellow-mud-0b6281c1e.6.azurestaticapps.net",
+        "https://*.azurestaticapps.net",
+        "https://*.azurewebsites.net"
+    ],
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -83,6 +89,16 @@ async def log_game_complete(data: Dict[str, Any]):
     """Guarda cuando se completa un juego"""
     print("GAME COMPLETE:", data)
     return {"success": True}
+
+@app.post("/api/informe-ia", response_model=ReportResponse)
+async def generate_ia_report(request: EmployabilityReportRequest):
+    """Genera informe de IA basado en datos del usuario"""
+    return await generate_report(request)
+
+@app.get("/api/informe-ia")
+async def get_ia_report():
+    """Endpoint GET para el informe de IA"""
+    return {"message": "Endpoint de informe de IA disponible"}
 
 @app.post("/api/logs/report", response_model=ReportResponse)
 async def generate_report(request: EmployabilityReportRequest):
