@@ -58,7 +58,7 @@ app.post('/api/generate-report', async (req: Request, res: Response) => {
 
 // Arrancar el servidor solo si este archivo es ejecutado directamente
 if (require.main === module) {
-  const PORT = process.env.PORT || 3001;
+  const PORT = process.env.PORT || 8080;
   app.listen(PORT, () => {
     console.log(`EvaluaTE backend server running on port ${PORT}`);
   });
