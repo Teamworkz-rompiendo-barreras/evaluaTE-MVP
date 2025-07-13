@@ -14,14 +14,16 @@ const app = express();
 app.use(cors({
   origin: [
     'http://localhost:3005',
+    'http://localhost:5173',
     'https://yellow-mud-0b6281c1e.6.azurestaticapps.net',
     'https://*.azurestaticapps.net',
     'https://*.azurewebsites.net'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With'],
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
   credentials: true,
-  optionsSuccessStatus: 200
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 }));
 
 app.use(express.json());

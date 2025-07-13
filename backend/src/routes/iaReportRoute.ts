@@ -12,11 +12,16 @@ const router = express.Router();
 router.use(cors({
   origin: [
     'http://localhost:3005',
-    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net'
+    'http://localhost:5173',
+    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net',
+    'https://*.azurestaticapps.net',
+    'https://*.azurewebsites.net'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 }))
 
 // Responde a preflight OPTIONS

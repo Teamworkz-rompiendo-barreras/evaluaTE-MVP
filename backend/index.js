@@ -20,12 +20,20 @@ const fs_1 = __importDefault(require("fs"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
 const app = (0, express_1.default)();
 
-// Configuración CORS para permitir solo el origen de Azure
+// Configuración CORS para permitir múltiples orígenes
 app.use((0, cors_1.default)({
-  origin: 'https://yellow-mud-0b6281c1e.6.azurestaticapps.net',
+  origin: [
+    'http://localhost:3005',
+    'http://localhost:5173',
+    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net',
+    'https://*.azurestaticapps.net',
+    'https://*.azurewebsites.net'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization'],
-  credentials: true
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 }));
 app.use(express_1.default.json());
 // Sirve los archivos estáticos de templates (si quieres exponer report.html o assets)
