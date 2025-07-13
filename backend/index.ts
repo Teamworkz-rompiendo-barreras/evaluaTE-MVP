@@ -15,9 +15,7 @@ app.use(cors({
   origin: [
     'http://localhost:3005',
     'http://localhost:5173',
-    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net',
-    'https://*.azurestaticapps.net',
-    'https://*.azurewebsites.net'
+    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net'
   ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
   allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
@@ -25,6 +23,9 @@ app.use(cors({
   optionsSuccessStatus: 200,
   preflightContinue: false
 }));
+
+// Responder a preflight OPTIONS para todas las rutas
+app.options('*', cors());
 
 app.use(express.json());
 app.use(cookieParser());
