@@ -109,6 +109,10 @@ export const createPdf = async (data: any) => {
   let pdfBuffer;
   try {
     pdfBuffer = canvas.toBuffer('application/pdf');
+    if (!pdfBuffer || !Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
+      console.error('El buffer PDF es inválido o está vacío:', pdfBuffer);
+      throw new Error('No se pudo generar el PDF: el buffer es inválido o está vacío. Puede ser un problema de la librería canvas o del entorno.');
+    }
     console.log('Tamaño del buffer PDF:', pdfBuffer.length);
   } catch (err) {
     console.error('Error al generar el buffer PDF:', err);
