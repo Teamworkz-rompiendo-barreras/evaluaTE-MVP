@@ -48,6 +48,7 @@ export const createPdf = async (data: any) => {
 
   const { gameData, cvAnalysis, jobPreferences } = data;
 
+  // Crear canvas en formato PDF
   const canvas = createCanvas(800, 1200, 'pdf');
   const ctx = canvas.getContext('2d');
 
@@ -108,7 +109,8 @@ export const createPdf = async (data: any) => {
   console.log('¡Entrando a generatePDF!');
   let pdfBuffer;
   try {
-    pdfBuffer = canvas.toBuffer('image/png');
+    // Generar buffer PDF correctamente
+    pdfBuffer = canvas.toBuffer();
     if (!pdfBuffer || !Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
       console.error('El buffer PDF es inválido o está vacío:', pdfBuffer);
       throw new Error('No se pudo generar el PDF: el buffer es inválido o está vacío. Puede ser un problema de la librería canvas o del entorno.');
