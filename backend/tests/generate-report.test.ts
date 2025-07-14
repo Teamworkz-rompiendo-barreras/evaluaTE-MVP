@@ -1,6 +1,6 @@
 // backend/tests/generate-report.test.ts
 import request from 'supertest';
-import { app } from '../src/app'; // Asegúrate de que la ruta sea correcta
+import app from '../src/app';
 import { describe, it, expect, beforeAll, afterAll } from 'vitest';
 
 let server: any;
