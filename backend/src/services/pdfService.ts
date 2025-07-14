@@ -106,7 +106,13 @@ export const createPdf = async (data: any) => {
   ctx.fillText('Portales de empleo recomendados:', 50, 1190);
 
   console.log('¡Entrando a generatePDF!');
-  const pdfBuffer = canvas.toBuffer('application/pdf');
-  console.log('Tamaño del buffer PDF:', pdfBuffer.length);
+  let pdfBuffer;
+  try {
+    pdfBuffer = canvas.toBuffer('application/pdf');
+    console.log('Tamaño del buffer PDF:', pdfBuffer.length);
+  } catch (err) {
+    console.error('Error al generar el buffer PDF:', err);
+    throw err;
+  }
   return pdfBuffer;
 };
