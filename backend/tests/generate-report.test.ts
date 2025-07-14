@@ -66,7 +66,7 @@ describe('POST /api/generate-report', () => {
       .timeout({ response: 5000, deadline: 10000 });
 
     expect(res.status).toBe(400);
-    expect(res.headers['content-type']).toBe('application/json');
+    expect(res.headers['content-type']).toContain('application/json');
     expect(res.body.error).toContain('Datos inválidos');
     expect(res.body.error).toContain('jobPreferences es requerido');
   });
@@ -90,7 +90,7 @@ describe('POST /api/generate-report', () => {
       .timeout({ response: 5000, deadline: 10000 });
 
     expect(res.status).toBe(400);
-    expect(res.headers['content-type']).toBe('application/json');
+    expect(res.headers['content-type']).toContain('application/json');
     expect(res.body.error).toContain('Datos inválidos');
     expect(res.body.error).toContain('gameData debe ser un array');
   });
