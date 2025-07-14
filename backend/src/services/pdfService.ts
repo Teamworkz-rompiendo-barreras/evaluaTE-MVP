@@ -108,7 +108,7 @@ export const createPdf = async (data: any) => {
   console.log('¡Entrando a generatePDF!');
   let pdfBuffer;
   try {
-    pdfBuffer = canvas.toBuffer('application/pdf');
+    pdfBuffer = canvas.toBuffer('image/png');
     if (!pdfBuffer || !Buffer.isBuffer(pdfBuffer) || pdfBuffer.length === 0) {
       console.error('El buffer PDF es inválido o está vacío:', pdfBuffer);
       throw new Error('No se pudo generar el PDF: el buffer es inválido o está vacío. Puede ser un problema de la librería canvas o del entorno.');
