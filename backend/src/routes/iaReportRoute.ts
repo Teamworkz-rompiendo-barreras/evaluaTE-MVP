@@ -59,7 +59,7 @@ Usa un tono motivador, claro y profesional. No repitas los datos en bruto, inter
 
     // Llamada a Azure OpenAI
     const response = await axios.post(
-      `${AZURE_OPENAI_ENDPOINT}openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=2024-02-15-preview`,
+      `${AZURE_OPENAI_ENDPOINT}openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=2024-11-20`,
       {
         messages: [
           { role: 'system', content: 'Eres un orientador laboral experto en empleabilidad.' },
