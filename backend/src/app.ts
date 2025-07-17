@@ -9,22 +9,20 @@ import cors from 'cors';
 
 const app = express();
 
-const allowedOrigins = [
-  'https://yellow-mud-0b6281c1e.6.azurestaticapps.net'
-];
-
+// Middleware CORS: permite peticiones desde cualquier origen (puedes personalizar el origin si lo deseas)
 app.use(cors({
-  origin: function(origin, callback) {
-    if (!origin) return callback(null, true);
-    if (allowedOrigins.includes(origin)) {
-      return callback(null, true);
-    } else {
-      return callback(new Error('No permitido por CORS'));
-    }
-  },
-  credentials: true,
+  origin: [
+    'http://localhost:3005',
+    'http://localhost:5173',
+    'https://yellow-mud-0b6281c1e.6.azurestaticapps.net',
+    'https://*.azurestaticapps.net',
+    'https://*.azurewebsites.net'
+  ],
   methods: ['GET', 'POST', 'PUT', 'DELETE', 'OPTIONS'],
-  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept']
+  allowedHeaders: ['Content-Type', 'Authorization', 'X-Requested-With', 'Origin', 'Accept'],
+  credentials: true,
+  optionsSuccessStatus: 200,
+  preflightContinue: false
 }));
 
 app.use(express.json());
