@@ -3,10 +3,12 @@
   "version": "1.0.0",
   "main": "index.js",
   "scripts": {
-    "build": "tsc",
+    "build": "tsc && node copy-assets.js",
     "start": "node dist/index.js",
     "dev": "nodemon src/index.ts",
-    "test": "vitest"
+    "test": "vitest",
+    "copy-assets": "node copy-assets.js",
+    "check-deps": "node check-dependencies.js"
   },
   "dependencies": {
     "@types/cors": "^2.8.19",

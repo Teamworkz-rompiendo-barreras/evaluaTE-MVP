@@ -1,6 +1,30 @@
 // backend/src/services/pdfService.ts
 import { createCanvas, loadImage } from 'canvas';
 import { join } from 'path';
+import path from 'path';
+
+// Función para obtener la ruta correcta de las imágenes
+function getImagePath(imageName: string): string {
+  // En desarrollo: src/assets/
+  // En producción: dist/src/assets/
+  const possiblePaths = [
+    join(__dirname, '../assets', imageName),
+    join(__dirname, '../../src/assets', imageName),
+    join(process.cwd(), 'src/assets', imageName),
+    join(process.cwd(), 'dist/src/assets', imageName)
+  ];
+  
+  for (const imagePath of possiblePaths) {
+    try {
+      require('fs').accessSync(imagePath);
+      return imagePath;
+    } catch (err) {
+      // Continuar con la siguiente ruta
+    }
+  }
+  
+  throw new Error(`No se encontró la imagen ${imageName} en ninguna de las rutas esperadas`);
+}
 
 async function safeLoadImage(path: string, label: string) {
   try {
@@ -53,7 +77,7 @@ export const createPdf = async (data: any) => {
   const ctx = canvas.getContext('2d');
 
   // Cargar fondo
-  const background = await safeLoadImage(join(__dirname, '../assets/background.png'), 'background');
+  const background = await safeLoadImage(getImagePath('background.png'), 'background');
   ctx.drawImage(background, 0, 0, canvas.width, canvas.height);
 
   // Estilos básicos
@@ -65,7 +89,7 @@ export const createPdf = async (data: any) => {
 
   // Mapa de habilidades (ejemplo)
   ctx.fillText('Mapa de Habilidades', 50, 100);
-  const radarChart = await safeLoadImage(join(__dirname, '../assets/radarchart.png'), 'radarchart');
+  const radarChart = await safeLoadImage(getImagePath('radarchart.png'), 'radarchart');
   ctx.drawImage(radarChart, 50, 150, 300, 300);
 
   // Fortalezas más destacadas
