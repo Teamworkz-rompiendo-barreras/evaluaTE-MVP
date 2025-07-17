@@ -1,4 +1,4 @@
-import express from 'express';
+import express, { Request, Response } from 'express';
 import dotenv from 'dotenv';
 import fs from 'fs';
 import path from 'path';
@@ -34,7 +34,7 @@ const AZURE_OPENAI_DEPLOYMENT = process.env.AZURE_OPENAI_DEPLOYMENT;
 const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION;
 
 // POST /api/informe-ia
-router.post('/', async (req, res) => {
+router.post('/', async (req: Request, res: Response) => {
   try {
     const { preferences, minigames, cvAnalysis } = req.body;
 
@@ -85,7 +85,7 @@ Usa un tono motivador, claro y profesional. No repitas los datos en bruto, inter
 });
 
 // POST /api/ia-feedback
-router.post('/feedback', async (req, res) => {
+router.post('/feedback', async (req: Request, res: Response) => {
   try {
     const { informe, rating, comment, userData } = req.body;
     const feedback = {
