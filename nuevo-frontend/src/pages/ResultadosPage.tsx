@@ -27,9 +27,23 @@ const ResultadosPage: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            preferences: report?.jobPreferences,
-            minigames: report?.softSkills,
-            cvAnalysis: cvAnalysis,
+            userId: personal?.userId || 'usuario-demo',
+            fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim(),
+            softSkills: (report?.softSkills ?? []).map(skill => ({
+              skill: skill.skill,
+              level: skill.level,
+              confidence: skill.confidence ?? skill.score ?? 0,
+              feedback: skill.feedback || undefined
+            })),
+            cvAnalysis: cvAnalysis ? {
+              score: cvAnalysis.score ?? 0,
+              strengths: cvAnalysis.strengths ?? [],
+              weaknesses: cvAnalysis.weaknesses ?? [],
+              feedback: cvAnalysis.feedback || undefined
+            } : undefined,
+            jobPreferences: report?.jobPreferences || {},
+            completedGames: Array.isArray(report?.completedGames) ? report.completedGames : [],
+            logs: []
           }),
         });
         const data = await res.json();
