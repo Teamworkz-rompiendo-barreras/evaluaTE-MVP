@@ -73,6 +73,11 @@ const gameSlice = createSlice({
     
     clearCurrentGame: (state) => {
       state.currentGameId = null;
+    },
+
+    resetGameLogs: (state, action: PayloadAction<string>) => {
+      // Limpia los logs del juego indicado
+      delete state.gameLogs[action.payload];
     }
   }
 });
@@ -83,7 +88,8 @@ export const {
   completeGame, 
   addAdaptation, 
   resetGameState, 
-  clearCurrentGame 
+  clearCurrentGame, 
+  resetGameLogs
 } = gameSlice.actions;
 
 export default gameSlice.reducer; 

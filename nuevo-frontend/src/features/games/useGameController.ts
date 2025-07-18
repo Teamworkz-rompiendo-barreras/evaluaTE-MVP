@@ -5,7 +5,7 @@ import { useDispatch, useSelector } from 'react-redux';
 import { GameLog, SoftSkill } from '../../types/game';
 import { games, getGameById } from '../../data/games';
 import { RootState } from '../../app/store';
-import { updateGameProgress, addGameLog, completeGame } from './gameSlice';
+import { updateGameProgress, addGameLog, completeGame, resetGameLogs } from './gameSlice';
 
 export const useGameController = () => {
   const dispatch = useDispatch();
@@ -32,6 +32,7 @@ export const useGameController = () => {
   const startGame = useCallback((gameId: string) => {
     const game = getGameById(gameId);
     if (game) {
+      dispatch(resetGameLogs(gameId)); // Limpiar logs previos
       dispatch(updateGameProgress({ currentGameId: gameId }));
     }
   }, [dispatch]);
