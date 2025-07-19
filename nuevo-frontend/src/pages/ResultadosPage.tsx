@@ -29,19 +29,19 @@ const ResultadosPage: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: (personal as any)?.userId || 'usuario-demo',
             fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim(),
             softSkills: (report?.softSkills ?? []).map(skill => ({
               skill: skill.skill,
               level: skill.level,
-              confidence: (skill as any).confidence ?? (skill as any).score ?? 0,
-              feedback: (skill as any).feedback || undefined
+              score: skill.score
             })),
             cvAnalysis: cvAnalysis ? {
-              score: (cvAnalysis as any).score ?? 0,
-              strengths: (cvAnalysis as any).strengths ?? [],
-              weaknesses: (cvAnalysis as any).weaknesses ?? [],
-              feedback: (cvAnalysis as any).feedback || undefined
+              structure: cvAnalysis.structure,
+              coherence: cvAnalysis.coherence,
+              experience: cvAnalysis.experience,
+              skills: cvAnalysis.skills,
+              education: cvAnalysis.education,
+              alerts: cvAnalysis.alerts
             } : undefined,
             jobPreferences: report?.jobPreferences || {},
             completedGames: Array.isArray(game?.completedGames)
