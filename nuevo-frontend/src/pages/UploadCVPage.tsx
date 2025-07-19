@@ -5,6 +5,7 @@ import { useNavigate, Link } from 'react-router-dom'
 
 // Importamos las acciones desde personalSlice
 import { saveCV, saveCvAnalysis, saveSoftSkills, generateFinalReport } from '../features/personal/personalSlice'
+import { buildApiUrl, API_CONFIG } from '../config/api';
 
 export default function UploadCVPage() {
   const dispatch = useDispatch()
@@ -25,7 +26,7 @@ export default function UploadCVPage() {
     e.preventDefault()
     if (!file) return
 
-    // Leer el archivo como base64
+    // Leer el archivo como base64 para la preview
     const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
       const reader = new FileReader()
       reader.readAsDataURL(file)
@@ -35,108 +36,43 @@ export default function UploadCVPage() {
 
     const fileContent = await toBase64(file)
     dispatch(saveCV({ fileName: file.name, fileContent }))
-    
-    // Simular análisis del CV (temporal para depuración)
-    const mockCvAnalysis = {
-      structure: 'bueno',
-      coherence: 'bueno',
-      experience: 'regular',
-      skills: Array.from(['JavaScript', 'React', 'TypeScript', 'HTML', 'CSS']),
-      education: Array.from(['Grado en Informática']),
-      alerts: Array.from(['Considerar agregar más proyectos personales'])
-    } as const;
-    
-    dispatch(saveCvAnalysis(mockCvAnalysis))
-    
-    // Simular soft skills evaluadas (temporal para depuración)
-    const mockSoftSkills = [
-      {
-        skill: 'Toma de decisiones',
-        level: 'alto' as const,
-        score: 85,
-        confidence: 0.85,
-        feedback: 'Excelente capacidad para tomar decisiones informadas',
-        interactions: []
-      },
-      {
-        skill: 'Pensamiento analítico',
-        level: 'medio' as const,
-        score: 65,
-        confidence: 0.65,
-        feedback: 'Buen pensamiento analítico, con espacio para mejorar',
-        interactions: []
-      },
-      {
-        skill: 'Creatividad',
-        level: 'alto' as const,
-        score: 90,
-        confidence: 0.90,
-        feedback: 'Muy creativo/a en la resolución de problemas',
-        interactions: []
-      },
-      {
-        skill: 'Trabajo en equipo',
-        level: 'medio' as const,
-        score: 70,
-        confidence: 0.70,
-        feedback: 'Buen trabajo en equipo, mejora en comunicación',
-        interactions: []
-      },
-      {
-        skill: 'Curiosidad y aprendizaje',
-        level: 'alto' as const,
-        score: 88,
-        confidence: 0.88,
-        feedback: 'Excelente disposición para aprender',
-        interactions: []
-      },
-      {
-        skill: 'Resiliencia y flexibilidad',
-        level: 'medio' as const,
-        score: 60,
-        confidence: 0.60,
-        feedback: 'Buena adaptabilidad, puede mejorar bajo presión',
-        interactions: []
-      },
-      {
-        skill: 'Autoconciencia',
-        level: 'alto' as const,
-        score: 82,
-        confidence: 0.82,
-        feedback: 'Excelente autoconciencia y reflexión',
-        interactions: []
-      },
-      {
-        skill: 'Empatía',
-        level: 'medio' as const,
-        score: 75,
-        confidence: 0.75,
-        feedback: 'Buena empatía, puede mejorar en situaciones difíciles',
-        interactions: []
-      },
-      {
-        skill: 'Comunicación',
-        level: 'medio' as const,
-        score: 68,
-        confidence: 0.68,
-        feedback: 'Comunicación clara, mejora en presentaciones',
-        interactions: []
-      },
-      {
-        skill: 'Gestión del tiempo',
-        level: 'bajo' as const,
-        score: 45,
-        confidence: 0.45,
-        feedback: 'Necesita mejorar la gestión del tiempo',
-        interactions: []
+
+    // Enviar el archivo al backend para análisis real
+    const formData = new FormData();
+    formData.append('cv', file);
+    let cvAnalysis = null;
+    try {
+      const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_ANALYZE), {
+        method: 'POST',
+        body: formData
+      });
+      if (res.ok) {
+        cvAnalysis = await res.json();
+        dispatch(saveCvAnalysis(cvAnalysis));
+      } else {
+        // Si hay error, guardar un análisis vacío
+        dispatch(saveCvAnalysis({
+          structure: 'regular',
+          coherence: 'regular',
+          experience: 'regular',
+          skills: [],
+          education: [],
+          alerts: ['No se pudo analizar el CV']
+        }));
       }
-    ]
-    
-    dispatch(saveSoftSkills(mockSoftSkills))
-    
+    } catch (err) {
+      dispatch(saveCvAnalysis({
+        structure: 'regular',
+        coherence: 'regular',
+        experience: 'regular',
+        skills: [],
+        education: [],
+        alerts: ['Error de conexión al analizar el CV']
+      }));
+    }
+
     // Generar reporte final después de subir el CV
     dispatch(generateFinalReport())
-    
     navigate('/resultados')
   }
 
