@@ -1,6 +1,11 @@
 // backend/src/controllers/pdfController.ts
 import express, { Request, Response } from 'express';
 import { createPdf } from '../services/pdfService'; // Asegúrate de que la ruta sea correcta
+import pdfParse from 'pdf-parse';
+import multer from 'multer';
+
+// Middleware de multer para recibir archivos
+const upload = multer({ storage: multer.memoryStorage() });
 
 export const generatePDF = async (req: Request, res: Response) => {
   try {
@@ -25,3 +30,40 @@ export const generatePDF = async (req: Request, res: Response) => {
     }
   }
 };
+
+export const analyzeCV = [
+  upload.single('cv'),
+  async (req: Request, res: Response) => {
+    try {
+      if (!req.file) {
+        return res.status(400).json({ error: 'No se envió ningún archivo PDF.' });
+      }
+      // Extraer texto del PDF
+      const data = await pdfParse(req.file.buffer);
+      const text = data.text || '';
+
+      // Lógica simple de análisis (puedes mejorarla con IA/NLP)
+      const structure = text.includes('Experiencia') && text.includes('Educación') ? 'bueno' : 'regular';
+      const coherence = text.includes('Responsable') && text.includes('Logros') ? 'bueno' : 'regular';
+      const experience = text.match(/\d{4}/g)?.length > 2 ? 'bueno' : 'regular';
+      const skills = Array.from(new Set((text.match(/JavaScript|React|TypeScript|HTML|CSS|Python|SQL/gi) || [])));
+      const education = (text.match(/(Grado|Licenciatura|Máster|Ingeniería|Doctorado)[^\n]*/gi) || []);
+      const alerts = [];
+      if (!text.toLowerCase().includes('proyecto')) alerts.push('Faltan proyectos personales');
+      if (skills.length < 3) alerts.push('Pocas habilidades técnicas detectadas');
+
+      const cvAnalysis = {
+        structure,
+        coherence,
+        experience,
+        skills,
+        education,
+        alerts
+      };
+      return res.json(cvAnalysis);
+    } catch (error) {
+      console.error('Error analizando el CV:', error);
+      return res.status(500).json({ error: 'Error analizando el CV.' });
+    }
+  }
+];
