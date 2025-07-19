@@ -24,7 +24,7 @@ const GameScene: React.FC<GameSceneProps> = ({
   onNextScene,
   accessibility
 }) => {
-  console.log('🎮 GameScene - Renderizando escena:', scene.id, scene.title);
+  // console.log('🎮 GameScene - Renderizando escena:', scene.id, scene.title);
   const [startTime] = useState(Date.now());
   const [helpUsed, setHelpUsed] = useState(false);
   const [adaptations, setAdaptations] = useState<string[]>([]);

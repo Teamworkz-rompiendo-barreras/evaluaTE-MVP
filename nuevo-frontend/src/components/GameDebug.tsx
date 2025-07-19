@@ -23,7 +23,7 @@ const GameDebug: React.FC = () => {
         <div className="mt-2">
           <button
             onClick={() => {
-              console.log('🎮 Debug - Estado completo:', { gameState, personal, currentGame, currentScene });
+              // console.log('🎮 Debug - Estado completo:', { gameState, personal, currentGame, currentScene });
             }}
             className="bg-blue-500 text-white px-2 py-1 rounded text-xs"
           >

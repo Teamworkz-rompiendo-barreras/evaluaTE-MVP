@@ -4,7 +4,7 @@ import { useSelector, useDispatch } from 'react-redux'
 import { useNavigate, Link } from 'react-router-dom'
 
 // Importamos las acciones desde personalSlice
-import { saveCV, saveCvAnalysis, saveSoftSkills, generateFinalReport } from '../features/personal/personalSlice'
+import { saveCV, saveCvAnalysis, generateFinalReport } from '../features/personal/personalSlice'
 import { buildApiUrl, API_CONFIG } from '../config/api';
 
 export default function UploadCVPage() {

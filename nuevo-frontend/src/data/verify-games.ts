@@ -5,7 +5,7 @@ export const verifyAndFixGames = () => {
   const issues: string[] = [];
   
   games.forEach((game, gameIndex) => {
-    console.log(`Verificando minijuego ${gameIndex + 1}: ${game.title}`);
+    // console.log(`Verificando minijuego ${gameIndex + 1}: ${game.title}`);
     
     // Verificar que tenga escenas
     if (!game.scenes || game.scenes.length === 0) {
@@ -34,10 +34,10 @@ export const verifyAndFixGames = () => {
   });
   
   if (issues.length === 0) {
-    console.log('✅ Todos los minijuegos están correctamente estructurados');
+    // console.log('✅ Todos los minijuegos están correctamente estructurados');
   } else {
-    console.log('❌ Problemas encontrados:');
-    issues.forEach(issue => console.log(`  - ${issue}`));
+    // console.log('❌ Problemas encontrados:');
+    // issues.forEach(issue => console.log(`  - ${issue}`));
   }
   
   return issues;
@@ -46,5 +46,5 @@ export const verifyAndFixGames = () => {
 // Ejecutar verificación
 if (typeof window !== 'undefined') {
   // Solo en el navegador
-  (window as any).verifyGames = verifyAndFixGames;
+  (window as unknown as { verifyGames: unknown }).verifyGames = verifyAndFixGames;
 } 
