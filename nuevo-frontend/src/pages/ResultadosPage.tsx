@@ -11,6 +11,7 @@ const ResultadosPage: React.FC = () => {
   const cvAnalysis = personal?.cvAnalysis;
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
+  const game = useAppSelector((state: RootState) => state.game); // <-- Añadir esta línea
 
   // Estado para el informe IA
   const [iaReport, setIaReport] = useState<string>('');
@@ -27,22 +28,22 @@ const ResultadosPage: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify({
-            userId: personal?.userId || 'usuario-demo',
+            userId: (personal as any)?.userId || 'usuario-demo',
             fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim(),
             softSkills: (report?.softSkills ?? []).map(skill => ({
               skill: skill.skill,
               level: skill.level,
-              confidence: skill.confidence ?? skill.score ?? 0,
-              feedback: skill.feedback || undefined
+              confidence: (skill as any).confidence ?? (skill as any).score ?? 0,
+              feedback: (skill as any).feedback || undefined
             })),
             cvAnalysis: cvAnalysis ? {
-              score: cvAnalysis.score ?? 0,
-              strengths: cvAnalysis.strengths ?? [],
-              weaknesses: cvAnalysis.weaknesses ?? [],
-              feedback: cvAnalysis.feedback || undefined
+              score: (cvAnalysis as any).score ?? 0,
+              strengths: (cvAnalysis as any).strengths ?? [],
+              weaknesses: (cvAnalysis as any).weaknesses ?? [],
+              feedback: (cvAnalysis as any).feedback || undefined
             } : undefined,
             jobPreferences: report?.jobPreferences || {},
-            completedGames: Array.isArray(report?.completedGames) ? report.completedGames : [],
+            completedGames: Array.isArray(game?.completedGames) ? game.completedGames.map(Number) : [], // Usar el estado global
             logs: []
           }),
         });
@@ -62,7 +63,7 @@ const ResultadosPage: React.FC = () => {
     if (report?.jobPreferences && report?.softSkills && cvAnalysis) {
       fetchIaReport();
     }
-  }, [report?.jobPreferences, report?.softSkills, cvAnalysis]);
+  }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames]);
 
   // Estado para feedback
   const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
