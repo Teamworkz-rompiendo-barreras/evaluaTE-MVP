@@ -11,5 +11,9 @@
     "forceConsistentCasingInFileNames": true,            /* Ensure correct casing in imports. */
     "skipLibCheck": true                                 /* Skip type checking all .d.ts files. */
   },
-  "include": ["index.ts", "src/**/*.ts"]                               /* Include the main entry point */
+  "include": [
+    "index.ts",
+    "src/**/*.ts",
+    "./*.d.ts"
+  ]                               /* Include the main entry point */
 }

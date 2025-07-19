@@ -48,7 +48,8 @@ export const analyzeCV = [
       // Lógica simple de análisis (puedes mejorarla con IA/NLP)
       const structure = text.includes('Experiencia') && text.includes('Educación') ? 'bueno' : 'regular';
       const coherence = text.includes('Responsable') && text.includes('Logros') ? 'bueno' : 'regular';
-      const experience = text.match(/\d{4}/g)?.length > 2 ? 'bueno' : 'regular';
+      const years = text.match(/\d{4}/g);
+      const experience = years && years.length > 2 ? 'bueno' : 'regular';
       const skills = Array.from(new Set((text.match(/JavaScript|React|TypeScript|HTML|CSS|Python|SQL/gi) || [])));
       const education = (text.match(/(Grado|Licenciatura|Máster|Ingeniería|Doctorado)[^\n]*/gi) || []);
       const alerts = [];
