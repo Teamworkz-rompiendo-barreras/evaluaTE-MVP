@@ -69,7 +69,7 @@ const ResultadosPage: React.FC = () => {
     if (report?.jobPreferences && report?.softSkills && cvAnalysis) {
       fetchIaReport();
     }
-  }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames]);
+  }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName]);
 
   // Estado para feedback
   const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
