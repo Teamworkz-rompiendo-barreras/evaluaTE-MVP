@@ -38,9 +38,9 @@ export default function UploadCVPage() {
     
     // Simular análisis del CV (temporal para depuración)
     const mockCvAnalysis = {
-      structure: 'bueno' as const,
-      coherence: 'bueno' as const,
-      experience: 'regular' as const,
+      structure: 'bueno',
+      coherence: 'bueno',
+      experience: 'regular',
       skills: ['JavaScript', 'React', 'TypeScript', 'HTML', 'CSS'],
       education: ['Grado en Informática'],
       alerts: ['Considerar agregar más proyectos personales']

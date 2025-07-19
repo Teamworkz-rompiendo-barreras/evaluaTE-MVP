@@ -5,6 +5,7 @@ import type { RootState } from '../app/store';
 import { ResponsiveRadar } from '@nivo/radar';
 import logo from '../assets/Logo_teamworkz.png';
 import { buildApiUrl, API_CONFIG } from '../config/api';
+import { games } from '../data/games'; // Importar el array global de juegos
 
 const ResultadosPage: React.FC = () => {
   const personal = useAppSelector((state: RootState) => state.personal);
@@ -43,7 +44,12 @@ const ResultadosPage: React.FC = () => {
               feedback: (cvAnalysis as any).feedback || undefined
             } : undefined,
             jobPreferences: report?.jobPreferences || {},
-            completedGames: Array.isArray(game?.completedGames) ? game.completedGames.map(Number) : [], // Usar el estado global
+            completedGames: Array.isArray(game?.completedGames)
+              ? game.completedGames.map(id => {
+                  const idx = games.findIndex(g => g.id === id);
+                  return idx >= 0 ? idx + 1 : null;
+                }).filter(n => typeof n === 'number' && !isNaN(n))
+              : [],
             logs: []
           }),
         });
