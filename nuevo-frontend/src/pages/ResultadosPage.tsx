@@ -6,6 +6,25 @@ import { ResponsiveRadar } from '@nivo/radar';
 import logo from '../assets/Logo_teamworkz.png';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 import { games } from '../data/games'; // Importar el array global de juegos
+import ReactMarkdown from 'react-markdown';
+import { useMemo } from 'react';
+
+// Función para extraer el bloque JSON radarData del Markdown
+function extractRadarData(markdown: string): any[] {
+  const regex = /```json\s*([\s\S]*?)\s*```/g;
+  const matches = [...markdown.matchAll(regex)];
+  for (const match of matches) {
+    try {
+      const json = JSON.parse(match[1]);
+      if (json && Array.isArray(json.radarData)) {
+        return json.radarData;
+      }
+    } catch (e) {
+      // Ignorar errores de parseo
+    }
+  }
+  return [];
+}
 
 const ResultadosPage: React.FC = () => {
   const personal = useAppSelector((state: RootState) => state.personal);
@@ -111,12 +130,18 @@ const ResultadosPage: React.FC = () => {
   );
 
   // 2. Mapa de habilidades (Radar + resumen)
-  const radarData = (report?.softSkills ?? []).map(skill => ({
-    softskill: skill.skill,
-    nivel: skill.level,
-    confianza: skill.score,
-    score: skill.score,
-  }));
+  // Usar useMemo para evitar recalcular en cada render
+  const radarDataFromIa = useMemo(() => iaReport ? extractRadarData(iaReport) : [], [iaReport]);
+
+  const radarData = radarDataFromIa.length > 0
+    ? radarDataFromIa.map(item => ({
+        softskill: item.skill,
+        score: item.score,
+      }))
+    : (report?.softSkills ?? []).map(skill => ({
+        softskill: skill.skill,
+        score: skill.score,
+      }));
   const radar = (
     <div className="bg-white rounded-lg shadow-md p-8 mb-8">
       <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>
@@ -264,7 +289,7 @@ const ResultadosPage: React.FC = () => {
         <h2 className="text-2xl font-bold mb-4">Informe personalizado generado por IA</h2>
         {loadingIa && <p>Generando informe con IA...</p>}
         {errorIa && <p className="text-red-600">{errorIa}</p>}
-        {iaReport && <pre className="whitespace-pre-wrap text-gray-800">{iaReport}</pre>}
+        {iaReport && <div className="prose max-w-none"><ReactMarkdown>{iaReport}</ReactMarkdown></div>}
         {/* Formulario de feedback */}
         {iaReport && !feedbackSent && (
           <form className="mt-6" onSubmit={handleFeedbackSubmit}>
