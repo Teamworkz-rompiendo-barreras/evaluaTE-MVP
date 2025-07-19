@@ -18,6 +18,7 @@ const cors_1 = __importDefault(require("cors"));
 const path_1 = __importDefault(require("path"));
 const fs_1 = __importDefault(require("fs"));
 const puppeteer_1 = __importDefault(require("puppeteer"));
+const pdfRoute = require('./src/routes/pdfRoute').default;
 const app = (0, express_1.default)();
 
 // Configuración CORS para permitir múltiples orígenes
@@ -38,6 +39,7 @@ app.use((0, cors_1.default)({
 app.use(express_1.default.json());
 // Sirve los archivos estáticos de templates (si quieres exponer report.html o assets)
 app.use(express_1.default.static(path_1.default.join(__dirname, '../templates')));
+app.use('/api/pdf', pdfRoute);
 app.post('/api/generate-report', (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     const { gameData, cvAnalysis } = req.body;
     const templatePath = path_1.default.join(__dirname, '../templates/report.html');
