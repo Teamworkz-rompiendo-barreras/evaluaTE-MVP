@@ -1,8 +1,11 @@
 // backend/src/controllers/pdfController.ts
-import express, { Request, Response } from 'express';
+import express from 'express';
 import { createPdf } from '../services/pdfService'; // Asegúrate de que la ruta sea correcta
 import pdfParse from 'pdf-parse';
 import multer from 'multer';
+import { Request, Response } from 'express';
+
+// Eliminar la declaración inline y crear un archivo pdf-parse.d.ts en la raíz del backend.
 
 // Middleware de multer para recibir archivos
 const upload = multer({ storage: multer.memoryStorage() });
@@ -33,7 +36,7 @@ export const generatePDF = async (req: Request, res: Response) => {
 
 export const analyzeCV = [
   upload.single('cv'),
-  async (req: Request, res: Response) => {
+  async (req: Request & { file?: Express.Multer.File }, res: Response) => {
     try {
       if (!req.file) {
         return res.status(400).json({ error: 'No se envió ningún archivo PDF.' });
