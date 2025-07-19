@@ -4,7 +4,7 @@ import { games } from './games';
 export const verifyAndFixGames = () => {
   const issues: string[] = [];
   
-  games.forEach((game, gameIndex) => {
+  games.forEach((game, _gameIndex) => {
     // console.log(`Verificando minijuego ${gameIndex + 1}: ${game.title}`);
     
     // Verificar que tenga escenas

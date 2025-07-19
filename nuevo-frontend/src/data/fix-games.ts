@@ -1,27 +1,40 @@
 // Script para corregir el problema del bucle infinito en minijuegos
 // Este archivo contiene las correcciones necesarias para todos los minijuegos
 
-export const fixGameScenes = (games: unknown[]): unknown[] => {
-  return games.map((game: Record<string, unknown>) => {
+export interface Scene {
+  id: string;
+  title: string;
+  description: string;
+  type: string;
+  options: Array<Record<string, unknown>>;
+  nextSceneId?: string;
+}
+
+export interface Game {
+  scenes: Scene[];
+  [key: string]: unknown;
+}
+
+export const fixGameScenes = (games: Game[]): Game[] => {
+  return games.map((game: Game) => {
     // Buscar la escena feedback-final
-    const feedbackFinalIndex = (game.scenes as any[]).findIndex((scene: any) => scene.id === 'feedback-final');
+    const feedbackFinalIndex = game.scenes.findIndex((scene: Scene) => scene.id === 'feedback-final');
     
     if (feedbackFinalIndex !== -1) {
       // Agregar nextSceneId a feedback-final
-      (game.scenes as any[])[feedbackFinalIndex].nextSceneId = 'game-complete';
+      game.scenes[feedbackFinalIndex].nextSceneId = 'game-complete';
       
       // Agregar escena game-complete al final
-      (game.scenes as any[]).push({
+      game.scenes.push({
         id: 'game-complete',
         title: 'Minijuego Completado',
-        description: `Has completado exitosamente el minijuego de ${game.softSkill}. ¡Bien hecho!`,
+        description: 'Has completado exitosamente el minijuego.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
         ]
       });
     }
-    
     return game;
   });
 }; 
