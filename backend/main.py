@@ -238,7 +238,7 @@ softSkills = {json.dumps(soft_skills, ensure_ascii=False, indent=2)}
 
 jobPreferences = {json.dumps(job_preferences, ensure_ascii=False, indent=2)}
 
-cvText = """{pdf_text[:2000]}"""
+cvText = f"{pdf_text[:2000]}"
 
 # === SALIDA REQUERIDA (FORMATO MARKDOWN) ===================================
 Devuelve **SOLO** Markdown con la siguiente estructura de nivel 1 (###):
