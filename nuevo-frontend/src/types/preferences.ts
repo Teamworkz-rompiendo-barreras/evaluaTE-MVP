@@ -5,40 +5,14 @@
  * Análisis del CV cargado
  */
 export interface CvAnalysis {
-  /**
-   * Estructura del CV
-   * Ejemplo: "bueno", "regular", "mal"
-   */
-  structure: 'bueno' | 'regular' | 'mal';
-
-  /**
-   * Coherencia del CV
-   * Ejemplo: "bueno", "regular", "mal"
-   */
-  coherence: 'bueno' | 'regular' | 'mal';
-
-  /**
-   * Experiencia laboral en el CV
-   * Ejemplo: "bueno", "regular", "mal"
-   */
-  experience: 'bueno' | 'regular' | 'mal';
-
-  /**
-   * Habilidades duras detectadas en el CV
-   * Ejemplo: ["JavaScript", "Python", "SQL"]
-   */
-  skills: string[];
-
-  /**
-   * Formación detectada en el CV
-   * Ejemplo: ["Licenciatura en Informática", "Master en Gestión de Proyectos"]
-   */
+  strengths: string[];
+  weaknesses: string[];
+  feedback?: string;
+  structure?: string;
+  coherence?: string;
+  experience?: string;
+  skills?: string[];
   education?: string[];
-
-  /**
-   * Alertas o áreas de mejora detectadas en el CV
-   * Ejemplo: ["Falta de experiencia en proyectos", "Habilidades técnicas insuficientes"]
-   */
   alerts?: string[];
 }
 

@@ -56,6 +56,9 @@ const ResultadosPage: React.FC = () => {
               score: skill.score ?? 0,
             })),
             cvAnalysis: cvAnalysis ? {
+              strengths: cvAnalysis.strengths ?? [],
+              weaknesses: cvAnalysis.weaknesses ?? [],
+              feedback: cvAnalysis.feedback ?? '',
               structure: cvAnalysis.structure ?? 'regular',
               coherence: cvAnalysis.coherence ?? 'regular',
               experience: cvAnalysis.experience ?? 'regular',

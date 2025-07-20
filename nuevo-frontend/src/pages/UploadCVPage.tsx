@@ -39,7 +39,12 @@ export default function UploadCVPage() {
 
     // Enviar el archivo al backend para análisis real
     const formData = new FormData();
-    formData.append('cv', file);
+    formData.append('file', file); // Cambiado de 'cv' a 'file'
+    formData.append('userId', 'user-ester-2025');
+    formData.append('fullName', 'Ester Pérez Ribada');
+    formData.append('softSkills', JSON.stringify([])); // Puedes rellenar con los datos reales si los tienes
+    formData.append('jobPreferences', JSON.stringify({})); // Puedes rellenar con los datos reales si los tienes
+    formData.append('completedGames', JSON.stringify([])); // Puedes rellenar con los datos reales si los tienes
     let cvAnalysis = null;
     try {
       const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_ANALYZE), {
@@ -50,8 +55,11 @@ export default function UploadCVPage() {
         cvAnalysis = await res.json();
         dispatch(saveCvAnalysis(cvAnalysis));
       } else {
-        // Si hay error, guardar un análisis vacío
+        // Si hay error, guardar un análisis vacío cualitativo
         dispatch(saveCvAnalysis({
+          strengths: [],
+          weaknesses: [],
+          feedback: '',
           structure: 'regular',
           coherence: 'regular',
           experience: 'regular',
@@ -62,6 +70,9 @@ export default function UploadCVPage() {
       }
     } catch (err) {
       dispatch(saveCvAnalysis({
+        strengths: [],
+        weaknesses: [],
+        feedback: '',
         structure: 'regular',
         coherence: 'regular',
         experience: 'regular',
