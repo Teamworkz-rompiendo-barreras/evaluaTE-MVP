@@ -6,6 +6,7 @@ import { GameLog, SoftSkill } from '../../types/game';
 import { games, getGameById } from '../../data/games';
 import { RootState } from '../../app/store';
 import { updateGameProgress, addGameLog, completeGame, resetGameLogs } from './gameSlice';
+import { saveSoftSkills } from '../personal/personalSlice';
 
 export const useGameController = () => {
   const dispatch = useDispatch();
@@ -50,6 +51,21 @@ export const useGameController = () => {
       return sum;
     }, 0);
     const averageScore = gameLogs.length > 0 ? totalScore / gameLogs.length : 0;
+    // Calcular confianza como porcentaje (0-100)
+    const confidence = Math.round(averageScore); // Si averageScore ya es 0-100
+    // Helper para tipado estricto
+    function getLevel(score: number): 'bajo' | 'medio' | 'alto' {
+      if (score < 50) return 'bajo';
+      if (score < 75) return 'medio';
+      return 'alto';
+    }
+    const score = Math.round(averageScore); // 0-100
+    const softSkillResult = {
+      skill: currentGame.softSkill,
+      score,
+      level: getLevel(averageScore),
+    };
+    dispatch(saveSoftSkills([softSkillResult]));
     // Crear la habilidad blanda evaluada
     const softSkill: SoftSkill = {
       id: currentGame.id,
@@ -60,7 +76,7 @@ export const useGameController = () => {
       gameId: currentGame.id,
       level: averageScore < 50 ? 'bajo' : averageScore < 75 ? 'medio' : 'alto',
       score: averageScore,
-      confidence: 0.8,
+      confidence: confidence / 100, // Si otros lugares esperan 0-1
       logs: gameLogs
     };
     dispatch(completeGame({ 
