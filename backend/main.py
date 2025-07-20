@@ -21,10 +21,15 @@ class SoftSkillResult(BaseModel):
     feedback: Optional[str] = None
 
 class CvAnalysis(BaseModel):
-    score: int
     strengths: List[str]
     weaknesses: List[str]
     feedback: Optional[str] = None
+    structure: Optional[str] = None
+    coherence: Optional[str] = None
+    experience: Optional[str] = None
+    skills: Optional[List[str]] = []
+    education: Optional[List[str]] = []
+    alerts: Optional[List[str]] = []
 
 class JobPreference(BaseModel):
     areas: List[str]
@@ -128,9 +133,9 @@ async def generate_report(request: EmployabilityReportRequest):
         total_score = (score_high + score_medium + score_low) // max(1, len(request.softSkills))
 
         # Ajuste según CV
-        if request.cvAnalysis:
-            if request.cvAnalysis.score < 60:
-                total_score = max(20, total_score - 10)
+        # if request.cvAnalysis:
+        #     if request.cvAnalysis.score < 60:
+        #         total_score = max(20, total_score - 10)
 
         # Nivel de empleabilidad
         level = (
