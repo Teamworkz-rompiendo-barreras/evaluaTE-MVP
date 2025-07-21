@@ -2,14 +2,18 @@
 // src/pages/ResultadosPage.test.tsx
 
 import React from 'react';
-import { render } from '@testing-library/react';
+import { render, screen, waitFor } from '@testing-library/react';
 import '@testing-library/jest-dom';
-import ResultadosPage from './ResultadosPage';
 import { MemoryRouter } from "react-router-dom";
 import { Provider } from "react-redux";
 import { configureStore } from '@reduxjs/toolkit';
+import { setupServer } from 'msw/node';
+import { http, HttpResponse } from 'msw';
 
-// Store de prueba con datos mockeados que coinciden con el componente real
+import ResultadosPage from './ResultadosPage';
+import { API_CONFIG, buildApiUrl } from '../config/api';
+
+// Datos mock para el store de Redux
 const mockPersonalState = {
   cvAnalysis: {
     structure: 'CV bien estructurado',
@@ -51,123 +55,93 @@ const mockPersonalState = {
   }
 };
 
-const testStore = configureStore({
+// Informe mock que la IA debería generar
+const mockIaReport = `
+## Análisis de tu CV
+Tu CV está bien estructurado.
+
+## Tus Puntos Fuertes
+- **Resolución de Problemas:** Demostrado en tu experiencia.
+
+## Áreas de Desarrollo y Sugerencias Prácticas
+- **Gestión Emocional:** Considera un curso de mindfulness.
+
+## Recomendaciones Laborales
+- Podrías encajar como **Project Manager Junior**.
+
+## Próximos Pasos para tu Carrera
+1.  Actualiza tu perfil de LinkedIn.
+`;
+
+// Configuración del servidor mock con msw
+const server = setupServer(
+  http.post(buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT), () => {
+    return HttpResponse.json({ informe: mockIaReport });
+  })
+);
+
+// Store de prueba
+const createTestStore = (initialState: any) => configureStore({
   reducer: {
-    personal: (state = mockPersonalState, action) => state,
+    personal: (state = initialState.personal, action) => state,
+    game: (state = initialState.game, action) => state,
     progress: (state = {}, action) => state,
     accessibility: (state = {}, action) => state,
   },
   middleware: (getDefaultMiddleware) =>
-    getDefaultMiddleware({
-      serializableCheck: false,
-    }),
+    getDefaultMiddleware({ serializableCheck: false }),
 });
 
 describe('ResultadosPage', () => {
-  it('muestra el título del informe correctamente', () => {
-    const { container } = render(
-      <Provider store={testStore}>
+  beforeAll(() => server.listen());
+  afterEach(() => server.resetHandlers());
+  afterAll(() => server.close());
+
+  it('muestra el informe generado por la IA correctamente', async () => {
+    const store = createTestStore({
+      personal: mockPersonalState,
+      game: { completedGames: ['game1'] }
+    });
+
+    render(
+      <Provider store={store}>
         <MemoryRouter>
           <ResultadosPage />
         </MemoryRouter>
       </Provider>
     );
 
-    expect(container.textContent).toContain('Informe de Empleabilidad');
+    // Esperar a que el contenido de la IA se renderice
+    await waitFor(() => {
+      // Comprobar que los títulos del informe generado por la IA están presentes
+      expect(screen.getByText('Análisis de tu CV')).toBeInTheDocument();
+      expect(screen.getByText('Tus Puntos Fuertes')).toBeInTheDocument();
+      expect(screen.getByText('Áreas de Desarrollo y Sugerencias Prácticas')).toBeInTheDocument();
+      expect(screen.getByText('Recomendaciones Laborales')).toBeInTheDocument();
+      expect(screen.getByText('Próximos Pasos para tu Carrera')).toBeInTheDocument();
+    });
+
+    // Comprobar contenido específico del informe
+    expect(screen.getByText(/Tu CV está bien estructurado/)).toBeInTheDocument();
+    expect(screen.getByText(/Project Manager Junior/)).toBeInTheDocument();
   });
 
-  it('muestra el análisis del CV correctamente', () => {
-    const { container } = render(
-      <Provider store={testStore}>
+  it('muestra el radar de habilidades y la portada', () => {
+    const store = createTestStore({
+      personal: mockPersonalState,
+      game: { completedGames: [] } // No llamar a la IA en este test
+    });
+
+    render(
+      <Provider store={store}>
         <MemoryRouter>
           <ResultadosPage />
         </MemoryRouter>
       </Provider>
     );
 
-    expect(container.textContent).toContain('Análisis de tu CV');
-    expect(container.textContent).toContain('Estructura: CV bien estructurado');
-    expect(container.textContent).toContain('Habilidades Detectadas: JavaScript, React');
-  });
-
-  it('muestra el feedback general del CV', () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <ResultadosPage />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    expect(container.textContent).toContain('Feedback General');
-    expect(container.textContent).toContain('CV bien estructurado y con información relevante.');
-  });
-
-  it('muestra las habilidades blandas evaluadas correctamente', () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <ResultadosPage />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    expect(container.textContent).toContain('Mapa de habilidades');
-    expect(container.textContent).toContain('Resolución de Problemas');
-    expect(container.textContent).toContain('Trabajo en equipo');
-  });
-
-  it('muestra las fortalezas más destacadas correctamente', () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <ResultadosPage />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    expect(container.textContent).toContain('Fortalezas más destacadas');
-    expect(container.textContent).toContain('Resolución de Problemas');
-    expect(container.textContent).toContain('Trabajo en equipo');
-  });
-
-  it('muestra las áreas a mejorar correctamente', () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <ResultadosPage />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    expect(container.textContent).toContain('Áreas de mejora y sugerencias');
-    expect(container.textContent).toContain('Gestión emocional');
-  });
-
-  it('muestra las recomendaciones de mejora correctamente', () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <ResultadosPage />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    expect(container.textContent).toContain('Recomendaciones laborales');
-    expect(container.textContent).toContain('Gestión emocional');
-  });
-
-  it('muestra el resumen de habilidades correctamente', () => {
-    const { container } = render(
-      <Provider store={testStore}>
-        <MemoryRouter>
-          <ResultadosPage />
-        </MemoryRouter>
-      </Provider>
-    );
-
-    expect(container.textContent).toContain('Resumen de niveles:');
-    expect(container.textContent).toContain('Puntaje global de empleabilidad');
-    expect(container.textContent).toContain('78');
+    expect(screen.getByText('Informe de Empleabilidad')).toBeInTheDocument();
+    expect(screen.getByText('Mapa de habilidades')).toBeInTheDocument();
+    expect(screen.getByText('Resumen de niveles:')).toBeInTheDocument();
   });
 });
