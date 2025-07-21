@@ -39,11 +39,24 @@ export const analyzeCV = [
   async (req: Request & { file?: Express.Multer.File }, res: Response) => {
     try {
       if (!req.file) {
+        console.error('No se envió ningún archivo PDF.');
         return res.status(400).json({ error: 'No se envió ningún archivo PDF.' });
       }
+      console.log(`Archivo recibido: ${req.file.originalname}, tamaño: ${req.file.size} bytes`);
       // Extraer texto del PDF
-      const data = await pdfParse(req.file.buffer);
+      let data;
+      try {
+        data = await pdfParse(req.file.buffer);
+      } catch (err) {
+        console.error('Error al leer el PDF:', err);
+        return res.status(400).json({ error: 'No se pudo leer el archivo PDF. Asegúrate de que el archivo es un PDF válido.' });
+      }
       const text = data.text || '';
+      console.log('Texto extraído del PDF (primeros 500 caracteres):', text.slice(0, 500));
+      if (text.length < 100) {
+        console.error('El texto extraído del PDF es demasiado corto o vacío.');
+        return res.status(400).json({ error: 'El archivo PDF no contiene suficiente texto para analizar el CV. Por favor, revisa el archivo.' });
+      }
 
       // Lógica simple de análisis (puedes mejorarla con IA/NLP)
       const structure = text.includes('Experiencia') && text.includes('Educación') ? 'bueno' : 'regular';
@@ -64,6 +77,7 @@ export const analyzeCV = [
         education,
         alerts
       };
+      console.log('Resultado del análisis de CV:', JSON.stringify(cvAnalysis, null, 2));
       return res.json(cvAnalysis);
     } catch (error) {
       console.error('Error analizando el CV:', error);
