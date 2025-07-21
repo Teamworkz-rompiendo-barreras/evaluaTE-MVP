@@ -25,12 +25,19 @@ const mockPersonalState = {
     feedback: 'CV bien estructurado y con información relevante.'
   },
   report: {
+    userId: 'test-user-123',
+    firstName: 'Juan',
+    lastName: 'Candidato',
+    jobPreferences: {
+      areas: ['Tecnología', 'Consultoría']
+    },
     softSkills: [
       {
         skill: 'Resolución de Problemas',
         level: 'Alto',
         confidence: 0.9,
         feedback: 'Excelente capacidad de resolución',
+        score: 90,
         interactions: []
       },
       {
@@ -38,6 +45,7 @@ const mockPersonalState = {
         level: 'Alto',
         confidence: 0.85,
         feedback: 'Muy buen trabajo colaborativo',
+        score: 85,
         interactions: []
       },
       {
@@ -45,6 +53,7 @@ const mockPersonalState = {
         level: 'Medio',
         confidence: 0.5,
         feedback: 'Necesitas mejorar el control emocional',
+        score: 50,
         interactions: []
       }
     ],
