@@ -17,7 +17,8 @@ const mockPersonalState = {
     experience: 'Experiencia relevante',
     skills: ['JavaScript', 'React'],
     education: ['Universidad X'],
-    alerts: ['Falta de habilidades duras', 'Necesita más proyectos']
+    alerts: ['Falta de habilidades duras', 'Necesita más proyectos'],
+    feedback: 'CV bien estructurado y con información relevante.'
   },
   report: {
     softSkills: [
@@ -98,7 +99,8 @@ describe('ResultadosPage', () => {
       </Provider>
     );
 
-    expect(container.textContent).toContain('Feedback General: CV bien estructurado');
+    expect(container.textContent).toContain('Feedback General');
+    expect(container.textContent).toContain('CV bien estructurado y con información relevante.');
   });
 
   it('muestra las habilidades blandas evaluadas correctamente', () => {
