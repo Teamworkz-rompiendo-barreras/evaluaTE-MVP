@@ -86,7 +86,19 @@ describe('ResultadosPage', () => {
 
     expect(container.textContent).toContain('Análisis de tu CV');
     expect(container.textContent).toContain('Estructura: CV bien estructurado');
-    expect(container.textContent).toContain('Falta de habilidades duras');
+    expect(container.textContent).toContain('Habilidades Detectadas: JavaScript, React');
+  });
+
+  it('muestra el feedback general del CV', () => {
+    const { container } = render(
+      <Provider store={testStore}>
+        <MemoryRouter>
+          <ResultadosPage />
+        </MemoryRouter>
+      </Provider>
+    );
+
+    expect(container.textContent).toContain('Feedback General: CV bien estructurado');
   });
 
   it('muestra las habilidades blandas evaluadas correctamente', () => {
