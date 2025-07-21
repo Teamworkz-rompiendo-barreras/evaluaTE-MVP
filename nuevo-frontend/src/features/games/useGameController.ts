@@ -64,6 +64,7 @@ export const useGameController = () => {
       skill: currentGame.softSkill,
       score,
       level: getLevel(averageScore),
+      confidence: score,
     };
     dispatch(saveSoftSkills([softSkillResult]));
     // Crear la habilidad blanda evaluada

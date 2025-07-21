@@ -54,6 +54,7 @@ const ResultadosPage: React.FC = () => {
               skill: skill.skill,
               level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
               score: skill.score ?? 0,
+              confidence: skill.confidence ?? skill.score ?? 0,
             })),
             cvAnalysis: cvAnalysis ? {
               strengths: cvAnalysis.strengths ?? [],

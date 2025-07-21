@@ -71,9 +71,10 @@ export interface JobPreference {
 }
 
 export interface SoftSkillResult {
-  skill: string
-  score: number
-  level: 'bajo' | 'medio' | 'alto'
+  skill: string;
+  score: number;
+  level: 'bajo' | 'medio' | 'alto';
+  confidence: number;
 }
 /**
  * Configuración de accesibilidad según elecciones del usuario
