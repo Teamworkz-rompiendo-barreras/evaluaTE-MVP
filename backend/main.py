@@ -3,7 +3,7 @@
 from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse
-from pydantic import BaseModel
+from pydantic import BaseModel, Field
 import uvicorn
 from typing import List, Optional, Dict, Any
 from datetime import datetime
@@ -21,15 +21,15 @@ class SoftSkillResult(BaseModel):
     confidence: int
 
 class CvAnalysis(BaseModel):
-    strengths: List[str]
-    weaknesses: List[str]
-    feedback: Optional[str] = None
-    structure: Optional[str] = None
-    coherence: Optional[str] = None
-    experience: Optional[str] = None
-    skills: Optional[List[str]] = []
-    education: Optional[List[str]] = []
-    alerts: Optional[List[str]] = []
+    strengths: List[str] = Field(description="Puntos fuertes del CV")
+    weaknesses: List[str] = Field(description="Áreas de mejora del CV")
+    feedback: Optional[str] = Field(None, description="Feedback general sobre el CV")
+    structure: Optional[str] = Field(None, description="Análisis de la estructura del CV")
+    coherence: Optional[str] = Field(None, description="Análisis de la coherencia del CV")
+    experience: Optional[str] = Field(None, description="Análisis de la experiencia laboral")
+    skills: Optional[List[str]] = Field([], description="Habilidades técnicas detectadas")
+    education: Optional[List[str]] = Field([], description="Formación detectada")
+    alerts: Optional[List[str]] = Field([], description="Alertas o puntos críticos detectados")
 
 class JobPreference(BaseModel):
     areas: List[str]
@@ -191,7 +191,7 @@ async def generate_report(request: EmployabilityReportRequest):
     except Exception as e:
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
-@app.post("/api/pdf/analyze-cv")
+@app.post("/api/pdf/analyze-cv", response_model=CvAnalysis)
 async def analyze_cv(
     file: UploadFile = File(...),
     userId: str = Form(...),
@@ -229,54 +229,29 @@ Eres un/a ORIENTADOR/A LABORAL senior con:
 • Conocimiento actualizado del marco de competencias WEF 2025
 • Experiencia en redacción accesible (WCAG 2.2 y lectura fácil)
 
-Tu misión es elaborar un **Informe de Empleabilidad** inclusivo y profesional a partir de:
-1. Un array `softSkills` con las habilidades evaluadas en minijuegos
-2. Un objeto `jobPreferences` con las preferencias laborales del candidato
-3. El texto extraído del CV (PDF) del candidato (`cvText`)
+Tu misión es analizar el texto de un CV y devolver un análisis estructurado en formato JSON.
 
-NO uses fuentes externas ni inventes datos: limita tus conclusiones a la información entregada.
+# === ENTRADA ===============================================================
+Analiza el siguiente texto extraído de un CV:
+cvText = ```{pdf_text[:2000]}```
 
-# === ENTRADA ESPERADA =======================================================
-Recibirás tres variables ya parseadas:
+# === SALIDA REQUERIDA (FORMATO JSON) =======================================
+Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluyas explicaciones, comentarios ni la palabra 'json' al principio. El JSON debe contener estas claves:
 
-softSkills = {json.dumps(soft_skills, ensure_ascii=False, indent=2)}
-
-jobPreferences = {json.dumps(job_preferences, ensure_ascii=False, indent=2)}
-
-cvText = f"{pdf_text[:2000]}"
-
-# === SALIDA REQUERIDA (FORMATO MARKDOWN) ===================================
-Devuelve **SOLO** Markdown con la siguiente estructura de nivel 1 (###):
-
-### 1. Resumen Ejecutivo
-– 3-5 frases claras (<20 palabras cada una) resumiendo: fortalezas clave, áreas de mejora y encaje general con sus preferencias.
-
-### 2. Datos de Soft Skills
-Tablas accesibles (formato Markdown) con encabezados:
-| Habilidad | Nivel | Confianza (%) |
-Incluye inmediatamente después de la tabla un bloque de código JSON denominado
-```json
 {{
-  "radarData": [
-    {{ "skill": "<skill>", "score": <confidence> }},
-    …
-  ]
+  "strengths": ["...", "..."],
+  "weaknesses": ["...", "..."],
+  "feedback": "...",
+  "structure": "Análisis de la estructura del CV (ej: 'Clara y fácil de seguir' o 'Algo desordenada')",
+  "coherence": "Análisis de la coherencia (ej: 'La experiencia es coherente con los objetivos')",
+  "experience": "Resumen de la experiencia laboral detectada",
+  "skills": ["Lista de habilidades técnicas clave detectadas"],
+  "education": ["Lista de la formación principal detectada"],
+  "alerts": ["Alertas o puntos críticos, como falta de información de contacto o periodos sin actividad no explicados"]
 }}
-```
-
-### 3. Análisis de Fortalezas y Áreas de Mejora
-- Explica brevemente las principales fortalezas detectadas y las áreas de mejora, usando lenguaje positivo y accesible.
-
-### 4. Oportunidades Laborales
-- Sugiere tipos de puestos, sectores o entornos laborales alineados con el perfil y preferencias.
-
-### 5. Consejos para el CV y la Búsqueda de Empleo
-- Ofrece recomendaciones prácticas para mejorar el CV y la empleabilidad, adaptadas al perfil.
-
-No añadas explicaciones ni comentarios fuera de la estructura solicitada. Redacta siempre en el idioma del CV.
 """
 
-    # --- Llamada a OpenAI (GPT-3.5/4) ---
+    # --- Llamada a OpenAI (GPT-4) ---
     try:
         client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         response = client.chat.completions.create(
@@ -284,9 +259,9 @@ No añadas explicaciones ni comentarios fuera de la estructura solicitada. Redac
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1200,
             temperature=0.7,
+            response_format={"type": "json_object"},
         )
-        informe_markdown = response.choices[0].message.content
+        analysis_data = json.loads(response.choices[0].message.content)
+        return CvAnalysis(**analysis_data)
     except Exception as e:
-        return JSONResponse(status_code=500, content={"error": f"Error generando informe IA: {str(e)}"})
-
-    return {"informe": informe_markdown}
+        raise HTTPException(status_code=500, detail=f"Error generando informe IA: {str(e)}")
