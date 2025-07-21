@@ -278,8 +278,8 @@ No añadas explicaciones ni comentarios fuera de la estructura solicitada. Redac
 
     # --- Llamada a OpenAI (GPT-3.5/4) ---
     try:
-        openai.api_key = os.getenv("OPENAI_API_KEY")
-        response = openai.ChatCompletion.create(
+        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
+        response = client.chat.completions.create(
             model="gpt-4",
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1200,
