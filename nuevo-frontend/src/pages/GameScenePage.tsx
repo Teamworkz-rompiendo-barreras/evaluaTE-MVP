@@ -37,9 +37,7 @@ const GameScenePage: React.FC = () => {
   } = useGameController()
 
   useEffect(() => {
-    console.log('🎮 GameScenePage - useEffect startGame:', { id, currentGame: currentGame?.title });
     if (id && !currentGame) {
-      console.log('🎮 GameScenePage - Iniciando juego:', id);
       startGame(id)
     }
   }, [id, currentGame, startGame])

@@ -9,8 +9,15 @@ import { games } from '../data/games'; // Importar el array global de juegos
 import ReactMarkdown from 'react-markdown';
 import { useMemo } from 'react';
 
+// Tipo para los datos del radar
+interface RadarDataItem {
+  skill: string;
+  score: number;
+  [key: string]: any;
+}
+
 // Función para extraer el bloque JSON radarData del Markdown
-function extractRadarData(markdown: string): any[] {
+function extractRadarData(markdown: string): RadarDataItem[] {
   const regex = /```json\s*([\s\S]*?)\s*```/g;
   const matches = [...markdown.matchAll(regex)];
   for (const match of matches) {
@@ -93,7 +100,7 @@ const ResultadosPage: React.FC = () => {
     if (report?.jobPreferences && report?.softSkills && cvAnalysis) {
       fetchIaReport();
     }
-  }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName]);
+  }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
 
   // Estado para feedback
   const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
@@ -188,136 +195,8 @@ const ResultadosPage: React.FC = () => {
     </div>
   );
 
-  // 3. Fortalezas más destacadas
-  const fortalezas = (report?.softSkills ?? []).filter(s => s.score >= 80);
-  const fortalezasSection = (
-    <div className="bg-green-50 rounded-lg shadow-md p-8 mb-8">
-      <h2 className="text-2xl font-bold mb-4">Fortalezas más destacadas</h2>
-      {fortalezas.length > 0 ? (
-        <ul className="space-y-2">
-          {fortalezas.map((skill, idx) => (
-            <li key={idx}>
-              <strong>{skill.skill}:</strong> {skill.level} ({skill.score}% confianza)
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No se han identificado fortalezas destacadas aún.</p>
-      )}
-    </div>
-  );
-
-  // 4. Áreas de mejora + sugerencias prácticas
-  const areasMejora = (report?.softSkills ?? []).filter(s => s.score < 70);
-  const areasMejoraSection = (
-    <div className="bg-red-50 rounded-lg shadow-md p-8 mb-8">
-      <h2 className="text-2xl font-bold mb-4">Áreas de mejora y sugerencias</h2>
-      {areasMejora.length > 0 ? (
-        <ul className="space-y-2">
-          {areasMejora.map((skill, idx) => (
-            <li key={idx}>
-              <strong>{skill.skill}:</strong> {skill.level} ({skill.score}% confianza). <br />
-              <span className="text-sm">Sugerencia: Practica situaciones reales y pide feedback para mejorar esta habilidad.</span>
-            </li>
-          ))}
-        </ul>
-      ) : (
-        <p>No hay áreas de mejora destacadas según el análisis actual.</p>
-      )}
-    </div>
-  );
-
-  // 5. Recomendaciones laborales (puestos, sectores, entorno)
-  const recomendaciones = report?.recommendations ?? [];
-  const recomendacionesSection = (
-    <div className="bg-blue-50 rounded-lg shadow-md p-8 mb-8">
-      <h2 className="text-2xl font-bold mb-4">Recomendaciones laborales</h2>
-      {recomendaciones.length > 0 ? (
-        <ul className="space-y-2">
-          {recomendaciones.map((rec, idx) => (
-            <li key={idx}>{rec}</li>
-          ))}
-        </ul>
-      ) : (
-        <p>No hay recomendaciones laborales específicas aún.</p>
-      )}
-    </div>
-  );
-
-  // 6. Análisis del CV
-  const cvSection = (
-    <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-      <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Análisis de tu CV</h2>
-      {cvAnalysis ? (
-        <div className="space-y-6">
-          {/* Feedback General */}
-          {cvAnalysis.feedback && (
-            <div className="bg-gray-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-gray-700 mb-2">Feedback General</h3>
-              <p className="text-gray-600">{cvAnalysis.feedback}</p>
-            </div>
-          )}
-
-          {/* Fortalezas y Debilidades */}
-          <div className="grid md:grid-cols-2 gap-6">
-            {/* Fortalezas */}
-            <div className="bg-green-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-green-800 mb-2">✓ Fortalezas</h3>
-              {cvAnalysis.strengths && cvAnalysis.strengths.length > 0 ? (
-                <ul className="list-disc list-inside space-y-1 text-green-700">
-                  {cvAnalysis.strengths.map((item, i) => <li key={i}>{item}</li>)}
-                </ul>
-              ) : (
-                <p className="text-gray-500">No se detectaron fortalezas específicas.</p>
-              )}
-            </div>
-
-            {/* Debilidades */}
-            <div className="bg-red-50 rounded-lg p-4">
-              <h3 className="text-lg font-semibold text-red-800 mb-2">→ Áreas de Mejora</h3>
-              {cvAnalysis.weaknesses && cvAnalysis.weaknesses.length > 0 ? (
-                <ul className="list-disc list-inside space-y-1 text-red-700">
-                  {cvAnalysis.weaknesses.map((item, i) => <li key={i}>{item}</li>)}
-                </ul>
-              ) : (
-                <p className="text-gray-500">No se detectaron áreas de mejora específicas.</p>
-              )}
-            </div>
-          </div>
-
-          {/* Otros detalles */}
-          <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
-            <h3 className="font-semibold mb-2">Otros Detalles</h3>
-            <p><strong>Estructura:</strong> {cvAnalysis.structure || 'No analizada'}</p>
-            <p><strong>Coherencia:</strong> {cvAnalysis.coherence || 'No analizada'}</p>
-            <p><strong>Habilidades Detectadas:</strong> {(cvAnalysis.skills && cvAnalysis.skills.length > 0) ? cvAnalysis.skills.join(', ') : 'Ninguna'}</p>
-          </div>
-
-        </div>
-      ) : (
-        <p className="text-center text-gray-500">No se ha podido analizar el CV en este momento.</p>
-      )}
-    </div>
-  );
-
-  // 7. Próximos pasos sugeridos
-  const pasos = [
-    'Completa todos los minijuegos para mejorar tu perfil.',
-    'Actualiza tu CV con los nuevos logros y habilidades.',
-    'Solicita feedback a personas de confianza.',
-    'Explora formaciones y recursos recomendados.',
-    'Revisa tus preferencias laborales y adáptalas a tus intereses.'
-  ];
-  const pasosSection = (
-    <div className="bg-yellow-50 rounded-lg shadow-md p-8 mb-8">
-      <h2 className="text-2xl font-bold mb-4">Próximos pasos sugeridos</h2>
-      <ul className="list-disc ml-6">
-        {pasos.map((p, idx) => (
-          <li key={idx}>{p}</li>
-        ))}
-      </ul>
-    </div>
-  );
+  // Ya no se necesitan las secciones hardcodeadas
+  // El contenido ahora viene de la IA
 
   // Renderizado final
   return (
