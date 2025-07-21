@@ -41,8 +41,27 @@ router.post('/', async (req: Request, res: Response) => {
     return res.status(500).json({ error: 'El servidor no está configurado correctamente para generar informes de IA.' });
   }
 
+  // Log del payload recibido
+  console.log('Payload recibido en /api/informe-ia:', JSON.stringify(req.body, null, 2));
+
   try {
     const { preferences, minigames, cvAnalysis } = req.body;
+
+    // Validación del análisis de CV
+    const isCVAnalysisInvalid = !cvAnalysis || (
+      [cvAnalysis.structure, cvAnalysis.coherence, cvAnalysis.experience].every(
+        v => !v || v.trim().toLowerCase() === 'regular'
+      ) &&
+      (!cvAnalysis.skills || cvAnalysis.skills.length === 0) &&
+      (!cvAnalysis.strengths || cvAnalysis.strengths.length === 0) &&
+      (!cvAnalysis.weaknesses || cvAnalysis.weaknesses.length === 0) &&
+      (!cvAnalysis.feedback || cvAnalysis.feedback.trim() === '')
+    );
+
+    if (isCVAnalysisInvalid) {
+      console.error('Error: El análisis del CV es inválido o no se ha podido analizar.');
+      return res.status(400).json({ error: 'No se ha podido analizar el CV. Por favor, revisa el archivo enviado o inténtalo de nuevo.' });
+    }
 
     // Construir prompt profesional y detallado
     const prompt = `
@@ -112,12 +131,12 @@ Eres un experto en orientación laboral y análisis de talento, con un enfoque h
         },
       }
     );
-
     const informe = response.data.choices[0]?.message?.content || 'No se pudo generar el informe.';
     res.json({ informe });
   } catch (error: any) {
-    console.error('Error generando informe IA:', error?.response?.data || error.message || error);
-    res.status(500).json({ error: 'Error generando informe IA' });
+    // Log detallado del error de Azure/OpenAI o cualquier otro error
+    console.error('Error en /api/informe-ia:', error?.response?.data || error.message || error);
+    res.status(500).json({ error: 'Error generando informe IA: ' + (error?.response?.data?.error?.message || error.message || 'Error desconocido') });
   }
 });
 
