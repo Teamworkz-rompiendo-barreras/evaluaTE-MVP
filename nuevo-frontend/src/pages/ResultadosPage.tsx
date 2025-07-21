@@ -244,25 +244,58 @@ const ResultadosPage: React.FC = () => {
     </div>
   );
 
-  // 6. Análisis del CV (breve y amable)
+  // 6. Análisis del CV
   const cvSection = (
     <div className="bg-white rounded-lg shadow-md p-8 mb-8">
-      <h2 className="text-2xl font-bold mb-4">Análisis de tu CV</h2>
+      <h2 className="text-2xl font-bold mb-6 text-gray-800 text-center">Análisis de tu CV</h2>
       {cvAnalysis ? (
-        <div>
-          <p className="mb-2">¡Gracias por compartir tu CV! Hemos detectado los siguientes puntos:</p>
-          <ul className="list-disc ml-6 mb-2">
-            <li><strong>Estructura:</strong> {cvAnalysis.structure}</li>
-            <li><strong>Coherencia:</strong> {cvAnalysis.coherence}</li>
-            <li><strong>Experiencia:</strong> {cvAnalysis.experience}</li>
-            <li><strong>Habilidades técnicas:</strong> {(cvAnalysis.skills ?? []).join(', ')}</li>
-            {cvAnalysis.education && <li><strong>Formación:</strong> {cvAnalysis.education.join(', ')}</li>}
-            {cvAnalysis.alerts && <li><strong>Áreas de mejora:</strong> {cvAnalysis.alerts.join(', ')}</li>}
-          </ul>
-          <p className="text-green-700">Recuerda que tu CV es una herramienta viva: actualízalo con tus logros y aprendizajes.</p>
+        <div className="space-y-6">
+          {/* Feedback General */}
+          {cvAnalysis.feedback && (
+            <div className="bg-gray-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-gray-700 mb-2">Feedback General</h3>
+              <p className="text-gray-600">{cvAnalysis.feedback}</p>
+            </div>
+          )}
+
+          {/* Fortalezas y Debilidades */}
+          <div className="grid md:grid-cols-2 gap-6">
+            {/* Fortalezas */}
+            <div className="bg-green-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-green-800 mb-2">✓ Fortalezas</h3>
+              {cvAnalysis.strengths && cvAnalysis.strengths.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-green-700">
+                  {cvAnalysis.strengths.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No se detectaron fortalezas específicas.</p>
+              )}
+            </div>
+
+            {/* Debilidades */}
+            <div className="bg-red-50 rounded-lg p-4">
+              <h3 className="text-lg font-semibold text-red-800 mb-2">→ Áreas de Mejora</h3>
+              {cvAnalysis.weaknesses && cvAnalysis.weaknesses.length > 0 ? (
+                <ul className="list-disc list-inside space-y-1 text-red-700">
+                  {cvAnalysis.weaknesses.map((item, i) => <li key={i}>{item}</li>)}
+                </ul>
+              ) : (
+                <p className="text-gray-500">No se detectaron áreas de mejora específicas.</p>
+              )}
+            </div>
+          </div>
+
+          {/* Otros detalles */}
+          <div className="bg-blue-50 rounded-lg p-4 text-sm text-blue-800">
+            <h3 className="font-semibold mb-2">Otros Detalles</h3>
+            <p><strong>Estructura:</strong> {cvAnalysis.structure || 'No analizada'}</p>
+            <p><strong>Coherencia:</strong> {cvAnalysis.coherence || 'No analizada'}</p>
+            <p><strong>Habilidades Detectadas:</strong> {(cvAnalysis.skills && cvAnalysis.skills.length > 0) ? cvAnalysis.skills.join(', ') : 'Ninguna'}</p>
+          </div>
+
         </div>
       ) : (
-        <p>No se ha podido analizar el CV en este momento.</p>
+        <p className="text-center text-gray-500">No se ha podido analizar el CV en este momento.</p>
       )}
     </div>
   );
