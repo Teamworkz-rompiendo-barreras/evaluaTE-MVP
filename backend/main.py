@@ -16,9 +16,9 @@ import openai
 # Tipos compartidos – puedes moverlos a un paquete común si lo usas también en frontend
 class SoftSkillResult(BaseModel):
     skill: str
-    level: str  # 'Bajo', 'Medio', 'Alto'
-    confidence: float
-    feedback: Optional[str] = None
+    score: int
+    level: str  # 'bajo', 'medio', 'alto'
+    confidence: int
 
 class CvAnalysis(BaseModel):
     strengths: List[str]
