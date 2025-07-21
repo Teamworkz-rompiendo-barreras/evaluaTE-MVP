@@ -35,6 +35,12 @@ const AZURE_OPENAI_API_VERSION = process.env.AZURE_OPENAI_API_VERSION;
 
 // POST /api/informe-ia
 router.post('/', async (req: Request, res: Response) => {
+  // 1. Validación rigurosa de las variables de entorno
+  if (!AZURE_OPENAI_API_KEY || !AZURE_OPENAI_ENDPOINT || !AZURE_OPENAI_DEPLOYMENT || !AZURE_OPENAI_API_VERSION) {
+    console.error('Error: Faltan variables de entorno para el servicio de Azure OpenAI.');
+    return res.status(500).json({ error: 'El servidor no está configurado correctamente para generar informes de IA.' });
+  }
+
   try {
     const { preferences, minigames, cvAnalysis } = req.body;
 
@@ -85,9 +91,12 @@ Eres un experto en orientación laboral y análisis de talento, con un enfoque h
 - El informe debe ser 100% original y basado en los datos proporcionados. ¡No uses plantillas!
 `;
 
+    // 2. Construcción correcta de la URL usando la variable de entorno
+    const url = `${AZURE_OPENAI_ENDPOINT}openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=${AZURE_OPENAI_API_VERSION}`;
+    
     // Llamada a Azure OpenAI
     const response = await axios.post(
-      `${AZURE_OPENAI_ENDPOINT}openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=2024-11-20`,
+      url,
       {
         messages: [
           { role: 'system', content: 'Eres un orientador laboral experto en empleabilidad.' },
