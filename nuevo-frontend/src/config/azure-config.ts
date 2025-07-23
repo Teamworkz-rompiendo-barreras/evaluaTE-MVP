@@ -11,7 +11,7 @@ export const AZURE_CONFIG = {
   AZURE_BACKEND_URL: 'https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net',
   
   // URL local para desarrollo
-  LOCAL_BACKEND_URL: 'http://localhost:3001',
+  LOCAL_BACKEND_URL: 'http://localhost:8000',
   
   // Obtener la URL correcta del backend
   getBackendUrl: () => {
