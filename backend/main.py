@@ -12,6 +12,14 @@ import json
 from PyPDF2 import PdfReader
 import os
 import openai
+from openai import AzureOpenAI
+from dotenv import load_dotenv
+load_dotenv()
+API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
+ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
+DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
+API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+client = AzureOpenAI(api_key=API_KEY, api_version=API_VERSION, azure_endpoint=ENDPOINT)
 
 # Tipos compartidos – puedes moverlos a un paquete común si lo usas también en frontend
 class SoftSkillResult(BaseModel):
@@ -255,9 +263,8 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
 
     # --- Llamada a OpenAI (GPT-4) ---
     try:
-        client = openai.OpenAI(api_key=os.getenv("OPENAI_API_KEY"))
         response = client.chat.completions.create(
-            model="gpt-4",
+            model=DEPLOYMENT,
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1200,
             temperature=0.7,
