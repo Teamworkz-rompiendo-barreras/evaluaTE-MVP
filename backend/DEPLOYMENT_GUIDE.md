@@ -31,7 +31,7 @@ AZURE_OPENAI_API_KEY=tu_api_key_aqui
 AZURE_OPENAI_ENDPOINT=https://teamworkz-openai.openai.azure.com/
 AZURE_OPENAI_DEPLOYMENT=tu_deployment_name
 AZURE_OPENAI_API_VERSION=2024-02-15-preview
-PORT=8080
+PORT=8000
 ```
 
 ### 2. Verificar Dependencias Nativas
@@ -97,7 +97,7 @@ Azure App Service necesita dependencias nativas. Soluciones:
 
 ### Error: "Puerto no disponible"
 
-1. Verificar que `PORT=8080` está configurado en Azure
+1. Verificar que `PORT=8000` está configurado en Azure
 2. Verificar que no hay conflictos con otros servicios
 3. Revisar los logs de Azure para más detalles
 

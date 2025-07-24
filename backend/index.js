@@ -59,5 +59,5 @@ app.post('/api/generate-report', (req, res) => __awaiter(void 0, void 0, void 0,
     })
         .send(pdfBuffer);
 }));
-const PORT = process.env.PORT || 8080;
-app.listen(PORT, () => console.log(`PDF report server running on port ${PORT}`));
+const PORT = process.env.PORT || 8000;
+app.listen(PORT, () => console.log(`

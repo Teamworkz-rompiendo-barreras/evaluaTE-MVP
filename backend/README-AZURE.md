@@ -27,7 +27,7 @@ En la configuración de tu App Service, ve a **Configuration > Application setti
 
 ```
 NODE_ENV=production
-PORT=8080
+PORT=8000
 PYTHON_VERSION=3.11
 ```
 

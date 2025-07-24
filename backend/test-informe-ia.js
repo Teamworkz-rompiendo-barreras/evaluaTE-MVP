@@ -1,5 +1,5 @@
 // Usa fetch nativo de Node.js 18+ (no necesitas instalar node-fetch)
-fetch('http://localhost:8080/api/informe-ia', {
+fetch('http://localhost:8000/api/informe-ia', {
   method: 'POST',
   headers: { 'Content-Type': 'application/json' },
   body: JSON.stringify({

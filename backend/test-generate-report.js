@@ -1,7 +1,7 @@
 const fs = require('fs');
 const axios = require('axios');
 
-axios.post('http://localhost:8080/api/generate-report', {
+axios.post('http://localhost:8000/api/generate-report', {
   gameData: [
     { subject: 'Minijuego 1', dA: 80 },
     { subject: 'Minijuego 2', dA: 90 }

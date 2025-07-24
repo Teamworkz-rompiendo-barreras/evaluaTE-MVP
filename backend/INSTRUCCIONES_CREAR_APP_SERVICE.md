@@ -50,7 +50,7 @@ En **"Configuración de la aplicación"**, agrega:
 | Nombre | Valor |
 |--------|-------|
 | `NODE_ENV` | `production` |
-| `PORT` | `8080` |
+| `PORT` | `8000` |
 | `PYTHON_VERSION` | `3.11` |
 
 ### 3. Guardar
