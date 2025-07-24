@@ -186,6 +186,8 @@ async def generate_report(request: EmployabilityReportRequest):
             },
             "summary": f"{request.fullName}, tienes un nivel de empleabilidad: {level}",
             "employabilityScore": total_score,
+            "level": level,
+            "createdAt": datetime.now().isoformat(),
         }
 
     except Exception as e:
