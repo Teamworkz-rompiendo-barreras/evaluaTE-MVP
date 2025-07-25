@@ -264,7 +264,7 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
     # --- Llamada a OpenAI (GPT-4) ---
     try:
         response = client.chat.completions.create(
-            model=DEPLOYMENT,
+            model=DEPLOYMENT,  # En Azure OpenAI, el deployment name se usa como model name
             messages=[{"role": "user", "content": prompt}],
             max_tokens=1200,
             temperature=0.7,
