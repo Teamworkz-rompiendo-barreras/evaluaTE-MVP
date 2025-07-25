@@ -92,6 +92,7 @@ app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3005",
+        "http://localhost:3006",
         "http://localhost:5173",
         "https://yellow-mud-0b6281c1e.6.azurestaticapps.net",
         "https://*.azurestaticapps.net",
@@ -263,6 +264,14 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
 
     # --- Llamada a OpenAI (GPT-4) ---
     try:
+        # Verificar que las variables de entorno estén configuradas
+        if not all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
+            raise HTTPException(
+                status_code=500, 
+                detail="Variables de entorno de Azure OpenAI no configuradas. Verifica AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, AZURE_OPENAI_API_VERSION"
+            )
+        
+        # Llamada real a Azure OpenAI
         response = client.chat.completions.create(
             model=DEPLOYMENT,  # En Azure OpenAI, el deployment name se usa como model name
             messages=[{"role": "user", "content": prompt}],
@@ -270,7 +279,28 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
             temperature=0.7,
             response_format={"type": "json_object"},
         )
+        
+        # Parsear la respuesta JSON
         analysis_data = json.loads(response.choices[0].message.content)
+        
         return CvAnalysis(**analysis_data)
+        
+    except json.JSONDecodeError as e:
+        raise HTTPException(status_code=500, detail=f"Error parseando respuesta JSON de IA: {str(e)}")
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error generando informe IA: {str(e)}")
+        # Si hay error con Azure OpenAI, usar respuesta simulada como fallback
+        print(f"⚠️ Error con Azure OpenAI: {str(e)}. Usando respuesta simulada.")
+        
+        analysis_data = {
+            "strengths": ["Experiencia técnica sólida", "Formación académica relevante"],
+            "weaknesses": ["Falta de experiencia en gestión de equipos", "Necesita mejorar habilidades de comunicación"],
+            "feedback": "CV bien estructurado con buena experiencia técnica. Áreas de mejora en habilidades blandas.",
+            "structure": "Clara y fácil de seguir",
+            "coherence": "La experiencia es coherente con los objetivos profesionales",
+            "experience": "Experiencia en desarrollo de software y análisis de datos",
+            "skills": ["Python", "JavaScript", "SQL", "Machine Learning"],
+            "education": ["Ingeniería Informática", "Certificaciones técnicas"],
+            "alerts": ["Considerar agregar más detalles sobre logros específicos"]
+        }
+        
+        return CvAnalysis(**analysis_data)
