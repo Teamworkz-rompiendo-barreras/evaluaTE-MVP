@@ -15,10 +15,27 @@ export default function UploadCVPage() {
   const cvFile = useSelector((state: unknown) => (state as { personal: { cvFile: { fileName: string; fileContent: string } | null } }).personal.cvFile)
 
   const [file, setFile] = useState<File | null>(null)
+  const [isLoading, setIsLoading] = useState(false)
+  const [error, setError] = useState<string | null>(null)
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    setError(null) // Limpiar errores anteriores
     if (e.target.files && e.target.files[0]) {
-      setFile(e.target.files[0])
+      const selectedFile = e.target.files[0]
+      
+      // Validar tipo de archivo
+      if (!selectedFile.type.includes('pdf')) {
+        setError('Por favor, selecciona un archivo PDF válido.')
+        return
+      }
+      
+      // Validar tamaño (máximo 10MB)
+      if (selectedFile.size > 10 * 1024 * 1024) {
+        setError('El archivo es demasiado grande. Máximo 10MB.')
+        return
+      }
+      
+      setFile(selectedFile)
     }
   }
 
@@ -26,53 +43,67 @@ export default function UploadCVPage() {
     e.preventDefault()
     if (!file) return
 
-    // Leer el archivo como base64 para la preview
-    const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
-      const reader = new FileReader()
-      reader.readAsDataURL(file)
-      reader.onload = () => resolve(reader.result as string)
-      reader.onerror = error => reject(error)
-    })
+    setIsLoading(true)
+    setError(null)
 
-    const fileContent = await toBase64(file)
-    dispatch(saveCV({ fileName: file.name, fileContent }))
-
-    // Enviar el archivo al backend para análisis real
-    const formData = new FormData();
-    formData.append('cv', file); // Cambiado de 'file' a 'cv' para coincidir con el backend
-    formData.append('userId', 'user-ester-2025');
-    formData.append('fullName', 'Ester Pérez Ribada');
-    formData.append('softSkills', JSON.stringify([])); // Puedes rellenar con los datos reales si los tienes
-    formData.append('jobPreferences', JSON.stringify({})); // Puedes rellenar con los datos reales si los tienes
-    formData.append('completedGames', JSON.stringify([])); // Puedes rellenar con los datos reales si los tienes
-    let cvAnalysis = null;
     try {
+      // Leer el archivo como base64 para la preview
+      const toBase64 = (file: File) => new Promise<string>((resolve, reject) => {
+        const reader = new FileReader()
+        reader.readAsDataURL(file)
+        reader.onload = () => resolve(reader.result as string)
+        reader.onerror = error => reject(error)
+      })
+
+      const fileContent = await toBase64(file)
+      dispatch(saveCV({ fileName: file.name, fileContent }))
+
+      // Enviar el archivo al backend para análisis real
+      const formData = new FormData();
+      formData.append('cv', file);
+      formData.append('userId', 'user-ester-2025');
+      formData.append('fullName', 'Ester Pérez Ribada');
+      formData.append('softSkills', JSON.stringify([]));
+      formData.append('jobPreferences', JSON.stringify({}));
+      formData.append('completedGames', JSON.stringify([]));
+      
+      let cvAnalysis = null;
       const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_ANALYZE), {
         method: 'POST',
         body: formData
       });
+      
       if (res.ok) {
         cvAnalysis = await res.json();
         dispatch(saveCvAnalysis(cvAnalysis));
       } else {
-        // Si hay error, guardar un análisis vacío cualitativo
-        dispatch(saveCvAnalysis({
+        const errorData = await res.json().catch(() => ({}));
+        console.error('Error del servidor:', errorData);
+        
+        // Crear un análisis básico con información del error
+        const fallbackAnalysis = {
           strengths: [],
           weaknesses: [],
-          feedback: '',
+          feedback: errorData.details || 'No se pudo analizar completamente el CV',
           structure: 'regular',
           coherence: 'regular',
           experience: 'regular',
           skills: [],
           education: [],
-          alerts: ['No se pudo analizar el CV']
-        }));
+          alerts: [errorData.error || 'Error en el análisis del CV']
+        };
+        
+        dispatch(saveCvAnalysis(fallbackAnalysis));
       }
     } catch (err) {
+      console.error('Error de conexión:', err);
+      setError('Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.');
+      
+      // Crear un análisis básico para errores de conexión
       dispatch(saveCvAnalysis({
         strengths: [],
         weaknesses: [],
-        feedback: '',
+        feedback: 'No se pudo conectar con el servidor para analizar el CV',
         structure: 'regular',
         coherence: 'regular',
         experience: 'regular',
@@ -80,6 +111,9 @@ export default function UploadCVPage() {
         education: [],
         alerts: ['Error de conexión al analizar el CV']
       }));
+      
+      setIsLoading(false)
+      return
     }
 
     // Generar reporte final después de subir el CV
@@ -126,19 +160,37 @@ export default function UploadCVPage() {
       <h1 className="text-2xl font-bold mb-4">Sube tu CV</h1>
       <p className="mb-6">Adjunta tu CV en formato PDF para generar tu informe final.</p>
 
+      {/* Mostrar mensaje de error */}
+      {error && (
+        <div className="mb-4 p-4 bg-red-100 border border-red-400 text-red-700 rounded">
+          {error}
+        </div>
+      )}
+
       <form onSubmit={handleSubmit} className="space-y-4">
         <input
           type="file"
-          accept=".pdf,.doc,.docx"
+          accept=".pdf"
           onChange={handleChange}
-          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100"
+          disabled={isLoading}
+          className="block w-full text-sm text-gray-500 file:mr-4 file:py-2 file:px-4 file:rounded file:border-0 file:text-sm file:font-semibold file:bg-violet-50 file:text-violet-700 hover:file:bg-violet-100 disabled:opacity-50"
         />
         <button
           type="submit"
-          disabled={!file}
-          className="bg-blue-600 text-white px-6 py-2 rounded disabled:opacity-50"
+          disabled={!file || isLoading}
+          className="bg-blue-600 text-white px-6 py-2 rounded disabled:opacity-50 flex items-center justify-center"
         >
-          Subir y continuar
+          {isLoading ? (
+            <>
+              <svg className="animate-spin -ml-1 mr-3 h-5 w-5 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+              </svg>
+              Analizando CV...
+            </>
+          ) : (
+            'Subir y continuar'
+          )}
         </button>
       </form>
     </div>
