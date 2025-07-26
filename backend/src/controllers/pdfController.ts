@@ -50,6 +50,10 @@ export const analyzeCV = [
       // Usar Python para analizar el CV
       const pythonResult = await analyzeCVWithPython(req.file.buffer);
       
+      // Log completo del resultado recibido de Python
+      console.log('=== RESULTADO COMPLETO DE PYTHON ===');
+      console.log(JSON.stringify(pythonResult, null, 2));
+      
       if (pythonResult.error) {
         console.error('Error en análisis Python:', pythonResult.error);
         return res.status(500).json({ error: pythonResult.error });
@@ -58,30 +62,27 @@ export const analyzeCV = [
       // Extraer el análisis del resultado de Python
       const analysis = pythonResult.analysis;
       
-      console.log('=== ANÁLISIS DE CV CON PYTHON ===');
-      console.log('Estructura:', analysis.structure);
-      console.log('Coherencia:', analysis.coherence);
-      console.log('Experiencia:', analysis.experience);
-      console.log('Habilidades técnicas encontradas:', analysis.technologies_count);
-      console.log('Experiencias encontradas:', analysis.experience_count);
-      console.log('Educación encontrada:', analysis.education_count);
-      console.log('Años totales de experiencia:', analysis.total_years_experience);
+      // Log del análisis extraído
+      console.log('=== ANÁLISIS EXTRAÍDO DEL RESULTADO ===');
+      console.log(JSON.stringify(analysis, null, 2));
       
       // Convertir el resultado de Python al formato esperado por el frontend
       const cvAnalysis = {
-        structure: analysis.structure,
-        coherence: analysis.coherence,
-        experience: analysis.experience,
-        skills: analysis.skills || [],
-        softSkills: analysis.softSkills || [],
-        education: analysis.education || [],
-        strengths: analysis.strengths || [],
-        weaknesses: analysis.weaknesses || [],
-        feedback: analysis.feedback || '',
-        alerts: analysis.alerts || []
+        structure: analysis?.structure,
+        coherence: analysis?.coherence,
+        experience: analysis?.experience,
+        skills: analysis?.skills || [],
+        softSkills: analysis?.softSkills || [],
+        education: analysis?.education || [],
+        strengths: analysis?.strengths || [],
+        weaknesses: analysis?.weaknesses || [],
+        feedback: analysis?.feedback || '',
+        alerts: analysis?.alerts || []
       };
       
-      console.log('Resultado final:', JSON.stringify(cvAnalysis, null, 2));
+      // Log del objeto final enviado al frontend
+      console.log('=== OBJETO cvAnalysis ENVIADO AL FRONTEND ===');
+      console.log(JSON.stringify(cvAnalysis, null, 2));
       
       return res.json(cvAnalysis);
       
