@@ -78,7 +78,7 @@ export default function UploadCVPage() {
         dispatch(saveCvAnalysis(cvAnalysis));
       } else {
         const errorData = await res.json().catch(() => ({}));
-        console.error('Error del servidor:', errorData);
+        // console.error('Error del servidor:', errorData);
         
         // Crear un análisis básico con información del error
         const fallbackAnalysis = {
@@ -96,7 +96,7 @@ export default function UploadCVPage() {
         dispatch(saveCvAnalysis(fallbackAnalysis));
       }
     } catch (err) {
-      console.error('Error de conexión:', err);
+      // console.error('Error de conexión:', err);
       setError('Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.');
       
       // Crear un análisis básico para errores de conexión

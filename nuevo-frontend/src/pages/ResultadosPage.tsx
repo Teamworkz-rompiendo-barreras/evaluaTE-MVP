@@ -8,6 +8,7 @@ import { buildApiUrl, API_CONFIG } from '../config/api';
 import ReactMarkdown from 'react-markdown';
 import { useMemo } from 'react';
 
+
 // Tipo para los datos del radar
 interface RadarDataItem {
   skill: string;
@@ -94,7 +95,7 @@ const ResultadosPage: React.FC = () => {
           setErrorIa('No se pudo generar el informe IA.');
         }
       } catch (err) {
-        console.error('Error en fetchIaReport:', err);
+        // console.error('Error en fetchIaReport:', err);
         if (err instanceof Error && err.name === 'TimeoutError') {
           setErrorIa('El informe está tardando más de lo esperado. Se generará un informe básico automáticamente.');
         } else if (err instanceof Error && err.message?.includes('Failed to fetch')) {
@@ -185,11 +186,11 @@ const ResultadosPage: React.FC = () => {
   const radarDataFromIa = useMemo(() => iaReport ? extractRadarData(iaReport) : [], [iaReport]);
 
   // Función para eliminar duplicados y asegurar claves únicas
-  const processRadarData = (data: any[]) => {
+  const processRadarData = (data: Array<{ skill?: string; softskill?: string; score: number }>) => {
     const seen = new Set();
     return data
       .map(item => ({
-        softskill: item.skill || item.softskill,
+        softskill: item.skill || item.softskill || '',
         score: Number(item.score) || 0,
       }))
       .filter(item => {
