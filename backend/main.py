@@ -9,17 +9,34 @@ from typing import List, Optional, Dict, Any
 from datetime import datetime
 import io
 import json
-from PyPDF2 import PdfReader
+from pypdf import PdfReader
 import os
 import openai
 from openai import AzureOpenAI
 from dotenv import load_dotenv
+import logging
+
+# Configurar logging
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
+
 load_dotenv()
+
+# Validación de variables de entorno críticas
 API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
-client = AzureOpenAI(api_key=API_KEY, api_version=API_VERSION, azure_endpoint=ENDPOINT)
+
+# Validar configuración crítica
+if not all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
+    logger.warning("⚠️ Variables de entorno de Azure OpenAI incompletas. Algunas funciones pueden no estar disponibles.")
+    logger.warning(f"API_KEY: {'✅' if API_KEY else '❌'}")
+    logger.warning(f"ENDPOINT: {'✅' if ENDPOINT else '❌'}")
+    logger.warning(f"DEPLOYMENT: {'✅' if DEPLOYMENT else '❌'}")
+    logger.warning(f"API_VERSION: {'✅' if API_VERSION else '❌'}")
+
+client = AzureOpenAI(api_key=API_KEY, api_version=API_VERSION, azure_endpoint=ENDPOINT) if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]) else None
 
 # Tipos compartidos – puedes moverlos a un paquete común si lo usas también en frontend
 class SoftSkillResult(BaseModel):
@@ -214,23 +231,38 @@ async def analyze_cv(
     """
     Analiza el CV PDF y genera un informe de empleabilidad usando IA.
     """
-    # Leer el PDF
+    # Validar archivo
+    if not file.filename.lower().endswith('.pdf'):
+        raise HTTPException(status_code=400, detail="Solo se permiten archivos PDF")
+    
+    # Validar tamaño del archivo (máximo 10MB)
+    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
     contents = await file.read()
+    if len(contents) > MAX_FILE_SIZE:
+        raise HTTPException(status_code=400, detail="El archivo es demasiado grande. Máximo 10MB")
+    
+    # Leer el PDF
     pdf_text = ""
     try:
         pdf_reader = PdfReader(io.BytesIO(contents))
         for page in pdf_reader.pages:
             pdf_text += page.extract_text() or ""
+        
+        if not pdf_text.strip():
+            raise HTTPException(status_code=400, detail="No se pudo extraer texto del PDF. Verifica que el archivo no esté dañado.")
+            
     except Exception as e:
-        return JSONResponse(status_code=400, content={"error": f"No se pudo leer el PDF: {str(e)}"})
+        logger.error(f"Error leyendo PDF: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"No se pudo leer el PDF: {str(e)}")
 
     # Parsear los datos recibidos
     try:
         soft_skills = json.loads(softSkills)
         job_preferences = json.loads(jobPreferences)
         completed_games = json.loads(completedGames)
-    except Exception as e:
-        return JSONResponse(status_code=400, content={"error": f"Error en los datos enviados: {str(e)}"})
+    except json.JSONDecodeError as e:
+        logger.error(f"Error parseando datos JSON: {str(e)}")
+        raise HTTPException(status_code=400, detail=f"Error en los datos enviados: {str(e)}")
 
     # --- PROMPT PARA LA IA ---
     prompt = f"""
@@ -265,11 +297,9 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
     # --- Llamada a OpenAI (GPT-4) ---
     try:
         # Verificar que las variables de entorno estén configuradas
-        if not all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
-            raise HTTPException(
-                status_code=500, 
-                detail="Variables de entorno de Azure OpenAI no configuradas. Verifica AZURE_OPENAI_API_KEY, AZURE_OPENAI_ENDPOINT, AZURE_OPENAI_DEPLOYMENT, AZURE_OPENAI_API_VERSION"
-            )
+        if not client:
+            logger.warning("Azure OpenAI no configurado. Usando respuesta simulada.")
+            raise Exception("Azure OpenAI no configurado")
         
         # Llamada real a Azure OpenAI
         response = client.chat.completions.create(
@@ -282,14 +312,16 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
         
         # Parsear la respuesta JSON
         analysis_data = json.loads(response.choices[0].message.content)
+        logger.info(f"Análisis de CV completado para usuario {userId}")
         
         return CvAnalysis(**analysis_data)
         
     except json.JSONDecodeError as e:
+        logger.error(f"Error parseando respuesta JSON de IA: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error parseando respuesta JSON de IA: {str(e)}")
     except Exception as e:
         # Si hay error con Azure OpenAI, usar respuesta simulada como fallback
-        print(f"⚠️ Error con Azure OpenAI: {str(e)}. Usando respuesta simulada.")
+        logger.warning(f"Error con Azure OpenAI: {str(e)}. Usando respuesta simulada.")
         
         analysis_data = {
             "strengths": ["Experiencia técnica sólida", "Formación académica relevante"],
@@ -304,3 +336,43 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
         }
         
         return CvAnalysis(**analysis_data)
+
+@app.post("/api/upload-cv")
+async def upload_cv(file: UploadFile = File(...)):
+    """
+    Sube un archivo CV y devuelve información básica del archivo.
+    """
+    try:
+        # Verificar que sea un PDF
+        if not file.filename.lower().endswith('.pdf'):
+            return JSONResponse(
+                status_code=400, 
+                content={"error": "Solo se permiten archivos PDF"}
+            )
+        
+        # Leer el contenido del archivo
+        contents = await file.read()
+        
+        # Verificar que sea un PDF válido
+        try:
+            pdf_reader = PdfReader(io.BytesIO(contents))
+            num_pages = len(pdf_reader.pages)
+        except Exception as e:
+            return JSONResponse(
+                status_code=400, 
+                content={"error": f"Archivo PDF inválido: {str(e)}"}
+            )
+        
+        # Devolver información del archivo
+        return {
+            "filename": file.filename,
+            "size": len(contents),
+            "pages": num_pages,
+            "message": "CV subido correctamente"
+        }
+        
+    except Exception as e:
+        return JSONResponse(
+            status_code=500, 
+            content={"error": f"Error al procesar el archivo: {str(e)}"}
+        )
