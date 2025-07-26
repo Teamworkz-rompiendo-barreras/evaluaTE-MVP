@@ -42,7 +42,21 @@ router.post('/', async (req: Request, res: Response) => {
     console.error('AZURE_OPENAI_ENDPOINT:', AZURE_OPENAI_ENDPOINT ? 'Presente' : 'Faltante');
     console.error('AZURE_OPENAI_DEPLOYMENT:', AZURE_OPENAI_DEPLOYMENT ? 'Presente' : 'Faltante');
     console.error('AZURE_OPENAI_API_VERSION:', AZURE_OPENAI_API_VERSION ? 'Presente' : 'Faltante');
-    return res.status(500).json({ error: 'El servidor no está configurado correctamente para generar informes de IA.' });
+    
+    // En lugar de devolver error, generar un informe básico
+    try {
+      const { preferences, minigames, cvAnalysis } = req.body;
+      
+      // Generar informe básico sin IA
+      const informeBasico = generateBasicReport(preferences, minigames, cvAnalysis);
+      
+      return res.json({ informe: informeBasico });
+    } catch (error) {
+      return res.status(500).json({ 
+        error: 'El servidor no está configurado correctamente para generar informes de IA.',
+        details: 'Variables de entorno de Azure OpenAI no configuradas'
+      });
+    }
   }
 
   // Log del payload recibido
@@ -56,6 +70,8 @@ router.post('/', async (req: Request, res: Response) => {
     console.log('preferences:', preferences);
     console.log('minigames:', minigames);
     console.log('cvAnalysis:', cvAnalysis);
+    console.log('cvAnalysis type:', typeof cvAnalysis);
+    console.log('cvAnalysis keys:', cvAnalysis ? Object.keys(cvAnalysis) : 'null/undefined');
 
     // Validación de datos de entrada
     if (!preferences || !minigames) {
@@ -85,90 +101,112 @@ router.post('/', async (req: Request, res: Response) => {
     console.log('cvAnalysis recibido:', JSON.stringify(cvAnalysis, null, 2));
     console.log('cvAnalysisToUse procesado:', JSON.stringify(cvAnalysisToUse, null, 2));
 
-    // Construir prompt profesional y detallado
+    // Construir prompt optimizado y conciso
     const prompt = `
-Eres un experto en orientación laboral y análisis de talento. Genera un informe de empleabilidad PERSONALIZADO y ACCIONABLE basado ÚNICAMENTE en los datos proporcionados.
+Eres un orientador laboral experto. Genera un informe de empleabilidad PERSONALIZADO basado en los datos proporcionados.
 
-**DATOS DEL CANDIDATO/A:**
-*   **Preferencias laborales:** ${JSON.stringify(preferences, null, 2)}
-*   **Resultados de minijuegos:** ${JSON.stringify(minigames, null, 2)}
-*   **Análisis del CV:** ${JSON.stringify(cvAnalysisToUse, null, 2)}
+**DATOS:**
+- Preferencias: ${JSON.stringify(preferences, null, 2)}
+- Minijuegos: ${JSON.stringify(minigames, null, 2)}
+- CV: ${JSON.stringify(cvAnalysisToUse, null, 2)}
 
-**REGLAS IMPORTANTES:**
-1. **NO uses plantillas genéricas** - cada recomendación debe basarse en los datos específicos
-2. **Si el CV no se pudo analizar**, enfócate en los minijuegos y preferencias
-3. **NO repitas información** - no digas "tienes X en toma de decisiones" si ya está en el radar
-4. **Sé específico** - evita consejos genéricos como "mejora tu CV"
+**ESTRUCTURA (Markdown, máximo 600 palabras):**
 
----
+## 1. Análisis del CV
+- Estructura: ${cvAnalysisToUse.structure}
+- Coherencia: ${cvAnalysisToUse.coherence}
+- Experiencia: ${cvAnalysisToUse.experience}
+- Habilidades: ${cvAnalysisToUse.skills.length > 0 ? cvAnalysisToUse.skills.join(', ') : 'No detectadas'}
+- Fortalezas: ${cvAnalysisToUse.strengths.join(', ') || 'No identificadas'}
+- Mejoras: ${cvAnalysisToUse.weaknesses.join(', ') || 'No identificadas'}
 
-**ESTRUCTURA DEL INFORME (Markdown):**
+## 2. Puntos Fuertes
+Combina preferencias + minijuegos + CV para identificar 2-3 fortalezas únicas.
 
-## 1. Análisis de tu CV
-**Estructura y Coherencia:** 
-- Si el CV se analizó: Evalúa la estructura real y ofrece sugerencias específicas
-- Si no se pudo analizar: Explica por qué y qué hacer al respecto
+## 3. Áreas de Desarrollo
+Para cada área de mejora, ofrece acciones específicas y recursos.
 
-**Habilidades Detectadas:**
-- Lista las habilidades técnicas y blandas encontradas en el CV
-- Si no hay habilidades detectadas, explica constructivamente por qué
+## 4. Recomendaciones Laborales
+Sugiere roles específicos basados en preferencias Y experiencia del CV.
 
-## 2. Tus Puntos Fuertes
-**Cruza información de múltiples fuentes:**
-- Combina preferencias laborales + resultados de minijuegos + experiencia del CV
-- Identifica 2-3 fortalezas únicas y específicas
-- **Ejemplo:** "Tu interés en roles prácticos (jardinero, barista) se alinea perfectamente con tu alta puntuación en 'Curiosidad y aprendizaje' (50%). Esto sugiere que te adaptas bien a nuevos entornos y aprendes rápidamente."
+## 5. Próximos Pasos
+Plan de 3 acciones concretas: esta semana, 1 mes, 3 meses.
 
-## 3. Áreas de Desarrollo y Sugerencias Prácticas
-**Para cada área de mejora, ofrece:**
-- **Por qué es importante** para sus preferencias laborales
-- **Cómo mejorar** con acciones específicas y medibles
-- **Recursos concretos** (cursos, prácticas, etc.)
-
-**Ejemplo:** "**Influencia Social (17%):** Aunque prefieres roles prácticos, la interacción con clientes es inevitable. **Mejora:** Practica técnicas de venta en tu trabajo actual, toma un curso de atención al cliente en Coursera."
-
-## 4. Recomendaciones Laborales Específicas
-**Basándote en sus preferencias reales:**
-- Sugiere roles específicos en sus áreas de interés
-- Menciona tipos de empresas donde encajarían
-- Considera su disponibilidad (remoto, completa)
-
-## 5. Próximos Pasos Accionables
-**Plan de 3-4 pasos específicos:**
-1. Acción concreta para esta semana
-2. Objetivo a corto plazo (1 mes)
-3. Desarrollo a medio plazo (3 meses)
-4. Recursos específicos (cursos, plataformas, etc.)
-
-**Formato:** Usa Markdown con ## para títulos principales y ### para subtítulos. Tono profesional pero cercano. Máximo 800 palabras.
+**Reglas:** Sé específico, evita plantillas genéricas, cruza información de todas las fuentes.
 `;
 
     // 2. Construcción correcta de la URL usando la variable de entorno
     const url = `${AZURE_OPENAI_ENDPOINT}openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=${AZURE_OPENAI_API_VERSION}`;
     
-    // Llamada a Azure OpenAI
+    // Log de la URL y configuración para debug
+    console.log('=== CONFIGURACIÓN AZURE OPENAI ===');
+    console.log('URL:', url);
+    console.log('Deployment:', AZURE_OPENAI_DEPLOYMENT);
+    console.log('API Version:', AZURE_OPENAI_API_VERSION);
+    console.log('API Key presente:', AZURE_OPENAI_API_KEY ? 'Sí' : 'No');
+    console.log('Prompt length:', prompt.length, 'caracteres');
+    
+    // Llamada a Azure OpenAI optimizada
+    console.log('Iniciando llamada a Azure OpenAI...');
+    const startTime = Date.now();
+    
     const response = await axios.post(
       url,
       {
         messages: [
-          { role: 'system', content: 'Eres un orientador laboral experto en empleabilidad.' },
+          { role: 'system', content: 'Eres un orientador laboral experto. Genera informes concisos y específicos.' },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 1500,
-        temperature: 0.7,
+        max_tokens: 800, // Reducido de 1500
+        temperature: 0.5, // Reducido de 0.7 para respuestas más consistentes
       },
       {
         headers: {
           'Content-Type': 'application/json',
           'api-key': AZURE_OPENAI_API_KEY,
         },
+        timeout: 60000, // Timeout aumentado a 60 segundos
       }
     );
+    
+    const endTime = Date.now();
+    console.log(`Azure OpenAI respondió en ${endTime - startTime}ms`);
     const informe = response.data.choices[0]?.message?.content || 'No se pudo generar el informe.';
     res.json({ informe });
   } catch (error: any) {
     // Log detallado del error de Azure/OpenAI o cualquier otro error
-    console.error('Error en /api/informe-ia:', error?.response?.data || error.message || error);
+    console.error('=== ERROR DETALLADO ===');
+    console.error('Error type:', error.constructor.name);
+    console.error('Error code:', error.code);
+    console.error('Error message:', error.message);
+    console.error('Error response status:', error.response?.status);
+    console.error('Error response data:', error.response?.data);
+    console.error('Error stack:', error.stack);
+    
+    // Si es un error de timeout o conexión, generar informe básico
+    if (error.code === 'ECONNABORTED' || error.message?.includes('timeout') || error.code === 'ENOTFOUND') {
+      console.log('Error de timeout/conexión detectado, generando informe básico...');
+      try {
+        const { preferences, minigames, cvAnalysis } = req.body;
+        const informeBasico = generateBasicReport(preferences, minigames, cvAnalysis);
+        console.log('Informe básico generado exitosamente');
+        return res.json({ informe: informeBasico });
+      } catch (fallbackError) {
+        console.error('Error generando informe básico:', fallbackError);
+      }
+    }
+    
+    // Si es un error de autenticación o configuración de Azure
+    if (error.response?.status === 401) {
+      console.error('Error de autenticación con Azure OpenAI - API Key inválida');
+      return res.status(500).json({ error: 'Error de configuración: API Key de Azure OpenAI inválida' });
+    }
+    
+    if (error.response?.status === 404) {
+      console.error('Error 404 - Deployment no encontrado o URL incorrecta');
+      return res.status(500).json({ error: 'Error de configuración: Deployment de Azure OpenAI no encontrado' });
+    }
+    
     res.status(500).json({ error: 'Error generando informe IA: ' + (error?.response?.data?.error?.message || error.message || 'Error desconocido') });
   }
 });
@@ -198,3 +236,45 @@ router.post('/feedback', async (req: Request, res: Response) => {
 });
 
 export default router; 
+
+// Función para generar informe básico sin IA
+function generateBasicReport(preferences: any, minigames: any[], cvAnalysis: any): string {
+  const highSkills = minigames.filter(skill => skill.level === 'Alto');
+  const mediumSkills = minigames.filter(skill => skill.level === 'Medio');
+  const lowSkills = minigames.filter(skill => skill.level === 'Bajo');
+
+  const totalScore = minigames.reduce((sum, skill) => sum + (skill.score || 0), 0) / Math.max(1, minigames.length);
+  
+  const level = totalScore >= 80 ? 'Alta empleabilidad' : totalScore >= 50 ? 'Empleabilidad media' : 'Baja empleabilidad';
+
+  return `# Informe de Empleabilidad - Análisis Básico
+
+## 1. Análisis del CV
+- **Estructura:** ${cvAnalysis?.structure || 'Regular'}
+- **Coherencia:** ${cvAnalysis?.coherence || 'Regular'}
+- **Experiencia:** ${cvAnalysis?.experience || 'Regular'}
+- **Habilidades detectadas:** ${cvAnalysis?.skills?.join(', ') || 'No detectadas'}
+- **Fortalezas:** ${cvAnalysis?.strengths?.join(', ') || 'No identificadas'}
+- **Áreas de mejora:** ${cvAnalysis?.weaknesses?.join(', ') || 'No identificadas'}
+
+## 2. Puntos Fuertes
+${highSkills.length > 0 ? `- **Habilidades destacadas:** ${highSkills.map(s => s.skill).join(', ')}` : '- Necesitas desarrollar más habilidades blandas'}
+${preferences?.areas?.length > 0 ? `- **Áreas de interés:** ${preferences.areas.join(', ')}` : ''}
+
+## 3. Áreas de Desarrollo
+${lowSkills.length > 0 ? `- **Habilidades a mejorar:** ${lowSkills.map(s => s.skill).join(', ')}` : '- Todas las habilidades están en buen nivel'}
+- **Recomendación:** Practica regularmente los minijuegos para mejorar tus habilidades
+
+## 4. Recomendaciones Laborales
+- **Nivel de empleabilidad:** ${level}
+- **Roles sugeridos:** Desarrollador frontend, Soporte técnico, Analista de datos
+- **Modo de trabajo preferido:** ${preferences?.workMode || 'No especificado'}
+
+## 5. Próximos Pasos
+1. **Esta semana:** Completa todos los minijuegos disponibles
+2. **1 mes:** Actualiza tu CV con las mejoras sugeridas
+3. **3 meses:** Busca oportunidades laborales en las áreas de tu interés
+
+---
+*Este es un informe básico generado automáticamente. Para un análisis más detallado, contacta con un orientador laboral.*`;
+} 

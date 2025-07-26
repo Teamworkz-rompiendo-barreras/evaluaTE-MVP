@@ -19,22 +19,25 @@ except ImportError:
 
 def extract_text_with_ocr(pdf_buffer: bytes) -> str:
     """
-    Extrae texto de un PDF usando OCR si es necesario
+    Extrae texto de un PDF usando OCR si es necesario (optimizado)
     """
     try:
         doc = fitz.open(stream=pdf_buffer, filetype="pdf")
         text = ""
         
-        for page_num in range(len(doc)):
+        # Limitar a las primeras 5 páginas para velocidad
+        max_pages = min(5, len(doc))
+        
+        for page_num in range(max_pages):
             page = doc[page_num]
             
             # Intentar extraer texto normal primero
             page_text = page.get_text("text")
             
             # Si hay texto suficiente, usarlo
-            if len(page_text.strip()) > 50:
+            if len(page_text.strip()) > 30:  # Reducido de 50 a 30
                 text += page_text + "\n"
-            elif OCR_AVAILABLE:
+            elif OCR_AVAILABLE and page_num < 2:  # Solo OCR en las primeras 2 páginas
                 # Si no hay texto suficiente y OCR está disponible, usar OCR
                 try:
                     pix = page.get_pixmap()
@@ -49,7 +52,8 @@ def extract_text_with_ocr(pdf_buffer: bytes) -> str:
                     )
                     text += ocr_text + "\n"
                 except Exception as e:
-                    print(f"Error en OCR página {page_num}: {e}")
+                    if __name__ == "__main__":
+                        print(f"Error en OCR página {page_num}: {e}")
                     # Si OCR falla, intentar extraer texto de nuevo
                     page_text = page.get_text("text")
                     text += page_text + "\n"
@@ -61,7 +65,8 @@ def extract_text_with_ocr(pdf_buffer: bytes) -> str:
         return text.strip()
         
     except Exception as e:
-        print(f"Error extrayendo texto: {e}")
+        if __name__ == "__main__":
+            print(f"Error extrayendo texto: {e}")
         return ""
 
 def extract_contact_info(text: str) -> Dict[str, str]:
@@ -350,7 +355,9 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     Extrae y analiza información de un CV en PDF desde un buffer de bytes
     """
     try:
-        print("Iniciando análisis de CV...")
+        # Solo imprimir debug si se ejecuta directamente (no desde Node.js)
+        if __name__ == "__main__":
+            print("Iniciando análisis de CV...")
         
         # Extraer texto del PDF (con OCR si es necesario)
         text = extract_text_with_ocr(pdf_buffer)
@@ -363,20 +370,22 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "raw_text": ""
             }
         
-        print(f"Texto extraído: {len(text)} caracteres")
+        if __name__ == "__main__":
+            print(f"Texto extraído: {len(text)} caracteres")
         
-        # Extraer información específica
+        # Extraer información específica (optimizado)
         contact = extract_contact_info(text)
         skills = extract_skills_from_text(text)
         experience = extract_experience_from_text(text)
         education = extract_education_from_text(text)
         
-        print(f"Información extraída - Contacto: {len(contact)}, Habilidades: {len(skills)}, Experiencia: {len(experience)}, Educación: {len(education)}")
+        if __name__ == "__main__":
+            print(f"Información extraída - Contacto: {len(contact)}, Habilidades: {len(skills)}, Experiencia: {len(experience)}, Educación: {len(education)}")
         
-        # Analizar la estructura
+        # Analizar la estructura (simplificado)
         analysis = analyze_cv_structure_flexible(text, contact, skills, experience, education)
         
-        # Construir resultado
+        # Construir resultado (simplificado)
         cv_info = {
             "contacto": contact,
             "software": skills,
@@ -388,16 +397,18 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "proyectos": []
         }
         
-        print("Análisis completado exitosamente")
+        if __name__ == "__main__":
+            print("Análisis completado exitosamente")
         
         return {
             "cv_info": cv_info,
             "analysis": analysis,
-            "raw_text": text[:2000]  # Primeros 2000 caracteres para debugging
+            "raw_text": text[:1000]  # Reducido de 2000 a 1000 caracteres
         }
         
     except Exception as e:
-        print(f"Error en análisis: {str(e)}")
+        if __name__ == "__main__":
+            print(f"Error en análisis: {str(e)}")
         return {
             "error": f"Error al procesar el PDF: {str(e)}",
             "cv_info": {},
