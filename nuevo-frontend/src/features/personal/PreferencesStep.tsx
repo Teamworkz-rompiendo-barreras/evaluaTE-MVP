@@ -18,6 +18,7 @@ type PrefData = {
   startDate: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes'
   willingToRelocate: boolean
   hasDisabilityCert: boolean
+  specificNeeds: string // Nuevo campo para necesidades específicas
 }
 
 export default function PreferencesStep() {
@@ -35,14 +36,17 @@ export default function PreferencesStep() {
   } = useForm<PrefData>({
     mode: 'onChange', // Validación en tiempo real
     defaultValues: {
-      jobPreferences: typeof current.jobPreferences === 'string'
-        ? current.jobPreferences
-        : (current.jobPreferences?.areas?.[0] || ''),
+      jobPreferences: typeof current.jobPreferences === 'object' && current.jobPreferences?.areas?.[0]
+        ? current.jobPreferences.areas[0]
+        : (typeof current.jobPreferences === 'string' ? current.jobPreferences : ''),
       workMode: current.workMode || 'remoto',
       availability: current.availability || 'completa',
       startDate: current.startDate || 'inmediata',
       willingToRelocate: Boolean(current.willingToRelocate),
       hasDisabilityCert: Boolean(current.hasDisabilityCert),
+      specificNeeds: typeof current.jobPreferences === 'object' && current.jobPreferences?.needs?.[0] 
+        ? current.jobPreferences.needs[0] 
+        : '',
     },
   })
 
@@ -56,7 +60,7 @@ export default function PreferencesStep() {
 
     const jobPrefObj = {
       areas: [data.jobPreferences],
-      needs: [],
+      needs: data.specificNeeds ? [data.specificNeeds] : [],
       workMode: data.workMode,
       availability: data.availability,
       willingToRelocate: data.willingToRelocate,
@@ -203,6 +207,23 @@ export default function PreferencesStep() {
           </label>
         </div>
 
+        {/* Campo: Necesidades específicas */}
+        <div>
+          <label htmlFor="specificNeeds" className="block font-medium mb-1">
+            ¿Tienes alguna necesidad específica o adaptación que debamos conocer? 🤝
+          </label>
+          <textarea
+            id="specificNeeds"
+            placeholder="Ej. Necesito flexibilidad horaria, adaptaciones en el puesto de trabajo, accesibilidad específica, etc. (opcional)"
+            {...register('specificNeeds')}
+            rows={3}
+            className="w-full border rounded px-3 py-2 resize-none"
+          />
+          <p className="text-sm text-gray-600 mt-1">
+            Esta información nos ayudará a encontrar oportunidades laborales más adecuadas para ti.
+          </p>
+        </div>
+
         {/* Botones de navegación */}
         <div className="flex justify-between pt-4">
           <button
@@ -216,7 +237,7 @@ export default function PreferencesStep() {
             type="submit"
             className="w-full bg-blue-600 text-white py-2 px-4 rounded hover:bg-blue-700 transition-colors"
           >
-            Finalizar y empezar minijuegos
+            Continuar a los minijuegos
           </button>
         </div>
       </form>

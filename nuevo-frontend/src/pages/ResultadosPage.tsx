@@ -141,6 +141,35 @@ const ResultadosPage: React.FC = () => {
     }
   };
 
+  // Estado para el progreso de la barra
+  const [progress, setProgress] = useState(0);
+
+  // Efecto para animar la barra de progreso
+  useEffect(() => {
+    let interval: NodeJS.Timeout | null = null;
+    if (loadingIa) {
+      setProgress(0);
+      interval = setInterval(() => {
+        setProgress(prev => {
+          // Avanza hasta 95% mientras loadingIa es true
+          if (prev < 95) {
+            return prev + Math.random() * 5 + 1; // avance aleatorio para naturalidad
+          } else {
+            return prev;
+          }
+        });
+      }, 200);
+    } else {
+      // Cuando termina la carga, completa la barra
+      setProgress(100);
+      // Opcional: después de un pequeño delay, resetea la barra
+      setTimeout(() => setProgress(0), 800);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [loadingIa]);
+
   // 1. Portada
   const portada = (
     <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center mb-8">
@@ -231,18 +260,14 @@ const ResultadosPage: React.FC = () => {
       {/* Mensaje de carga */}
       {loadingIa && (
         <div className="bg-blue-100 rounded-lg shadow-md p-6 mb-8 text-center">
-          <div className="flex items-center justify-center mb-4">
-            <svg className="animate-spin -ml-1 mr-3 h-8 w-8 text-blue-600" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-            </svg>
-            <p className="text-lg font-semibold">Generando tu informe personalizado...</p>
-          </div>
-          <div className="space-y-2 text-sm text-gray-600">
-            <p>✓ Analizando tus preferencias laborales</p>
-            <p>✓ Procesando resultados de los minijuegos</p>
-            <p>✓ Evaluando tu CV</p>
-            <p className="font-medium text-blue-600">🔄 Generando recomendaciones personalizadas con IA...</p>
+          <p className="text-lg font-semibold mb-4">Generando tu informe personalizado</p>
+          <div className="w-full flex justify-center">
+            <div className="w-2/3 bg-blue-200 rounded-full h-3 overflow-hidden">
+              <div
+                className="bg-blue-500 h-3 transition-all duration-300"
+                style={{ width: `${progress}%` }}
+              ></div>
+            </div>
           </div>
           <p className="mt-4 text-xs text-gray-500">Esto puede tardar unos segundos. Por favor, ten paciencia.</p>
         </div>
@@ -264,7 +289,36 @@ const ResultadosPage: React.FC = () => {
       {iaReport && (
         <>
           <div className="bg-white rounded-lg shadow-md p-8 mb-8 prose max-w-none overflow-visible">
-            <ReactMarkdown>{iaReport}</ReactMarkdown>
+            <ReactMarkdown
+              components={{
+                a: (props) => (
+                  <a {...props} target="_blank" rel="noopener noreferrer">
+                    {props.children}
+                  </a>
+                ),
+                p: (props) => (
+                  <p {...props} className="mb-4" />
+                ),
+                h1: (props) => (
+                  <h1 {...props} className="mb-6 mt-8" />
+                ),
+                h2: (props) => (
+                  <h2 {...props} className="mb-4 mt-6" />
+                ),
+                h3: (props) => (
+                  <h3 {...props} className="mb-3 mt-5" />
+                ),
+                ul: (props) => (
+                  <ul {...props} className="mb-4 space-y-2" />
+                ),
+                ol: (props) => (
+                  <ol {...props} className="mb-4 space-y-2" />
+                ),
+                li: (props) => (
+                  <li {...props} className="mb-2" />
+                ),
+              }}
+            >{iaReport}</ReactMarkdown>
           </div>
 
           {!feedbackSent && (

@@ -83,15 +83,7 @@ const GameDashboardPage: React.FC = () => {
           ))}
         </div>
 
-        {/* Botón de prueba para Sentry */}
-        <div className="flex justify-center my-6">
-          <button
-            onClick={() => { throw new Error('¡Esto es una prueba de Sentry!'); }}
-            className="px-4 py-2 bg-red-600 text-white rounded shadow hover:bg-red-700"
-          >
-            Probar Sentry (lanzar error)
-          </button>
-        </div>
+
 
         {/* Botones de acción */}
         <div className="mt-8 flex justify-center space-x-4">
@@ -106,7 +98,7 @@ const GameDashboardPage: React.FC = () => {
             className={`px-6 py-3 rounded-lg transition-colors text-white ${allCompleted ? 'bg-green-500 hover:bg-green-600' : 'bg-gray-300 cursor-not-allowed'}`}
             disabled={!allCompleted}
           >
-            Ver Resultados →
+            Ir a adjuntar currículum →
           </button>
         </div>
       </div>

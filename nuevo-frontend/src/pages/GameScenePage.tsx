@@ -8,7 +8,7 @@ import { useSelector } from 'react-redux'
 import { useGameController } from '../features/games/useGameController'
 import GameScene from '../components/GameScene'
 import ProgressBar from '../components/ProgressBar'
-import GameDebug from '../components/GameDebug'
+
 import { RootState } from '../app/store'
 import { GameLog } from '../types/game';
 
@@ -118,7 +118,6 @@ const GameScenePage: React.FC = () => {
 
   return (
     <div className="min-h-screen bg-gray-50 py-8">
-      <GameDebug />
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header del juego */}
         <div className="mb-8 text-center">
@@ -171,15 +170,8 @@ const GameScenePage: React.FC = () => {
         {/* Navegación */}
         <div className="mt-8 flex justify-between">
           <button
-            onClick={() => {
-              if (currentScene.id === 'game-complete') {
-                navigate('/games');
-              } else {
-                alert('Debes completar el juego antes de volver al menú.');
-              }
-            }}
-            className={`px-4 py-2 ${currentScene.id === 'game-complete' ? 'text-gray-600 hover:text-gray-800' : 'text-gray-400 cursor-not-allowed'}`}
-            disabled={currentScene.id !== 'game-complete'}
+            onClick={() => navigate('/games')}
+            className="px-4 py-2 text-gray-600 hover:text-gray-800"
           >
             ← Volver al menú
           </button>

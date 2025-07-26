@@ -76,8 +76,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Bravo!',
-        description: 'Hoy has demostrado tu capacidad para tomar decisiones en situaciones reales de trabajo. Cada forma de decidir suma valor.',
+        title: '¡Excelente trabajo!',
+        description: 'Has completado exitosamente este minijuego. ¡Sigue así, cada paso te acerca más a tu objetivo!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -86,8 +86,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Toma de decisiones. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -170,8 +170,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Genial!',
-        description: '¡Genial! Has puesto en práctica tu pensamiento analítico para encontrar soluciones. ¡Sigue observando y razonando con detalle!',
+        title: '¡Muy bien!',
+        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de análisis te está llevando lejos!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -180,8 +180,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Resolución de problemas. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -264,8 +264,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Muy bien!',
-        description: '¡Muy bien! Has demostrado que tu creatividad puede marcar la diferencia en el trabajo diario. No dejes de aportar nuevas ideas.',
+        title: '¡Fantástico!',
+        description: 'Has completado exitosamente este minijuego. ¡Tu imaginación y originalidad son tus mejores aliadas!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -274,8 +274,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Creatividad. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -358,8 +358,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Enhorabuena!',
-        description: '¡Enhorabuena! Has puesto en práctica tu capacidad de influencia social y tu forma de comunicar en el entorno laboral.',
+        title: '¡Excelente!',
+        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de conectar con otros es una gran fortaleza!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -368,8 +368,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Influencia Social. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -452,8 +452,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Excelente!',
-        description: '¡Excelente! Tu curiosidad y tus ganas de aprender son clave para avanzar en cualquier trabajo. Sigue buscando nuevas oportunidades para crecer.',
+        title: '¡Increíble!',
+        description: 'Has completado exitosamente este minijuego. ¡Tu sed de conocimiento te llevará muy lejos!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -462,8 +462,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Curiosidad y Aprendizaje. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -546,8 +546,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Estupendo!',
-        description: '¡Estupendo! Has demostrado resiliencia y flexibilidad ante los cambios. Estas cualidades te ayudarán a afrontar cualquier reto laboral.',
+        title: '¡Magnífico!',
+        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de adaptación es extraordinaria!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -556,8 +556,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Resiliencia y Flexibilidad. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -640,8 +640,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Muy bien!',
-        description: '¡Muy bien! Tener autoconciencia te permite trabajar mejor contigo mismo/a y con el equipo. Un gran paso hacia el éxito.',
+        title: '¡Extraordinario!',
+        description: 'Has completado exitosamente este minijuego. ¡Conocerte a ti mismo es el primer paso hacia el éxito!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -650,8 +650,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Autoconciencia. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -734,8 +734,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Enhorabuena!',
-        description: '¡Enhorabuena! Tu empatía ayuda a crear un ambiente laboral sano y colaborativo. Sigue cuidando las relaciones en tu entorno.',
+        title: '¡Maravilloso!',
+        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de conectar con otros es un don especial!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -744,8 +744,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Empatía. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -828,8 +828,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Enhorabuena!',
-        description: '¡Enhorabuena! Tu pensamiento crítico te permite tomar decisiones informadas y responsables. Sigue cuestionando y analizando.',
+        title: '¡Brillante!',
+        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de análisis es excepcional!',
         type: 'choice',
         options: [
           { id: 'continuar', text: 'Continuar', score: 0 }
@@ -838,8 +838,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Pensamiento Crítico. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -922,8 +922,8 @@ export const games: Game[] = [
       },
       {
         id: 'feedback-final',
-        title: '¡Enhorabuena!',
-        description: '¡Enhorabuena! Has demostrado habilidades de liderazgo, motivando y guiando a tu equipo hacia el éxito. Sigue desarrollando tu capacidad de inspirar a otros.',
+        title: '¡Sobresaliente!',
+        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de liderazgo es inspiradora!',
         type: 'choice',
         options: [
           { id: 'finalizar', text: 'Finalizar', score: 0 }
@@ -932,8 +932,8 @@ export const games: Game[] = [
       },
       {
         id: 'game-complete',
-        title: 'Minijuego Completado',
-        description: 'Has completado exitosamente el minijuego de Liderazgo. ¡Bien hecho!',
+        title: '¡Minijuego Completado!',
+        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
