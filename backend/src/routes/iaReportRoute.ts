@@ -93,6 +93,7 @@ router.post('/', async (req: Request, res: Response) => {
       skills: cvAnalysis.skills || [],
       strengths: cvAnalysis.strengths || [],
       weaknesses: cvAnalysis.weaknesses || [],
+      education: cvAnalysis.education || [],
       feedback: cvAnalysis.feedback && cvAnalysis.feedback.trim() !== '' ? cvAnalysis.feedback : 'No se pudo analizar completamente el CV',
       alerts: cvAnalysis.alerts || ['Análisis limitado del CV']
     };
@@ -101,38 +102,249 @@ router.post('/', async (req: Request, res: Response) => {
     console.log('cvAnalysis recibido:', JSON.stringify(cvAnalysis, null, 2));
     console.log('cvAnalysisToUse procesado:', JSON.stringify(cvAnalysisToUse, null, 2));
 
-    // Construir prompt optimizado y conciso
+    // Construir prompt optimizado para análisis profesional y accesible
     const prompt = `
-Eres un orientador laboral experto. Genera un informe de empleabilidad PERSONALIZADO basado en los datos proporcionados.
+Eres un orientador laboral experto especializado en inclusión laboral. Genera un informe de empleabilidad PROFESIONAL Y ACCESIBLE basado en los datos proporcionados.
 
-**DATOS:**
-- Preferencias: ${JSON.stringify(preferences, null, 2)}
-- Minijuegos: ${JSON.stringify(minigames, null, 2)}
-- CV: ${JSON.stringify(cvAnalysisToUse, null, 2)}
+**IMPORTANTE:** Este informe será leído por personas neurodivergentes y con discapacidad intelectual. Usa lenguaje claro, frases cortas y estructura muy organizada.
 
-**ESTRUCTURA (Markdown, máximo 600 palabras):**
+**DATOS DEL USUARIO:**
+- Preferencias laborales: ${JSON.stringify(preferences, null, 2)}
+- Resultados de minijuegos: ${JSON.stringify(minigames, null, 2)}
+- Análisis del CV: ${JSON.stringify(cvAnalysisToUse, null, 2)}
 
-## 1. Análisis del CV
-- Estructura: ${cvAnalysisToUse.structure}
-- Coherencia: ${cvAnalysisToUse.coherence}
-- Experiencia: ${cvAnalysisToUse.experience}
-- Habilidades: ${cvAnalysisToUse.skills.length > 0 ? cvAnalysisToUse.skills.join(', ') : 'No detectadas'}
-- Fortalezas: ${cvAnalysisToUse.strengths.join(', ') || 'No identificadas'}
-- Mejoras: ${cvAnalysisToUse.weaknesses.join(', ') || 'No identificadas'}
+**ESTRUCTURA DEL INFORME (Markdown, 3-4 páginas, lenguaje accesible):**
 
-## 2. Puntos Fuertes
-Combina preferencias + minijuegos + CV para identificar 2-3 fortalezas únicas.
+# Informe de Empleabilidad Personalizado
 
-## 3. Áreas de Desarrollo
-Para cada área de mejora, ofrece acciones específicas y recursos.
+---
 
-## 4. Recomendaciones Laborales
-Sugiere roles específicos basados en preferencias Y experiencia del CV.
+## 1. Resumen Ejecutivo
 
-## 5. Próximos Pasos
-Plan de 3 acciones concretas: esta semana, 1 mes, 3 meses.
+**Fecha del análisis:** [Fecha actual]  
+**Nivel de empleabilidad:** [Alto/Medio/Bajo basado en puntuaciones]  
 
-**Reglas:** Sé específico, evita plantillas genéricas, cruza información de todas las fuentes.
+**Puntos clave:**
+• [3-4 puntos principales del análisis]  
+• [Fortalezas más importantes]  
+• [Áreas de mejora prioritarias]  
+
+---
+
+## 2. Análisis Detallado del CV
+
+### 2.1 Estructura y Presentación
+
+**Calidad de la estructura:** ${cvAnalysisToUse.structure}  
+**Coherencia del contenido:** ${cvAnalysisToUse.coherence}  
+**Experiencia laboral:** ${cvAnalysisToUse.experience}  
+
+**Observaciones:**
+• [Comentario específico sobre la estructura]  
+• [Sugerencia de mejora si es necesario]  
+
+### 2.2 Habilidades Técnicas Identificadas
+
+**Habilidades detectadas en el CV:**
+${cvAnalysisToUse.skills.length > 0 ? cvAnalysisToUse.skills.join(', ') : 'No se detectaron habilidades técnicas específicas'}
+
+**Nivel de dominio:**
+• [Evaluar cada habilidad: Básico/Intermedio/Avanzado]  
+• [Comentario sobre la relevancia para el mercado laboral]  
+
+### 2.3 Formación Académica
+
+**Educación detectada:**
+${cvAnalysisToUse.education.length > 0 ? cvAnalysisToUse.education.join(', ') : 'No se especificó formación académica'}
+
+**Relevancia para el empleo:**
+• [Comentario sobre la formación]  
+
+### 2.4 Fortalezas del CV
+
+**Puntos fuertes identificados:**
+${cvAnalysisToUse.strengths.length > 0 ? cvAnalysisToUse.strengths.join(', ') : 'Necesita identificar más fortalezas'}
+
+### 2.5 Áreas de Mejora del CV
+
+**Aspectos a mejorar:**
+${cvAnalysisToUse.weaknesses.length > 0 ? cvAnalysisToUse.weaknesses.join(', ') : 'El CV está bien estructurado'}
+
+---
+
+## 3. Evaluación de Habilidades Blandas
+
+### 3.1 Resultados de los Minijuegos
+
+**Habilidades evaluadas:**
+[La IA analizará los resultados de los minijuegos proporcionados]
+
+### 3.2 Análisis por Categoría
+
+**Habilidades destacadas (Alto nivel):**
+[La IA identificará las habilidades con mejor puntuación]
+
+**Habilidades en desarrollo (Medio nivel):**
+[La IA identificará las habilidades con puntuación media]
+
+**Habilidades a mejorar (Bajo nivel):**
+[La IA identificará las habilidades que necesitan mejora]
+
+---
+
+## 4. Perfil Laboral
+
+### 4.1 Preferencias del Candidato
+
+**Áreas de interés:**
+${preferences.areas ? preferences.areas.join(', ') : 'No especificadas'}
+
+**Tipo de trabajo preferido:**
+• Modalidad: ${preferences.workMode || 'No especificada'}  
+• Disponibilidad: ${preferences.availability || 'No especificada'}  
+• Disposición a trasladarse: ${preferences.willingToRelocate ? 'Sí' : 'No'}  
+
+### 4.2 Necesidades Específicas
+
+**Necesidades identificadas:**
+${preferences.needs ? preferences.needs.join(', ') : 'No especificadas'}
+
+**Certificado de discapacidad:**
+• ${preferences.hasDisabilityCert ? 'Sí tiene certificado' : 'No tiene certificado'}  
+
+---
+
+## 5. Recomendaciones Específicas
+
+### 5.1 Roles Laborales Recomendados
+
+**Basado en habilidades y preferencias:**
+
+**Rol 1: [Nombre del puesto]**
+• Descripción: [Explicación breve]  
+• Por qué es adecuado: [Razones específicas]  
+• Requisitos que cumple: [Lista de habilidades]  
+
+**Rol 2: [Nombre del puesto]**
+• Descripción: [Explicación breve]  
+• Por qué es adecuado: [Razones específicas]  
+• Requisitos que cumple: [Lista de habilidades]  
+
+**Rol 3: [Nombre del puesto]**
+• Descripción: [Explicación breve]  
+• Por qué es adecuado: [Razones específicas]  
+• Requisitos que cumple: [Lista de habilidades]  
+
+### 5.2 Tipos de Empresas Recomendadas
+
+**Empresas inclusivas:**
+• [Tipo de empresa 1] - [Razón]  
+• [Tipo de empresa 2] - [Razón]  
+• [Tipo de empresa 3] - [Razón]  
+
+### 5.3 Sectores de Actividad
+
+**Sectores con oportunidades:**
+• [Sector 1] - [Oportunidades]  
+• [Sector 2] - [Oportunidades]  
+• [Sector 3] - [Oportunidades]  
+
+---
+
+## 6. Plan de Desarrollo Personal
+
+### 6.1 Mejoras Inmediatas (Esta semana)
+
+**Acciones concretas:**
+• [Acción 1: específica y medible]  
+• [Acción 2: específica y medible]  
+• [Acción 3: específica y medible]  
+
+### 6.2 Objetivos a Corto Plazo (1 mes)
+
+**Metas alcanzables:**
+• [Meta 1: específica y medible]  
+• [Meta 2: específica y medible]  
+• [Meta 3: específica y medible]  
+
+### 6.3 Objetivos a Medio Plazo (3 meses)
+
+**Desarrollo profesional:**
+• [Objetivo 1: específico y medible]  
+• [Objetivo 2: específico y medible]  
+• [Objetivo 3: específico y medible]  
+
+---
+
+## 7. Recursos y Herramientas
+
+### 7.1 Formación Recomendada
+
+**Cursos gratuitos:**
+• [Curso 1] - [Plataforma]  
+• [Curso 2] - [Plataforma]  
+• [Curso 3] - [Plataforma]  
+
+**Cursos de pago:**
+• [Curso 1] - [Plataforma] - [Precio aproximado]  
+• [Curso 2] - [Plataforma] - [Precio aproximado]  
+
+### 7.2 Herramientas Útiles
+
+**Para mejorar habilidades:**
+• [Herramienta 1] - [Propósito]  
+• [Herramienta 2] - [Propósito]  
+• [Herramienta 3] - [Propósito]  
+
+### 7.3 Comunidades y Redes
+
+**Grupos de apoyo:**
+• [Comunidad 1] - [Enfoque]  
+• [Comunidad 2] - [Enfoque]  
+• [Comunidad 3] - [Enfoque]  
+
+---
+
+## 8. Consideraciones de Accesibilidad
+
+### 8.1 Adaptaciones Laborales
+
+**Recomendaciones para el empleador:**
+• [Adaptación 1] - [Beneficio]  
+• [Adaptación 2] - [Beneficio]  
+• [Adaptación 3] - [Beneficio]  
+
+### 8.2 Derechos Laborales
+
+**Información importante:**
+• [Derecho 1] - [Explicación]  
+• [Derecho 2] - [Explicación]  
+• [Derecho 3] - [Explicación]  
+
+---
+
+## 9. Conclusiones
+
+**Resumen final:**
+• [Punto clave 1]  
+• [Punto clave 2]  
+• [Punto clave 3]  
+
+[Frase de ánimo personalizada y realista sin etiqueta]
+
+---
+
+**REGLAS IMPORTANTES PARA LA GENERACIÓN:**
+- Usa SOLO la información proporcionada en el CV
+- NO inventes habilidades que no están mencionadas
+- Usa frases cortas y lenguaje claro
+- Estructura la información con viñetas (•)
+- Usa espaciado generoso entre secciones
+- Mantén un tono profesional pero accesible
+- Sé específico y evita generalidades
+- Incluye solo información relevante y verificable
+- Usa un lenguaje inclusivo y respetuoso
+- Prioriza la claridad sobre la complejidad
 `;
 
     // 2. Construcción correcta de la URL usando la variable de entorno
@@ -157,7 +369,7 @@ Plan de 3 acciones concretas: esta semana, 1 mes, 3 meses.
           { role: 'system', content: 'Eres un orientador laboral experto. Genera informes concisos y específicos.' },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 800, // Reducido de 1500
+        max_tokens: 2000, // Aumentado para informes más detallados
         temperature: 0.5, // Reducido de 0.7 para respuestas más consistentes
       },
       {
@@ -249,32 +461,63 @@ function generateBasicReport(preferences: any, minigames: any[], cvAnalysis: any
 
   return `# Informe de Empleabilidad - Análisis Básico
 
+---
+
 ## 1. Análisis del CV
-- **Estructura:** ${cvAnalysis?.structure || 'Regular'}
-- **Coherencia:** ${cvAnalysis?.coherence || 'Regular'}
-- **Experiencia:** ${cvAnalysis?.experience || 'Regular'}
-- **Habilidades detectadas:** ${cvAnalysis?.skills?.join(', ') || 'No detectadas'}
-- **Fortalezas:** ${cvAnalysis?.strengths?.join(', ') || 'No identificadas'}
-- **Áreas de mejora:** ${cvAnalysis?.weaknesses?.join(', ') || 'No identificadas'}
 
-## 2. Puntos Fuertes
-${highSkills.length > 0 ? `- **Habilidades destacadas:** ${highSkills.map(s => s.skill).join(', ')}` : '- Necesitas desarrollar más habilidades blandas'}
-${preferences?.areas?.length > 0 ? `- **Áreas de interés:** ${preferences.areas.join(', ')}` : ''}
+**Estructura:** ${cvAnalysis?.structure || 'Regular'}  
+**Coherencia:** ${cvAnalysis?.coherence || 'Regular'}  
+**Experiencia:** ${cvAnalysis?.experience || 'Regular'}  
 
-## 3. Áreas de Desarrollo
-${lowSkills.length > 0 ? `- **Habilidades a mejorar:** ${lowSkills.map(s => s.skill).join(', ')}` : '- Todas las habilidades están en buen nivel'}
-- **Recomendación:** Practica regularmente los minijuegos para mejorar tus habilidades
+**Habilidades detectadas:** ${cvAnalysis?.skills?.join(', ') || 'No detectadas'}  
 
-## 4. Recomendaciones Laborales
-- **Nivel de empleabilidad:** ${level}
-- **Roles sugeridos:** Desarrollador frontend, Soporte técnico, Analista de datos
-- **Modo de trabajo preferido:** ${preferences?.workMode || 'No especificado'}
+**Fortalezas:** ${cvAnalysis?.strengths?.join(', ') || 'No identificadas'}  
 
-## 5. Próximos Pasos
-1. **Esta semana:** Completa todos los minijuegos disponibles
-2. **1 mes:** Actualiza tu CV con las mejoras sugeridas
-3. **3 meses:** Busca oportunidades laborales en las áreas de tu interés
+**Áreas de mejora:** ${cvAnalysis?.weaknesses?.join(', ') || 'No identificadas'}  
 
 ---
+
+## 2. Puntos Fuertes
+
+${highSkills.length > 0 ? `**Habilidades destacadas:** ${highSkills.map(s => s.skill).join(', ')}` : '**Necesitas desarrollar más habilidades blandas**'}  
+
+${preferences?.areas?.length > 0 ? `**Áreas de interés:** ${preferences.areas.join(', ')}` : ''}  
+
+---
+
+## 3. Áreas de Desarrollo
+
+${lowSkills.length > 0 ? `**Habilidades a mejorar:** ${lowSkills.map(s => s.skill).join(', ')}` : '**Todas las habilidades están en buen nivel**'}  
+
+**Recomendación:** Practica regularmente los minijuegos para mejorar tus habilidades  
+
+---
+
+## 4. Recomendaciones Laborales
+
+**Nivel de empleabilidad:** ${level}  
+
+**Roles sugeridos:**
+• Desarrollador frontend  
+• Soporte técnico  
+• Analista de datos  
+
+**Modo de trabajo preferido:** ${preferences?.workMode || 'No especificado'}  
+
+---
+
+## 5. Próximos Pasos
+
+### Esta semana:
+• Completa todos los minijuegos disponibles  
+
+### En 1 mes:
+• Actualiza tu CV con las mejoras sugeridas  
+
+### En 3 meses:
+• Busca oportunidades laborales en las áreas de tu interés  
+
+---
+
 *Este es un informe básico generado automáticamente. Para un análisis más detallado, contacta con un orientador laboral.*`;
 } 
