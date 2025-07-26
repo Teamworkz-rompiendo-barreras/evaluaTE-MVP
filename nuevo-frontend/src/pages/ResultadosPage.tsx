@@ -5,7 +5,6 @@ import type { RootState } from '../app/store';
 import { ResponsiveRadar } from '@nivo/radar';
 import logo from '../assets/Logo_teamworkz.png';
 import { buildApiUrl, API_CONFIG } from '../config/api';
-import { games } from '../data/games'; // Importar el array global de juegos
 import ReactMarkdown from 'react-markdown';
 import { useMemo } from 'react';
 
@@ -13,7 +12,7 @@ import { useMemo } from 'react';
 interface RadarDataItem {
   skill: string;
   score: number;
-  [key: string]: any;
+  [key: string]: unknown;
 }
 
 // Función para extraer el bloque JSON radarData del Markdown
@@ -82,7 +81,7 @@ const ResultadosPage: React.FC = () => {
           }
         };
 
-        console.log('Enviando datos al backend:', JSON.stringify(requestBody, null, 2));
+        // console.log('Enviando datos al backend:', JSON.stringify(requestBody, null, 2));
 
         const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT), {
           method: 'POST',
