@@ -4,6 +4,8 @@ import { createPdf } from '../services/pdfService'; // Asegúrate de que la ruta
 import pdfParse from 'pdf-parse';
 import multer from 'multer';
 import { Request, Response } from 'express';
+import { spawn } from 'child_process';
+import path from 'path';
 
 // Eliminar la declaración inline y crear un archivo pdf-parse.d.ts en la raíz del backend.
 
@@ -42,46 +44,121 @@ export const analyzeCV = [
         console.error('No se envió ningún archivo PDF.');
         return res.status(400).json({ error: 'No se envió ningún archivo PDF.' });
       }
+      
       console.log(`Archivo recibido: ${req.file.originalname}, tamaño: ${req.file.size} bytes`);
-      // Extraer texto del PDF
-      let data;
-      try {
-        data = await pdfParse(req.file.buffer);
-      } catch (err) {
-        console.error('Error al leer el PDF:', err);
-        return res.status(400).json({ error: 'No se pudo leer el archivo PDF. Asegúrate de que el archivo es un PDF válido.' });
+      
+      // Usar Python para analizar el CV
+      const pythonResult = await analyzeCVWithPython(req.file.buffer);
+      
+      if (pythonResult.error) {
+        console.error('Error en análisis Python:', pythonResult.error);
+        return res.status(500).json({ error: pythonResult.error });
       }
-      const text = data.text || '';
-      console.log('Texto extraído del PDF (primeros 500 caracteres):', text.slice(0, 500));
-      if (text.length < 100) {
-        console.error('El texto extraído del PDF es demasiado corto o vacío.');
-        return res.status(400).json({ error: 'El archivo PDF no contiene suficiente texto para analizar el CV. Por favor, revisa el archivo.' });
-      }
-
-      // Lógica simple de análisis (puedes mejorarla con IA/NLP)
-      const structure = text.includes('Experiencia') && text.includes('Educación') ? 'bueno' : 'regular';
-      const coherence = text.includes('Responsable') && text.includes('Logros') ? 'bueno' : 'regular';
-      const years = text.match(/\d{4}/g);
-      const experience = years && years.length > 2 ? 'bueno' : 'regular';
-      const skills = Array.from(new Set((text.match(/JavaScript|React|TypeScript|HTML|CSS|Python|SQL/gi) || [])));
-      const education = (text.match(/(Grado|Licenciatura|Máster|Ingeniería|Doctorado)[^\n]*/gi) || []);
-      const alerts = [];
-      if (!text.toLowerCase().includes('proyecto')) alerts.push('Faltan proyectos personales');
-      if (skills.length < 3) alerts.push('Pocas habilidades técnicas detectadas');
-
+      
+      // Extraer el análisis del resultado de Python
+      const analysis = pythonResult.analysis;
+      
+      console.log('=== ANÁLISIS DE CV CON PYTHON ===');
+      console.log('Estructura:', analysis.structure);
+      console.log('Coherencia:', analysis.coherence);
+      console.log('Experiencia:', analysis.experience);
+      console.log('Habilidades técnicas encontradas:', analysis.technologies_count);
+      console.log('Experiencias encontradas:', analysis.experience_count);
+      console.log('Educación encontrada:', analysis.education_count);
+      console.log('Años totales de experiencia:', analysis.total_years_experience);
+      
+      // Convertir el resultado de Python al formato esperado por el frontend
       const cvAnalysis = {
-        structure,
-        coherence,
-        experience,
-        skills,
-        education,
-        alerts
+        structure: analysis.structure,
+        coherence: analysis.coherence,
+        experience: analysis.experience,
+        skills: analysis.skills || [],
+        softSkills: analysis.softSkills || [],
+        education: analysis.education || [],
+        strengths: analysis.strengths || [],
+        weaknesses: analysis.weaknesses || [],
+        feedback: analysis.feedback || '',
+        alerts: analysis.alerts || []
       };
-      console.log('Resultado del análisis de CV:', JSON.stringify(cvAnalysis, null, 2));
+      
+      console.log('Resultado final:', JSON.stringify(cvAnalysis, null, 2));
+      
       return res.json(cvAnalysis);
+      
     } catch (error) {
       console.error('Error analizando el CV:', error);
       return res.status(500).json({ error: 'Error analizando el CV.' });
     }
   }
 ];
+
+async function analyzeCVWithPython(pdfBuffer: Buffer): Promise<any> {
+  return new Promise((resolve, reject) => {
+    try {
+      // Crear un script Python temporal que reciba el buffer
+      const pythonScript = `
+import sys
+import json
+import base64
+from cv_analyzer import extract_pdf_info
+
+# Recibir el PDF como base64 desde stdin
+pdf_base64 = sys.stdin.read().strip()
+pdf_buffer = base64.b64decode(pdf_base64)
+
+# Analizar el CV
+result = extract_pdf_info(pdf_buffer)
+
+# Enviar resultado como JSON
+print(json.dumps(result, ensure_ascii=False))
+`;
+
+      // Convertir el buffer a base64
+      const pdfBase64 = pdfBuffer.toString('base64');
+      
+      // Ejecutar Python con el entorno virtual
+      const pythonProcess = spawn(path.join(__dirname, '../../venv/bin/python'), ['-c', pythonScript], {
+        cwd: path.join(__dirname, '../../'), // Ir al directorio backend
+        env: {
+          ...process.env,
+          PYTHONPATH: path.join(__dirname, '../../')
+        }
+      });
+      
+      let stdout = '';
+      let stderr = '';
+      
+      pythonProcess.stdout.on('data', (data) => {
+        stdout += data.toString();
+      });
+      
+      pythonProcess.stderr.on('data', (data) => {
+        stderr += data.toString();
+      });
+      
+      pythonProcess.on('close', (code) => {
+        if (code !== 0) {
+          console.error('Error en Python:', stderr);
+          reject(new Error(`Python process exited with code ${code}: ${stderr}`));
+          return;
+        }
+        
+        try {
+          const result = JSON.parse(stdout);
+          resolve(result);
+        } catch (parseError) {
+          console.error('Error parsing Python output:', parseError);
+          console.error('Python stdout:', stdout);
+          reject(new Error('Error parsing Python output'));
+        }
+      });
+      
+      // Enviar el PDF al proceso Python
+      pythonProcess.stdin.write(pdfBase64);
+      pythonProcess.stdin.end();
+      
+    } catch (error) {
+      reject(error);
+    }
+  });
+}

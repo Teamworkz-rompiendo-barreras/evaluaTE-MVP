@@ -38,6 +38,10 @@ router.post('/', async (req: Request, res: Response) => {
   // 1. Validación rigurosa de las variables de entorno
   if (!AZURE_OPENAI_API_KEY || !AZURE_OPENAI_ENDPOINT || !AZURE_OPENAI_DEPLOYMENT || !AZURE_OPENAI_API_VERSION) {
     console.error('Error: Faltan variables de entorno para el servicio de Azure OpenAI.');
+    console.error('AZURE_OPENAI_API_KEY:', AZURE_OPENAI_API_KEY ? 'Presente' : 'Faltante');
+    console.error('AZURE_OPENAI_ENDPOINT:', AZURE_OPENAI_ENDPOINT ? 'Presente' : 'Faltante');
+    console.error('AZURE_OPENAI_DEPLOYMENT:', AZURE_OPENAI_DEPLOYMENT ? 'Presente' : 'Faltante');
+    console.error('AZURE_OPENAI_API_VERSION:', AZURE_OPENAI_API_VERSION ? 'Presente' : 'Faltante');
     return res.status(500).json({ error: 'El servidor no está configurado correctamente para generar informes de IA.' });
   }
 
@@ -46,68 +50,97 @@ router.post('/', async (req: Request, res: Response) => {
 
   try {
     const { preferences, minigames, cvAnalysis } = req.body;
+    
+    // Log completo del body para debug
+    console.log('Body completo recibido:', JSON.stringify(req.body, null, 2));
+    console.log('preferences:', preferences);
+    console.log('minigames:', minigames);
+    console.log('cvAnalysis:', cvAnalysis);
 
-    // Validación del análisis de CV
-    const isCVAnalysisInvalid = !cvAnalysis || (
-      [cvAnalysis.structure, cvAnalysis.coherence, cvAnalysis.experience].every(
-        v => !v || v.trim().toLowerCase() === 'regular'
-      ) &&
-      (!cvAnalysis.skills || cvAnalysis.skills.length === 0) &&
-      (!cvAnalysis.strengths || cvAnalysis.strengths.length === 0) &&
-      (!cvAnalysis.weaknesses || cvAnalysis.weaknesses.length === 0) &&
-      (!cvAnalysis.feedback || cvAnalysis.feedback.trim() === '')
-    );
+    // Validación de datos de entrada
+    if (!preferences || !minigames) {
+      console.error('Error: Faltan datos requeridos (preferences o minigames)');
+      return res.status(400).json({ error: 'Faltan datos requeridos para generar el informe.' });
+    }
 
-    if (isCVAnalysisInvalid) {
-      console.error('Error: El análisis del CV es inválido o no se ha podido analizar.');
+    // Validación del análisis de CV - más permisiva
+    if (!cvAnalysis) {
+      console.error('Error: No se proporcionó análisis de CV.');
       return res.status(400).json({ error: 'No se ha podido analizar el CV. Por favor, revisa el archivo enviado o inténtalo de nuevo.' });
     }
 
+    // Si el CV no se pudo analizar completamente, crear un análisis básico
+    const cvAnalysisToUse = {
+      structure: cvAnalysis.structure || 'regular',
+      coherence: cvAnalysis.coherence || 'regular',
+      experience: cvAnalysis.experience || 'regular',
+      skills: cvAnalysis.skills || [],
+      strengths: cvAnalysis.strengths || [],
+      weaknesses: cvAnalysis.weaknesses || [],
+      feedback: cvAnalysis.feedback && cvAnalysis.feedback.trim() !== '' ? cvAnalysis.feedback : 'No se pudo analizar completamente el CV',
+      alerts: cvAnalysis.alerts || ['Análisis limitado del CV']
+    };
+
+    // Log para debug
+    console.log('cvAnalysis recibido:', JSON.stringify(cvAnalysis, null, 2));
+    console.log('cvAnalysisToUse procesado:', JSON.stringify(cvAnalysisToUse, null, 2));
+
     // Construir prompt profesional y detallado
     const prompt = `
-Eres un experto en orientación laboral y análisis de talento, con un enfoque humano, motivador y profesional. Tu objetivo es generar un informe de empleabilidad excepcional, personalizado y accionable para un candidato/a.
+Eres un experto en orientación laboral y análisis de talento. Genera un informe de empleabilidad PERSONALIZADO y ACCIONABLE basado ÚNICAMENTE en los datos proporcionados.
 
-**Contexto del candidato/a:**
+**DATOS DEL CANDIDATO/A:**
 *   **Preferencias laborales:** ${JSON.stringify(preferences, null, 2)}
-*   **Resultados de minijuegos (habilidades):** ${JSON.stringify(minigames, null, 2)}
-*   **Análisis preliminar del CV:** ${JSON.stringify(cvAnalysis, null, 2)}
+*   **Resultados de minijuegos:** ${JSON.stringify(minigames, null, 2)}
+*   **Análisis del CV:** ${JSON.stringify(cvAnalysisToUse, null, 2)}
+
+**REGLAS IMPORTANTES:**
+1. **NO uses plantillas genéricas** - cada recomendación debe basarse en los datos específicos
+2. **Si el CV no se pudo analizar**, enfócate en los minijuegos y preferencias
+3. **NO repitas información** - no digas "tienes X en toma de decisiones" si ya está en el radar
+4. **Sé específico** - evita consejos genéricos como "mejora tu CV"
 
 ---
 
-**Feedback de un usuario anterior (esto es lo que DEBES EVITAR):**
-"En áreas de mejora me vuelve a poner lo mismo que en el resumen del radar chart, no me aporta nada nuevo. Y las sugerencias son todo el rato lo mismo. Las recomendaciones laborales son absurdas ('Completar todos los juegos'). El análisis del CV es vago ('estructura regular'). Los próximos pasos son genéricos ('actualiza tu CV')."
+**ESTRUCTURA DEL INFORME (Markdown):**
 
----
+## 1. Análisis de tu CV
+**Estructura y Coherencia:** 
+- Si el CV se analizó: Evalúa la estructura real y ofrece sugerencias específicas
+- Si no se pudo analizar: Explica por qué y qué hacer al respecto
 
-**INSTRUCCIONES PARA EL INFORME (usa formato Markdown):**
+**Habilidades Detectadas:**
+- Lista las habilidades técnicas y blandas encontradas en el CV
+- Si no hay habilidades detectadas, explica constructivamente por qué
 
-**1. Análisis de tu CV:**
-   - **Estructura y Coherencia:** Evalúa si el CV es claro, profesional y fácil de leer. Ofrece sugerencias específicas. Por ejemplo, en lugar de decir "estructura regular", di "Tu CV tiene una base sólida, pero podrías mejorar la sección de experiencia utilizando verbos de acción más potentes. Por ejemplo, en lugar de 'responsable de tareas', prueba con 'lideré la implementación de...'".
-   - **Habilidades Detectadas:** Extrae y lista las habilidades clave (técnicas y blandas) que identificas en el CV. Si no detectas ninguna, explícalo de forma constructiva.
+## 2. Tus Puntos Fuertes
+**Cruza información de múltiples fuentes:**
+- Combina preferencias laborales + resultados de minijuegos + experiencia del CV
+- Identifica 2-3 fortalezas únicas y específicas
+- **Ejemplo:** "Tu interés en roles prácticos (jardinero, barista) se alinea perfectamente con tu alta puntuación en 'Curiosidad y aprendizaje' (50%). Esto sugiere que te adaptas bien a nuevos entornos y aprendes rápidamente."
 
-**2. Tus Puntos Fuertes:**
-   - **NO** te limites a listar las puntuaciones altas de los minijuegos.
-   - **SÍ** cruza la información del CV (experiencia, logros), las preferencias (sectores de interés) y los minijuegos para identificar 2-3 fortalezas clave.
-   - **Ejemplo:** "Tu habilidad en 'Resolución de Problemas' (resultado del minijuego) se refleja claramente en tu experiencia en el proyecto X (del CV), donde lideraste la solución a un problema complejo. Esta es una fortaleza muy demandada en el sector de la consultoría (tu preferencia)."
+## 3. Áreas de Desarrollo y Sugerencias Prácticas
+**Para cada área de mejora, ofrece:**
+- **Por qué es importante** para sus preferencias laborales
+- **Cómo mejorar** con acciones específicas y medibles
+- **Recursos concretos** (cursos, prácticas, etc.)
 
-**3. Áreas de Desarrollo y Sugerencias Prácticas:**
-   - **NO** repitas simplemente los resultados de los minijuegos con puntuaciones bajas.
-   - **SÍ** identifica 2-3 áreas de mejora realistas. Para cada una, ofrece sugerencias concretas y accionables.
-   - **Ejemplo:** "Para potenciar tu 'Comunicación Asertiva', te sugiero practicar con el método 'STAR' (Situación, Tarea, Acción, Resultado) al describir tus logros en entrevistas. También puedes unirte a un club de debate como Toastmasters."
+**Ejemplo:** "**Influencia Social (17%):** Aunque prefieres roles prácticos, la interacción con clientes es inevitable. **Mejora:** Practica técnicas de venta en tu trabajo actual, toma un curso de atención al cliente en Coursera."
 
-**4. Recomendaciones Laborales:**
-   - Basándote en **TODOS** los datos, sugiere 2-3 roles o puestos de trabajo específicos.
-   - Menciona sectores y tipos de empresa (startup, corporación, ONG) donde el perfil del candidato/a podría encajar bien.
-   - **Ejemplo:** "Dado tu interés en el sector tecnológico y tus habilidades analíticas, podrías explorar roles como 'Analista de Datos Junior' o 'Business Intelligence Analyst' en startups de crecimiento."
+## 4. Recomendaciones Laborales Específicas
+**Basándote en sus preferencias reales:**
+- Sugiere roles específicos en sus áreas de interés
+- Menciona tipos de empresas donde encajarían
+- Considera su disponibilidad (remoto, completa)
 
-**5. Próximos Pasos para tu Carrera:**
-   - Ofrece un plan de acción con 3-4 pasos claros y orientados a la búsqueda de empleo y desarrollo profesional.
-   - **Ejemplos de pasos útiles:** "1. Adapta tu CV para la oferta X, destacando tus logros en Y. 2. Prepara una entrevista para un rol de 'Project Manager' investigando sobre la empresa Z. 3. Considera realizar el curso online de 'Gestión de Proyectos Ágil con Scrum' [enlace al curso] para fortalecer tu perfil."
+## 5. Próximos Pasos Accionables
+**Plan de 3-4 pasos específicos:**
+1. Acción concreta para esta semana
+2. Objetivo a corto plazo (1 mes)
+3. Desarrollo a medio plazo (3 meses)
+4. Recursos específicos (cursos, plataformas, etc.)
 
-**Formato Final:**
-- Usa Markdown (## para títulos, * para listas).
-- Tono profesional, cercano y siempre constructivo.
-- El informe debe ser 100% original y basado en los datos proporcionados. ¡No uses plantillas!
+**Formato:** Usa Markdown con ## para títulos principales y ### para subtítulos. Tono profesional pero cercano. Máximo 800 palabras.
 `;
 
     // 2. Construcción correcta de la URL usando la variable de entorno
@@ -121,7 +154,7 @@ Eres un experto en orientación laboral y análisis de talento, con un enfoque h
           { role: 'system', content: 'Eres un orientador laboral experto en empleabilidad.' },
           { role: 'user', content: prompt }
         ],
-        max_tokens: 900,
+        max_tokens: 1500,
         temperature: 0.7,
       },
       {
