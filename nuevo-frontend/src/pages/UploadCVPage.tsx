@@ -39,7 +39,7 @@ export default function UploadCVPage() {
 
     // Enviar el archivo al backend para análisis real
     const formData = new FormData();
-    formData.append('file', file); // Cambiado de 'cv' a 'file'
+    formData.append('cv', file); // Cambiado de 'file' a 'cv' para coincidir con el backend
     formData.append('userId', 'user-ester-2025');
     formData.append('fullName', 'Ester Pérez Ribada');
     formData.append('softSkills', JSON.stringify([])); // Puedes rellenar con los datos reales si los tienes

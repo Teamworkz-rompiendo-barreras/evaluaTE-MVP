@@ -21,18 +21,22 @@ const SOFT_SKILLS = [
  * @param {Object} [props.averageScores] - (opcional) { [softskill]: puntuación } para referencia
  */
 export default function RadarChart({ userScores, averageScores }) {
-  // Prepara los datos en el orden correcto
+  // Validar y limpiar los datos de entrada
+  const cleanUserScores = userScores || {};
+  const cleanAverageScores = averageScores || {};
+  
+  // Prepara los datos en el orden correcto, asegurándose de que todos los valores sean números válidos
   const radarData = SOFT_SKILLS.map(skill => ({
     softskill: skill,
-    usuario: userScores?.[skill] ?? 0,
-    ...(averageScores && { promedio: averageScores[skill] ?? 0 }),
+    usuario: Number(cleanUserScores[skill]) || 0,
+    ...(cleanAverageScores && { promedio: Number(cleanAverageScores[skill]) || 0 }),
   }));
 
   // Determina las keys que se van a graficar
   const keys = averageScores ? ['usuario', 'promedio'] : ['usuario'];
 
   // Evita renderizar si no hay datos válidos
-  const hasScores = SOFT_SKILLS.some(skill => !!userScores?.[skill]);
+  const hasScores = radarData.some(item => item.usuario > 0);
 
   if (!hasScores) {
     return <p>No hay datos suficientes para mostrar el radar chart.</p>;

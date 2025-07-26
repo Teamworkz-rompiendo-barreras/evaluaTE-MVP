@@ -51,38 +51,43 @@ const ResultadosPage: React.FC = () => {
       setLoadingIa(true);
       setErrorIa('');
       try {
+        const requestBody = {
+          preferences: report?.jobPreferences || {},
+          minigames: (report?.softSkills ?? []).map(skill => ({
+            skill: skill.skill,
+            level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
+            score: skill.score ?? 0,
+            confidence: skill.confidence ?? skill.score ?? 0,
+          })),
+          cvAnalysis: cvAnalysis ? {
+            strengths: cvAnalysis.strengths ?? [],
+            weaknesses: cvAnalysis.weaknesses ?? [],
+            feedback: cvAnalysis.feedback ?? '',
+            structure: cvAnalysis.structure ?? 'regular',
+            coherence: cvAnalysis.coherence ?? 'regular',
+            experience: cvAnalysis.experience ?? 'regular',
+            skills: cvAnalysis.skills ?? [],
+            education: cvAnalysis.education ?? [],
+            alerts: cvAnalysis.alerts ?? [],
+          } : {
+            strengths: [],
+            weaknesses: [],
+            feedback: 'No se pudo analizar el CV',
+            structure: 'regular',
+            coherence: 'regular',
+            experience: 'regular',
+            skills: [],
+            education: [],
+            alerts: ['Análisis limitado del CV']
+          }
+        };
+
+        console.log('Enviando datos al backend:', JSON.stringify(requestBody, null, 2));
+
         const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT), {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({
-            userId: report?.userId || 'user-unknown',
-            fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim(),
-            softSkills: (report?.softSkills ?? []).map(skill => ({
-              skill: skill.skill,
-              level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
-              score: skill.score ?? 0,
-              confidence: skill.confidence ?? skill.score ?? 0,
-            })),
-            cvAnalysis: cvAnalysis ? {
-              strengths: cvAnalysis.strengths ?? [],
-              weaknesses: cvAnalysis.weaknesses ?? [],
-              feedback: cvAnalysis.feedback ?? '',
-              structure: cvAnalysis.structure ?? 'regular',
-              coherence: cvAnalysis.coherence ?? 'regular',
-              experience: cvAnalysis.experience ?? 'regular',
-              skills: cvAnalysis.skills ?? [],
-              education: cvAnalysis.education ?? [],
-              alerts: cvAnalysis.alerts ?? [],
-            } : undefined,
-            jobPreferences: report?.jobPreferences || {},
-            completedGames: Array.isArray(game?.completedGames)
-              ? game.completedGames.map(id => {
-                  const idx = games.findIndex(g => g.id === id);
-                  return idx >= 0 ? idx + 1 : null;
-                }).filter(n => typeof n === 'number' && !isNaN(n))
-              : [],
-            logs: []
-          }),
+          body: JSON.stringify(requestBody),
         });
         const data = await res.json();
         if (res.ok && data.informe) {
@@ -97,7 +102,7 @@ const ResultadosPage: React.FC = () => {
       }
     };
     // Solo llamar si hay datos suficientes
-    if (report?.jobPreferences && report?.softSkills && cvAnalysis) {
+    if (report?.jobPreferences && report?.softSkills) {
       fetchIaReport();
     }
   }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
@@ -148,35 +153,41 @@ const ResultadosPage: React.FC = () => {
   const radarData = radarDataFromIa.length > 0
     ? radarDataFromIa.map(item => ({
         softskill: item.skill,
-        score: item.score,
+        score: Number(item.score) || 0,
       }))
     : (report?.softSkills ?? []).map(skill => ({
         softskill: skill.skill,
-        score: skill.score,
-      }));
+        score: Number(skill.score) || 0,
+      })).filter(item => item.score > 0); // Filtrar solo elementos con score válido
   const radar = (
     <div className="bg-white rounded-lg shadow-md p-8 mb-8">
       <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-1/2 h-96">
-          <ResponsiveRadar
-            data={radarData}
-            keys={["score"]}
-            indexBy="softskill"
-            margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
-            borderColor={{ from: 'color' }}
-            gridLabelOffset={20}
-            dotSize={12}
-            dotColor={{ theme: 'background' }}
-            dotBorderWidth={2}
-            dotBorderColor={{ from: 'color' }}
-            colors={{ scheme: 'nivo' }}
-            fillOpacity={0.25}
-            blendMode="multiply"
-            animate={true}
-            isInteractive={false}
-            legends={[]}
-          />
+          {radarData.length > 0 ? (
+            <ResponsiveRadar
+              data={radarData}
+              keys={["score"]}
+              indexBy="softskill"
+              margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
+              borderColor={{ from: 'color' }}
+              gridLabelOffset={20}
+              dotSize={12}
+              dotColor={{ theme: 'background' }}
+              dotBorderWidth={2}
+              dotBorderColor={{ from: 'color' }}
+              colors={{ scheme: 'nivo' }}
+              fillOpacity={0.25}
+              blendMode="multiply"
+              animate={true}
+              isInteractive={false}
+              legends={[]}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              <p>No hay datos suficientes para mostrar el gráfico de habilidades</p>
+            </div>
+          )}
         </div>
         <div className="w-full md:w-1/2">
           <h3 className="font-semibold mb-2">Resumen de niveles:</h3>
@@ -217,10 +228,14 @@ const ResultadosPage: React.FC = () => {
         </div>
       )}
 
+      {/* Contenido del informe que no depende de la IA */}
+      {portada}
+      {radar}
+
       {/* Informe de la IA y formulario de feedback */}
       {iaReport && (
         <>
-          <div className="bg-white rounded-lg shadow-md p-8 mb-8 prose max-w-none">
+          <div className="bg-white rounded-lg shadow-md p-8 mb-8 prose max-w-none overflow-visible">
             <ReactMarkdown>{iaReport}</ReactMarkdown>
           </div>
 
@@ -253,10 +268,6 @@ const ResultadosPage: React.FC = () => {
           )}
         </>
       )}
-
-      {/* Contenido del informe que no depende de la IA */}
-      {portada}
-      {radar}
     </section>
   );
 };
