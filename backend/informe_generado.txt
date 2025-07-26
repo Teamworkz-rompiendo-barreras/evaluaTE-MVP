@@ -1,0 +1,49 @@
+# Informe Personalizado de Empleabilidad
+
+## 1. Análisis de tu CV
+
+### **Estructura y Coherencia**
+Tu CV tiene una base sólida, especialmente en tu experiencia técnica, pero hay margen de mejora para hacerlo más impactante y profesional. A continuación, algunas recomendaciones específicas:  
+- **Sección de Experiencia:** Utiliza verbos de acción más precisos y orientados a logros. Por ejemplo, en lugar de "responsable de desarrollo de aplicaciones", prueba con "Diseñé e implementé una aplicación web que incrementó la eficiencia del sistema en un 20%".  
+- **Formato:** Mejora la presentación visual utilizando encabezados claros, listas con viñetas y un diseño limpio. Esto facilitará la lectura y captará mejor la atención de los reclutadores.  
+- **Coherencia:** Asegúrate de que el formato sea uniforme en todo el documento (por ejemplo, fechas alineadas y consistencia en el uso de tiempos verbales).  
+
+### **Habilidades Detectadas**
+Actualmente, tu CV no destaca tus habilidades clave de manera explícita. Sin embargo, basado en tu experiencia técnica sólida y tus fortalezas de los minijuegos, se pueden identificar las siguientes:  
+- **Habilidades Técnicas:** Desarrollo Full Stack, resolución de problemas técnicos y capacidad de aprendizaje rápido de nuevas tecnologías.  
+- **Habilidades Blandas:** Resolución de problemas, trabajo en equipo y adaptabilidad.  
+Te sugiero incluir una sección específica de "Habilidades Técnicas y Blandas" en tu CV para resaltar estos puntos.  
+
+---
+
+## 2. Tus Puntos Fuertes
+
+1. **Resolución de Problemas:** Tu puntuación alta en este ámbito (85) se refleja en tu experiencia laboral técnica, donde has enfrentado y resuelto desafíos complejos de desarrollo. Esta habilidad es clave en roles de Desarrollo Full Stack, donde se necesita pensar de forma estructurada y creativa.  
+
+2. **Trabajo en Equipo:** Con una puntuación destacada de 88, tienes una habilidad demostrada para colaborar eficazmente. Esto es muy valorado en entornos de desarrollo ágil, donde la interacción con otros desarrolladores, testers y stakeholders es constante.  
+
+3. **Adaptabilidad:** Tu capacidad para adaptarte (79) es crucial en el mundo tecnológico, donde las herramientas y frameworks evolucionan rápidamente. Sumado a tu disposición para reubicación, esto te posiciona como un candidato flexible y dispuesto a asumir desafíos globales.  
+
+---
+
+## 3. Áreas de Desarrollo y Sugerencias Prácticas
+
+1. **Comunicación Escrita:** Aunque tienes una comunicación asertiva aceptable (72), mejorar tu habilidad para expresar ideas de forma clara y persuasiva será clave, especialmente en documentación técnica y reportes.  
+   - **Sugerencia:** Practica el método "PIR" (Problema, Intervención, Resultado) al redactar informes o descripciones de proyectos. Esto te ayudará a estructurar tus ideas de manera más efectiva.  
+   - **Recurso:** Considera un curso breve en "Escritura Técnica para Desarrolladores" en plataformas como Coursera o Udemy.  
+
+2. **Gestión de Proyectos:** Aunque no es tu fortaleza principal, desarrollar habilidades en este ámbito te permitirá asumir roles de mayor responsabilidad en el futuro.  
+   - **Sugerencia:** Familiarízate con metodologías ágiles como Scrum y Kanban. Puedes comenzar con un curso introductorio en gestión de proyectos ágiles.  
+   - **Recurso:** El curso gratuito de "Fundamentos de Scrum" ofrecido por Scrum.org es un buen punto de partida.  
+
+3. **Liderazgo:** Con una puntuación de 65, esta es un área que puedes seguir desarrollando para asumir roles más estratégicos en el futuro.  
+   - **Sugerencia:** Practica el liderazgo en proyectos pequeños, como tutorías a compañeros o liderando un sprint en un entorno ágil.  
+   - **Recurso:** Únete a comunidades de desarrolladores como GitHub o Stack Overflow, donde puedes colaborar y liderar en proyectos open-source.  
+
+---
+
+## 4. Recomendaciones Laborales
+
+Con base en tu interés en Desarrollo Full Stack, tus habilidades técnicas y blandas, y tu disponibilidad inmediata, aquí tienes tres sugerencias específicas:  
+
+1. **Rol
