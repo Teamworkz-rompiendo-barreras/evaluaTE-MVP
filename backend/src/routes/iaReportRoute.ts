@@ -102,289 +102,64 @@ router.post('/', async (req: Request, res: Response) => {
     console.log('cvAnalysis recibido:', JSON.stringify(cvAnalysis, null, 2));
     console.log('cvAnalysisToUse procesado:', JSON.stringify(cvAnalysisToUse, null, 2));
 
-    // Construir prompt optimizado para análisis profesional y accesible
-    const prompt = `
-Eres un orientador laboral experto especializado en inclusión laboral. Genera un informe de empleabilidad PROFESIONAL Y ACCESIBLE basado en los datos proporcionados.
-
-**IMPORTANTE:** Este informe será leído por personas neurodivergentes y con discapacidad intelectual. Usa lenguaje claro, frases cortas y estructura muy organizada.
-
-**DATOS DEL USUARIO:**
-- Preferencias laborales: ${JSON.stringify(preferences, null, 2)}
-- Resultados de minijuegos: ${JSON.stringify(minigames, null, 2)}
-- Análisis del CV: ${JSON.stringify(cvAnalysisToUse, null, 2)}
-
-**ESTRUCTURA DEL INFORME (Markdown, 3-4 páginas, lenguaje accesible):**
-
-# Informe de Empleabilidad Personalizado
-
----
-
-## 1. Resumen Ejecutivo
-
-**Fecha del análisis:** [Fecha actual]  
-**Nivel de empleabilidad:** [Alto/Medio/Bajo basado en puntuaciones]  
-
-**Puntos clave:**
-• [3-4 puntos principales del análisis]  
-• [Fortalezas más importantes]  
-• [Áreas de mejora prioritarias]  
-
----
-
-## 2. Análisis Detallado del CV
-
-### 2.1 Estructura y Presentación
-
-**Calidad de la estructura:** ${cvAnalysisToUse.structure}  
-**Coherencia del contenido:** ${cvAnalysisToUse.coherence}  
-**Experiencia laboral:** ${cvAnalysisToUse.experience}  
-
-**Observaciones:**
-• [Comentario específico sobre la estructura]  
-• [Sugerencia de mejora si es necesario]  
-
-### 2.2 Habilidades Técnicas Identificadas
-
-**Habilidades detectadas en el CV:**
-${cvAnalysisToUse.skills.length > 0 ? cvAnalysisToUse.skills.join(', ') : 'No se detectaron habilidades técnicas específicas'}
-
-**Nivel de dominio:**
-• [Evaluar cada habilidad: Básico/Intermedio/Avanzado]  
-• [Comentario sobre la relevancia para el mercado laboral]  
-
-### 2.3 Formación Académica
-
-**Educación detectada:**
-${cvAnalysisToUse.education.length > 0 ? cvAnalysisToUse.education.join(', ') : 'No se especificó formación académica'}
-
-**Relevancia para el empleo:**
-• [Comentario sobre la formación]  
-
-### 2.4 Fortalezas del CV
-
-**Puntos fuertes identificados:**
-${cvAnalysisToUse.strengths.length > 0 ? cvAnalysisToUse.strengths.join(', ') : 'Necesita identificar más fortalezas'}
-
-### 2.5 Áreas de Mejora del CV
-
-**Aspectos a mejorar:**
-${cvAnalysisToUse.weaknesses.length > 0 ? cvAnalysisToUse.weaknesses.join(', ') : 'El CV está bien estructurado'}
-
----
-
-## 3. Evaluación de Habilidades Blandas
-
-### 3.1 Resultados de los Minijuegos
-
-**Habilidades evaluadas:**
-[La IA analizará los resultados de los minijuegos proporcionados]
-
-### 3.2 Análisis por Categoría
-
-**Habilidades destacadas (Alto nivel):**
-[La IA identificará las habilidades con mejor puntuación]
-
-**Habilidades en desarrollo (Medio nivel):**
-[La IA identificará las habilidades con puntuación media]
-
-**Habilidades a mejorar (Bajo nivel):**
-[La IA identificará las habilidades que necesitan mejora]
-
----
-
-## 4. Perfil Laboral
-
-### 4.1 Preferencias del Candidato
-
-**Áreas de interés:**
-${preferences.areas ? preferences.areas.join(', ') : 'No especificadas'}
-
-**Tipo de trabajo preferido:**
-• Modalidad: ${preferences.workMode || 'No especificada'}  
-• Disponibilidad: ${preferences.availability || 'No especificada'}  
-• Disposición a trasladarse: ${preferences.willingToRelocate ? 'Sí' : 'No'}  
-
-### 4.2 Necesidades Específicas
-
-**Necesidades identificadas:**
-${preferences.needs ? preferences.needs.join(', ') : 'No especificadas'}
-
-**Certificado de discapacidad:**
-• ${preferences.hasDisabilityCert ? 'Sí tiene certificado' : 'No tiene certificado'}  
-
----
-
-## 5. Recomendaciones Específicas
-
-### 5.1 Roles Laborales Recomendados
-
-**Basado en habilidades y preferencias:**
-
-**Rol 1: [Nombre del puesto]**
-• Descripción: [Explicación breve]  
-• Por qué es adecuado: [Razones específicas]  
-• Requisitos que cumple: [Lista de habilidades]  
-
-**Rol 2: [Nombre del puesto]**
-• Descripción: [Explicación breve]  
-• Por qué es adecuado: [Razones específicas]  
-• Requisitos que cumple: [Lista de habilidades]  
-
-**Rol 3: [Nombre del puesto]**
-• Descripción: [Explicación breve]  
-• Por qué es adecuado: [Razones específicas]  
-• Requisitos que cumple: [Lista de habilidades]  
-
-### 5.2 Tipos de Empresas Recomendadas
-
-**Empresas inclusivas:**
-• [Tipo de empresa 1] - [Razón]  
-• [Tipo de empresa 2] - [Razón]  
-• [Tipo de empresa 3] - [Razón]  
-
-### 5.3 Sectores de Actividad
-
-**Sectores con oportunidades:**
-• [Sector 1] - [Oportunidades]  
-• [Sector 2] - [Oportunidades]  
-• [Sector 3] - [Oportunidades]  
-
----
-
-## 6. Plan de Desarrollo Personal
-
-### 6.1 Mejoras Inmediatas (Esta semana)
-
-**Acciones concretas:**
-• [Acción 1: específica y medible]  
-• [Acción 2: específica y medible]  
-• [Acción 3: específica y medible]  
-
-### 6.2 Objetivos a Corto Plazo (1 mes)
-
-**Metas alcanzables:**
-• [Meta 1: específica y medible]  
-• [Meta 2: específica y medible]  
-• [Meta 3: específica y medible]  
-
-### 6.3 Objetivos a Medio Plazo (3 meses)
-
-**Desarrollo profesional:**
-• [Objetivo 1: específico y medible]  
-• [Objetivo 2: específico y medible]  
-• [Objetivo 3: específico y medible]  
-
----
-
-## 7. Recursos y Herramientas
-
-### 7.1 Formación Recomendada
-
-**Cursos gratuitos:**
-• [Curso 1] - [Plataforma]  
-• [Curso 2] - [Plataforma]  
-• [Curso 3] - [Plataforma]  
-
-**Cursos de pago:**
-• [Curso 1] - [Plataforma] - [Precio aproximado]  
-• [Curso 2] - [Plataforma] - [Precio aproximado]  
-
-### 7.2 Herramientas Útiles
-
-**Para mejorar habilidades:**
-• [Herramienta 1] - [Propósito]  
-• [Herramienta 2] - [Propósito]  
-• [Herramienta 3] - [Propósito]  
-
-### 7.3 Comunidades y Redes
-
-**Grupos de apoyo:**
-• [Comunidad 1] - [Enfoque]  
-• [Comunidad 2] - [Enfoque]  
-• [Comunidad 3] - [Enfoque]  
-
----
-
-## 8. Consideraciones de Accesibilidad
-
-### 8.1 Adaptaciones Laborales
-
-**Recomendaciones para el empleador:**
-• [Adaptación 1] - [Beneficio]  
-• [Adaptación 2] - [Beneficio]  
-• [Adaptación 3] - [Beneficio]  
-
-### 8.2 Derechos Laborales
-
-**Información importante:**
-• [Derecho 1] - [Explicación]  
-• [Derecho 2] - [Explicación]  
-• [Derecho 3] - [Explicación]  
-
----
-
-## 9. Conclusiones
-
-**Resumen final:**
-• [Punto clave 1]  
-• [Punto clave 2]  
-• [Punto clave 3]  
-
-[Frase de ánimo personalizada y realista sin etiqueta]
-
----
-
-**REGLAS IMPORTANTES PARA LA GENERACIÓN:**
-- Usa SOLO la información proporcionada en el CV
-- NO inventes habilidades que no están mencionadas
-- Usa frases cortas y lenguaje claro
-- Estructura la información con viñetas (•)
-- Usa espaciado generoso entre secciones
-- Mantén un tono profesional pero accesible
-- Sé específico y evita generalidades
-- Incluye solo información relevante y verificable
-- Usa un lenguaje inclusivo y respetuoso
-- Prioriza la claridad sobre la complejidad
+    // Preparar el perfil completo para el análisis profesional de IA
+    const perfil_completo = {
+      datos_personales: {
+        nombre: preferences.fullName || 'Usuario',
+        user_id: preferences.userId || 'user123'
+      },
+      habilidades_soft: minigames.map(game => ({
+        habilidad: game.skill || game.name || 'Habilidad',
+        puntuacion: game.score || game.value || 0,
+        nivel: game.level || (game.score >= 70 ? 'Alto' : game.score >= 40 ? 'Medio' : 'Bajo'),
+        confianza: game.confidence || 80
+      })),
+      analisis_cv: cvAnalysisToUse,
+      preferencias_laborales: preferences,
+      juegos_completados: minigames.map(game => game.name || game.skill || 'Juego'),
+      logs_juegos: []
+    };
+    
+    // Convertir a formato de texto para la IA
+    const perfil_texto = `
+PERFIL COMPLETO DEL CANDIDATO:
+
+DATOS PERSONALES:
+- Nombre: ${perfil_completo.datos_personales.nombre}
+- ID: ${perfil_completo.datos_personales.user_id}
+
+HABILIDADES SOFT EVALUADAS:
+${perfil_completo.habilidades_soft.map(h => `- ${h.habilidad}: ${h.puntuacion}% (Nivel: ${h.nivel}, Confianza: ${h.confianza}%)`).join('\n')}
+
+ANÁLISIS DEL CV:
+${JSON.stringify(perfil_completo.analisis_cv, null, 2)}
+
+PREFERENCIAS LABORALES:
+${JSON.stringify(perfil_completo.preferencias_laborales, null, 2)}
+
+JUEGOS COMPLETADOS:
+${perfil_completo.juegos_completados.join(', ')}
+
+LOGS DE JUEGOS:
+${JSON.stringify(perfil_completo.logs_juegos, null, 2)}
 `;
 
-    // 2. Construcción correcta de la URL usando la variable de entorno
-    const url = `${AZURE_OPENAI_ENDPOINT}openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=${AZURE_OPENAI_API_VERSION}`;
+    console.log('🤖 Generando informe profesional con IA...');
     
-    // Log de la URL y configuración para debug
-    console.log('=== CONFIGURACIÓN AZURE OPENAI ===');
-    console.log('URL:', url);
-    console.log('Deployment:', AZURE_OPENAI_DEPLOYMENT);
-    console.log('API Version:', AZURE_OPENAI_API_VERSION);
-    console.log('API Key presente:', AZURE_OPENAI_API_KEY ? 'Sí' : 'No');
-    console.log('Prompt length:', prompt.length, 'caracteres');
-    
-    // Llamada a Azure OpenAI optimizada
-    console.log('Iniciando llamada a Azure OpenAI...');
-    const startTime = Date.now();
-    
-    const response = await axios.post(
-      url,
-      {
-        messages: [
-          { role: 'system', content: 'Eres un orientador laboral experto. Genera informes concisos y específicos.' },
-          { role: 'user', content: prompt }
-        ],
-        max_tokens: 2000, // Aumentado para informes más detallados
-        temperature: 0.5, // Reducido de 0.7 para respuestas más consistentes
-      },
-      {
-        headers: {
-          'Content-Type': 'application/json',
-          'api-key': AZURE_OPENAI_API_KEY,
-        },
-        timeout: 60000, // Timeout aumentado a 60 segundos
-      }
-    );
-    
-    const endTime = Date.now();
-    console.log(`Azure OpenAI respondió en ${endTime - startTime}ms`);
-    const informe = response.data.choices[0]?.message?.content || 'No se pudo generar el informe.';
-    res.json({ informe });
+    try {
+      // Generar informe profesional usando Azure OpenAI
+      const informe_profesional = await generarInformeProfesional(perfil_texto);
+      console.log('✅ Informe profesional generado exitosamente');
+      
+      res.json({ informe: informe_profesional });
+    } catch (iaError) {
+      console.error('❌ Error generando informe profesional:', iaError);
+      
+      // Fallback: generar informe básico
+      console.log('🔄 Generando informe básico como fallback...');
+      const informeBasico = generateBasicReport(preferences, minigames, cvAnalysisToUse);
+      res.json({ informe: informeBasico });
+    }
   } catch (error: any) {
     // Log detallado del error de Azure/OpenAI o cualquier otro error
     console.error('=== ERROR DETALLADO ===');
@@ -448,6 +223,137 @@ router.post('/feedback', async (req: Request, res: Response) => {
 });
 
 export default router; 
+
+// Función para generar informe profesional usando Azure OpenAI
+async function generarInformeProfesional(perfil: string): Promise<string> {
+  const url = `${AZURE_OPENAI_ENDPOINT}openai/deployments/${AZURE_OPENAI_DEPLOYMENT}/chat/completions?api-version=${AZURE_OPENAI_API_VERSION}`;
+  
+  const prompt = `
+Eres un orientador laboral experto en neuroinclusión, con formación en psicología y especialización en empleabilidad para personas neurodivergentes. Tu misión es realizar un análisis integral y profesional del candidato, considerando todos los aspectos evaluados.
+
+---
+
+DATOS DEL CANDIDATO A ANALIZAR:
+${perfil}
+
+---
+
+INSTRUCCIONES PARA EL ANÁLISIS:
+
+1. **ANÁLISIS INTEGRAL**: Debes analizar en conjunto:
+   - Preferencias laborales y motivaciones
+   - Resultados de los minijuegos (habilidades cognitivas y soft skills)
+   - Experiencia y formación del CV
+   - Factores de neuroinclusión y accesibilidad
+
+2. **PERSPECTIVA PROFESIONAL**: Redacta como un psicólogo laboral experto que:
+   - Comprende las fortalezas neurodivergentes
+   - Identifica barreras y facilitadores laborales
+   - Propone adaptaciones y estrategias de inclusión
+   - Utiliza evidencia científica en sus recomendaciones
+
+3. **ENFOQUE NEUROINCLUSIVO**: Considera:
+   - Fortalezas cognitivas únicas
+   - Estilos de aprendizaje y comunicación
+   - Necesidades de adaptación en el entorno laboral
+   - Potencial de desarrollo y crecimiento
+
+---
+
+ESTRUCTURA DEL INFORME PROFESIONAL:
+
+## 1. RESUMEN EJECUTIVO
+(2-3 párrafos que sinteticen el perfil completo del candidato, destacando sus características principales, experiencia relevante y potencial laboral desde una perspectiva neuroinclusiva)
+
+## 2. ANÁLISIS DE COMPETENCIAS COGNITIVAS Y SOFT SKILLS
+### 2.1 Fortalezas Identificadas
+- Análisis detallado de las habilidades cognitivas evaluadas
+- Interpretación de los resultados de los minijuegos
+- Relación con competencias laborales específicas
+
+### 2.2 Áreas de Desarrollo
+- Identificación de oportunidades de mejora
+- Estrategias de compensación y adaptación
+- Recursos y herramientas de apoyo
+
+## 3. ANÁLISIS DE PREFERENCIAS Y MOTIVACIONES LABORALES
+### 3.1 Perfil Motivacional
+- Análisis de las preferencias expresadas
+- Compatibilidad con diferentes entornos laborales
+- Factores de satisfacción y retención
+
+### 3.2 Estilo de Trabajo Preferido
+- Condiciones laborales ideales
+- Tipo de supervisión y comunicación preferida
+- Entorno físico y social óptimo
+
+## 4. EVALUACIÓN DE EXPERIENCIA Y FORMACIÓN
+### 4.1 Análisis del CV
+- Revisión de experiencia laboral previa
+- Formación académica y profesional
+- Transferibilidad de competencias
+
+### 4.2 Brechas y Oportunidades
+- Identificación de necesidades formativas
+- Experiencia complementaria recomendada
+- Certificaciones o formación adicional sugerida
+
+## 5. RECOMENDACIONES DE EMPLEABILIDAD NEUROINCLUSIVA
+### 5.1 Puestos de Trabajo Recomendados
+- 3-4 propuestas específicas con justificación
+- Análisis de compatibilidad con el perfil
+- Perspectivas de desarrollo en cada rol
+
+### 5.2 Adaptaciones y Acompañamiento Recomendado
+- Ajustes en el entorno laboral
+- Estrategias de comunicación y supervisión
+- Recursos de apoyo y desarrollo
+
+### 5.3 Plan de Desarrollo Profesional
+- Objetivos a corto, medio y largo plazo
+- Recursos y herramientas recomendadas
+- Seguimiento y evaluación del progreso
+
+## 6. CONCLUSIONES Y PRÓXIMOS PASOS
+- Síntesis de las principales recomendaciones
+- Acciones inmediatas recomendadas
+- Expectativas realistas de empleabilidad
+
+---
+
+CRITERIOS DE CALIDAD:
+- Lenguaje profesional pero accesible
+- Análisis basado en evidencia y experiencia clínica
+- Recomendaciones prácticas y realizables
+- Enfoque positivo y empoderador
+- Consideración integral de factores neuroinclusivos
+- Propuestas específicas y contextualizadas
+`;
+
+  const response = await axios.post(
+    url,
+    {
+      messages: [
+        { 
+          role: 'system', 
+          content: 'Eres un psicólogo laboral experto en neuroinclusión, con más de 15 años de experiencia en orientación profesional para personas neurodivergentes. Tienes formación en psicología clínica, neuropsicología y empleabilidad. Tu enfoque es científico, empático y basado en evidencia. Siempre consideras las fortalezas únicas de cada persona y propones adaptaciones prácticas para maximizar su potencial laboral.' 
+        },
+        { role: 'user', content: prompt }
+      ],
+      max_tokens: 4000,
+      temperature: 0.7
+    },
+    {
+      headers: {
+        'Content-Type': 'application/json',
+        'api-key': AZURE_OPENAI_API_KEY,
+      },
+      timeout: 60000,
+    }
+  );
+
+  return response.data.choices[0]?.message?.content || 'No se pudo generar el informe profesional.';
+}
 
 // Función para generar informe básico sin IA
 function generateBasicReport(preferences: any, minigames: any[], cvAnalysis: any): string {

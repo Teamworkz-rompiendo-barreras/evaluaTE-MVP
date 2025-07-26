@@ -2,7 +2,7 @@
 
 from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse
+from fastapi.responses import JSONResponse, FileResponse
 from pydantic import BaseModel, Field
 import uvicorn
 from typing import List, Optional, Dict, Any
@@ -15,6 +15,10 @@ import openai
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 import logging
+import tempfile
+
+# Importar la función de generación de informe profesional
+from generate_report import generar_informe
 
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
@@ -86,7 +90,7 @@ class EmployabilityReportRequest(BaseModel):
     softSkills: List[SoftSkillResult]
     cvAnalysis: Optional[CvAnalysis] = None
     jobPreferences: Optional[JobPreference] = None
-    completedGames: List[int] = []
+    completedGames: List[str] = []  # Cambiado de List[int] a List[str] para compatibilidad
     logs: List[GameDecisionLog] = []
 
 class ReportResponse(BaseModel):
@@ -144,25 +148,73 @@ async def get_ia_report():
 
 @app.post("/api/logs/report", response_model=ReportResponse)
 async def generate_report(request: EmployabilityReportRequest):
-    """Genera informe final basado en datos del usuario"""
+    """Genera informe final profesional usando IA basado en datos del usuario"""
 
     try:
-        # Simula análisis de soft skills
-        high_skills = [skill for skill in request.softSkills if skill.level == "Alto"]
-        medium_skills = [skill for skill in request.softSkills if skill.level == "Medio"]
-        low_skills = [skill for skill in request.softSkills if skill.level == "Bajo"]
+        logger.info(f"🔄 Iniciando generación de informe profesional para: {request.fullName}")
+        
+        # Preparar el perfil completo para el análisis de IA
+        perfil_completo = {
+            "datos_personales": {
+                "nombre": request.fullName,
+                "user_id": request.userId
+            },
+            "habilidades_soft": [
+                {
+                    "habilidad": skill.skill,
+                    "puntuacion": skill.score,
+                    "nivel": skill.level,
+                    "confianza": skill.confidence
+                }
+                for skill in request.softSkills
+            ],
+            "analisis_cv": request.cvAnalysis.dict() if request.cvAnalysis else {},
+            "preferencias_laborales": request.jobPreferences.dict() if request.jobPreferences else {},
+            "juegos_completados": request.completedGames,
+            "logs_juegos": [log.dict() for log in request.logs] if request.logs else []
+        }
+        
+        # Convertir a formato de texto para la IA
+        perfil_texto = f"""
+PERFIL COMPLETO DEL CANDIDATO:
 
-        # Puntaje global basado en habilidades blandas
+DATOS PERSONALES:
+- Nombre: {perfil_completo['datos_personales']['nombre']}
+- ID: {perfil_completo['datos_personales']['user_id']}
+
+HABILIDADES SOFT EVALUADAS:
+{chr(10).join([f"- {h['habilidad']}: {h['puntuacion']}% (Nivel: {h['nivel']}, Confianza: {h['confianza']}%)" for h in perfil_completo['habilidades_soft']])}
+
+ANÁLISIS DEL CV:
+{json.dumps(perfil_completo['analisis_cv'], indent=2, ensure_ascii=False) if perfil_completo['analisis_cv'] else "No se proporcionó análisis de CV"}
+
+PREFERENCIAS LABORALES:
+{json.dumps(perfil_completo['preferencias_laborales'], indent=2, ensure_ascii=False) if perfil_completo['preferencias_laborales'] else "No se especificaron preferencias laborales"}
+
+JUEGOS COMPLETADOS:
+{', '.join(perfil_completo['juegos_completados']) if perfil_completo['juegos_completados'] else "Ningún juego completado"}
+
+LOGS DE JUEGOS:
+{json.dumps(perfil_completo['logs_juegos'], indent=2, ensure_ascii=False) if perfil_completo['logs_juegos'] else "No hay logs de juegos disponibles"}
+"""
+        
+        logger.info("🤖 Generando informe profesional con IA...")
+        
+        # Generar informe profesional usando IA
+        informe_profesional = generar_informe(perfil_texto)
+        
+        logger.info("✅ Informe profesional generado exitosamente")
+        
+        # Calcular puntuación de empleabilidad basada en habilidades
+        high_skills = [skill for skill in request.softSkills if skill.level.lower() == "alto"]
+        medium_skills = [skill for skill in request.softSkills if skill.level.lower() == "medio"]
+        low_skills = [skill for skill in request.softSkills if skill.level.lower() == "bajo"]
+        
         score_high = len(high_skills) * 100
         score_medium = len(medium_skills) * 65
         score_low = len(low_skills) * 30
         total_score = (score_high + score_medium + score_low) // max(1, len(request.softSkills))
-
-        # Ajuste según CV
-        # if request.cvAnalysis:
-        #     if request.cvAnalysis.score < 60:
-        #         total_score = max(20, total_score - 10)
-
+        
         # Nivel de empleabilidad
         level = (
             "Alta empleabilidad"
@@ -171,24 +223,32 @@ async def generate_report(request: EmployabilityReportRequest):
             if total_score >= 50
             else "Baja empleabilidad"
         )
-
-        # Recomendaciones personalizadas
-        roles = []
-        resources = ["Platzi", "Microsoft Learn"]
-        improvements = []
-        next_steps = []
-
-        if any(skill.level == "Alto" for skill in request.softSkills):
-            roles.append("Desarrollador frontend")
-            roles.append("Soporte técnico")
-
-        if request.cvAnalysis and request.cvAnalysis.weaknesses:
-            improvements.extend(request.cvAnalysis.weaknesses)
-
-        next_steps.append("Completar todos los juegos")
-        next_steps.append("Actualizar tu CV")
-        next_steps.append("Revisar tus preferencias")
-
+        
+        # Extraer recomendaciones del informe de IA
+        # Buscar secciones específicas en el informe
+        recomendaciones = {
+            "roles": [],
+            "resources": ["Platzi", "Microsoft Learn"],
+            "cvImprovements": [],
+            "nextSteps": ["Revisar el informe completo", "Implementar las recomendaciones", "Seguir el plan de desarrollo"]
+        }
+        
+        # Intentar extraer roles recomendados del informe
+        if "puestos de trabajo recomendados" in informe_profesional.lower() or "empleos compatibles" in informe_profesional.lower():
+            # Buscar patrones de roles en el texto
+            import re
+            roles_pattern = r"(?:puesto|rol|empleo|trabajo)[\s\w]*recomendado[^:]*:\s*([^.\n]+)"
+            roles_matches = re.findall(roles_pattern, informe_profesional, re.IGNORECASE)
+            if roles_matches:
+                recomendaciones["roles"] = [rol.strip() for rol in roles_matches[:3]]
+        
+        # Si no se encontraron roles, usar algunos por defecto basados en habilidades
+        if not recomendaciones["roles"]:
+            if any(skill.level.lower() == "alto" for skill in request.softSkills):
+                recomendaciones["roles"].extend(["Desarrollador frontend", "Soporte técnico"])
+            if request.cvAnalysis and request.cvAnalysis.strengths:
+                recomendaciones["roles"].append("Analista de datos")
+        
         return {
             "report": {
                 "userId": request.userId,
@@ -203,20 +263,19 @@ async def generate_report(request: EmployabilityReportRequest):
                 "createdAt": datetime.now().isoformat(),
                 "completedGames": request.completedGames,
                 "level": level,
+                "informeProfesional": informe_profesional  # Incluir el informe completo de IA
             },
-            "recommendations": {
-                "roles": roles,
-                "resources": resources,
-                "cvImprovements": improvements,
-                "nextSteps": next_steps,
-            },
-            "summary": f"{request.fullName}, tienes un nivel de empleabilidad: {level}",
+            "recommendations": recomendaciones,
+            "summary": f"{request.fullName}, tu informe profesional ha sido generado. Nivel de empleabilidad: {level}",
             "employabilityScore": total_score,
             "level": level,
             "createdAt": datetime.now().isoformat(),
         }
 
     except Exception as e:
+        logger.error(f"❌ Error generando informe profesional: {str(e)}")
+        import traceback
+        logger.error(f"📋 Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
 @app.post("/api/pdf/analyze-cv", response_model=CvAnalysis)
@@ -260,6 +319,15 @@ async def analyze_cv(
         soft_skills = json.loads(softSkills)
         job_preferences = json.loads(jobPreferences)
         completed_games = json.loads(completedGames)
+        
+        # Validar que soft_skills sea un array válido
+        if not isinstance(soft_skills, list):
+            soft_skills = []
+        if not isinstance(job_preferences, dict):
+            job_preferences = {}
+        if not isinstance(completed_games, list):
+            completed_games = []
+            
     except json.JSONDecodeError as e:
         logger.error(f"Error parseando datos JSON: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error en los datos enviados: {str(e)}")
@@ -376,3 +444,190 @@ async def upload_cv(file: UploadFile = File(...)):
             status_code=500, 
             content={"error": f"Error al procesar el archivo: {str(e)}"}
         )
+
+@app.post("/api/pdf/generate-report")
+async def generate_pdf_report(request: EmployabilityReportRequest):
+    """
+    Genera un PDF del informe de empleabilidad y lo devuelve para descarga.
+    """
+    logger.info(f"🔄 Iniciando generación de PDF para usuario: {request.fullName}")
+    
+    try:
+        logger.info("📦 Importando servicio de PDF...")
+        # Importar el servicio de PDF
+        from pdf_service import create_employability_pdf
+        logger.info("✅ Servicio de PDF importado correctamente")
+        
+        # Generar informe profesional de IA primero
+        logger.info("🤖 Generando informe profesional de IA...")
+        
+        # Preparar el perfil completo para el análisis de IA
+        perfil_completo = {
+            "datos_personales": {
+                "nombre": request.fullName,
+                "user_id": request.userId
+            },
+            "habilidades_soft": [
+                {
+                    "habilidad": skill.skill,
+                    "puntuacion": skill.score,
+                    "nivel": skill.level,
+                    "confianza": skill.confidence
+                }
+                for skill in request.softSkills
+            ],
+            "analisis_cv": request.cvAnalysis.dict() if request.cvAnalysis else {},
+            "preferencias_laborales": request.jobPreferences.dict() if request.jobPreferences else {},
+            "juegos_completados": request.completedGames,
+            "logs_juegos": [log.dict() for log in request.logs] if request.logs else []
+        }
+        
+        # Convertir a formato de texto para la IA
+        perfil_texto = f"""
+PERFIL COMPLETO DEL CANDIDATO:
+
+DATOS PERSONALES:
+- Nombre: {perfil_completo['datos_personales']['nombre']}
+- ID: {perfil_completo['datos_personales']['user_id']}
+
+HABILIDADES SOFT EVALUADAS:
+{chr(10).join([f"- {h['habilidad']}: {h['puntuacion']}% (Nivel: {h['nivel']}, Confianza: {h['confianza']}%)" for h in perfil_completo['habilidades_soft']])}
+
+ANÁLISIS DEL CV:
+{json.dumps(perfil_completo['analisis_cv'], indent=2, ensure_ascii=False) if perfil_completo['analisis_cv'] else "No se proporcionó análisis de CV"}
+
+PREFERENCIAS LABORALES:
+{json.dumps(perfil_completo['preferencias_laborales'], indent=2, ensure_ascii=False) if perfil_completo['preferencias_laborales'] else "No se especificaron preferencias laborales"}
+
+JUEGOS COMPLETADOS:
+{', '.join(perfil_completo['juegos_completados']) if perfil_completo['juegos_completados'] else "Ningún juego completado"}
+
+LOGS DE JUEGOS:
+{json.dumps(perfil_completo['logs_juegos'], indent=2, ensure_ascii=False) if perfil_completo['logs_juegos'] else "No hay logs de juegos disponibles"}
+"""
+        
+        # Generar informe profesional usando IA
+        informe_profesional = generar_informe(perfil_texto)
+        logger.info("✅ Informe profesional de IA generado")
+        
+        # Preparar los datos para el PDF
+        logger.info("📊 Preparando datos para el PDF...")
+        # Convertir objetos Pydantic a diccionarios
+        soft_skills_dict = [skill.dict() for skill in request.softSkills]
+        cv_analysis_dict = request.cvAnalysis.dict() if request.cvAnalysis else {}
+        job_preferences_dict = request.jobPreferences.dict() if request.jobPreferences else {}
+        
+        pdf_data = {
+            "gameData": soft_skills_dict,
+            "cvAnalysis": cv_analysis_dict,
+            "jobPreferences": job_preferences_dict,
+            "userInfo": {
+                "fullName": request.fullName,
+                "userId": request.userId
+            },
+            "informeProfesional": informe_profesional  # Incluir el informe profesional de IA
+        }
+        logger.info(f"📋 Datos preparados: {len(request.softSkills)} habilidades, CV: {bool(request.cvAnalysis)}, Preferencias: {bool(request.jobPreferences)}")
+        
+        # Generar el PDF
+        logger.info("🖨️ Generando PDF...")
+        start_time = datetime.now()
+        pdf_buffer = create_employability_pdf(pdf_data)
+        end_time = datetime.now()
+        generation_time = (end_time - start_time).total_seconds()
+        logger.info(f"✅ PDF generado en {generation_time:.2f} segundos")
+        
+        # Crear un archivo temporal
+        logger.info("📁 Creando archivo temporal...")
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            tmp_file.write(pdf_buffer)
+            tmp_file_path = tmp_file.name
+        logger.info(f"📄 Archivo temporal creado: {tmp_file_path}")
+        
+        # Generar nombre de archivo
+        filename = f"informe_empleabilidad_{request.fullName.replace(' ', '_')}_{datetime.now().strftime('%Y%m%d_%H%M%S')}.pdf"
+        logger.info(f"📝 Nombre de archivo: {filename}")
+        
+        # Devolver el archivo PDF
+        logger.info("🚀 Enviando respuesta...")
+        return FileResponse(
+            path=tmp_file_path,
+            filename=filename,
+            media_type='application/pdf',
+            headers={
+                'Content-Disposition': f'attachment; filename="{filename}"'
+            }
+        )
+        
+    except ImportError as e:
+        logger.error(f"❌ Error importando servicio PDF: {str(e)}")
+        raise HTTPException(
+            status_code=500, 
+            detail="Servicio de PDF no disponible"
+        )
+    except Exception as e:
+        logger.error(f"❌ Error generando PDF: {str(e)}")
+        logger.error(f"🔍 Tipo de error: {type(e).__name__}")
+        import traceback
+        logger.error(f"📋 Traceback completo: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=500, 
+            detail=f"Error generando PDF: {str(e)}"
+        )
+
+@app.post("/api/pdf/test")
+async def test_pdf_generation():
+    """
+    Endpoint de prueba para verificar la generación de PDF
+    """
+    logger.info("🧪 Iniciando prueba de generación de PDF...")
+    
+    try:
+        logger.info("📊 Preparando datos de prueba...")
+        # Datos de prueba simples
+        test_data = {
+            "gameData": [
+                {"skill": "Comunicación", "score": 85, "level": "alto", "confidence": 90}
+            ],
+            "cvAnalysis": {"strengths": ["Test"], "weaknesses": []},
+            "jobPreferences": {"areas": ["Test"], "needs": []},
+            "userInfo": {"fullName": "Test User", "userId": "test123"}
+        }
+        logger.info("✅ Datos de prueba preparados")
+        
+        logger.info("📦 Importando servicio de PDF completo...")
+        from pdf_service import create_employability_pdf
+        logger.info("✅ Servicio importado")
+        
+        logger.info("🖨️ Generando PDF completo de prueba...")
+        start_time = datetime.now()
+        pdf_buffer = create_employability_pdf(test_data)
+        end_time = datetime.now()
+        generation_time = (end_time - start_time).total_seconds()
+        
+        logger.info(f"✅ PDF de prueba generado en {generation_time:.2f} segundos")
+        logger.info(f"📏 Tamaño del buffer: {len(pdf_buffer)} bytes")
+        
+        logger.info("📁 Creando archivo temporal...")
+        # Crear archivo temporal
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
+            tmp_file.write(pdf_buffer)
+            tmp_file_path = tmp_file.name
+        logger.info(f"✅ Archivo temporal creado: {tmp_file_path}")
+        
+        logger.info("🚀 Preparando respuesta...")
+        response = FileResponse(
+            path=tmp_file_path,
+            filename="test.pdf",
+            media_type='application/pdf'
+        )
+        logger.info("✅ Respuesta preparada")
+        
+        return response
+        
+    except Exception as e:
+        logger.error(f"❌ Error en prueba de PDF: {str(e)}")
+        logger.error(f"🔍 Tipo de error: {type(e).__name__}")
+        import traceback
+        logger.error(f"📋 Traceback: {traceback.format_exc()}")
+        raise HTTPException(status_code=500, detail=str(e))
