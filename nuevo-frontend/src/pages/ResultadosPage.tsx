@@ -7,6 +7,7 @@ import logo from '../assets/Logo_teamworkz.png';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 import ReactMarkdown from 'react-markdown';
 import { useMemo } from 'react';
+import '../styles/print.css';
 
 
 // Tipo para los datos del radar
@@ -52,11 +53,12 @@ const ResultadosPage: React.FC = () => {
       setErrorIa('');
       try {
         const requestBody = {
-          preferences: report?.jobPreferences || {},
-          minigames: (report?.softSkills ?? []).map(skill => ({
+          userId: report?.userId || 'user',
+          fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
+          softSkills: (report?.softSkills ?? []).map(skill => ({
             skill: skill.skill,
-            level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
             score: skill.score ?? 0,
+            level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
             confidence: skill.confidence ?? skill.score ?? 0,
           })),
           cvAnalysis: cvAnalysis ? {
@@ -69,17 +71,10 @@ const ResultadosPage: React.FC = () => {
             skills: cvAnalysis.skills ?? [],
             education: cvAnalysis.education ?? [],
             alerts: cvAnalysis.alerts ?? [],
-          } : {
-            strengths: [],
-            weaknesses: [],
-            feedback: 'No se pudo analizar el CV',
-            structure: 'regular',
-            coherence: 'regular',
-            experience: 'regular',
-            skills: [],
-            education: [],
-            alerts: ['Análisis limitado del CV']
-          }
+          } : null,
+          jobPreferences: report?.jobPreferences || null,
+          completedGames: game?.completedGames || [],
+          logs: []
         };
 
         const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT), {
@@ -89,8 +84,45 @@ const ResultadosPage: React.FC = () => {
           signal: AbortSignal.timeout(45000), // Timeout de 45 segundos
         });
         const data = await res.json();
-        if (res.ok && data.informe) {
-          setIaReport(data.informe);
+        if (res.ok && data.summary) {
+          // Generar un informe basado en la respuesta del backend
+          const informe = `
+# Informe de Empleabilidad
+
+## Resumen
+${data.summary}
+
+## Nivel de Empleabilidad
+**${data.level}** (Puntaje: ${data.employabilityScore}/100)
+
+## Recomendaciones
+
+### Roles Sugeridos
+${data.recommendations.roles.map((role: string) => `- ${role}`).join('\n')}
+
+### Recursos de Aprendizaje
+${data.recommendations.resources.map((resource: string) => `- ${resource}`).join('\n')}
+
+### Mejoras para el CV
+${data.recommendations.cvImprovements.map((improvement: string) => `- ${improvement}`).join('\n')}
+
+### Próximos Pasos
+${data.recommendations.nextSteps.map((step: string) => `- ${step}`).join('\n')}
+
+## Análisis Detallado
+
+### Habilidades Evaluadas
+${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
+
+### Preferencias Laborales
+- **Áreas de interés**: ${data.report.jobPreferences.areas?.join(', ') || 'No especificadas'}
+- **Modalidad de trabajo**: ${data.report.jobPreferences.workMode || 'No especificada'}
+- **Disponibilidad**: ${data.report.jobPreferences.availability || 'No especificada'}
+
+---
+*Informe generado el ${new Date(data.createdAt).toLocaleDateString('es-ES')}*
+          `;
+          setIaReport(informe);
         } else {
           setErrorIa('No se pudo generar el informe IA.');
         }
@@ -145,6 +177,10 @@ const ResultadosPage: React.FC = () => {
   // Estado para el progreso de la barra
   const [progress, setProgress] = useState(0);
 
+  // Estado para la descarga de PDF
+  const [downloadingPdf, setDownloadingPdf] = useState(false);
+  const [pdfError, setPdfError] = useState('');
+
   // Efecto para animar la barra de progreso
   useEffect(() => {
     let interval: NodeJS.Timeout | null = null;
@@ -171,13 +207,140 @@ const ResultadosPage: React.FC = () => {
     };
   }, [loadingIa]);
 
+  // Función para descargar PDF
+  const handleDownloadPdf = async () => {
+    setDownloadingPdf(true);
+    setPdfError('');
+    
+    try {
+      const requestBody = {
+        userId: report?.userId || 'user',
+        fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
+        softSkills: (report?.softSkills ?? []).map(skill => ({
+          skill: skill.skill,
+          score: skill.score ?? 0,
+          level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
+          confidence: skill.confidence ?? skill.score ?? 0,
+        })),
+        cvAnalysis: cvAnalysis ? {
+          strengths: cvAnalysis.strengths ?? [],
+          weaknesses: cvAnalysis.weaknesses ?? [],
+          feedback: cvAnalysis.feedback ?? '',
+          structure: cvAnalysis.structure ?? 'regular',
+          coherence: cvAnalysis.coherence ?? 'regular',
+          experience: cvAnalysis.experience ?? 'regular',
+          skills: cvAnalysis.skills ?? [],
+          education: cvAnalysis.education ?? [],
+          alerts: cvAnalysis.alerts ?? [],
+        } : null,
+        jobPreferences: report?.jobPreferences || null,
+        completedGames: game?.completedGames || [],
+        logs: []
+      };
+
+      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_DOWNLOAD), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(requestBody),
+      });
+
+      if (!response.ok) {
+        throw new Error(`Error ${response.status}: ${response.statusText}`);
+      }
+
+      // Obtener el blob del PDF
+      const blob = await response.blob();
+      
+      // Crear URL del blob
+      const url = window.URL.createObjectURL(blob);
+      
+      // Crear enlace de descarga
+      const link = document.createElement('a');
+      link.href = url;
+      link.download = `informe_empleabilidad_${requestBody.fullName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
+      
+      // Simular clic para descargar
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      
+      // Limpiar URL
+      window.URL.revokeObjectURL(url);
+      
+    } catch (error) {
+      console.error('Error descargando PDF:', error);
+      setPdfError('Error al descargar el PDF. Por favor, inténtalo de nuevo.');
+    } finally {
+      setDownloadingPdf(false);
+    }
+  };
+
+  // Función para imprimir
+  const handlePrint = () => {
+    window.print();
+  };
+
   // 1. Portada
   const portada = (
-    <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center mb-8">
+    <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid">
       <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4" />
       <h1 className="text-4xl font-bold mb-2">Informe de Empleabilidad</h1>
       <h2 className="text-2xl font-semibold mb-1">{report?.firstName} {report?.lastName}</h2>
       <p className="text-gray-600">{fecha}</p>
+      
+      {/* Botones de acción */}
+      <div className="flex gap-4 mt-6 print-hidden">
+        <button
+          onClick={handleDownloadPdf}
+          disabled={downloadingPdf || !iaReport}
+          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+            downloadingPdf || !iaReport
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-blue-600 text-white hover:bg-blue-700'
+          }`}
+        >
+          {downloadingPdf ? (
+            <span className="flex items-center gap-2">
+              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
+                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
+                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+              </svg>
+              Generando PDF...
+            </span>
+          ) : (
+            <span className="flex items-center gap-2">
+              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              Descargar PDF
+            </span>
+          )}
+        </button>
+        
+        <button
+          onClick={handlePrint}
+          disabled={!iaReport}
+          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+            !iaReport
+              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
+              : 'bg-green-600 text-white hover:bg-green-700'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Imprimir
+          </span>
+        </button>
+      </div>
+      
+      {/* Mensaje de error del PDF */}
+      {pdfError && (
+        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg print-hidden">
+          {pdfError}
+        </div>
+      )}
     </div>
   );
 
@@ -206,7 +369,7 @@ const ResultadosPage: React.FC = () => {
     ? processRadarData(radarDataFromIa)
     : processRadarData(report?.softSkills ?? []);
   const radar = (
-    <div className="bg-white rounded-lg shadow-md p-8 mb-8">
+    <div className="bg-white rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid">
       <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-1/2 h-96">
@@ -257,7 +420,8 @@ const ResultadosPage: React.FC = () => {
 
   // Renderizado final
   return (
-    <section className="max-w-4xl mx-auto p-4">
+    <section className="max-w-4xl mx-auto p-4 print:p-0 print:max-w-none">
+
       {/* Mensaje de carga */}
       {loadingIa && (
         <div className="bg-blue-100 rounded-lg shadow-md p-6 mb-8 text-center">
@@ -289,7 +453,7 @@ const ResultadosPage: React.FC = () => {
       {/* Informe de la IA y formulario de feedback */}
       {iaReport && (
         <>
-          <div className="bg-white rounded-lg shadow-md p-8 mb-8 prose max-w-none overflow-visible">
+          <div className="bg-white rounded-lg shadow-md p-8 mb-8 prose max-w-none overflow-visible print-report-section print-page-break-inside-avoid">
             <ReactMarkdown
               components={{
                 a: (props) => (
@@ -323,7 +487,7 @@ const ResultadosPage: React.FC = () => {
           </div>
 
           {!feedbackSent && (
-            <div className="bg-gray-50 rounded-lg shadow-md p-6 mb-8">
+            <div className="bg-gray-50 rounded-lg shadow-md p-6 mb-8 print-hidden">
               <form onSubmit={handleFeedbackSubmit}>
                 <label className="block mb-2 font-semibold">¿Te resultó útil este informe?</label>
                 <div className="flex gap-4 mb-4">
@@ -345,7 +509,7 @@ const ResultadosPage: React.FC = () => {
           )}
 
           {feedbackSent && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
+            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8 print-hidden" role="alert">
               <p className="font-semibold">¡Gracias por tu feedback!</p>
             </div>
           )}

@@ -11,7 +11,8 @@ export const API_CONFIG = {
     IA_FEEDBACK: '/api/informe-ia/feedback',
     PDF_GENERATE: '/api/generate-report',
     PDF_UPLOAD: '/api/upload-cv',
-    PDF_ANALYZE: '/api/pdf/analyze-cv'
+    PDF_ANALYZE: '/api/pdf/analyze-cv',
+    PDF_DOWNLOAD: '/api/pdf/generate-report'
   }
 };
 
