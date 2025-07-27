@@ -108,7 +108,7 @@ router.post('/', async (req: Request, res: Response) => {
         nombre: preferences.fullName || 'Usuario',
         user_id: preferences.userId || 'user123'
       },
-      habilidades_soft: minigames.map(game => ({
+      habilidades_soft: minigames.map((game: any) => ({
         habilidad: game.skill || game.name || 'Habilidad',
         puntuacion: game.score || game.value || 0,
         nivel: game.level || (game.score >= 70 ? 'Alto' : game.score >= 40 ? 'Medio' : 'Bajo'),
@@ -116,7 +116,7 @@ router.post('/', async (req: Request, res: Response) => {
       })),
       analisis_cv: cvAnalysisToUse,
       preferencias_laborales: preferences,
-      juegos_completados: minigames.map(game => game.name || game.skill || 'Juego'),
+      juegos_completados: minigames.map((game: any) => game.name || game.skill || 'Juego'),
       logs_juegos: []
     };
     
@@ -129,7 +129,7 @@ DATOS PERSONALES:
 - ID: ${perfil_completo.datos_personales.user_id}
 
 HABILIDADES SOFT EVALUADAS:
-${perfil_completo.habilidades_soft.map(h => `- ${h.habilidad}: ${h.puntuacion}% (Nivel: ${h.nivel}, Confianza: ${h.confianza}%)`).join('\n')}
+${perfil_completo.habilidades_soft.map((h: any) => `- ${h.habilidad}: ${h.puntuacion}% (Nivel: ${h.nivel}, Confianza: ${h.confianza}%)`).join('\n')}
 
 ANÁLISIS DEL CV:
 ${JSON.stringify(perfil_completo.analisis_cv, null, 2)}
