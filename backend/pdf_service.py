@@ -382,6 +382,28 @@ class PDFService:
         
         elements.append(Spacer(1, 20))
         
+        # Habilidades técnicas detectadas
+        skills = cv_analysis.get('skills', [])
+        if skills:
+            elements.append(Paragraph("<b>Habilidades técnicas detectadas:</b>", self.styles['CustomBody']))
+            for skill in skills:
+                elements.append(Paragraph(
+                    f"• {skill}",
+                    self.styles['CustomList']
+                ))
+            elements.append(Spacer(1, 20))
+        
+        # Formación detectada
+        education = cv_analysis.get('education', [])
+        if education:
+            elements.append(Paragraph("<b>Formación detectada:</b>", self.styles['CustomBody']))
+            for edu in education:
+                elements.append(Paragraph(
+                    f"• {edu}",
+                    self.styles['CustomList']
+                ))
+            elements.append(Spacer(1, 20))
+        
         # Fortalezas del CV
         strengths = cv_analysis.get('strengths', [])
         if strengths:
@@ -391,8 +413,7 @@ class PDFService:
                     f"• {strength}",
                     self.styles['CustomList']
                 ))
-        
-        elements.append(Spacer(1, 20))
+            elements.append(Spacer(1, 20))
         
         # Áreas de mejora
         weaknesses = cv_analysis.get('weaknesses', [])
@@ -403,11 +424,22 @@ class PDFService:
                     f"• {weakness}",
                     self.styles['CustomList']
                 ))
+            elements.append(Spacer(1, 20))
+        
+        # Alertas o puntos críticos
+        alerts = cv_analysis.get('alerts', [])
+        if alerts:
+            elements.append(Paragraph("<b>Alertas o puntos críticos:</b>", self.styles['CustomBody']))
+            for alert in alerts:
+                elements.append(Paragraph(
+                    f"⚠️ {alert}",
+                    self.styles['CustomList']
+                ))
+            elements.append(Spacer(1, 20))
         
         # Feedback general
         feedback = cv_analysis.get('feedback', '')
         if feedback:
-            elements.append(Spacer(1, 20))
             elements.append(Paragraph(
                 f"<b>Feedback general:</b> {feedback}",
                 self.styles['CustomBody']

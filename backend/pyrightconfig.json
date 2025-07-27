@@ -1,4 +1,19 @@
 {
   "venvPath": ".",
-  "venv": "venv"
+  "venv": "venv",
+  "pythonPath": "./venv/bin/python",
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true,
+  "reportMissingImports": "warning",
+  "reportMissingTypeStubs": false,
+  "include": [
+    "*.py",
+    "**/*.py"
+  ],
+  "exclude": [
+    "venv",
+    "__pycache__",
+    "*.pyc",
+    ".pytest_cache"
+  ]
 } 
