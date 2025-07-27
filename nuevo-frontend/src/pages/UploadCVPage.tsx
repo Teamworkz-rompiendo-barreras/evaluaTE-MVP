@@ -13,6 +13,7 @@ export default function UploadCVPage() {
 
   // Seleccionamos el archivo del CV desde el estado
   const cvFile = useSelector((state: unknown) => (state as { personal: { cvFile: { fileName: string; fileContent: string } | null } }).personal.cvFile)
+  const cvAnalysis = useSelector((state: unknown) => (state as { personal: { cvAnalysis: any } }).personal.cvAnalysis)
 
   const [file, setFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -60,25 +61,36 @@ export default function UploadCVPage() {
 
       // Enviar el archivo al backend para análisis real
       const formData = new FormData();
-      formData.append('cv', file);
+      formData.append('file', file);
       formData.append('userId', 'user-ester-2025');
       formData.append('fullName', 'Ester Pérez Ribada');
       formData.append('softSkills', JSON.stringify([]));
       formData.append('jobPreferences', JSON.stringify({}));
       formData.append('completedGames', JSON.stringify([]));
       
-      let cvAnalysis = null;
+      console.log('📤 Enviando CV para análisis...');
       const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_ANALYZE), {
         method: 'POST',
         body: formData
       });
       
       if (res.ok) {
-        cvAnalysis = await res.json();
+        const cvAnalysis = await res.json();
+        console.log('✅ Análisis de CV recibido:', cvAnalysis);
+        
+        // Guardar el análisis en el estado de Redux
         dispatch(saveCvAnalysis(cvAnalysis));
+        console.log('✅ Análisis de CV guardado en Redux');
+        
+        // Verificar que se guardó correctamente
+        if (cvAnalysis && (cvAnalysis.strengths?.length > 0 || cvAnalysis.skills?.length > 0 || cvAnalysis.weaknesses?.length > 0)) {
+          console.log('✅ CV analizado con datos reales');
+        } else {
+          console.log('⚠️ CV analizado pero sin datos significativos');
+        }
       } else {
         const errorData = await res.json().catch(() => ({}));
-        // console.error('Error del servidor:', errorData);
+        console.error('❌ Error del servidor:', errorData);
         
         // Crear un análisis básico con información del error
         const fallbackAnalysis = {
@@ -94,9 +106,10 @@ export default function UploadCVPage() {
         };
         
         dispatch(saveCvAnalysis(fallbackAnalysis));
+        console.log('⚠️ Usando análisis de fallback');
       }
     } catch (err) {
-      // console.error('Error de conexión:', err);
+      console.error('❌ Error de conexión:', err);
       setError('Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.');
       
       // Crear un análisis básico para errores de conexión
@@ -117,6 +130,7 @@ export default function UploadCVPage() {
     }
 
     // Generar reporte final después de subir el CV
+    console.log('📋 Generando reporte final...');
     dispatch(generateFinalReport())
     navigate('/resultados')
   }
@@ -127,6 +141,34 @@ export default function UploadCVPage() {
       <div className="p-6 max-w-3xl mx-auto">
         <h1 className="text-2xl font-bold mb-4">Tu CV</h1>
         <p className="mb-4">Ya has subido un CV: {cvFile.fileName}</p>
+
+        {/* Mostrar información del análisis si está disponible */}
+        {cvAnalysis && (
+          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+            <h3 className="font-semibold text-blue-800 mb-2">Análisis del CV:</h3>
+            <p className="text-blue-700">{cvAnalysis.feedback}</p>
+            {cvAnalysis.strengths && cvAnalysis.strengths.length > 0 && (
+              <div className="mt-2">
+                <strong className="text-green-700">Fortalezas:</strong>
+                <ul className="list-disc list-inside text-green-600">
+                  {cvAnalysis.strengths.map((strength: string, index: number) => (
+                    <li key={index}>{strength}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+            {cvAnalysis.skills && cvAnalysis.skills.length > 0 && (
+              <div className="mt-2">
+                <strong className="text-purple-700">Habilidades detectadas:</strong>
+                <ul className="list-disc list-inside text-purple-600">
+                  {cvAnalysis.skills.map((skill: string, index: number) => (
+                    <li key={index}>{skill}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </div>
+        )}
 
         {/* Vista previa del PDF */}
         <object data={cvFile.fileContent} type="application/pdf" width="100%" height="600px">
