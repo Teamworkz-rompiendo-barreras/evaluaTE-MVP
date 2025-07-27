@@ -41,11 +41,24 @@ def test_cv_analysis(pdf_path: str):
         print(f"Coherencia: {analysis.get('coherence', 'N/A')}")
         print(f"Experiencia: {analysis.get('experience', 'N/A')}")
         print(f"Habilidades encontradas: {len(analysis.get('skills', []))}")
+        print(f"Soft Skills encontradas: {len(analysis.get('softSkills', []))}")
+        print(f"Idiomas encontrados: {len(analysis.get('languages', []))}")
         print(f"Experiencias encontradas: {len(cv_info.get('experiencia', []))}")
         print(f"Educación encontrada: {len(cv_info.get('educacion', []))}")
         
         if analysis.get('skills'):
-            print(f"Habilidades: {', '.join(analysis['skills'])}")
+            print(f"Habilidades técnicas: {', '.join(analysis['skills'])}")
+        
+        if analysis.get('softSkills'):
+            print(f"Soft Skills: {', '.join(analysis['softSkills'])}")
+        
+        if analysis.get('languages'):
+            idiomas_str = []
+            for lang in analysis['languages']:
+                idioma = lang.get('idioma', '')
+                nivel = lang.get('nivel', '')
+                idiomas_str.append(f"{idioma} ({nivel})")
+            print(f"Idiomas: {', '.join(idiomas_str)}")
         
         if analysis.get('strengths'):
             print(f"Fortalezas: {', '.join(analysis['strengths'])}")

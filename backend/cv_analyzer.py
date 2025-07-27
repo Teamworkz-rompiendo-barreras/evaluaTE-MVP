@@ -204,8 +204,144 @@ def extract_education_from_text(text: str) -> List[Dict[str, Any]]:
     
     return education
 
+def extract_soft_skills_from_text(text: str) -> List[str]:
+    """
+    Extrae soft skills (habilidades blandas) del texto
+    """
+    soft_skills_keywords = {
+        'liderazgo': ['liderazgo', 'liderar', 'líder', 'team lead', 'team leader', 'management', 'gestión'],
+        'comunicación': ['comunicación', 'comunicar', 'presentación', 'presentar', 'negociación', 'negociar'],
+        'trabajo en equipo': ['trabajo en equipo', 'colaboración', 'colaborar', 'teamwork', 'coordinación'],
+        'resolución de problemas': ['resolución', 'problemas', 'problem solving', 'análisis', 'analizar'],
+        'adaptabilidad': ['adaptabilidad', 'flexibilidad', 'flexible', 'adaptación', 'cambio'],
+        'creatividad': ['creatividad', 'creativo', 'innovación', 'innovador', 'diseño', 'diseñar'],
+        'organización': ['organización', 'organizar', 'planificación', 'planificar', 'gestión de proyectos'],
+        'atención al detalle': ['detalle', 'precisión', 'preciso', 'cuidadoso', 'meticuloso'],
+        'gestión del tiempo': ['gestión del tiempo', 'time management', 'priorización', 'deadlines'],
+        'pensamiento crítico': ['pensamiento crítico', 'critical thinking', 'análisis crítico'],
+        'toma de decisiones': ['toma de decisiones', 'decision making', 'decisión'],
+        'empatía': ['empatía', 'empatizar', 'comprensión', 'entender'],
+        'motivación': ['motivación', 'motivado', 'proactivo', 'iniciativa'],
+        'confianza': ['confianza', 'seguridad', 'seguro', 'autoconfianza'],
+        'responsabilidad': ['responsabilidad', 'responsable', 'compromiso', 'comprometido']
+    }
+    
+    found_soft_skills = []
+    text_lower = text.lower()
+    
+    for skill_category, keywords in soft_skills_keywords.items():
+        for keyword in keywords:
+            if keyword in text_lower and skill_category not in found_soft_skills:
+                found_soft_skills.append(skill_category)
+                break
+    
+    return found_soft_skills
+
+def extract_languages_from_text(text: str) -> List[Dict[str, str]]:
+    """
+    Extrae información de idiomas del texto
+    """
+    languages = []
+    
+    # Patrones para detectar idiomas y niveles
+    language_patterns = [
+        r'(español|castellano|spanish)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(inglés|english)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(francés|french)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(alemán|german)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(italiano|italian)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(portugués|portuguese)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(catalán|catalan)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(euskera|basque)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(gallego|galician)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(chino|chinese)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(japonés|japanese)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(árabe|arabic)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)',
+        r'(ruso|russian)\s*[:\-]?\s*(nativo|bilingüe|avanzado|intermedio|básico|fluido|excelente|bueno|regular)'
+    ]
+    
+    # Buscar patrones específicos
+    for pattern in language_patterns:
+        matches = re.finditer(pattern, text, re.IGNORECASE)
+        for match in matches:
+            language_name = match.group(1).lower()
+            level = match.group(2).lower()
+            
+            # Normalizar nombres de idiomas
+            language_mapping = {
+                'español': 'Español', 'castellano': 'Español', 'spanish': 'Inglés',
+                'inglés': 'Inglés', 'english': 'Inglés',
+                'francés': 'Francés', 'french': 'Francés',
+                'alemán': 'Alemán', 'german': 'Alemán',
+                'italiano': 'Italiano', 'italian': 'Italiano',
+                'portugués': 'Portugués', 'portuguese': 'Portugués',
+                'catalán': 'Catalán', 'catalan': 'Catalán',
+                'euskera': 'Euskera', 'basque': 'Euskera',
+                'gallego': 'Gallego', 'galician': 'Gallego',
+                'chino': 'Chino', 'chinese': 'Chino',
+                'japonés': 'Japonés', 'japanese': 'Japonés',
+                'árabe': 'Árabe', 'arabic': 'Árabe',
+                'ruso': 'Ruso', 'russian': 'Ruso'
+            }
+            
+            normalized_language = language_mapping.get(language_name, language_name.title())
+            
+            # Normalizar niveles
+            level_mapping = {
+                'nativo': 'Nativo', 'bilingüe': 'Bilingüe', 'bilingue': 'Bilingüe',
+                'avanzado': 'Avanzado', 'fluido': 'Fluido', 'excelente': 'Avanzado',
+                'intermedio': 'Intermedio', 'bueno': 'Intermedio',
+                'básico': 'Básico', 'basico': 'Básico', 'regular': 'Básico'
+            }
+            
+            normalized_level = level_mapping.get(level, level.title())
+            
+            languages.append({
+                "idioma": normalized_language,
+                "nivel": normalized_level
+            })
+    
+    # Si no se encontraron idiomas con patrones específicos, buscar solo nombres de idiomas
+    if not languages:
+        # Definir el mapeo de idiomas aquí también
+        language_mapping = {
+            'español': 'Español', 'castellano': 'Español', 'spanish': 'Inglés',
+            'inglés': 'Inglés', 'english': 'Inglés',
+            'francés': 'Francés', 'french': 'Francés',
+            'alemán': 'Alemán', 'german': 'Alemán',
+            'italiano': 'Italiano', 'italian': 'Italiano',
+            'portugués': 'Portugués', 'portuguese': 'Portugués',
+            'catalán': 'Catalán', 'catalan': 'Catalán',
+            'euskera': 'Euskera', 'basque': 'Euskera',
+            'gallego': 'Gallego', 'galician': 'Gallego',
+            'chino': 'Chino', 'chinese': 'Chino',
+            'japonés': 'Japonés', 'japanese': 'Japonés',
+            'árabe': 'Árabe', 'arabic': 'Árabe',
+            'ruso': 'Ruso', 'russian': 'Ruso'
+        }
+        
+        simple_language_patterns = [
+            r'\b(español|castellano|spanish|inglés|english|francés|french|alemán|german|italiano|italian|portugués|portuguese|catalán|catalan|euskera|basque|gallego|galician|chino|chinese|japonés|japanese|árabe|arabic|ruso|russian)\b'
+        ]
+        
+        for pattern in simple_language_patterns:
+            matches = re.finditer(pattern, text, re.IGNORECASE)
+            for match in matches:
+                language_name = match.group(1).lower()
+                normalized_language = language_mapping.get(language_name, language_name.title())
+                
+                # Evitar duplicados
+                if not any(lang["idioma"] == normalized_language for lang in languages):
+                    languages.append({
+                        "idioma": normalized_language,
+                        "nivel": "No especificado"
+                    })
+    
+    return languages
+
 def analyze_cv_structure_flexible(text: str, contact: Dict, skills: List[str], 
-                                experience: List[Dict], education: List[Dict]) -> Dict[str, Any]:
+                                experience: List[Dict], education: List[Dict],
+                                soft_skills: List[str], languages: List[Dict]) -> Dict[str, Any]:
     """
     Analiza la estructura del CV de manera flexible
     """
@@ -216,6 +352,8 @@ def analyze_cv_structure_flexible(text: str, contact: Dict, skills: List[str],
     has_experience = len(experience) > 0
     has_education = len(education) > 0
     has_skills = len(skills) > 0
+    has_soft_skills = len(soft_skills) > 0
+    has_languages = len(languages) > 0
     
     # Evaluar estructura
     structure_score = 0
@@ -223,6 +361,8 @@ def analyze_cv_structure_flexible(text: str, contact: Dict, skills: List[str],
     if has_experience: structure_score += 2
     if has_education: structure_score += 2
     if has_skills: structure_score += 1
+    if has_soft_skills: structure_score += 1
+    if has_languages: structure_score += 1
     
     if structure_score >= 5:
         structure = "excelente"
@@ -295,9 +435,17 @@ def analyze_cv_structure_flexible(text: str, contact: Dict, skills: List[str],
         strengths.append("CV orientado a resultados y logros")
     if len(education) > 0:
         strengths.append("Formación académica presente")
+    if len(soft_skills) > 3:
+        strengths.append("Perfil equilibrado con habilidades blandas")
+    if len(languages) > 1:
+        strengths.append("Perfil internacional con múltiples idiomas")
     
     if len(skills) < 3:
         weaknesses.append("Pocas habilidades técnicas específicas")
+    if len(soft_skills) < 2:
+        weaknesses.append("Falta de habilidades blandas específicas")
+    if len(languages) < 2:
+        weaknesses.append("Perfil limitado en idiomas")
     if not has_action_verbs:
         weaknesses.append("Falta de verbos de acción en las descripciones")
     if not has_results:
@@ -326,6 +474,10 @@ def analyze_cv_structure_flexible(text: str, contact: Dict, skills: List[str],
     alerts = []
     if len(skills) < 3:
         alerts.append("Considera agregar más habilidades técnicas específicas")
+    if len(soft_skills) < 2:
+        alerts.append("Incluye habilidades blandas como liderazgo, comunicación, trabajo en equipo")
+    if len(languages) < 2:
+        alerts.append("Considera agregar más idiomas para mejorar tu perfil internacional")
     if not has_action_verbs:
         alerts.append("Usa verbos de acción en tus descripciones")
     if not has_results:
@@ -338,7 +490,8 @@ def analyze_cv_structure_flexible(text: str, contact: Dict, skills: List[str],
         "coherence": coherence,
         "experience": experience_level,
         "skills": skills,
-        "softSkills": [],  # Se puede expandir más adelante
+        "softSkills": soft_skills,
+        "languages": languages,
         "education": [str(edu) for edu in education],
         "strengths": strengths,
         "weaknesses": weaknesses,
@@ -346,6 +499,8 @@ def analyze_cv_structure_flexible(text: str, contact: Dict, skills: List[str],
         "alerts": alerts,
         "total_years_experience": total_years,
         "technologies_count": len(skills),
+        "soft_skills_count": len(soft_skills),
+        "languages_count": len(languages),
         "experience_count": len(experience),
         "education_count": len(education)
     }
@@ -376,24 +531,26 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         # Extraer información específica (optimizado)
         contact = extract_contact_info(text)
         skills = extract_skills_from_text(text)
+        soft_skills = extract_soft_skills_from_text(text)
+        languages = extract_languages_from_text(text)
         experience = extract_experience_from_text(text)
         education = extract_education_from_text(text)
         
         if __name__ == "__main__":
-            print(f"Información extraída - Contacto: {len(contact)}, Habilidades: {len(skills)}, Experiencia: {len(experience)}, Educación: {len(education)}")
+            print(f"Información extraída - Contacto: {len(contact)}, Habilidades: {len(skills)}, Soft Skills: {len(soft_skills)}, Idiomas: {len(languages)}, Experiencia: {len(experience)}, Educación: {len(education)}")
         
         # Analizar la estructura (simplificado)
-        analysis = analyze_cv_structure_flexible(text, contact, skills, experience, education)
+        analysis = analyze_cv_structure_flexible(text, contact, skills, experience, education, soft_skills, languages)
         
         # Construir resultado (simplificado)
         cv_info = {
             "contacto": contact,
             "software": skills,
-            "idiomas": [],
+            "idiomas": languages,
             "perfil": "",
             "experiencia": experience,
             "educacion": education,
-            "habilidades": [],
+            "habilidades": soft_skills,
             "proyectos": []
         }
         

@@ -20,11 +20,99 @@ import tempfile
 # Importar la función de generación de informe profesional
 from generate_report import generar_informe
 
+# Importar las funciones de análisis de CV
+from cv_analyzer import extract_pdf_info
+
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 load_dotenv()
+
+def format_cv_analysis(cv_data: dict) -> str:
+    """Formatea el análisis del CV de manera legible para la IA"""
+    if not cv_data:
+        return "No se proporcionó análisis de CV"
+    
+    formatted = []
+    
+    if cv_data.get('strengths'):
+        formatted.append("PUNTOS FUERTES:")
+        for strength in cv_data['strengths']:
+            formatted.append(f"  • {strength}")
+        formatted.append("")
+    
+    if cv_data.get('weaknesses'):
+        formatted.append("ÁREAS DE MEJORA:")
+        for weakness in cv_data['weaknesses']:
+            formatted.append(f"  • {weakness}")
+        formatted.append("")
+    
+    if cv_data.get('feedback'):
+        formatted.append(f"FEEDBACK GENERAL: {cv_data['feedback']}")
+        formatted.append("")
+    
+    if cv_data.get('structure'):
+        formatted.append(f"ESTRUCTURA: {cv_data['structure']}")
+    
+    if cv_data.get('coherence'):
+        formatted.append(f"COHERENCIA: {cv_data['coherence']}")
+    
+    if cv_data.get('experience'):
+        formatted.append(f"EXPERIENCIA: {cv_data['experience']}")
+    
+    if cv_data.get('skills'):
+        formatted.append("HABILIDADES TÉCNICAS DETECTADAS:")
+        for skill in cv_data['skills']:
+            formatted.append(f"  • {skill}")
+        formatted.append("")
+    
+    if cv_data.get('education'):
+        formatted.append("FORMACIÓN DETECTADA:")
+        for edu in cv_data['education']:
+            formatted.append(f"  • {edu}")
+        formatted.append("")
+    
+    if cv_data.get('alerts'):
+        formatted.append("ALERTAS O PUNTOS CRÍTICOS:")
+        for alert in cv_data['alerts']:
+            formatted.append(f"  ⚠️ {alert}")
+        formatted.append("")
+    
+    return "\n".join(formatted) if formatted else "Análisis de CV disponible pero sin detalles específicos"
+
+def format_job_preferences(preferences: dict) -> str:
+    """Formatea las preferencias laborales de manera legible para la IA"""
+    if not preferences:
+        return "No se especificaron preferencias laborales"
+    
+    formatted = []
+    
+    if preferences.get('areas'):
+        formatted.append("ÁREAS DE INTERÉS:")
+        for area in preferences['areas']:
+            formatted.append(f"  • {area}")
+        formatted.append("")
+    
+    if preferences.get('needs'):
+        formatted.append("NECESIDADES ESPECÍFICAS:")
+        for need in preferences['needs']:
+            formatted.append(f"  • {need}")
+        formatted.append("")
+    
+    if preferences.get('workMode'):
+        formatted.append(f"MODO DE TRABAJO: {preferences['workMode']}")
+    
+    if preferences.get('availability'):
+        formatted.append(f"DISPONIBILIDAD: {preferences['availability']}")
+    
+    if preferences.get('willingToRelocate'):
+        formatted.append(f"DISPONIBILIDAD DE REUBICACIÓN: {'Sí' if preferences['willingToRelocate'] else 'No'}")
+    
+    if preferences.get('hasDisabilityCert'):
+        formatted.append(f"CERTIFICADO DE DISCAPACIDAD: {'Sí' if preferences['hasDisabilityCert'] else 'No'}")
+    
+    return "\n".join(formatted) if formatted else "Preferencias laborales básicas especificadas"
 
 # Validación de variables de entorno críticas
 API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
@@ -185,17 +273,17 @@ DATOS PERSONALES:
 HABILIDADES SOFT EVALUADAS:
 {chr(10).join([f"- {h['habilidad']}: {h['puntuacion']}% (Nivel: {h['nivel']}, Confianza: {h['confianza']}%)" for h in perfil_completo['habilidades_soft']])}
 
-ANÁLISIS DEL CV:
-{json.dumps(perfil_completo['analisis_cv'], indent=2, ensure_ascii=False) if perfil_completo['analisis_cv'] else "No se proporcionó análisis de CV"}
+ANÁLISIS DETALLADO DEL CV:
+{format_cv_analysis(perfil_completo['analisis_cv']) if perfil_completo['analisis_cv'] else "El candidato no ha proporcionado un CV para análisis. Se realizará la evaluación basada en las habilidades soft evaluadas y preferencias laborales."}
 
 PREFERENCIAS LABORALES:
-{json.dumps(perfil_completo['preferencias_laborales'], indent=2, ensure_ascii=False) if perfil_completo['preferencias_laborales'] else "No se especificaron preferencias laborales"}
+{format_job_preferences(perfil_completo['preferencias_laborales']) if perfil_completo['preferencias_laborales'] else "El candidato no ha especificado preferencias laborales detalladas. Se realizará la evaluación basada en las habilidades soft evaluadas."}
 
 JUEGOS COMPLETADOS:
-{', '.join(perfil_completo['juegos_completados']) if perfil_completo['juegos_completados'] else "Ningún juego completado"}
+{', '.join(perfil_completo['juegos_completados']) if perfil_completo['juegos_completados'] else "El candidato no ha completado juegos de evaluación. La evaluación se basa en las habilidades soft proporcionadas."}
 
 LOGS DE JUEGOS:
-{json.dumps(perfil_completo['logs_juegos'], indent=2, ensure_ascii=False) if perfil_completo['logs_juegos'] else "No hay logs de juegos disponibles"}
+{json.dumps(perfil_completo['logs_juegos'], indent=2, ensure_ascii=False) if perfil_completo['logs_juegos'] else "No se dispone de logs detallados de juegos. La evaluación se basa en los resultados de habilidades soft proporcionados."}
 """
         
         logger.info("🤖 Generando informe profesional con IA...")
@@ -288,7 +376,8 @@ async def analyze_cv(
     completedGames: str = Form(...),  # JSON stringified array
 ):
     """
-    Analiza el CV PDF y genera un informe de empleabilidad usando IA.
+    Analiza el CV PDF usando funciones avanzadas (incluyendo OCR para PDFs escaneados)
+    y genera un análisis estructurado usando IA.
     """
     # Validar archivo
     if not file.filename.lower().endswith('.pdf'):
@@ -300,20 +389,6 @@ async def analyze_cv(
     if len(contents) > MAX_FILE_SIZE:
         raise HTTPException(status_code=400, detail="El archivo es demasiado grande. Máximo 10MB")
     
-    # Leer el PDF
-    pdf_text = ""
-    try:
-        pdf_reader = PdfReader(io.BytesIO(contents))
-        for page in pdf_reader.pages:
-            pdf_text += page.extract_text() or ""
-        
-        if not pdf_text.strip():
-            raise HTTPException(status_code=400, detail="No se pudo extraer texto del PDF. Verifica que el archivo no esté dañado.")
-            
-    except Exception as e:
-        logger.error(f"Error leyendo PDF: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"No se pudo leer el PDF: {str(e)}")
-
     # Parsear los datos recibidos
     try:
         soft_skills = json.loads(softSkills)
@@ -332,8 +407,52 @@ async def analyze_cv(
         logger.error(f"Error parseando datos JSON: {str(e)}")
         raise HTTPException(status_code=400, detail=f"Error en los datos enviados: {str(e)}")
 
-    # --- PROMPT PARA LA IA ---
-    prompt = f"""
+    # Usar la función avanzada de análisis de CV (incluye OCR para PDFs escaneados)
+    try:
+        logger.info(f"Iniciando análisis avanzado de CV para usuario {userId}")
+        
+        # Extraer información del PDF usando cv_analyzer
+        cv_result = extract_pdf_info(contents)
+        
+        if cv_result.get("error"):
+            logger.error(f"Error en análisis de CV: {cv_result['error']}")
+            raise HTTPException(status_code=400, detail=cv_result["error"])
+        
+        # Obtener el texto extraído y el análisis
+        pdf_text = cv_result.get("raw_text", "")
+        cv_analysis = cv_result.get("analysis", {})
+        cv_info = cv_result.get("cv_info", {})
+        
+        if not pdf_text.strip():
+            raise HTTPException(status_code=400, detail="No se pudo extraer texto del PDF. Verifica que el archivo no esté dañado o escaneado.")
+        
+        logger.info(f"Texto extraído: {len(pdf_text)} caracteres")
+        logger.info(f"Análisis obtenido: {len(cv_analysis)} elementos")
+        
+        # Si ya tenemos un análisis completo del cv_analyzer, usarlo directamente
+        if cv_analysis and all(key in cv_analysis for key in ["strengths", "weaknesses", "feedback"]):
+            logger.info("Usando análisis completo de cv_analyzer")
+            
+            # Mapear el análisis a la estructura esperada
+            analysis_data = {
+                "strengths": cv_analysis.get("strengths", []),
+                "weaknesses": cv_analysis.get("weaknesses", []),
+                "feedback": cv_analysis.get("feedback", ""),
+                "structure": cv_analysis.get("structure", ""),
+                "coherence": cv_analysis.get("coherence", ""),
+                "experience": cv_analysis.get("experience", ""),
+                "skills": cv_analysis.get("skills", []),
+                "education": cv_analysis.get("education", []),
+                "alerts": cv_analysis.get("alerts", [])
+            }
+            
+            return CvAnalysis(**analysis_data)
+        
+        # Si no tenemos análisis completo, usar IA para complementar
+        logger.info("Complementando análisis con IA")
+        
+        # --- PROMPT PARA LA IA ---
+        prompt = f"""
 # === CONTEXTO Y ROL =========================================================
 Eres un/a ORIENTADOR/A LABORAL senior con:
 • Formación en Psicología y en Inclusión Laboral de personas neurodivergentes
@@ -362,48 +481,52 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
 }}
 """
 
-    # --- Llamada a OpenAI (GPT-4) ---
-    try:
-        # Verificar que las variables de entorno estén configuradas
-        if not client:
-            logger.warning("Azure OpenAI no configurado. Usando respuesta simulada.")
-            raise Exception("Azure OpenAI no configurado")
-        
-        # Llamada real a Azure OpenAI
-        response = client.chat.completions.create(
-            model=DEPLOYMENT,  # En Azure OpenAI, el deployment name se usa como model name
-            messages=[{"role": "user", "content": prompt}],
-            max_tokens=1200,
-            temperature=0.7,
-            response_format={"type": "json_object"},
-        )
-        
-        # Parsear la respuesta JSON
-        analysis_data = json.loads(response.choices[0].message.content)
-        logger.info(f"Análisis de CV completado para usuario {userId}")
-        
-        return CvAnalysis(**analysis_data)
-        
-    except json.JSONDecodeError as e:
-        logger.error(f"Error parseando respuesta JSON de IA: {str(e)}")
-        raise HTTPException(status_code=500, detail=f"Error parseando respuesta JSON de IA: {str(e)}")
+        # --- Llamada a OpenAI (GPT-4) ---
+        try:
+            # Verificar que las variables de entorno estén configuradas
+            if not client:
+                logger.warning("Azure OpenAI no configurado. Usando respuesta simulada.")
+                raise Exception("Azure OpenAI no configurado")
+            
+            # Llamada real a Azure OpenAI
+            response = client.chat.completions.create(
+                model=DEPLOYMENT,  # En Azure OpenAI, el deployment name se usa como model name
+                messages=[{"role": "user", "content": prompt}],
+                max_tokens=1200,
+                temperature=0.7,
+                response_format={"type": "json_object"},
+            )
+            
+            # Parsear la respuesta JSON
+            analysis_data = json.loads(response.choices[0].message.content)
+            logger.info(f"Análisis de CV completado para usuario {userId}")
+            
+            return CvAnalysis(**analysis_data)
+            
+        except json.JSONDecodeError as e:
+            logger.error(f"Error parseando respuesta JSON de IA: {str(e)}")
+            raise HTTPException(status_code=500, detail=f"Error parseando respuesta JSON de IA: {str(e)}")
+        except Exception as e:
+            # Si hay error con Azure OpenAI, usar respuesta simulada como fallback
+            logger.warning(f"Error con Azure OpenAI: {str(e)}. Usando respuesta simulada.")
+            
+            analysis_data = {
+                "strengths": ["Experiencia técnica sólida", "Formación académica relevante"],
+                "weaknesses": ["Falta de experiencia en gestión de equipos", "Necesita mejorar habilidades de comunicación"],
+                "feedback": "CV bien estructurado con buena experiencia técnica. Áreas de mejora en habilidades blandas.",
+                "structure": "Clara y fácil de seguir",
+                "coherence": "La experiencia es coherente con los objetivos profesionales",
+                "experience": "Experiencia en desarrollo de software y análisis de datos",
+                "skills": ["Python", "JavaScript", "SQL", "Machine Learning"],
+                "education": ["Ingeniería Informática", "Certificaciones técnicas"],
+                "alerts": ["Considerar agregar más detalles sobre logros específicos"]
+            }
+            
+            return CvAnalysis(**analysis_data)
+            
     except Exception as e:
-        # Si hay error con Azure OpenAI, usar respuesta simulada como fallback
-        logger.warning(f"Error con Azure OpenAI: {str(e)}. Usando respuesta simulada.")
-        
-        analysis_data = {
-            "strengths": ["Experiencia técnica sólida", "Formación académica relevante"],
-            "weaknesses": ["Falta de experiencia en gestión de equipos", "Necesita mejorar habilidades de comunicación"],
-            "feedback": "CV bien estructurado con buena experiencia técnica. Áreas de mejora en habilidades blandas.",
-            "structure": "Clara y fácil de seguir",
-            "coherence": "La experiencia es coherente con los objetivos profesionales",
-            "experience": "Experiencia en desarrollo de software y análisis de datos",
-            "skills": ["Python", "JavaScript", "SQL", "Machine Learning"],
-            "education": ["Ingeniería Informática", "Certificaciones técnicas"],
-            "alerts": ["Considerar agregar más detalles sobre logros específicos"]
-        }
-        
-        return CvAnalysis(**analysis_data)
+        logger.error(f"Error en análisis de CV: {str(e)}")
+        raise HTTPException(status_code=500, detail=f"Error procesando el CV: {str(e)}")
 
 @app.post("/api/upload-cv")
 async def upload_cv(file: UploadFile = File(...)):
@@ -493,11 +616,11 @@ DATOS PERSONALES:
 HABILIDADES SOFT EVALUADAS:
 {chr(10).join([f"- {h['habilidad']}: {h['puntuacion']}% (Nivel: {h['nivel']}, Confianza: {h['confianza']}%)" for h in perfil_completo['habilidades_soft']])}
 
-ANÁLISIS DEL CV:
-{json.dumps(perfil_completo['analisis_cv'], indent=2, ensure_ascii=False) if perfil_completo['analisis_cv'] else "No se proporcionó análisis de CV"}
+ANÁLISIS DETALLADO DEL CV:
+{format_cv_analysis(perfil_completo['analisis_cv']) if perfil_completo['analisis_cv'] else "No se proporcionó análisis de CV"}
 
 PREFERENCIAS LABORALES:
-{json.dumps(perfil_completo['preferencias_laborales'], indent=2, ensure_ascii=False) if perfil_completo['preferencias_laborales'] else "No se especificaron preferencias laborales"}
+{format_job_preferences(perfil_completo['preferencias_laborales']) if perfil_completo['preferencias_laborales'] else "No se especificaron preferencias laborales"}
 
 JUEGOS COMPLETADOS:
 {', '.join(perfil_completo['juegos_completados']) if perfil_completo['juegos_completados'] else "Ningún juego completado"}

@@ -1,0 +1,88 @@
+{
+  "report": {
+    "userId": "frontend_test",
+    "fullName": "Test Frontend",
+    "softSkills": [
+      {
+        "skill": "Comunicación",
+        "score": 78,
+        "level": "medio",
+        "confidence": 8500
+      },
+      {
+        "skill": "Trabajo en equipo",
+        "score": 82,
+        "level": "alto",
+        "confidence": 8800
+      }
+    ],
+    "employabilityScore": 82,
+    "jobPreferences": {
+      "areas": [
+        "Desarrollo web",
+        "Diseño gráfico"
+      ],
+      "needs": [
+        "Flexibilidad horaria",
+        "Trabajo remoto"
+      ],
+      "workMode": "remoto",
+      "availability": "completa",
+      "willingToRelocate": false,
+      "hasDisabilityCert": false
+    },
+    "cvAnalysis": {
+      "strengths": [
+        "Formación académica presente"
+      ],
+      "weaknesses": [
+        "Falta de verbos de acción en las descripciones"
+      ],
+      "feedback": "Tu CV tiene una buena estructura, pero podrías mejorarla. Intenta usar verbos de acción y cuantificar tus logros. Has mencionado 5 tecnologías. ",
+      "structure": "bueno",
+      "coherence": "regular",
+      "experience": "mejorable",
+      "skills": [
+        "photoshop",
+        "office",
+        "microsoft",
+        "go",
+        "ant"
+      ],
+      "education": [
+        "{'titulo': 'Teleformación          Academia del transportista', 'año': '', 'institucion': ''}"
+      ],
+      "alerts": [
+        "Usa verbos de acción en tus descripciones"
+      ]
+    },
+    "createdAt": "2025-07-27T16:48:20.377441",
+    "completedGames": [
+      "comunicacion_equipo",
+      "resolucion_problemas"
+    ],
+    "level": "Alta empleabilidad",
+    "informeProfesional": "# Informe de Orientación Laboral Neuroinclusiva  \n**Candidato: Test Frontend**  \n**ID: frontend_test**  \n\n---\n\n## 1. RESUMEN EJECUTIVO  \n\nEl candidato Test Frontend presenta un perfil con un interesante balance entre capacidades técnicas y habilidades interpersonales, lo que lo posiciona como un talento con potencial de desarrollo en áreas relacionadas con el desarrollo web y el diseño gráfico. Su perfil demuestra una inclinación hacia el trabajo en equipo y la comunicación colaborativa, habilidades que se reflejan en los resultados obtenidos en las evaluaciones y juegos completados. Destaca su preferencia por modalidades laborales remotas, lo cual es coherente con sus necesidades específicas de flexibilidad horaria y la naturaleza de los campos de interés expresados.  \n\nEn términos de habilidades técnicas, su conocimiento en herramientas como Photoshop, Office, Microsoft, Go y Ant señala una base sólida en tecnologías utilizadas en diseño y desarrollo. Sin embargo, la experiencia práctica descrita en su CV evidencia ciertas áreas de mejora, particularmente en la explicitación de logros concretos y el uso de verbos de acción que destaquen sus contribuciones. La formación académica detectada, aunque no completamente detallada, sugiere interés por el aprendizaje contínuo, una fortaleza que debe ser aprovechada y complementada con certificaciones específicas.  \n\nDesde una perspectiva neuroinclusiva, el candidato muestra fortalezas que pueden ser valiosas en entornos laborales bien adaptados. Su emocionalidad colaborativa y confianza en la toma de decisiones reflejan una capacidad para contribuir positivamente en equipos y para asumir roles donde la resolución de problemas y la interacción interpersonal sean cruciales. No obstante, la necesidad de flexibilidad horaria y un entorno remoto indica una preferencia por contextos laborales que minimicen la sobrecarga sensorial y maximicen su capacidad de concentración y productividad.  \n\nEn términos de compatibilidad con el mercado laboral, su perfil se alinea con varias de las competencias previstas en el informe del WEF 2025, como la colaboración, resolución de problemas y habilidades digitales. Con una adecuada estrategia de desarrollo profesional y las adaptaciones necesarias, Test Frontend tiene el potencial de destacar en roles que combinen su conocimiento técnico, habilidades creativas y capacidad de trabajo en equipo.  \n\n---\n\n## 2. ANÁLISIS DETALLADO DE COMPETENCIAS COGNITIVAS Y SOFT SKILLS  \n\n### 2.1 Fortalezas Identificadas  \n\n#### **Comunicación (78%)**  \nEl candidato demuestra un nivel medio en sus habilidades de comunicación, con una confianza significativa (85%) en su capacidad para interactuar de manera efectiva. Este resultado sugiere que posee una base sólida para transmitir ideas, recibir retroalimentación y participar en discusiones productivas. Los datos del juego \"comunicacion_equipo\" aportan evidencia adicional de esta fortaleza, destacando decisiones clave como \"escuchar activamente\" y \"proponer soluciones\", realizadas con un promedio de confianza del 81.5%.  \n\nEn el contexto laboral, estas habilidades son fundamentales en roles que requieran interacción constante con colegas, clientes o stakeholders. Por ejemplo, en un equipo de desarrollo web, su capacidad para escuchar activamente puede facilitar una comprensión más precisa de los requerimientos del proyecto, mientras que su disposición para proponer soluciones puede contribuir a la innovación y resolución de conflictos. Sin embargo, es importante que siga fortaleciendo su capacidad para estructurar y articular mensajes de manera más clara, lo cual podría lograrse mediante capacitaciones específicas en comunicación efectiva o storytelling.  \n\n#### **Trabajo en equipo (82%)**  \nLa evaluación de trabajo en equipo posiciona al candidato en un nivel alto, con una confianza del 88%. Este resultado indica una predisposición natural para colaborar, comprender dinámicas grupales y adaptarse a diferentes roles dentro de un equipo. Su emocionalidad colaborativa detectada en los logs de juegos refuerza esta competencia, sugiriendo que es capaz de mantener un enfoque positivo y constructivo en situaciones grupales, incluso bajo presión.  \n\nDesde una perspectiva laboral, esta fortaleza resulta especialmente relevante en entornos ágiles y colaborativos, como equipos de diseño o desarrollo web. Su capacidad para integrarse y contribuir eficazmente puede ser un factor diferenciador en proyectos que requieran una fuerte sinergia entre diferentes áreas. Además, su disposición para trabajar en equipo podría facilitar procesos de mentoría y aprendizaje mutuo, lo que lo posiciona como un candidato valioso para roles de naturaleza colaborativa.  \n\n### 2.2 Áreas de Desarrollo y Estrategias  \n\n#### **Comunicación**  \nAunque el candidato posee una base sólida, el nivel medio en esta habilidad sugiere que puede beneficiarse de estrategias específicas para mejorar su impacto comunicativo. Algunas áreas clave incluyen el desarrollo de habilidades para estructurar mensajes, manejar conversaciones difíciles y presentar ideas de manera persuasiva.  \n\n- **Estrategias de mejora**:  \n  - Participar en talleres de comunicación efectiva orientados a profesionales del ámbito tecnológico y creativo.  \n  - Practicar técnicas de storytelling para mejorar la capacidad de transmitir ideas complejas de manera clara y atractiva.  \n  - Utilizar herramientas como feedback estructurado para mejorar la calidad de sus interacciones en equipo.  \n\n#### **Trabajo en equipo**  \nAunque esta habilidad es una de sus fortalezas, el candidato podría beneficiarse de un enfoque más estratégico para maximizar su contribución en equipos multidisciplinarios. Esto incluye aprender a gestionar conflictos de manera constructiva y a asumir roles de liderazgo cuando sea necesario.  \n\n- **Estrategias de mejora**:  \n  - Participar en dinámicas de equipo que simulen escenarios laborales complejos.  \n  - Desarrollar competencias en gestión de conflictos y negociación.  \n  - Explorar herramientas de colaboración digital para optimizar su desempeño en entornos remotos.  \n\n---\n\n## 3. ANÁLISIS COMPLETO DE PREFERENCIAS Y MOTIVACIONES LABORALES  \n\n### 3.1 Perfil Motivacional Profundo  \n\nEl candidato expresa un interés claro por el desarrollo web y el diseño gráfico, áreas que combinan habilidades técnicas y creativas. Este enfoque es coherente con las habilidades técnicas detectadas en su CV, lo que sugiere una alineación entre sus intereses y capacidades. Desde un punto de vista psicológico, esta preferencia indica una motivación intrínseca por la creación y resolución de problemas visuales y funcionales, lo que puede ser un motor importante para su satisfacción laboral.  \n\nAdemás, su preferencia por el trabajo remoto y la flexibilidad horaria refleja una necesidad de autonomía y control sobre su entorno laboral, características que suelen estar asociadas con perfiles neurodivergentes. Estas condiciones no solo facilitan su productividad, sino que también contribuyen a minimizar el estrés asociado con entornos rígidos o poco adaptativos.  \n\n---\n\n## 4. EVALUACIÓN COMPRENSIVA DE EXPERIENCIA Y FORMACIÓN  \n\n### 4.1 Análisis Crítico del CV  \n\nEl CV del candidato tiene una estructura adecuada y menciona cinco tecnologías específicas, lo que demuestra un nivel básico de organización y claridad. Sin embargo, la falta de verbos de acción y la ausencia de cuantificación de logros representan áreas significativas de mejora.  \n\n- **Recomendaciones de mejora**:  \n  - Revisar el CV para incluir verbos de acción como \"desarrollé\", \"lideré\", \"optimizé\", etc.  \n  - Cuantificar logros específicos, como \"mejoré la eficiencia en un X%\" o \"completé proyectos utilizando Y herramientas\".  \n\n---\n\n## 5. RECOMENDACIONES ESPECÍFICAS DE EMPLEABILIDAD NEUROINCLUSIVA  \n\n### 5.1 Puestos de Trabajo Recomendados  \n1. **Diseñador gráfico junior en entornos remotos**  \n2. **Desarrollador frontend**  \n3. **Especialista en prototipado de interfaces**  \n4. **Soporte técnico en herramientas web**  \n\n---\n\n## 6. CONCLUSIONES COMPRENSIVAS Y PRÓXIMOS PASOS  \n\nEn resumen, Test Frontend es un candidato con un perfil prometedor que, con las adaptaciones y estrategias adecuadas, puede destacar en roles relacionados con el desarrollo web y diseño gráfico. Se recomienda priorizar la mejora de su CV, fortalecer habilidades de comunicación y aprovechar formaciones específicas."
+  },
+  "recommendations": {
+    "roles": [
+      "Desarrollador frontend",
+      "Soporte técnico",
+      "Analista de datos"
+    ],
+    "resources": [
+      "Platzi",
+      "Microsoft Learn"
+    ],
+    "cvImprovements": [],
+    "nextSteps": [
+      "Revisar el informe completo",
+      "Implementar las recomendaciones",
+      "Seguir el plan de desarrollo"
+    ]
+  },
+  "employabilityScore": 82,
+  "level": "Alta empleabilidad",
+  "summary": "Test Frontend, tu informe profesional ha sido generado. Nivel de empleabilidad: Alta empleabilidad",
+  "createdAt": "2025-07-27T16:48:20.377451"
+}
