@@ -84,8 +84,11 @@ const ResultadosPage: React.FC = () => {
           signal: AbortSignal.timeout(45000), // Timeout de 45 segundos
         });
         const data = await res.json();
-        if (res.ok && data.summary) {
-          // Generar un informe basado en la respuesta del backend
+        if (res.ok && data.report?.informeProfesional) {
+          // Usar el informe completo generado por la IA
+          setIaReport(data.report.informeProfesional);
+        } else if (res.ok && data.summary) {
+          // Fallback: generar un informe básico si no hay informe de IA
           const informe = `
 # Informe de Empleabilidad
 
