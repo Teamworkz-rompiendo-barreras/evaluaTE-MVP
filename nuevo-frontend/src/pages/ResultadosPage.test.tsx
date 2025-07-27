@@ -64,28 +64,33 @@ const mockPersonalState = {
   }
 };
 
-// Informe mock que la IA debería generar
-const mockIaReport = `
-## Análisis de tu CV
-Tu CV está bien estructurado.
-
-## Tus Puntos Fuertes
-- **Resolución de Problemas:** Demostrado en tu experiencia.
-
-## Áreas de Desarrollo y Sugerencias Prácticas
-- **Gestión Emocional:** Considera un curso de mindfulness.
-
-## Recomendaciones Laborales
-- Podrías encajar como **Project Manager Junior**.
-
-## Próximos Pasos para tu Carrera
-1.  Actualiza tu perfil de LinkedIn.
-`;
-
 // Configuración del servidor mock con msw
 const server = setupServer(
-  http.post(buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT), () => {
-    return HttpResponse.json({ informe: mockIaReport });
+  http.post('*/api/informe-ia', () => {
+    return HttpResponse.json({
+      summary: "Resumen del informe de empleabilidad",
+      level: "Alta empleabilidad",
+      employabilityScore: 85,
+      recommendations: {
+        roles: ["Desarrollador Frontend", "Project Manager Junior"],
+        resources: ["Platzi", "Microsoft Learn"],
+        cvImprovements: ["Mejorar la estructura", "Agregar más detalles"],
+        nextSteps: ["Actualizar LinkedIn", "Completar cursos"]
+      },
+      report: {
+        softSkills: [
+          { skill: "Resolución de Problemas", score: 90, level: "Alto" },
+          { skill: "Trabajo en equipo", score: 85, level: "Alto" },
+          { skill: "Gestión emocional", score: 50, level: "Medio" }
+        ],
+        jobPreferences: {
+          areas: ["Tecnología", "Desarrollo"],
+          workMode: "remoto",
+          availability: "completa"
+        }
+      },
+      createdAt: new Date().toISOString()
+    });
   })
 );
 
@@ -122,17 +127,17 @@ describe('ResultadosPage', () => {
 
     // Esperar a que el contenido de la IA se renderice
     await waitFor(() => {
-      // Comprobar que los títulos del informe generado por la IA están presentes
-      expect(screen.getByText('Análisis de tu CV')).toBeInTheDocument();
-      expect(screen.getByText('Tus Puntos Fuertes')).toBeInTheDocument();
-      expect(screen.getByText('Áreas de Desarrollo y Sugerencias Prácticas')).toBeInTheDocument();
-      expect(screen.getByText('Recomendaciones Laborales')).toBeInTheDocument();
-      expect(screen.getByText('Próximos Pasos para tu Carrera')).toBeInTheDocument();
+      // Comprobar elementos esenciales que siempre deben estar presentes
+      expect(screen.getByText('Informe de Empleabilidad')).toBeInTheDocument();
+      expect(screen.getByText('Mapa de habilidades')).toBeInTheDocument();
     });
 
-    // Comprobar contenido específico del informe
-    expect(screen.getByText(/Tu CV está bien estructurado/)).toBeInTheDocument();
-    expect(screen.getByText(/Project Manager Junior/)).toBeInTheDocument();
+    // Comprobar que el informe de IA se generó correctamente
+    await waitFor(() => {
+      expect(screen.getByText(/Resumen del informe de empleabilidad/)).toBeInTheDocument();
+      expect(screen.getByText(/Project Manager Junior/)).toBeInTheDocument();
+      expect(screen.getByText(/Desarrollador Frontend/)).toBeInTheDocument();
+    });
   });
 
   it('muestra el radar de habilidades y la portada', () => {
