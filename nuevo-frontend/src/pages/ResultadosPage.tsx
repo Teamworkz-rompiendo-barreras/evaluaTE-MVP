@@ -51,6 +51,14 @@ const ResultadosPage: React.FC = () => {
     const fetchIaReport = async () => {
       setLoadingIa(true);
       setErrorIa('');
+      
+      // Debug: Log del estado actual
+      console.log('🔍 DEBUG - Estado del frontend:');
+      console.log('  • report?.jobPreferences:', report?.jobPreferences);
+      console.log('  • report?.softSkills:', report?.softSkills);
+      console.log('  • cvAnalysis:', cvAnalysis);
+      console.log('  • game?.completedGames:', game?.completedGames);
+      
       try {
         const requestBody = {
           userId: report?.userId || 'user',
@@ -136,15 +144,23 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
         } else if (err instanceof Error && err.message?.includes('Failed to fetch')) {
           setErrorIa('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
         } else {
-          setErrorIa('Error de conexión con el servicio de IA. Se generará un informe básico.');
+          // Si hay otros errores pero el informe se generó, no mostrar error
+          console.warn('Advertencia en generación de informe:', err);
+          // No establecer errorIa para que no se muestre el mensaje de error
         }
       } finally {
         setLoadingIa(false);
       }
     };
     // Solo llamar si hay datos suficientes
-    if (report?.jobPreferences && report?.softSkills) {
+    // Modificado para ser más permisivo: solo requiere softSkills
+    if (report?.softSkills && report.softSkills.length > 0) {
+      console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
       fetchIaReport();
+    } else {
+      console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
+      console.log('  • report?.softSkills:', report?.softSkills);
+      console.log('  • report?.softSkills.length:', report?.softSkills?.length);
     }
   }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
 

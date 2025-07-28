@@ -72,22 +72,12 @@ export const games: Game[] = [
           { id: 'preguntar', text: 'Preguntas antes a tus compañeros/as. 👥', score: 50 },
           { id: 'no-opinar', text: 'Prefieres no opinar hasta tener más información. 📖', score: 20 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Excelente trabajo!',
-        description: 'Has completado exitosamente este minijuego. ¡Sigue así, cada paso te acerca más a tu objetivo!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Excelente trabajo!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Sigue así, cada paso te acerca más a tu objetivo! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -166,22 +156,12 @@ export const games: Game[] = [
           { id: 'dedo', text: 'Eliges la que te suena mejor. ☝️', score: 20 },
           { id: 'responsable', text: 'Pides la opinión del responsable antes de decidir. 👔', score: 50 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Muy bien!',
-        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de análisis te está llevando lejos!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Muy bien!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Tu capacidad de análisis te está llevando lejos! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -260,22 +240,12 @@ export const games: Game[] = [
           { id: 'ok', text: 'Dices que está bien como está. 👍', score: 20 },
           { id: 'bocadillo', text: 'Preguntas qué le gustaría a los demás. 💬', score: 50 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Fantástico!',
-        description: 'Has completado exitosamente este minijuego. ¡Tu imaginación y originalidad son tus mejores aliadas!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Fantástico!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Tu imaginación y originalidad son tus mejores aliadas! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -354,22 +324,12 @@ export const games: Game[] = [
           { id: 'puerta', text: 'Esperas a que surja la oportunidad. 🚪', score: 20 },
           { id: 'susurro', text: 'Se lo cuentas solo a una persona de confianza. 🤫', score: 50 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Excelente!',
-        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de conectar con otros es una gran fortaleza!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Excelente!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Tu capacidad de conectar con otros es una gran fortaleza! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -448,22 +408,12 @@ export const games: Game[] = [
           { id: 'cara-neutra', text: 'Lo aceptas pero no cambias nada. 😐', score: 50 },
           { id: 'cruz', text: 'Te molesta y te cierras al comentario. ❌', score: 20 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Increíble!',
-        description: 'Has completado exitosamente este minijuego. ¡Tu sed de conocimiento te llevará muy lejos!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Increíble!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Tu sed de conocimiento te llevará muy lejos! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -542,22 +492,12 @@ export const games: Game[] = [
           { id: 'cara-neutra', text: 'Te adaptas, aunque te molesta. 😐', score: 50 },
           { id: 'pausa', text: 'Te bloqueas y necesitas parar. ⏸️', score: 20 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Magnífico!',
-        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de adaptación es extraordinaria!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Magnífico!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Tu capacidad de adaptación es extraordinaria! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -636,22 +576,12 @@ export const games: Game[] = [
           { id: 'dedo-senalando', text: 'Te justificas o echas la culpa a otra cosa. 👉', score: 50 },
           { id: 'cara-sonrojada', text: 'Te avergüenzas y no vuelves a hablar en público. 😳', score: 20 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Extraordinario!',
-        description: 'Has completado exitosamente este minijuego. ¡Conocerte a ti mismo es el primer paso hacia el éxito!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Extraordinario!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Conocerte a ti mismo es el primer paso hacia el éxito! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -730,22 +660,12 @@ export const games: Game[] = [
           { id: 'bocadillo', text: 'Le explicas que no es grave y que tenga paciencia. 💬', score: 50 },
           { id: 'cruz', text: 'Le dices que no tienes la culpa y te molestas. ❌', score: 20 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Maravilloso!',
-        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de conectar con otros es un don especial!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Maravilloso!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Tu capacidad de conectar con otros es un don especial! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -824,22 +744,12 @@ export const games: Game[] = [
           { id: 'elige-rapido', text: 'Eliges el más barato sin analizar más. 💸', score: 50 },
           { id: 'amigo', text: 'Eliges al que te cae mejor. 🤝', score: 20 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Brillante!',
-        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de análisis es excepcional!',
-        type: 'choice',
-        options: [
-          { id: 'continuar', text: 'Continuar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Brillante!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Tu capacidad de análisis es excepcional! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }
@@ -918,22 +828,12 @@ export const games: Game[] = [
           { id: 'decides-solo', text: 'Decides sin consultar a nadie. 🗣️', score: 50 },
           { id: 'evitas', text: 'Evitas decidir y dejas el problema sin resolver. ⏸️', score: 20 }
         ],
-        nextSceneId: 'feedback-final'
-      },
-      {
-        id: 'feedback-final',
-        title: '¡Sobresaliente!',
-        description: 'Has completado exitosamente este minijuego. ¡Tu capacidad de liderazgo es inspiradora!',
-        type: 'choice',
-        options: [
-          { id: 'finalizar', text: 'Finalizar', score: 0 }
-        ],
         nextSceneId: 'game-complete'
       },
       {
         id: 'game-complete',
-        title: '¡Minijuego Completado!',
-        description: '¡Felicidades! Has superado este desafío con éxito. Estás progresando muy bien en tu evaluación.',
+        title: '¡Sobresaliente!',
+        description: '¡Felicidades! Has completado exitosamente este minijuego. ¡Tu capacidad de liderazgo es inspiradora! Estás progresando muy bien en tu evaluación.',
         type: 'choice',
         options: [
           { id: 'volver-menu', text: 'Volver al menú', score: 0 }

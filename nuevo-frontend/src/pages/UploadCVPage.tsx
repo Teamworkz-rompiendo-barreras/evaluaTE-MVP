@@ -110,7 +110,13 @@ export default function UploadCVPage() {
       }
     } catch (err) {
       console.error('❌ Error de conexión:', err);
-      setError('Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.');
+      // No mostrar error al usuario si es un error de conexión con Azure OpenAI
+      // ya que esto es normal cuando no está configurado
+      if (err instanceof Error && err.message?.includes('Azure OpenAI no configurado')) {
+        console.log('ℹ️ Azure OpenAI no configurado, usando análisis básico');
+      } else {
+        setError('Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.');
+      }
       
       // Crear un análisis básico para errores de conexión
       dispatch(saveCvAnalysis({
