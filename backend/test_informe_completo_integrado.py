@@ -80,7 +80,7 @@ def test_complete_integrated_report():
                 f"{base_url}/api/pdf/analyze-cv",
                 files=files,
                 data=cv_analysis_data,
-                timeout=60
+                timeout=300  # Timeout extendido a 5 minutos
             )
         
         if response.status_code != 200:
@@ -176,7 +176,7 @@ def test_complete_integrated_report():
         response = requests.post(
             f"{base_url}/api/logs/report",
             json=complete_report_data,
-            timeout=120  # Timeout más largo para generación de informe
+            timeout=300  # Timeout extendido a 5 minutos para generación de informe
         )
         
         if response.status_code != 200:
@@ -312,7 +312,7 @@ def test_pdf_report_generation():
         response = requests.post(
             f"{base_url}/api/pdf/generate-report",
             json=pdf_report_data,
-            timeout=120
+            timeout=300  # Timeout extendido a 5 minutos
         )
         
         if response.status_code == 200:

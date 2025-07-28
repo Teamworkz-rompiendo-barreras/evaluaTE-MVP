@@ -29,17 +29,87 @@ logger = logging.getLogger(__name__)
 
 load_dotenv()
 
+def extract_basic_cv_info(text: str) -> dict:
+    """Extrae información básica del texto del CV cuando no hay datos estructurados"""
+    info = {
+        "strengths": [],
+        "weaknesses": [],
+        "feedback": "Análisis básico del CV basado en el texto extraído",
+        "structure": "Información extraída del CV",
+        "coherence": "Datos disponibles del CV",
+        "experience": "",
+        "skills": [],
+        "education": [],
+        "alerts": []
+    }
+    
+    # Buscar patrones básicos en el texto
+    lines = text.split('\n')
+    
+    # Buscar habilidades técnicas comunes
+    tech_keywords = [
+        "javascript", "python", "java", "c++", "c#", "php", "ruby", "go", "rust",
+        "react", "angular", "vue", "node.js", "express", "django", "flask",
+        "sql", "mysql", "postgresql", "mongodb", "redis",
+        "html", "css", "bootstrap", "tailwind", "sass", "less",
+        "git", "docker", "kubernetes", "aws", "azure", "gcp",
+        "machine learning", "ai", "data science", "analytics"
+    ]
+    
+    found_skills = []
+    for line in lines:
+        line_lower = line.lower()
+        for keyword in tech_keywords:
+            if keyword in line_lower:
+                found_skills.append(keyword.title())
+    
+    info["skills"] = list(set(found_skills))  # Eliminar duplicados
+    
+    # Buscar formación académica
+    education_keywords = ["universidad", "universidad", "grado", "licenciatura", "ingeniería", "master", "máster", "doctorado", "curso", "certificación"]
+    found_education = []
+    for line in lines:
+        line_lower = line.lower()
+        for keyword in education_keywords:
+            if keyword in line_lower:
+                found_education.append(line.strip())
+    
+    info["education"] = found_education[:5]  # Limitar a 5 elementos
+    
+    # Buscar experiencia laboral
+    experience_keywords = ["años", "experiencia", "desarrollador", "programador", "analista", "ingeniero", "consultor"]
+    for line in lines:
+        line_lower = line.lower()
+        if any(keyword in line_lower for keyword in experience_keywords):
+            info["experience"] = line.strip()
+            break
+    
+    # Si no se encontró experiencia específica, usar el texto completo como experiencia
+    if not info["experience"] and text.strip():
+        info["experience"] = text[:200] + "..." if len(text) > 200 else text
+    
+    return info
+
 def format_cv_analysis(cv_data: dict) -> str:
     """Formatea el análisis del CV de manera legible para la IA"""
     if not cv_data:
         return "No se proporcionó análisis de CV"
     
+    # Verificar si cv_data es un diccionario válido
+    if not isinstance(cv_data, dict):
+        return "Formato de análisis de CV inválido"
+    
     formatted = []
     
+    # Siempre incluir información disponible, incluso si está incompleta
     if cv_data.get('strengths'):
         formatted.append("PUNTOS FUERTES:")
         for strength in cv_data['strengths']:
             formatted.append(f"  • {strength}")
+        formatted.append("")
+    elif cv_data.get('experience'):
+        formatted.append("EXPERIENCIA LABORAL:")
+        formatted.append(f"  • {cv_data['experience']}")
         formatted.append("")
     
     if cv_data.get('weaknesses'):
@@ -54,12 +124,15 @@ def format_cv_analysis(cv_data: dict) -> str:
     
     if cv_data.get('structure'):
         formatted.append(f"ESTRUCTURA: {cv_data['structure']}")
+        formatted.append("")
     
     if cv_data.get('coherence'):
         formatted.append(f"COHERENCIA: {cv_data['coherence']}")
+        formatted.append("")
     
     if cv_data.get('experience'):
-        formatted.append(f"EXPERIENCIA: {cv_data['experience']}")
+        formatted.append(f"EXPERIENCIA LABORAL: {cv_data['experience']}")
+        formatted.append("")
     
     if cv_data.get('skills'):
         formatted.append("HABILIDADES TÉCNICAS DETECTADAS:")
@@ -79,7 +152,27 @@ def format_cv_analysis(cv_data: dict) -> str:
             formatted.append(f"  ⚠️ {alert}")
         formatted.append("")
     
-    return "\n".join(formatted) if formatted else "Análisis de CV disponible pero sin detalles específicos"
+    # Si no hay datos estructurados pero hay texto raw, incluirlo
+    if not formatted and cv_data.get('raw_text'):
+        formatted.append("CONTENIDO DEL CV:")
+        formatted.append(cv_data['raw_text'][:1000] + "..." if len(cv_data['raw_text']) > 1000 else cv_data['raw_text'])
+        formatted.append("")
+    
+    # Si no hay ningún dato estructurado, intentar extraer información básica
+    if not formatted:
+        # Buscar cualquier campo que contenga información
+        for key, value in cv_data.items():
+            if value and key not in ['raw_text', 'analysis']:
+                if isinstance(value, list) and value:
+                    formatted.append(f"{key.upper()}:")
+                    for item in value[:5]:  # Limitar a 5 elementos
+                        formatted.append(f"  • {item}")
+                    formatted.append("")
+                elif isinstance(value, str) and value.strip():
+                    formatted.append(f"{key.upper()}: {value}")
+                    formatted.append("")
+    
+    return "\n".join(formatted) if formatted else "Análisis de CV disponible pero sin detalles específicos. Se realizará la evaluación basada en las habilidades soft evaluadas."
 
 def format_job_preferences(preferences: dict) -> str:
     """Formatea las preferencias laborales de manera legible para la IA"""
@@ -127,8 +220,13 @@ if not all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
     logger.warning(f"ENDPOINT: {'✅' if ENDPOINT else '❌'}")
     logger.warning(f"DEPLOYMENT: {'✅' if DEPLOYMENT else '❌'}")
     logger.warning(f"API_VERSION: {'✅' if API_VERSION else '❌'}")
+    logger.warning("💡 Para habilitar análisis completo de CV, configura las variables de entorno de Azure OpenAI")
 
-client = AzureOpenAI(api_key=API_KEY, api_version=API_VERSION, azure_endpoint=ENDPOINT) if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]) else None
+# Crear cliente solo si todas las variables están disponibles
+if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]) and API_KEY and ENDPOINT and DEPLOYMENT and API_VERSION:
+    client = AzureOpenAI(api_key=API_KEY, api_version=API_VERSION, azure_endpoint=ENDPOINT)
+else:
+    client = None
 
 # Tipos compartidos – puedes moverlos a un paquete común si lo usas también en frontend
 class SoftSkillResult(BaseModel):
@@ -274,7 +372,7 @@ HABILIDADES SOFT EVALUADAS:
 {chr(10).join([f"- {h['habilidad']}: {h['puntuacion']}% (Nivel: {h['nivel']}, Confianza: {h['confianza']}%)" for h in perfil_completo['habilidades_soft']])}
 
 ANÁLISIS DETALLADO DEL CV:
-{format_cv_analysis(perfil_completo['analisis_cv']) if perfil_completo['analisis_cv'] else "El candidato no ha proporcionado un CV para análisis. Se realizará la evaluación basada en las habilidades soft evaluadas y preferencias laborales."}
+{format_cv_analysis(perfil_completo['analisis_cv'])}
 
 PREFERENCIAS LABORALES:
 {format_job_preferences(perfil_completo['preferencias_laborales']) if perfil_completo['preferencias_laborales'] else "El candidato no ha especificado preferencias laborales detalladas. Se realizará la evaluación basada en las habilidades soft evaluadas."}
@@ -380,7 +478,7 @@ async def analyze_cv(
     y genera un análisis estructurado usando IA.
     """
     # Validar archivo
-    if not file.filename.lower().endswith('.pdf'):
+    if not file.filename or not file.filename.lower().endswith('.pdf'):
         raise HTTPException(status_code=400, detail="Solo se permiten archivos PDF")
     
     # Validar tamaño del archivo (máximo 10MB)
@@ -484,7 +582,7 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
         # --- Llamada a OpenAI (GPT-4) ---
         try:
             # Verificar que las variables de entorno estén configuradas
-            if not client:
+            if not client or not DEPLOYMENT:
                 logger.warning("Azure OpenAI no configurado. Usando respuesta simulada.")
                 raise Exception("Azure OpenAI no configurado")
             
@@ -498,7 +596,10 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
             )
             
             # Parsear la respuesta JSON
-            analysis_data = json.loads(response.choices[0].message.content)
+            content = response.choices[0].message.content
+            if not content:
+                raise Exception("Respuesta vacía de Azure OpenAI")
+            analysis_data = json.loads(content)
             logger.info(f"Análisis de CV completado para usuario {userId}")
             
             return CvAnalysis(**analysis_data)
@@ -507,20 +608,29 @@ Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluya
             logger.error(f"Error parseando respuesta JSON de IA: {str(e)}")
             raise HTTPException(status_code=500, detail=f"Error parseando respuesta JSON de IA: {str(e)}")
         except Exception as e:
-            # Si hay error con Azure OpenAI, usar respuesta simulada como fallback
-            logger.warning(f"Error con Azure OpenAI: {str(e)}. Usando respuesta simulada.")
+            # Si hay error con Azure OpenAI, usar los datos reales extraídos del CV
+            logger.warning(f"Error con Azure OpenAI: {str(e)}. Usando datos reales extraídos del CV.")
             
+            # Usar los datos reales extraídos del cv_analyzer
             analysis_data = {
-                "strengths": ["Experiencia técnica sólida", "Formación académica relevante"],
-                "weaknesses": ["Falta de experiencia en gestión de equipos", "Necesita mejorar habilidades de comunicación"],
-                "feedback": "CV bien estructurado con buena experiencia técnica. Áreas de mejora en habilidades blandas.",
-                "structure": "Clara y fácil de seguir",
-                "coherence": "La experiencia es coherente con los objetivos profesionales",
-                "experience": "Experiencia en desarrollo de software y análisis de datos",
-                "skills": ["Python", "JavaScript", "SQL", "Machine Learning"],
-                "education": ["Ingeniería Informática", "Certificaciones técnicas"],
-                "alerts": ["Considerar agregar más detalles sobre logros específicos"]
+                "strengths": cv_analysis.get("strengths", []),
+                "weaknesses": cv_analysis.get("weaknesses", []),
+                "feedback": cv_analysis.get("feedback", "Análisis basado en datos extraídos del CV"),
+                "structure": cv_analysis.get("structure", ""),
+                "coherence": cv_analysis.get("coherence", ""),
+                "experience": cv_analysis.get("experience", ""),
+                "skills": cv_analysis.get("skills", []),
+                "education": cv_analysis.get("education", []),
+                "alerts": cv_analysis.get("alerts", [])
             }
+            
+            # Si no hay datos estructurados, intentar extraer información básica del texto
+            if not any(analysis_data.values()):
+                logger.info("No hay datos estructurados, extrayendo información básica del texto")
+                
+                # Extraer información básica del texto del CV
+                basic_info = extract_basic_cv_info(pdf_text)
+                analysis_data.update(basic_info)
             
             return CvAnalysis(**analysis_data)
             
@@ -535,7 +645,7 @@ async def upload_cv(file: UploadFile = File(...)):
     """
     try:
         # Verificar que sea un PDF
-        if not file.filename.lower().endswith('.pdf'):
+        if not file.filename or not file.filename.lower().endswith('.pdf'):
             return JSONResponse(
                 status_code=400, 
                 content={"error": "Solo se permiten archivos PDF"}

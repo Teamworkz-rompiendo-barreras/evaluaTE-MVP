@@ -67,7 +67,7 @@ def test_cv_analysis_endpoint():
                 f"{base_url}{endpoint}",
                 files=files,
                 data=test_data,
-                timeout=60  # Timeout más largo para procesamiento de CV
+                timeout=300  # Timeout extendido a 5 minutos para procesamiento de CV
             )
         
         print(f"📊 Código de respuesta: {response.status_code}")
