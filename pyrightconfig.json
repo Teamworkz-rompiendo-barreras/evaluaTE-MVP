@@ -1,0 +1,28 @@
+{
+  "venvPath": ".",
+  "venv": "backend/venv",
+  "pythonPath": "./backend/venv/bin/python",
+  "typeCheckingMode": "basic",
+  "useLibraryCodeForTypes": true,
+  "reportMissingImports": "warning",
+  "reportMissingModuleSource": "none",
+  "reportMissingTypeStubs": false,
+  "include": [
+    "*.py",
+    "**/*.py",
+    "backend/*.py",
+    "backend/**/*.py"
+  ],
+  "exclude": [
+    "backend/venv",
+    "**/venv",
+    "__pycache__",
+    "*.pyc",
+    ".pytest_cache",
+    "node_modules"
+  ],
+  "extraPaths": [
+    "./backend/venv/lib/python3.11/site-packages",
+    "./backend"
+  ]
+} 
