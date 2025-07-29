@@ -56,12 +56,14 @@ try:
     from openai import AzureOpenAI
     # Si las credenciales están configuradas, inicializar el cliente
     if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
-        client = AzureOpenAI(
-            api_key=API_KEY,
-            api_version=API_VERSION,
-            azure_endpoint=ENDPOINT,
-            timeout=300.0
-        )
+        # Verificar que las variables no sean None antes de usarlas
+        if API_KEY and ENDPOINT and DEPLOYMENT and API_VERSION:
+            client = AzureOpenAI(
+                api_key=API_KEY,
+                api_version=API_VERSION,
+                azure_endpoint=ENDPOINT,
+                timeout=300.0
+            )
 except Exception as e:
     # En caso de que el paquete openai no esté disponible o haya fallo
     print(f"⚠️ Error configurando Azure OpenAI: {e}")
@@ -80,7 +82,7 @@ def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> str:
     Extrae texto de un PDF usando OCR avanzado para todas las páginas
     """
     try:
-        doc = fitz.open(stream=pdf_buffer, filetype="pdf")
+        doc = fitz.open(stream=pdf_buffer, filetype="pdf")  # type: ignore
         text = ""
         
         # Procesar todas las páginas
@@ -230,6 +232,10 @@ IMPORTANTE:
 """
 
         print("📤 Enviando solicitud a Azure OpenAI...")
+        # Verificar que DEPLOYMENT no sea None antes de usarlo
+        if not DEPLOYMENT:
+            raise ValueError("DEPLOYMENT no está configurado")
+            
         response = client.chat.completions.create(
             model=DEPLOYMENT,
             messages=[
@@ -243,7 +249,10 @@ IMPORTANTE:
         print("📥 Respuesta recibida de Azure OpenAI")
         
         # Extraer el contenido de la respuesta
-        content = response.choices[0].message.content.strip()
+        content = response.choices[0].message.content
+        if content is None:
+            raise ValueError("Respuesta vacía de Azure OpenAI")
+        content = content.strip()
         
         # Intentar parsear el JSON
         try:
