@@ -497,11 +497,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
                       {children}
                     </h4>
                   ),
-                  p: ({ children, ...props }) => (
-                    <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">
-                      {children}
-                    </p>
-                  ),
+
                   ul: ({ children, ...props }) => (
                     <ul {...props} className="list-disc list-inside space-y-2 mb-4 text-gray-700">
                       {children}
