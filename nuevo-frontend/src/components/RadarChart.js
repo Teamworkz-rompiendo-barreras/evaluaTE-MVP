@@ -21,6 +21,40 @@ const renderTick = (tick) => {
   // Dividir el texto en palabras
   const words = value.split(' ');
   
+  // Si tiene exactamente 2 palabras, dividir en dos líneas
+  if (words.length === 2) {
+    return (
+      <g>
+        <text
+          x={x}
+          y={y - 7}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          style={{
+            fontSize: '11px',
+            fontWeight: 500,
+            fill: '#666'
+          }}
+        >
+          {words[0]}
+        </text>
+        <text
+          x={x}
+          y={y + 7}
+          textAnchor="middle"
+          dominantBaseline="middle"
+          style={{
+            fontSize: '11px',
+            fontWeight: 500,
+            fill: '#666'
+          }}
+        >
+          {words[1]}
+        </text>
+      </g>
+    );
+  }
+  
   // Si tiene más de 2 palabras, dividir en líneas
   if (words.length > 2) {
     const lines = [];
@@ -40,22 +74,26 @@ const renderTick = (tick) => {
     });
     
     // Renderizar múltiples líneas
-    return lines.map((line, index) => (
-      <text
-        key={index}
-        x={x}
-        y={y + (index * 14)}
-        textAnchor="middle"
-        dominantBaseline="middle"
-        style={{
-          fontSize: '11px',
-          fontWeight: 500,
-          fill: '#666'
-        }}
-      >
-        {line}
-      </text>
-    ));
+    return (
+      <g>
+        {lines.map((line, index) => (
+          <text
+            key={index}
+            x={x}
+            y={y + (index * 14) - (lines.length - 1) * 7}
+            textAnchor="middle"
+            dominantBaseline="middle"
+            style={{
+              fontSize: '11px',
+              fontWeight: 500,
+              fill: '#666'
+            }}
+          >
+            {line}
+          </text>
+        ))}
+      </g>
+    );
   }
   
   // Para etiquetas cortas, renderizar normalmente
