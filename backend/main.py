@@ -16,6 +16,7 @@ from openai import AzureOpenAI
 from dotenv import load_dotenv
 import logging
 import tempfile
+from feedback_notifications import feedback_notifier
 
 # Importar la función de generación de informe profesional
 from generate_report import generar_informe
@@ -287,6 +288,12 @@ class ReportResponse(BaseModel):
     summary: str
     createdAt: str
 
+class FeedbackRequest(BaseModel):
+    informe: str
+    rating: str  # "Útil" o "No útil"
+    comment: str
+    userData: dict
+
 app = FastAPI(title="EvaluaTE Backend", version="1.0.0")
 
 @app.get("/")
@@ -358,7 +365,7 @@ Nombre: {request.fullName}
 ID de Usuario: {request.userId}
 
 HABILIDADES SOFT EVALUADAS:
-{chr(10).join([f"- {skill.skill}: {skill.level} (Puntuación: {skill.score}, Confianza: {skill.confidence}%)" for skill in request.softSkills])}
+{chr(10).join([f"- {skill.skill}: {skill.confidence}%" for skill in request.softSkills])}
 
 ANÁLISIS DETALLADO DEL CV:
 {format_cv_analysis(request.cvAnalysis.dict()) if request.cvAnalysis else "No se ha proporcionado análisis de CV."}
@@ -600,6 +607,104 @@ LOGS DE JUEGOS:
         logger.error(f"📋 Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
 
+@app.post("/api/informe-ia/feedback")
+async def receive_feedback(request: FeedbackRequest):
+    """
+    Recibe feedback de los usuarios sobre los informes generados por la IA.
+    Este feedback se guarda para mejorar futuros informes.
+    """
+    try:
+        feedback_data = {
+            "informe": request.informe,
+            "rating": request.rating,
+            "comment": request.comment,
+            "userData": request.userData,
+            "timestamp": datetime.now().isoformat(),
+        }
+        
+        # Guardar feedback en archivo JSON
+        feedback_file = "feedback_ia.json"
+        feedbacks = []
+        
+        # Leer feedback existente si existe
+        if os.path.exists(feedback_file):
+            try:
+                with open(feedback_file, 'r', encoding='utf-8') as f:
+                    feedbacks = json.load(f)
+            except (json.JSONDecodeError, FileNotFoundError):
+                feedbacks = []
+        
+        # Agregar nuevo feedback
+        feedbacks.append(feedback_data)
+        
+        # Guardar feedback actualizado
+        with open(feedback_file, 'w', encoding='utf-8') as f:
+            json.dump(feedbacks, f, indent=2, ensure_ascii=False)
+        
+        logger.info(f"✅ Feedback guardado exitosamente. Rating: {request.rating}")
+        
+        # Enviar notificación por email (en segundo plano)
+        try:
+            feedback_notifier.send_feedback_notification(feedback_data)
+        except Exception as e:
+            logger.warning(f"⚠️ Error enviando notificación: {str(e)}")
+        
+        return {"success": True, "message": "Feedback recibido correctamente"}
+        
+    except Exception as e:
+        logger.error(f"❌ Error guardando feedback: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
+@app.get("/api/informe-ia/feedback/stats")
+async def get_feedback_stats():
+    """
+    Obtiene estadísticas del feedback recibido para análisis y mejora.
+    """
+    try:
+        feedback_file = "feedback_ia.json"
+        if not os.path.exists(feedback_file):
+            return {
+                "total_feedback": 0,
+                "useful_feedback": 0,
+                "not_useful_feedback": 0,
+                "useful_percentage": 0,
+                "recent_feedback": [],
+                "common_comments": []
+            }
+        
+        with open(feedback_file, 'r', encoding='utf-8') as f:
+            feedbacks = json.load(f)
+        
+        total_feedback = len(feedbacks)
+        useful_feedback = len([f for f in feedbacks if f.get('rating') == 'Útil'])
+        not_useful_feedback = len([f for f in feedbacks if f.get('rating') == 'No útil'])
+        useful_percentage = (useful_feedback / total_feedback * 100) if total_feedback > 0 else 0
+        
+        # Últimos 10 feedbacks
+        recent_feedback = feedbacks[-10:] if len(feedbacks) > 10 else feedbacks
+        
+        # Comentarios más comunes (simplificado)
+        comments = [f.get('comment', '').strip() for f in feedbacks if f.get('comment', '').strip()]
+        common_comments = []
+        if comments:
+            # Tomar comentarios únicos que aparezcan más de una vez
+            from collections import Counter
+            comment_counts = Counter(comments)
+            common_comments = [comment for comment, count in comment_counts.most_common(5) if count > 1]
+        
+        return {
+            "total_feedback": total_feedback,
+            "useful_feedback": useful_feedback,
+            "not_useful_feedback": not_useful_feedback,
+            "useful_percentage": round(useful_percentage, 2),
+            "recent_feedback": recent_feedback,
+            "common_comments": common_comments
+        }
+        
+    except Exception as e:
+        logger.error(f"❌ Error obteniendo estadísticas de feedback: {str(e)}")
+        raise HTTPException(status_code=500, detail="Error interno del servidor")
+
 @app.post("/api/pdf/analyze-cv", response_model=CvAnalysis)
 async def analyze_cv(
     file: UploadFile = File(...),
@@ -610,64 +715,61 @@ async def analyze_cv(
     completedGames: str = Form(...),  # JSON stringified array
 ):
     """
-    Analiza el CV PDF usando funciones avanzadas (incluyendo OCR para PDFs escaneados)
-    y genera un análisis estructurado usando IA.
+    Analiza un CV subido y devuelve un análisis estructurado usando IA avanzada.
     """
-    # Validar archivo
-    if not file.filename or not file.filename.lower().endswith('.pdf'):
-        raise HTTPException(status_code=400, detail="Solo se permiten archivos PDF")
-    
-    # Validar tamaño del archivo (máximo 10MB)
-    MAX_FILE_SIZE = 10 * 1024 * 1024  # 10MB
-    contents = await file.read()
-    if len(contents) > MAX_FILE_SIZE:
-        raise HTTPException(status_code=400, detail="El archivo es demasiado grande. Máximo 10MB")
-    
-    # Parsear los datos recibidos
-    try:
-        soft_skills = json.loads(softSkills)
-        job_preferences = json.loads(jobPreferences)
-        completed_games = json.loads(completedGames)
-        
-        # Validar que soft_skills sea un array válido
-        if not isinstance(soft_skills, list):
-            soft_skills = []
-        if not isinstance(job_preferences, dict):
-            job_preferences = {}
-        if not isinstance(completed_games, list):
-            completed_games = []
-            
-    except json.JSONDecodeError as e:
-        logger.error(f"Error parseando datos JSON: {str(e)}")
-        raise HTTPException(status_code=400, detail=f"Error en los datos enviados: {str(e)}")
-
-    # Usar la función avanzada de análisis de CV (incluye OCR para PDFs escaneados)
     try:
         logger.info(f"Iniciando análisis avanzado de CV para usuario {userId}")
         
-        # Extraer información del PDF usando cv_analyzer
+        # Verificar que sea un PDF
+        if not file.filename or not file.filename.lower().endswith('.pdf'):
+            raise HTTPException(status_code=400, detail="Solo se permiten archivos PDF")
+        
+        # Leer el contenido del archivo
+        contents = await file.read()
+        
+        # Verificar que sea un PDF válido
+        try:
+            pdf_reader = PdfReader(io.BytesIO(contents))
+            if len(pdf_reader.pages) == 0:
+                raise HTTPException(status_code=400, detail="El archivo PDF está vacío")
+        except Exception as e:
+            raise HTTPException(status_code=400, detail=f"Error al leer el PDF: {str(e)}")
+        
+        # Extraer información del PDF usando el nuevo cv_analyzer con IA
         cv_result = extract_pdf_info(contents)
         
         if cv_result.get("error"):
             logger.error(f"Error en análisis de CV: {cv_result['error']}")
             raise HTTPException(status_code=400, detail=cv_result["error"])
         
-        # Obtener el texto extraído y el análisis
-        pdf_text = cv_result.get("raw_text", "")
+        # Obtener el análisis completo
         cv_analysis = cv_result.get("analysis", {})
         cv_info = cv_result.get("cv_info", {})
+        full_cv_data = cv_result.get("full_cv_data", {})
         
-        if not pdf_text.strip():
-            raise HTTPException(status_code=400, detail="No se pudo extraer texto del PDF. Verifica que el archivo no esté dañado o escaneado.")
-        
-        logger.info(f"Texto extraído: {len(pdf_text)} caracteres")
         logger.info(f"Análisis obtenido: {len(cv_analysis)} elementos")
+        logger.info(f"Datos completos extraídos: {len(full_cv_data)} secciones")
         
-        # Si ya tenemos un análisis completo del cv_analyzer, usarlo directamente
-        if cv_analysis and all(key in cv_analysis for key in ["strengths", "weaknesses", "feedback"]):
-            logger.info("Usando análisis completo de cv_analyzer")
+        # Verificar que tenemos un análisis válido
+        if not cv_analysis or not all(key in cv_analysis for key in ["strengths", "weaknesses", "feedback"]):
+            logger.warning("Análisis incompleto, generando análisis básico")
             
-            # Mapear el análisis a la estructura esperada
+            # Crear análisis básico con los datos disponibles
+            analysis_data = {
+                "strengths": ["CV procesado correctamente"],
+                "weaknesses": ["Análisis limitado por estructura del CV"],
+                "feedback": "El CV ha sido procesado. Se recomienda revisar la información extraída.",
+                "structure": "regular",
+                "coherence": "regular",
+                "experience": "limitada",
+                "skills": cv_info.get("software", []),
+                "education": cv_info.get("educacion", []),
+                "alerts": ["Análisis automático - revisar información extraída"]
+            }
+        else:
+            # Usar el análisis completo del cv_analyzer
+            logger.info("Usando análisis completo de cv_analyzer con IA")
+            
             analysis_data = {
                 "strengths": cv_analysis.get("strengths", []),
                 "weaknesses": cv_analysis.get("weaknesses", []),
@@ -679,97 +781,38 @@ async def analyze_cv(
                 "education": cv_analysis.get("education", []),
                 "alerts": cv_analysis.get("alerts", [])
             }
-            
-            return CvAnalysis(**analysis_data)
         
-        # Si no tenemos análisis completo, usar IA para complementar
-        logger.info("Complementando análisis con IA")
+        # Agregar información adicional del análisis completo
+        if full_cv_data:
+            # Agregar información de contacto si está disponible
+            if full_cv_data.get("contacto"):
+                contact_info = full_cv_data["contacto"]
+                if contact_info.get("nombre"):
+                    analysis_data["feedback"] += f" Nombre detectado: {contact_info['nombre']}."
+                if contact_info.get("email"):
+                    analysis_data["feedback"] += f" Email: {contact_info['email']}."
+            
+            # Agregar información de experiencia detallada
+            if full_cv_data.get("experiencia_laboral"):
+                exp_count = len(full_cv_data["experiencia_laboral"])
+                analysis_data["feedback"] += f" Se detectaron {exp_count} experiencias laborales."
+            
+            # Agregar información de formación
+            if full_cv_data.get("formacion_academica"):
+                edu_count = len(full_cv_data["formacion_academica"])
+                analysis_data["feedback"] += f" Se detectaron {edu_count} elementos de formación."
+            
+            # Agregar información de proyectos
+            if full_cv_data.get("proyectos"):
+                proj_count = len(full_cv_data["proyectos"])
+                analysis_data["feedback"] += f" Se detectaron {proj_count} proyectos."
         
-        # --- PROMPT PARA LA IA ---
-        prompt = f"""
-# === CONTEXTO Y ROL =========================================================
-Eres un/a ORIENTADOR/A LABORAL senior con:
-• Formación en Psicología y en Inclusión Laboral de personas neurodivergentes
-• Conocimiento actualizado del marco de competencias WEF 2025
-• Experiencia en redacción accesible (WCAG 2.2 y lectura fácil)
-
-Tu misión es analizar el texto de un CV y devolver un análisis estructurado en formato JSON.
-
-# === ENTRADA ===============================================================
-Analiza el siguiente texto extraído de un CV:
-cvText = ```{pdf_text[:2000]}```
-
-# === SALIDA REQUERIDA (FORMATO JSON) =======================================
-Devuelve **SOLO** un objeto JSON válido con la siguiente estructura. No incluyas explicaciones, comentarios ni la palabra 'json' al principio. El JSON debe contener estas claves:
-
-{{
-  "strengths": ["...", "..."],
-  "weaknesses": ["...", "..."],
-  "feedback": "...",
-  "structure": "Análisis de la estructura del CV (ej: 'Clara y fácil de seguir' o 'Algo desordenada')",
-  "coherence": "Análisis de la coherencia (ej: 'La experiencia es coherente con los objetivos')",
-  "experience": "Resumen de la experiencia laboral detectada",
-  "skills": ["Lista de habilidades técnicas clave detectadas"],
-  "education": ["Lista de la formación principal detectada"],
-  "alerts": ["Alertas o puntos críticos, como falta de información de contacto o periodos sin actividad no explicados"]
-}}
-"""
-
-        # --- Llamada a OpenAI (GPT-4) ---
-        try:
-            # Verificar que las variables de entorno estén configuradas
-            if not client or not DEPLOYMENT:
-                logger.warning("Azure OpenAI no configurado. Usando respuesta simulada.")
-                raise Exception("Azure OpenAI no configurado")
-            
-            # Llamada real a Azure OpenAI
-            response = client.chat.completions.create(
-                model=DEPLOYMENT,  # En Azure OpenAI, el deployment name se usa como model name
-                messages=[{"role": "user", "content": prompt}],
-                max_tokens=1200,
-                temperature=0.7,
-                response_format={"type": "json_object"},
-            )
-            
-            # Parsear la respuesta JSON
-            content = response.choices[0].message.content
-            if not content:
-                raise Exception("Respuesta vacía de Azure OpenAI")
-            analysis_data = json.loads(content)
-            logger.info(f"Análisis de CV completado para usuario {userId}")
-            
-            return CvAnalysis(**analysis_data)
-            
-        except json.JSONDecodeError as e:
-            logger.error(f"Error parseando respuesta JSON de IA: {str(e)}")
-            raise HTTPException(status_code=500, detail=f"Error parseando respuesta JSON de IA: {str(e)}")
-        except Exception as e:
-            # Si hay error con Azure OpenAI, usar los datos reales extraídos del CV
-            logger.warning(f"Error con Azure OpenAI: {str(e)}. Usando datos reales extraídos del CV.")
-            
-            # Usar los datos reales extraídos del cv_analyzer
-            analysis_data = {
-                "strengths": cv_analysis.get("strengths", []),
-                "weaknesses": cv_analysis.get("weaknesses", []),
-                "feedback": cv_analysis.get("feedback", "Análisis basado en datos extraídos del CV"),
-                "structure": cv_analysis.get("structure", ""),
-                "coherence": cv_analysis.get("coherence", ""),
-                "experience": cv_analysis.get("experience", ""),
-                "skills": cv_analysis.get("skills", []),
-                "education": cv_analysis.get("education", []),
-                "alerts": cv_analysis.get("alerts", [])
-            }
-            
-            # Si no hay datos estructurados, intentar extraer información básica del texto
-            if not any(analysis_data.values()):
-                logger.info("No hay datos estructurados, extrayendo información básica del texto")
-                
-                # Extraer información básica del texto del CV
-                basic_info = extract_basic_cv_info(pdf_text)
-                analysis_data.update(basic_info)
-            
-            return CvAnalysis(**analysis_data)
-            
+        logger.info(f"Análisis de CV completado para usuario {userId}")
+        
+        return CvAnalysis(**analysis_data)
+        
+    except HTTPException:
+        raise
     except Exception as e:
         logger.error(f"Error en análisis de CV: {str(e)}")
         raise HTTPException(status_code=500, detail=f"Error procesando el CV: {str(e)}")
