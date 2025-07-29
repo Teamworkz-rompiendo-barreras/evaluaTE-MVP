@@ -56,7 +56,7 @@ export const useAccessibility = () => {
     dispatch(setFontScale(scale));
   };
 
-  const setFontFamilyHandler = (family: string) => {
+  const setFontFamilyHandler = (family: 'sans' | 'dyslexic' | 'readable') => {
     dispatch(setFontFamily(family));
   };
 

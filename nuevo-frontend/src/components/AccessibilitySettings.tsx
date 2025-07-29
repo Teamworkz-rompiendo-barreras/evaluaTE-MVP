@@ -38,7 +38,7 @@ export const AccessibilitySettings: FC = () => {
         </label>
         <select
           value={fontFamily}
-          onChange={(e) => setFontFamily(e.target.value)}
+          onChange={(e) => setFontFamily(e.target.value as 'sans' | 'dyslexic' | 'readable')}
           className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
           aria-label="Seleccionar tipografía accesible"
         >
