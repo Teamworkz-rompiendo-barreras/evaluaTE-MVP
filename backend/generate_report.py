@@ -4,6 +4,7 @@ import os
 from openai import AzureOpenAI
 from dotenv import load_dotenv
 import time
+import json
 
 # ─── Cargamos variables de entorno ───
 load_dotenv()  # Busca un archivo .env en esta carpeta
@@ -13,29 +14,47 @@ ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 
-if not all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
-    raise RuntimeError("Faltan variables de entorno de Azure OpenAI")
+# Verificar que todas las variables de Azure OpenAI estén configuradas
+missing_vars = []
+if not API_KEY:
+    missing_vars.append("AZURE_OPENAI_API_KEY")
+if not ENDPOINT:
+    missing_vars.append("AZURE_OPENAI_ENDPOINT")
+if not DEPLOYMENT:
+    missing_vars.append("AZURE_OPENAI_DEPLOYMENT")
+if not API_VERSION:
+    missing_vars.append("AZURE_OPENAI_API_VERSION")
+
+if missing_vars:
+    error_msg = f"❌ Faltan variables de entorno de Azure OpenAI: {', '.join(missing_vars)}"
+    error_msg += "\n\nPara configurar Azure OpenAI:"
+    error_msg += "\n1. Ve a https://portal.azure.com"
+    error_msg += "\n2. Crea un recurso 'Azure OpenAI'"
+    error_msg += "\n3. Copia la API Key y Endpoint"
+    error_msg += "\n4. Crea un deployment con un modelo (gpt-35-turbo, gpt-4, etc.)"
+    error_msg += "\n5. Configura las variables en el archivo .env"
+    raise RuntimeError(error_msg)
 
 # Cliente de Azure OpenAI
-if not all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
-    raise RuntimeError("Faltan variables de entorno de Azure OpenAI")
-
-# Verificar que las variables no sean None y hacer type assertion
-if not all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
-    raise RuntimeError("Variables de entorno de Azure OpenAI no pueden ser None")
-
-# Type assertions para asegurar que las variables no sean None
-assert API_KEY is not None
-assert ENDPOINT is not None
-assert DEPLOYMENT is not None
-assert API_VERSION is not None
-
-client = AzureOpenAI(
-    api_key=API_KEY,
-    api_version=API_VERSION,
-    azure_endpoint=ENDPOINT,
-    timeout=300.0  # 5 minutos de timeout para evitar cancelaciones
-)
+try:
+    client = AzureOpenAI(
+        api_key=API_KEY,
+        api_version=API_VERSION,
+        azure_endpoint=ENDPOINT,
+        timeout=300.0  # 5 minutos de timeout para evitar cancelaciones
+    )
+    print(f"✅ Cliente Azure OpenAI configurado correctamente")
+    print(f"   Endpoint: {ENDPOINT}")
+    print(f"   Deployment: {DEPLOYMENT}")
+    print(f"   API Version: {API_VERSION}")
+except Exception as e:
+    error_msg = f"❌ Error configurando cliente Azure OpenAI: {str(e)}"
+    error_msg += "\n\nVerifica que:"
+    error_msg += "\n1. La API Key sea correcta"
+    error_msg += "\n2. El Endpoint sea válido"
+    error_msg += "\n3. El deployment exista en tu recurso de Azure OpenAI"
+    error_msg += "\n4. Tengas permisos para usar el deployment"
+    raise RuntimeError(error_msg)
 
 def generar_informe(perfil: str) -> str:
     """
@@ -44,96 +63,103 @@ def generar_informe(perfil: str) -> str:
     """
 
     prompt = f"""
-Eres un orientador laboral senior con estudios en psicología y experto en neuroinclusión laboral. Tu misión es generar un informe de empleabilidad personalizado, preciso, riguroso y profesional para personas neurodivergentes (autismo, TDAH, Dislexia, Tourette, etc.) y/o con discapacidad intelectual. 
+Eres un orientador laboral sénior con estudios en psicología y experto en neuroinclusión laboral. Tu misión es generar un informe de empleabilidad personalizado, preciso, riguroso y profesional para personas neurodivergentes (autismo, TDAH, dislexia, Tourette, etc.) y/o con discapacidad intelectual.
 
-En todas las secciones del informe, aplica tu conocimiento en neuroinclusión laboral para adaptar el lenguaje, las recomendaciones y los ejemplos, haciéndolos comprensibles, relevantes y motivadores para este colectivo. El informe debe estar escrito en español de España, utilizando frases cortas y de fácil lectura, con un lenguaje profesional pero cercano. Evita metáforas complejas, sarcasmo o ambigüedades. Utiliza un lenguaje directo, positivo y, cuando sea apropiado, proporciona instrucciones paso a paso. Utiliza únicamente los datos proporcionados, evitando información de relleno.
+En todas las secciones del informe debes aplicar tu conocimiento en neuroinclusión laboral: adapta el lenguaje, las recomendaciones y los ejemplos para que sean comprensibles, relevantes y motivadores para este colectivo. El informe debe redactarse en español de España, utilizando frases cortas y de fácil lectura, con un lenguaje profesional pero cercano. Evita metáforas complejas, sarcasmo o ambigüedades. Utiliza un tono directo, positivo y, cuando sea apropiado, proporciona instrucciones paso a paso. Utiliza únicamente los datos proporcionados, sin añadir información de relleno ni invenciones.
 
-IMPORTANTE: Genera un informe EXTENSO y COMPLETO. Cada sección debe tener al menos 3-4 párrafos detallados. NO seas escueto ni superficial.
+**FORMATO DE SALIDA:**
+• El informe debe generarse en formato Markdown para facilitar su visualización
+• Utiliza encabezados (##, ###) para estructurar las secciones
+• Emplea listas con viñetas para mejorar la legibilidad
+• Si algún dato está ausente o es insuficiente, indícalo claramente
+• No inventes información que no esté en los datos proporcionados
+• Cuando no tengas datos suficientes para una sección, sugiere qué información adicional sería útil
 
-OBLIGATORIO: Debes incluir SIEMPRE los datos reales del CV que aparecen en la sección 'ANÁLISIS DETALLADO DEL CV'. Cita específicamente la experiencia laboral, formación académica, habilidades técnicas y cualquier otra información relevante del CV en las secciones correspondientes.
+**TONO EMOCIONAL:**
+• Mantén un equilibrio entre realismo y optimismo
+• Reconoce los desafíos sin ser desalentador
+• Celebra los logros y progresos, por pequeños que sean
+• Utiliza un lenguaje motivador y constructivo, evitando generalizaciones y estereotipos
 
----
+**Requisitos generales**
+• Genera un informe extenso y completo, con un mínimo de 2.500 palabras.
+• Cada sección debe contener al menos tres o cuatro párrafos detallados. No seas escueto ni superficial.
+• Ofrece perspectivas de desarrollo a corto, medio y largo plazo.
+• Incluye siempre ejemplos concretos y casos de uso aplicables.
+• Proporciona recursos específicos, accionables y verificables.
+• Cita y referencia de manera específica los datos del CV en las secciones correspondientes.
+• Mantén un enfoque positivo, empoderador y basado en evidencia, destacando fortalezas sin omitir áreas de mejora.
 
-DATOS DEL CANDIDATO A ANALIZAR:
+**Datos del candidato a analizar**
 {perfil}
 
----
-
-El informe debe seguir la siguiente estructura y contenido:
+El informe debe seguir exactamente la siguiente estructura y contenido:
 
 ## 1. Resumen del perfil
-- Crear un resumen conciso y estructurado del candidato en formato de puntos, incluyendo:
-  - **Datos personales básicos**: Nombre y características principales
-  - **Resumen del CV**: CITA ESPECÍFICAMENTE la experiencia laboral, formación académica, habilidades técnicas detectadas del CV (incluye fechas, empresas, puestos, estudios, etc. que aparezcan en la sección 'ANÁLISIS DETALLADO DEL CV')
-  - **Preferencias laborales**: Áreas de interés, modo de trabajo preferido, disponibilidad, necesidades específicas (basándose en la sección 'PREFERENCIAS LABORALES')
-  - **Perfil de habilidades**: Resumen de las soft skills más destacadas con sus niveles (basándose en la sección 'HABILIDADES SOFT EVALUADAS')
-- Utilizar un formato claro y fácil de leer, con viñetas y subsecciones bien organizadas
-- Mantener un tono profesional pero accesible
+• Presenta un resumen conciso y estructurado del candidato. Utiliza viñetas y subsecciones claras para detallar:
+  o Datos personales básicos: nombre y otras características principales.
+  o Preferencias laborales: áreas de interés, modalidad de trabajo preferida, disponibilidad, desplazamiento y adaptaciones necesarias.
+  o Experiencia y nivel general de empleabilidad: ofrece una visión general de su experiencia profesional (cita fechas, empresas y puestos cuando existan) y elabora una valoración global de su empleabilidad.
+  o Resumen del CV: cita específicamente la experiencia laboral, la formación académica y las habilidades técnicas del CV (incluyendo fechas, empresas, puestos, estudios, etc.).
+  o Perfil de habilidades: resume las soft skills más destacadas con sus niveles (basándote en la sección "HABILIDADES SOFT EVALUADAS").
 
-## 2. Fortalezas clave
-- Listar las habilidades blandas identificadas con nivel "alto" en la sección de 'HABILIDADES SOFT EVALUADAS'. Al describir cada fortaleza, considera el nivel de 'Confianza' del candidato para reforzar su autoconfianza y validar sus percepciones.
-- Para cada fortaleza, proporcionar un ejemplo práctico de cómo el candidato puede usarla en un entorno laboral.
-- INCLUYE OBLIGATORIAMENTE las fortalezas identificadas en el análisis del CV (sección 'ANÁLISIS DETALLADO DEL CV'). Cita específicamente las habilidades técnicas, experiencia relevante y logros mencionados en el CV.
+## 2. Análisis del CV
+• Realiza una evaluación detallada del CV, citando los datos reales de la sección "ANÁLISIS DETALLADO DEL CV". Debes incluir:
+  o Formación académica: describe los estudios cursados, titulaciones, fechas e instituciones.
+  o Experiencia laboral: expón cada puesto de trabajo, empresa, fechas y tareas realizadas (cita textualmente los datos cuando estén disponibles).
+  o Habilidades técnicas: menciona las herramientas, lenguajes o tecnologías utilizadas.
+  o Idiomas: incluye los idiomas y niveles si aparecen en el CV.
+  o Análisis visual: valora la estructura, coherencia, claridad y diseño del CV. Incluye iconos o indicadores (por ejemplo, estrellas) para representar formato, claridad, información clave y ortografía.
+  o Sección de experiencia y personalización: evalúa cómo se presenta la experiencia laboral y ofrece recomendaciones para personalizar el CV según sectores o puestos de interés.
+  o Ortografía: comenta la calidad ortográfica, destacando aciertos o posibles correcciones.
+• Proporciona recomendaciones personalizadas y ejemplos concretos para mejorar el CV, adaptarlo a diferentes empresas y resaltar habilidades relevantes.
 
-## 3. Áreas a mejorar
-- Identificar un máximo de 4 habilidades blandas con nivel "bajo" o "medio" de la sección de 'HABILIDADES SOFT EVALUADAS'.
-- Para cada área, ofrecer consejos prácticos y accesibles (ej. "pasos a seguir" o sugerencias de recursos como "vídeos recomendados"). Al formular estos consejos, ten en cuenta el nivel de 'Confianza' del candidato, ofreciendo estrategias que ayuden a construirla y a superar posibles inseguridades.
-- INCLUYE OBLIGATORIAMENTE las áreas de mejora identificadas en el análisis del CV. Cita específicamente las debilidades o aspectos a mejorar mencionados en el CV.
+## 3. Fortalezas (blandas y técnicas)
+• Enumera las habilidades blandas con nivel "alto" identificadas en la sección de habilidades evaluadas y en el análisis del CV.
+• Para cada fortaleza, describe brevemente cómo se manifiesta y ofrece ejemplos prácticos de cómo el candidato puede aplicarla en un entorno laboral.
+• Incorpora también las fortalezas técnicas derivadas del CV, como experiencia relevante, logros profesionales o destrezas específicas.
+• Ten en cuenta el nivel de confianza del candidato para reforzar su autoconfianza y validar sus percepciones.
 
-## 4. Sugerencias laborales
-- Basándose en las preferencias laborales del candidato (sección 'PREFERENCIAS LABORALES'), el análisis detallado de los resultados de los minijuegos (sección 'LOGS DE JUEGOS') y el análisis del CV, sugerir:
-  - Entornos de trabajo ideales (ej. colaborativo, autónomo, estructurado, flexible), considerando las tendencias observadas en los minijuegos (ej. preferencia por tareas repetitivas, resolución de problemas bajo presión, interacción social).
-  - Tipos de tareas recomendadas que se alineen con sus fortalezas y preferencias, respaldadas por el rendimiento y las preferencias mostradas en los minijuegos y su experiencia profesional, mostrada en el CV.
-  - Consejos de búsqueda de empleo adaptados a su estilo y necesidades (ej. plataformas específicas, networking, preparación de entrevistas), teniendo en cuenta cómo el candidato gestiona la información y el estrés según los logs de los juegos.
-  - Adaptaciones específicas que puede solicitar en el entorno laboral basadas en sus necesidades y preferencias.
-- REFERENCIA ESPECÍFICA a la experiencia laboral del CV para respaldar las sugerencias.
+## 4. Áreas de mejora (blandas y técnicas) y consejos
+• Selecciona hasta cuatro habilidades blandas con nivel "bajo" o "medio" de la sección de habilidades evaluadas.
+• Describe cada área de mejora de forma comprensiva y ofrece consejos prácticos y accesibles (por ejemplo, pasos a seguir, recursos recomendados, vídeos, lecturas). Asegúrate de que estos consejos ayuden a construir confianza y a superar inseguridades.
+• Incluye obligatoriamente las áreas de mejora identificadas en el análisis del CV (por ejemplo, ausencia de verbos de acción, falta de cuantificación de logros, necesidad de formación adicional, etc.).
+• Distingue entre habilidades blandas y técnicas cuando corresponda, ofreciendo estrategias distintas para cada una.
 
-## 5. Evaluación del CV
-- Realizar un análisis visual del CV (sección 'ANÁLISIS DETALLADO DEL CV') considerando:
-  - Estructura y coherencia.
-  - Áreas de mejora. Proporciona ejemplos concretos de cómo adaptar el CV para destacar habilidades relevantes y cómo presentar la información de manera clara y concisa.
-- Utilizar iconos para representar:
-  - Formato.
-  - Claridad.
-  - Información clave.
-  - Ortografía.
-- Proporcionar recomendaciones personalizadas para optimizar el CV.
-- Incluir sugerencias específicas para adaptar el CV a diferentes tipos de empresas y puestos.
-- CITA ESPECÍFICAMENTE elementos del CV analizado para respaldar tus recomendaciones.
+## 5. Sugerencias laborales
+• Basándote en las preferencias laborales del candidato, los resultados de los minijuegos (sección "LOGS DE JUEGOS") y el análisis del CV, sugiere:
+  o Entornos de trabajo ideales: colaborativo, autónomo, estructurado, flexible…, explicando por qué se adaptan a su perfil.
+  o Tipos de tareas recomendadas: Estas recomendaciones se deben de basar en su experiencia, preferencias y fortalezas: tareas repetitivas, proyectos de resolución de problemas, trabajos con interacción social limitada o funciones de apoyo, respaldadas por su rendimiento y experiencia.
+  o Consejos de búsqueda de empleo: plataformas de búsqueda de empleo, plataformas inclusivas (sólo si tiene certificado de discapacidad), búsqueda activa de empleo, estrategias de networking, preparación de entrevistas, teniendo en cuenta cómo gestiona la información y el estrés,etc.
+  o Adaptaciones específicas: recomendaciones sobre horarios flexibles, apoyos tecnológicos o ajustes en el puesto de trabajo que el candidato puede solicitar.
+• Cita específicamente la experiencia y formación del CV para justificar cada sugerencia.
 
 ## 6. Próximos pasos
-- Sugerir formación relevante basada en las áreas a mejorar y las preferencias laborales. Prioriza formaciones accesibles y adaptadas a diferentes estilos de aprendizaje.
-- Recomendar portales de empleo específicos para personas con o sin discapacidad, o aquellos que se adapten a sus preferencias. Menciona plataformas que prioricen la inclusión o que tengan filtros específicos para adaptaciones y necesidades especiales.
-- Incluir una frase de motivación final.
-- Proporcionar un plan de acción concreto con fechas y objetivos específicos.
-- REFERENCIA a la experiencia y formación del CV para personalizar las recomendaciones.
+• Propón acciones de formación relevantes basadas en las áreas de mejora y preferencias laborales (cursos, certificaciones, talleres).
+• Aconseja crear un perfil de LinkedIn si no lo tienen creado. Añade algún enlace donde puedan aprender a crearse ese perfil
+• Incluye un plan de acción concreto con fechas, objetivos específicos y tareas semanales.
+• Finaliza con una frase explicando que ese informe ha sido realizado de manera personalizada para ajustarlo al perfil del candidato.
+• Referencia su experiencia y formación para personalizar los consejos y priorizar las próximas acciones.
 
 ## 7. Recursos y apoyo adicional
-- Listar organizaciones y asociaciones que ofrecen apoyo específico para personas neurodivergentes en el ámbito laboral.
-- Recomendar herramientas y tecnologías de apoyo que puedan facilitar el desempeño laboral.
-- Incluir contactos de orientadores laborales especializados en neuroinclusión.
+• Recomienda herramientas tecnológicas de apoyo que puedan facilitar el desempeño laboral (por ejemplo, Trello para organizar tareas, Grammarly para corregir textos).
+• Incluye contactos o programas de orientadores laborales especializados en neuroinclusión, indicando cómo acceder a ellos.
+• Lista organizaciones y asociaciones específicas que ofrecen apoyo para personas neurodivergentes en el ámbito laboral.
+• Enfatiza el uso de estos recursos como parte del plan de desarrollo personal y profesional.
 
----
-
-CRITERIOS DE CALIDAD OBLIGATORIOS:
-- Lenguaje profesional pero accesible, sin jerga técnica compleja
-- Análisis basado en evidencia y experiencia en neuroinclusión
-- Recomendaciones prácticas y realizables, con ejemplos concretos
-- Enfoque positivo y empoderador, destacando fortalezas
-- Consideración integral de factores neuroinclusivos
-- Propuestas específicas y contextualizadas
-- MÍNIMO 2500 palabras de contenido sustancial
-- Cada sección debe tener al menos 3-4 párrafos detallados
-- Incluir ejemplos concretos y casos de uso específicos
-- Proporcionar recursos específicos, accionables y verificables
-- Utilizar un tono motivador y constructivo
-- Evitar generalizaciones y estereotipos
-- Incluir perspectivas de desarrollo a corto, medio y largo plazo
-- OBLIGATORIO: Citar y referenciar específicamente los datos del CV en las secciones correspondientes
+**Criterios de calidad obligatorios**
+• Emplea un lenguaje profesional pero accesible, sin jerga técnica compleja.
+• Aporta análisis basados en evidencia y experiencia en neuroinclusión.
+• Ofrece recomendaciones prácticas, realizables y contextualizadas.
+• Mantén un enfoque positivo y empoderador, destacando fortalezas y sugiriendo mejoras desde la motivación.
+• Considera integralmente los factores neuroinclusivos y personaliza tus consejos.
+• Evita generalizaciones y estereotipos; sé específico y preciso.
+• Cada sección debe tener al menos 3–4 párrafos detallados y contribuir al mínimo de 2.500 palabras.
 """
 
     # Llamada a la API con timeout extendido
     try:
+        print(f"🤖 Enviando prompt a Azure OpenAI (deployment: {DEPLOYMENT})...")
         respuesta = client.chat.completions.create(
             model=DEPLOYMENT,  # type: ignore
             messages=[
@@ -144,37 +170,25 @@ CRITERIOS DE CALIDAD OBLIGATORIOS:
             temperature=0.7
         )
         
-        return respuesta.choices[0].message.content or ""
+        contenido = respuesta.choices[0].message.content or ""
+        print(f"✅ Informe generado exitosamente ({len(contenido)} caracteres)")
+        return contenido
         
     except Exception as e:
-        # Si hay un timeout o error, intentar con un prompt más corto
-        print(f"⚠️ Error en la primera llamada a la API: {str(e)}")
-        print("🔄 Intentando con prompt más corto...")
+        error_msg = f"❌ Error en la llamada a Azure OpenAI: {str(e)}"
+        if "DeploymentNotFound" in str(e):
+            error_msg += f"\n\nEl deployment '{DEPLOYMENT}' no existe en tu recurso de Azure OpenAI."
+            error_msg += "\n\nPara solucionarlo:"
+            error_msg += "\n1. Ve a tu recurso de Azure OpenAI en Azure Portal"
+            error_msg += "\n2. Ve a 'Model deployments'"
+            error_msg += "\n3. Crea un nuevo deployment con un modelo disponible (gpt-35-turbo, gpt-4, etc.)"
+            error_msg += "\n4. Actualiza AZURE_OPENAI_DEPLOYMENT en tu archivo .env"
+        elif "authentication" in str(e).lower() or "unauthorized" in str(e).lower():
+            error_msg += "\n\nError de autenticación. Verifica que:"
+            error_msg += "\n1. La API Key sea correcta"
+            error_msg += "\n2. Tengas permisos para usar el deployment"
+        elif "timeout" in str(e).lower():
+            error_msg += "\n\nTimeout en la llamada. El prompt puede ser muy largo."
+            error_msg += "\nIntenta con un prompt más corto o aumenta el timeout."
         
-        # Prompt más corto como fallback
-        prompt_corto = f"""
-Genera un informe de empleabilidad profesional para el siguiente candidato:
-
-{perfil}
-
-El informe debe incluir:
-1. Resumen del perfil
-2. Fortalezas clave
-3. Áreas a mejorar
-4. Sugerencias laborales
-5. Próximos pasos
-
-Genera un informe completo pero más conciso.
-"""
-        
-        respuesta = client.chat.completions.create(
-            model=DEPLOYMENT,  # type: ignore
-            messages=[
-                {"role": "system", "content": "Eres un psicólogo laboral experto en neuroinclusión."},
-                {"role": "user", "content": prompt_corto}
-            ],
-            max_tokens=4000,
-            temperature=0.7
-        )
-        
-        return respuesta.choices[0].message.content or ""
+        raise RuntimeError(error_msg)

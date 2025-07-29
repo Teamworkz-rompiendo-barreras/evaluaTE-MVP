@@ -1,85 +1,164 @@
-# Configuración de Azure OpenAI
+# 🚀 Configuración de Azure OpenAI para EvaluaTE
 
-## Problema identificado
-El error de conexión que aparece en el informe se debe a que **Azure OpenAI no está configurado correctamente** en el backend. Esto causa que:
+Esta guía te ayudará a configurar Azure OpenAI correctamente para que la aplicación pueda generar informes personalizados con IA.
 
-1. **El análisis de CV falla** porque no puede conectarse a Azure OpenAI para procesar el texto extraído del PDF
-2. **El informe se genera** pero con datos limitados porque no puede analizar completamente el CV
-3. **El frontend muestra el error** porque detecta que hay un problema de conexión
+## 📋 Requisitos Previos
 
-## Solución
+- Una cuenta de Microsoft Azure
+- Acceso a Azure OpenAI Service
+- Python 3.8+ instalado
 
-### Paso 1: Configurar Azure OpenAI
+## 🔧 Paso a Paso: Configuración de Azure OpenAI
 
-1. **Crear recurso en Azure Portal**
-   - Ve a https://portal.azure.com
-   - Busca "Azure OpenAI" y crea un nuevo recurso
-   - Selecciona tu suscripción y grupo de recursos
-   - Elige una región (recomendado: East US o West Europe)
-   - Dale un nombre al recurso (ej: "evaluador-openai")
+### 1. Crear Recurso de Azure OpenAI
 
-2. **Obtener las credenciales**
-   - Una vez creado, ve a "Keys and Endpoint"
-   - Copia la "Key 1" (será tu `AZURE_OPENAI_API_KEY`)
-   - Copia el "Endpoint" (será tu `AZURE_OPENAI_ENDPOINT`)
+1. Ve a [Azure Portal](https://portal.azure.com)
+2. Busca "Azure OpenAI" en la barra de búsqueda
+3. Selecciona "Azure OpenAI" y haz clic en "Crear"
+4. Completa la información básica:
+   - **Suscripción**: Selecciona tu suscripción
+   - **Grupo de recursos**: Crea uno nuevo o usa uno existente
+   - **Región**: Selecciona una región cercana (ej: West Europe)
+   - **Nombre**: Dale un nombre descriptivo (ej: `evaluate-openai`)
+   - **Plan de tarifa**: Selecciona "Standard S0" (suficiente para desarrollo)
+5. Haz clic en "Revisar + crear" y luego "Crear"
 
-3. **Crear un deployment**
-   - Ve a "Model deployments"
-   - Haz clic en "Create"
-   - Selecciona un modelo (recomendado: GPT-4o)
-   - Dale un nombre al deployment (ej: "gpt-4o-cv-analysis")
-   - Anota este nombre (será tu `AZURE_OPENAI_DEPLOYMENT`)
+### 2. Obtener Credenciales
 
-### Paso 2: Configurar el archivo .env
+Una vez creado el recurso:
 
-1. **Copiar el archivo de ejemplo**
+1. Ve al recurso de Azure OpenAI
+2. En el menú lateral, ve a **"Keys and Endpoint"**
+3. Copia:
+   - **Key 1** (será tu `AZURE_OPENAI_API_KEY`)
+   - **Endpoint** (será tu `AZURE_OPENAI_ENDPOINT`)
+
+### 3. Crear Deployment de Modelo
+
+1. En el menú lateral, ve a **"Model deployments"**
+2. Haz clic en **"Create"**
+3. Completa la información:
+   - **Deployment name**: Usa un nombre simple (ej: `gpt-35-turbo`)
+   - **Model**: Selecciona uno de estos modelos:
+     - `gpt-35-turbo` (recomendado para desarrollo - más económico)
+     - `gpt-4` (más potente, más costoso)
+     - `gpt-4o` (balanceado)
+   - **Model version**: Selecciona la versión más reciente
+4. Haz clic en **"Create"**
+
+### 4. Configurar Variables de Entorno
+
+1. En la carpeta `backend`, copia el archivo de ejemplo:
    ```bash
    cp env.example .env
    ```
 
-2. **Editar el archivo .env**
-   ```bash
-   nano .env
-   ```
-
-3. **Completar con tus valores**
+2. Edita el archivo `.env` y actualiza las variables:
    ```env
-   AZURE_OPENAI_API_KEY=tu_api_key_aqui
+   # Azure OpenAI Configuration
+   AZURE_OPENAI_API_KEY=tu_api_key_real_aqui
    AZURE_OPENAI_ENDPOINT=https://tu-recurso.openai.azure.com
-   AZURE_OPENAI_DEPLOYMENT=gpt-4o-cv-analysis
+   AZURE_OPENAI_DEPLOYMENT=gpt-35-turbo
    AZURE_OPENAI_API_VERSION=2024-02-15-preview
+   
+   # Configuración del backend
+   PORT=8000
+   HOST=0.0.0.0
+   
+   # Configuración de CORS
+   ALLOWED_ORIGINS=http://localhost:3005,http://localhost:3006,http://localhost:5173
    ```
 
-### Paso 3: Reiniciar el servidor
+### 5. Verificar Configuración
+
+Ejecuta el script de verificación:
 
 ```bash
-# Detener el servidor actual (Ctrl+C)
-# Luego reiniciar
-python main.py
+cd backend
+python setup_azure_openai.py
 ```
 
-### Paso 4: Verificar la configuración
+Este script verificará:
+- ✅ Que el archivo `.env` existe
+- ✅ Que las variables están configuradas
+- ✅ Que la conexión con Azure OpenAI funciona
+- ✅ Que el deployment está disponible
 
-Puedes usar el script de prueba incluido:
+## 🧪 Probar la Configuración
 
-```bash
-python test_azure_openai.py
-```
+Una vez configurado, puedes probar que todo funciona:
 
-## Resultado esperado
+1. Inicia el backend:
+   ```bash
+   cd backend
+   python main.py
+   ```
 
-Después de configurar Azure OpenAI correctamente:
+2. Ve a `http://localhost:8000/docs` para ver la documentación de la API
 
-1. **El análisis de CV funcionará completamente** - podrá extraer y analizar el contenido del PDF
-2. **El informe se generará sin errores** - incluirá análisis detallado del CV
-3. **No aparecerán mensajes de error** - la aplicación funcionará de manera fluida
+3. Prueba el endpoint `/api/informe-ia` con datos de ejemplo
 
-## Notas importantes
+## 🔍 Solución de Problemas
 
-- **Costo**: Azure OpenAI tiene un costo por uso. Configura límites de gasto en tu cuenta de Azure
-- **Regiones**: Asegúrate de que el deployment esté en la misma región que tu recurso
-- **Modelos**: GPT-4o es recomendado para análisis de CV, pero puedes usar otros modelos disponibles
+### Error: "DeploymentNotFound"
 
-## Solución temporal
+**Síntomas**: Error 404 con mensaje "The API deployment for this resource does not exist"
 
-Si no quieres configurar Azure OpenAI ahora, la aplicación seguirá funcionando con análisis básico del CV. El informe se generará pero con información limitada sobre el CV. 
+**Solución**:
+1. Verifica que el deployment existe en Azure Portal
+2. Asegúrate de que el nombre en `.env` coincida exactamente
+3. Espera unos minutos si acabas de crear el deployment
+
+### Error: "Unauthorized"
+
+**Síntomas**: Error 401 o 403
+
+**Solución**:
+1. Verifica que la API Key sea correcta
+2. Asegúrate de que tienes permisos para usar el servicio
+3. Verifica que el endpoint sea correcto
+
+### Error: "Rate limit exceeded"
+
+**Síntomas**: Error 429
+
+**Solución**:
+1. Espera unos minutos antes de hacer otra petición
+2. Considera actualizar el plan de tarifa si necesitas más capacidad
+
+### Error: "Timeout"
+
+**Síntomas**: La petición tarda demasiado
+
+**Solución**:
+1. El prompt puede ser muy largo, considera acortarlo
+2. Verifica la conexión a internet
+3. Intenta con un modelo más rápido (gpt-35-turbo)
+
+## 💰 Costos
+
+- **gpt-35-turbo**: ~$0.002 por 1K tokens (muy económico)
+- **gpt-4**: ~$0.03 por 1K tokens (más costoso)
+- **gpt-4o**: ~$0.005 por 1K tokens (balanceado)
+
+Un informe típico usa entre 2000-4000 tokens, por lo que el costo por informe es muy bajo.
+
+## 🔒 Seguridad
+
+- Nunca compartas tu API Key
+- No subas el archivo `.env` a repositorios públicos
+- Usa variables de entorno en producción
+- Considera usar Azure Key Vault para mayor seguridad
+
+## 📞 Soporte
+
+Si tienes problemas:
+
+1. Ejecuta `python setup_azure_openai.py` para diagnóstico
+2. Verifica los logs del backend
+3. Consulta la documentación de Azure OpenAI
+4. Contacta con soporte de Azure si es necesario
+
+---
+
+¡Con esta configuración, tu aplicación estará lista para generar informes personalizados con IA! 🎉

@@ -324,8 +324,144 @@ async def log_game_complete(data: Dict[str, Any]):
 
 @app.post("/api/informe-ia", response_model=ReportResponse)
 async def generate_ia_report(request: EmployabilityReportRequest):
-    """Genera informe de IA basado en datos del usuario"""
-    return await generate_report(request)
+    """
+    Genera un informe de empleabilidad usando IA avanzada.
+    """
+    try:
+        logger.info(f"🔄 Iniciando generación de informe profesional para: {request.fullName}")
+        
+        # Preparar perfil completo para la IA
+        perfil_completo = {
+            'datos_personales': {
+                'nombre': request.fullName,
+                'user_id': request.userId
+            },
+            'habilidades_soft': [
+                {
+                    'habilidad': skill.skill,
+                    'nivel': skill.level,
+                    'puntuacion': skill.score,
+                    'confianza': skill.confidence
+                }
+                for skill in request.softSkills
+            ],
+            'analisis_cv': request.cvAnalysis.dict() if request.cvAnalysis else {},
+            'preferencias_laborales': request.jobPreferences.dict() if request.jobPreferences else {},
+            'juegos_completados': request.completedGames,
+            'logs_juegos': [log.dict() for log in request.logs] if request.logs else []
+        }
+        
+        # Formatear el perfil como texto para la IA
+        perfil_texto = f"""
+DATOS DEL CANDIDATO:
+Nombre: {request.fullName}
+ID de Usuario: {request.userId}
+
+HABILIDADES SOFT EVALUADAS:
+{chr(10).join([f"- {skill.skill}: {skill.level} (Puntuación: {skill.score}, Confianza: {skill.confidence}%)" for skill in request.softSkills])}
+
+ANÁLISIS DETALLADO DEL CV:
+{format_cv_analysis(request.cvAnalysis.dict()) if request.cvAnalysis else "No se ha proporcionado análisis de CV."}
+
+PREFERENCIAS LABORALES:
+{format_job_preferences(request.jobPreferences.dict()) if request.jobPreferences else "No se han especificado preferencias laborales."}
+
+JUEGOS COMPLETADOS:
+{', '.join(perfil_completo['juegos_completados']) if perfil_completo['juegos_completados'] else "El candidato no ha completado juegos de evaluación. La evaluación se basa en las habilidades soft proporcionadas."}
+
+LOGS DE JUEGOS:
+{json.dumps(perfil_completo['logs_juegos'], indent=2, ensure_ascii=False) if perfil_completo['logs_juegos'] else "No se dispone de logs detallados de juegos. La evaluación se basa en los resultados de habilidades soft proporcionados."}
+"""
+        
+        logger.info("🤖 Generando informe profesional con IA...")
+        
+        # Generar informe profesional usando IA
+        informe_profesional = generar_informe(perfil_texto)
+        
+        logger.info("✅ Informe profesional generado exitosamente")
+        
+        # Calcular puntuación de empleabilidad basada en habilidades
+        high_skills = [skill for skill in request.softSkills if skill.level.lower() == "alto"]
+        medium_skills = [skill for skill in request.softSkills if skill.level.lower() == "medio"]
+        low_skills = [skill for skill in request.softSkills if skill.level.lower() == "bajo"]
+        
+        score_high = len(high_skills) * 100
+        score_medium = len(medium_skills) * 65
+        score_low = len(low_skills) * 30
+        total_score = (score_high + score_medium + score_low) // max(1, len(request.softSkills))
+        
+        # Nivel de empleabilidad
+        level = (
+            "Alta empleabilidad"
+            if total_score >= 80
+            else "Empleabilidad media"
+            if total_score >= 50
+            else "Baja empleabilidad"
+        )
+        
+        # Extraer recomendaciones del informe de IA
+        # Buscar secciones específicas en el informe
+        recomendaciones = {
+            "roles": [],
+            "resources": ["Platzi", "Microsoft Learn"],
+            "cvImprovements": [],
+            "nextSteps": ["Revisar el informe completo", "Implementar las recomendaciones", "Seguir el plan de desarrollo"]
+        }
+        
+        # Intentar extraer roles recomendados del informe
+        if "puestos de trabajo recomendados" in informe_profesional.lower() or "empleos compatibles" in informe_profesional.lower():
+            # Buscar patrones de roles en el texto
+            import re
+            roles_pattern = r"(?:puesto|rol|empleo|trabajo)[\s\w]*recomendado[^:]*:\s*([^.\n]+)"
+            roles_matches = re.findall(roles_pattern, informe_profesional, re.IGNORECASE)
+            if roles_matches:
+                recomendaciones["roles"] = [rol.strip() for rol in roles_matches[:3]]
+        
+        # Si no se encontraron roles, usar algunos por defecto basados en habilidades
+        if not recomendaciones["roles"]:
+            if any(skill.level.lower() == "alto" for skill in request.softSkills):
+                recomendaciones["roles"].extend(["Desarrollador frontend", "Soporte técnico"])
+            if request.cvAnalysis and request.cvAnalysis.strengths:
+                recomendaciones["roles"].append("Analista de datos")
+        
+        return {
+            "report": {
+                "userId": request.userId,
+                "fullName": request.fullName,
+                "softSkills": [
+                    {**skill.dict(), "confidence": round(skill.confidence * 100)}
+                    for skill in request.softSkills
+                ],
+                "employabilityScore": total_score,
+                "jobPreferences": request.jobPreferences.dict() if request.jobPreferences else {},
+                "cvAnalysis": request.cvAnalysis.dict() if request.cvAnalysis else None,
+                "createdAt": datetime.now().isoformat(),
+                "completedGames": request.completedGames,
+                "level": level,
+                "informeProfesional": informe_profesional  # Incluir el informe completo de IA
+            },
+            "recommendations": recomendaciones,
+            "summary": f"{request.fullName}, tu informe profesional ha sido generado. Nivel de empleabilidad: {level}",
+            "employabilityScore": total_score,
+            "level": level,
+            "createdAt": datetime.now().isoformat(),
+        }
+
+    except RuntimeError as e:
+        # Error de configuración de Azure OpenAI
+        logger.error(f"❌ Error de configuración Azure OpenAI: {str(e)}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error de configuración de Azure OpenAI: {str(e)}"
+        )
+    except Exception as e:
+        logger.error(f"❌ Error generando informe profesional: {str(e)}")
+        import traceback
+        logger.error(f"📋 Traceback: {traceback.format_exc()}")
+        raise HTTPException(
+            status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
+            detail=f"Error generando informe: {str(e)}"
+        )
 
 @app.get("/api/informe-ia")
 async def get_ia_report():
