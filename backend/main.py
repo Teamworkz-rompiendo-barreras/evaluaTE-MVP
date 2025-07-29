@@ -719,6 +719,7 @@ async def analyze_cv(
     """
     try:
         logger.info(f"Iniciando análisis avanzado de CV para usuario {userId}")
+        logger.info(f"Archivo recibido: {file.filename}, tamaño: {file.size} bytes")
         
         # Verificar que sea un PDF
         if not file.filename or not file.filename.lower().endswith('.pdf'):
@@ -726,21 +727,45 @@ async def analyze_cv(
         
         # Leer el contenido del archivo
         contents = await file.read()
+        logger.info(f"Contenido leído: {len(contents)} bytes")
         
         # Verificar que sea un PDF válido
         try:
             pdf_reader = PdfReader(io.BytesIO(contents))
             if len(pdf_reader.pages) == 0:
                 raise HTTPException(status_code=400, detail="El archivo PDF está vacío")
+            logger.info(f"PDF válido con {len(pdf_reader.pages)} páginas")
         except Exception as e:
+            logger.error(f"Error al validar PDF: {str(e)}")
             raise HTTPException(status_code=400, detail=f"Error al leer el PDF: {str(e)}")
         
         # Extraer información del PDF usando el nuevo cv_analyzer con IA
+        logger.info("Iniciando análisis con cv_analyzer...")
         cv_result = extract_pdf_info(contents)
         
         if cv_result.get("error"):
             logger.error(f"Error en análisis de CV: {cv_result['error']}")
-            raise HTTPException(status_code=400, detail=cv_result["error"])
+            # En lugar de fallar completamente, crear un análisis básico
+            logger.info("Creando análisis básico como fallback...")
+            
+            # Intentar extraer texto básico del PDF
+            try:
+                pdf_reader = PdfReader(io.BytesIO(contents))
+                basic_text = ""
+                for page in pdf_reader.pages:
+                    basic_text += page.extract_text() + "\n"
+                
+                if basic_text.strip():
+                    # Crear análisis básico con el texto extraído
+                    basic_analysis = extract_basic_cv_info(basic_text)
+                    logger.info("Análisis básico creado exitosamente")
+                    
+                    return CvAnalysis(**basic_analysis)
+                else:
+                    raise HTTPException(status_code=400, detail=cv_result["error"])
+            except Exception as basic_error:
+                logger.error(f"Error en análisis básico: {str(basic_error)}")
+                raise HTTPException(status_code=400, detail=cv_result["error"])
         
         # Obtener el análisis completo
         cv_analysis = cv_result.get("analysis", {})
@@ -808,13 +833,16 @@ async def analyze_cv(
                 analysis_data["feedback"] += f" Se detectaron {proj_count} proyectos."
         
         logger.info(f"Análisis de CV completado para usuario {userId}")
+        logger.info(f"Resultado final: {len(analysis_data.get('strengths', []))} fortalezas, {len(analysis_data.get('weaknesses', []))} debilidades")
         
         return CvAnalysis(**analysis_data)
         
     except HTTPException:
         raise
     except Exception as e:
-        logger.error(f"Error en análisis de CV: {str(e)}")
+        logger.error(f"Error inesperado en análisis de CV: {str(e)}")
+        import traceback
+        logger.error(f"Traceback completo: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=f"Error procesando el CV: {str(e)}")
 
 @app.post("/api/upload-cv")

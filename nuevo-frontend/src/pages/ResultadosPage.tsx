@@ -473,9 +473,8 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
       {iaReport && (
         <>
           <div className="informe-empleabilidad report-container">
-            <div className="report-content">
+            <div className="report-content professional-report">
               <ReactMarkdown
-                className="professional-report"
                 components={{
                   // Configuración mejorada para renderizado profesional
                   h1: ({ children, ...props }) => (
@@ -608,5 +607,4 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
   );
 };
 
-export default ResultadosPage;
 export default ResultadosPage;

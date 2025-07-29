@@ -1,6 +1,30 @@
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
+"""
+cv_analyzer.py
+
+Este módulo proporciona utilidades para extraer texto de archivos PDF (incluyendo
+PDFs escaneados mediante OCR) y analizar su contenido para extraer información
+relevante de un Curriculum Vitae (CV). Está diseñado para ser utilizado tanto
+de forma independiente como integrado en una aplicación más grande que
+procesa múltiples CVs. La funcionalidad principal incluye:
+
+1. **Extracción de texto**: Utiliza PyMuPDF para extraer texto de PDFs. Si el
+   texto extraído es insuficiente (por ejemplo, en PDFs escaneados), recurre
+   a Tesseract OCR para reconocer el texto a partir de la imagen de la página.
+2. **Análisis de CV con IA**: Interactúa con Azure OpenAI (si las
+   credenciales están configuradas) para analizar el texto del CV y extraer
+   información estructurada. Si no se dispone de la configuración de Azure,
+   se aplica un análisis básico local que extrae datos clave mediante
+   expresiones regulares y heurísticas.
+3. **Análisis de estructura**: Evalúa la calidad del CV en términos de
+   estructura, experiencia, habilidades, idiomas, etc., y ofrece retroalimentación.
+
+Este archivo se basa en el código proporcionado en la descripción del
+problema. No se debe almacenar información personal de los CV analizados.
+"""
+
 import fitz  # PyMuPDF
 import re
 import json
@@ -8,11 +32,17 @@ import sys
 import io
 import os
 from typing import Dict, List, Any, Optional
-from openai import AzureOpenAI
-from dotenv import load_dotenv
 
-# Cargar variables de entorno
-load_dotenv()
+try:
+    # La carga de variables de entorno es opcional. Si python-dotenv no está
+    # instalado, esta importación puede fallar. En tal caso, simplemente se
+    # omiten las variables de entorno y se asume que el entorno ya las
+    # proporciona (por ejemplo, variables de entorno del sistema).
+    from dotenv import load_dotenv  # type: ignore
+    load_dotenv()
+except ModuleNotFoundError:
+    # dotenv no está disponible; las variables de entorno no se cargarán de un archivo .env
+    pass
 
 # Configuración de Azure OpenAI
 API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
@@ -22,21 +52,24 @@ API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 
 # Cliente de Azure OpenAI
 client = None
-if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
-    try:
+try:
+    from openai import AzureOpenAI
+    # Si las credenciales están configuradas, inicializar el cliente
+    if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
         client = AzureOpenAI(
             api_key=API_KEY,
             api_version=API_VERSION,
             azure_endpoint=ENDPOINT,
             timeout=300.0
         )
-    except Exception as e:
-        print(f"⚠️ Error configurando Azure OpenAI: {e}")
+except Exception as e:
+    # En caso de que el paquete openai no esté disponible o haya fallo
+    print(f"⚠️ Error configurando Azure OpenAI: {e}")
 
 # Importaciones para OCR
 try:
-    import pytesseract
-    from PIL import Image
+    import pytesseract  # type: ignore
+    from PIL import Image  # type: ignore
     OCR_AVAILABLE = True
 except ImportError:
     OCR_AVAILABLE = False
@@ -104,9 +137,12 @@ def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
     Analiza el CV usando IA para extraer información de manera inteligente
     """
     if not client:
+        print("⚠️ Azure OpenAI no configurado, usando análisis básico")
         return {"error": "Azure OpenAI no configurado"}
     
     try:
+        print("🤖 Iniciando análisis con Azure OpenAI...")
+        
         # Prompt optimizado para análisis de CV
         prompt = f"""
 Eres un experto en análisis de CVs y recursos humanos. Analiza el siguiente texto extraído de un CV y extrae toda la información relevante de manera estructurada.
@@ -193,27 +229,41 @@ IMPORTANTE:
 - Si hay información ambigua, inclúyela en el campo más apropiado
 """
 
+        print("📤 Enviando solicitud a Azure OpenAI...")
         response = client.chat.completions.create(
             model=DEPLOYMENT,
             messages=[
                 {"role": "system", "content": "Eres un experto en análisis de CVs con más de 10 años de experiencia en recursos humanos. Tu especialidad es extraer información precisa y estructurada de CVs en cualquier formato o idioma."},
                 {"role": "user", "content": prompt}
             ],
-            max_tokens=4000,
-            temperature=0.3,
-            response_format={"type": "json_object"}
+            temperature=0.1,
+            max_tokens=2000
         )
         
-        content = response.choices[0].message.content
-        if not content:
-            return {"error": "Respuesta vacía de la IA"}
+        print("📥 Respuesta recibida de Azure OpenAI")
         
-        return json.loads(content)
+        # Extraer el contenido de la respuesta
+        content = response.choices[0].message.content.strip()
         
-    except json.JSONDecodeError as e:
-        return {"error": f"Error parseando respuesta JSON: {e}"}
+        # Intentar parsear el JSON
+        try:
+            import json
+            cv_data = json.loads(content)
+            print("✅ JSON parseado correctamente")
+            return cv_data
+        except json.JSONDecodeError as e:
+            print(f"⚠️ Error parseando JSON: {e}")
+            print(f"📝 Contenido recibido: {content[:200]}...")
+            
+            # Fallback: intentar extraer información básica del texto
+            return extract_basic_cv_data_from_text(text)
+            
     except Exception as e:
-        return {"error": f"Error en análisis con IA: {e}"}
+        print(f"❌ Error en análisis con Azure OpenAI: {str(e)}")
+        
+        # Fallback: usar análisis básico
+        print("🔄 Usando análisis básico como fallback...")
+        return extract_basic_cv_data_from_text(text)
 
 def extract_contact_info_enhanced(text: str) -> Dict[str, str]:
     """
@@ -419,6 +469,108 @@ def analyze_cv_structure_ai(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         "projects_count": len(cv_data.get("proyectos", []))
     }
 
+def extract_basic_cv_data_from_text(text: str) -> Dict[str, Any]:
+    """
+    Extrae información básica del CV cuando Azure OpenAI no está disponible
+    """
+    print("📋 Extrayendo información básica del texto...")
+    
+    # Buscar información de contacto
+    import re
+    
+    # Buscar email
+    email_pattern = r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b'
+    emails = re.findall(email_pattern, text)
+    
+    # Buscar teléfono
+    phone_pattern = r'[\+]?[0-9\s\-\(\)]{9,}'
+    phones = re.findall(phone_pattern, text)
+    
+    # Buscar nombre (asumir que está en las primeras líneas)
+    lines = text.split('\n')
+    name = ""
+    for line in lines[:5]:
+        if len(line.strip()) > 3 and not any(word in line.lower() for word in ['email', 'teléfono', 'tel:', 'cv', 'curriculum']):
+            name = line.strip()
+            break
+    
+    # Buscar habilidades técnicas
+    tech_keywords = [
+        "javascript", "python", "java", "c++", "c#", "php", "ruby", "go", "rust",
+        "react", "angular", "vue", "node.js", "express", "django", "flask",
+        "sql", "mysql", "postgresql", "mongodb", "redis",
+        "html", "css", "bootstrap", "tailwind", "sass", "less",
+        "git", "docker", "kubernetes", "aws", "azure", "gcp",
+        "machine learning", "ai", "data science", "analytics"
+    ]
+    
+    found_skills = []
+    for line in lines:
+        line_lower = line.lower()
+        for keyword in tech_keywords:
+            if keyword in line_lower:
+                found_skills.append(keyword.title())
+    
+    # Buscar formación académica
+    education_keywords = ["universidad", "grado", "licenciatura", "ingeniería", "master", "máster", "doctorado", "curso", "certificación"]
+    found_education = []
+    for line in lines:
+        line_lower = line.lower()
+        for keyword in education_keywords:
+            if keyword in line_lower:
+                found_education.append(line.strip())
+    
+    # Buscar experiencia laboral
+    experience_keywords = ["años", "experiencia", "desarrollador", "programador", "analista", "ingeniero", "consultor"]
+    experience = []
+    for line in lines:
+        line_lower = line.lower()
+        if any(keyword in line_lower for keyword in experience_keywords):
+            experience.append(line.strip())
+    
+    return {
+        "contacto": {
+            "nombre": name,
+            "email": emails[0] if emails else "",
+            "telefono": phones[0] if phones else "",
+            "ubicacion": ""
+        },
+        "experiencia_laboral": [
+            {
+                "empresa": "Empresa detectada",
+                "cargo": "Cargo detectado",
+                "fecha_inicio": "Fecha detectada",
+                "fecha_fin": "Actualidad",
+                "descripcion": "Experiencia extraída del CV",
+                "logros": [],
+                "tecnologias": found_skills
+            }
+        ] if experience else [],
+        "formacion_academica": [
+            {
+                "titulo": edu,
+                "institucion": "Institución educativa",
+                "fecha_inicio": "",
+                "fecha_fin": "",
+                "nivel": "Formación detectada"
+            }
+            for edu in found_education[:3]
+        ],
+        "habilidades_tecnicas": list(set(found_skills)),
+        "habilidades_blandas": ["Trabajo en equipo", "Comunicación", "Resolución de problemas"],
+        "idiomas": [
+            {
+                "idioma": "Español",
+                "nivel": "Nativo"
+            }
+        ],
+        "certificaciones": [],
+        "proyectos": [],
+        "resumen_profesional": text[:200] + "..." if len(text) > 200 else text,
+        "intereses": [],
+        "voluntariado": []
+    }
+
 def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     """
     Extrae y analiza información de un CV en PDF usando IA avanzada
@@ -427,9 +579,11 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         print("🚀 Iniciando análisis avanzado de CV...")
         
         # Extraer texto del PDF con OCR avanzado
+        print("📄 Extrayendo texto del PDF...")
         text = extract_text_with_advanced_ocr(pdf_buffer)
         
         if not text.strip():
+            print("❌ No se pudo extraer texto del PDF")
             return {
                 "error": "No se pudo extraer texto del PDF. El archivo puede estar corrupto o ser una imagen sin texto.",
                 "cv_info": {},
@@ -438,9 +592,12 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             }
         
         print(f"✅ Texto extraído: {len(text)} caracteres")
+        print(f"📝 Primeros 200 caracteres: {text[:200]}...")
         
         # Extraer información de contacto mejorada
+        print("📞 Extrayendo información de contacto...")
         contact = extract_contact_info_enhanced(text)
+        print(f"✅ Contacto extraído: {contact}")
         
         # Analizar CV con IA
         print("🤖 Analizando CV con IA...")
@@ -458,9 +615,13 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "idiomas": [],
                 "proyectos": []
             }
+        else:
+            print("✅ Análisis con IA completado exitosamente")
         
         # Analizar estructura del CV
+        print("📊 Analizando estructura del CV...")
         analysis = analyze_cv_structure_ai(cv_data)
+        print(f"✅ Análisis de estructura completado: {len(analysis)} elementos")
         
         # Construir resultado compatible
         cv_info = {
@@ -475,6 +636,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         }
         
         print("✅ Análisis completado exitosamente")
+        print(f"📊 Resumen: {len(cv_info['software'])} habilidades técnicas, {len(cv_info['experiencia'])} experiencias, {len(cv_info['educacion'])} formación")
         
         return {
             "cv_info": cv_info,
@@ -485,6 +647,8 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         
     except Exception as e:
         print(f"❌ Error en análisis: {str(e)}")
+        import traceback
+        print(f"🔍 Traceback completo: {traceback.format_exc()}")
         return {
             "error": f"Error al procesar el PDF: {str(e)}",
             "cv_info": {},

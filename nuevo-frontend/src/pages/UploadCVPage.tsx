@@ -74,9 +74,17 @@ export default function UploadCVPage() {
         body: formData
       });
       
+      console.log('📥 Respuesta del servidor:', res.status, res.statusText);
+      
       if (res.ok) {
         const cvAnalysis = await res.json();
         console.log('✅ Análisis de CV recibido:', cvAnalysis);
+        
+        // Verificar que el análisis tiene la estructura esperada
+        if (!cvAnalysis || typeof cvAnalysis !== 'object') {
+          console.error('❌ Análisis de CV inválido:', cvAnalysis);
+          throw new Error('El servidor devolvió un análisis de CV inválido');
+        }
         
         // Guardar el análisis en el estado de Redux
         dispatch(saveCvAnalysis(cvAnalysis));
@@ -91,22 +99,30 @@ export default function UploadCVPage() {
       } else {
         const errorData = await res.json().catch(() => ({}));
         console.error('❌ Error del servidor:', errorData);
+        console.error('❌ Status:', res.status, res.statusText);
         
         // Crear un análisis básico con información del error
         const fallbackAnalysis = {
           strengths: [],
           weaknesses: [],
-          feedback: errorData.details || 'No se pudo analizar completamente el CV',
+          feedback: errorData.detail || errorData.error || 'No se pudo analizar completamente el CV',
           structure: 'regular',
           coherence: 'regular',
           experience: 'regular',
           skills: [],
           education: [],
-          alerts: [errorData.error || 'Error en el análisis del CV']
+          alerts: [errorData.detail || errorData.error || 'Error en el análisis del CV']
         };
         
         dispatch(saveCvAnalysis(fallbackAnalysis));
         console.log('⚠️ Usando análisis de fallback');
+        
+        // Mostrar error específico al usuario
+        if (errorData.detail) {
+          setError(`Error en el análisis del CV: ${errorData.detail}`);
+        } else {
+          setError('Error al procesar el CV. Por favor, verifica que el archivo sea un PDF válido.');
+        }
       }
     } catch (err) {
       console.error('❌ Error de conexión:', err);
