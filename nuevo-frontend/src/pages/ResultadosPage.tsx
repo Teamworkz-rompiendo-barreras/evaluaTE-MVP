@@ -98,8 +98,7 @@ const ResultadosPage: React.FC = () => {
           setIaReport(data.report.informeProfesional);
         } else if (res.ok && data.summary) {
           // Fallback: generar un informe básico si no hay informe de IA
-          const informe = `
-# Informe de Empleabilidad
+          const informe = `# Informe de Empleabilidad
 
 ## Resumen
 ${data.summary}
@@ -476,64 +475,103 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
           <div className="informe-empleabilidad report-container">
             <div className="report-content">
               <ReactMarkdown
+                className="professional-report"
                 components={{
-                  a: (props) => (
-                    <a {...props} target="_blank" rel="noopener noreferrer">
-                      {props.children}
-                    </a>
+                  // Configuración mejorada para renderizado profesional
+                  h1: ({ children, ...props }) => (
+                    <h1 {...props} className="text-3xl font-bold text-gray-900 mb-6 mt-8 pb-2 border-b-2 border-gray-200">
+                      {children}
+                    </h1>
                   ),
-                  p: (props) => (
-                    <p {...props} className="mb-4" />
+                  h2: ({ children, ...props }) => (
+                    <h2 {...props} className="text-2xl font-semibold text-gray-800 mb-4 mt-6">
+                      {children}
+                    </h2>
                   ),
-                  h1: (props) => (
-                    <h1 {...props} className="mb-6 mt-8" />
+                  h3: ({ children, ...props }) => (
+                    <h3 {...props} className="text-xl font-semibold text-gray-700 mb-3 mt-5">
+                      {children}
+                    </h3>
                   ),
-                  h2: (props) => (
-                    <h2 {...props} className="mb-4 mt-6" />
+                  h4: ({ children, ...props }) => (
+                    <h4 {...props} className="text-lg font-semibold text-gray-600 mb-2 mt-4">
+                      {children}
+                    </h4>
                   ),
-                  h3: (props) => (
-                    <h3 {...props} className="mb-3 mt-5" />
+                  p: ({ children, ...props }) => (
+                    <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">
+                      {children}
+                    </p>
                   ),
-                  h4: (props) => (
-                    <h4 {...props} className="mb-2 mt-4" />
+                  ul: ({ children, ...props }) => (
+                    <ul {...props} className="list-disc list-inside space-y-2 mb-4 text-gray-700">
+                      {children}
+                    </ul>
                   ),
-                  ul: (props) => (
-                    <ul {...props} className="mb-4 space-y-2" />
+                  ol: ({ children, ...props }) => (
+                    <ol {...props} className="list-decimal list-inside space-y-2 mb-4 text-gray-700">
+                      {children}
+                    </ol>
                   ),
-                  ol: (props) => (
-                    <ol {...props} className="mb-4 space-y-2" />
+                  li: ({ children, ...props }) => (
+                    <li {...props} className="leading-relaxed">
+                      {children}
+                    </li>
                   ),
-                  li: (props) => (
-                    <li {...props} className="mb-2" />
+                  strong: ({ children, ...props }) => (
+                    <strong {...props} className="font-semibold text-gray-900">
+                      {children}
+                    </strong>
                   ),
-                  strong: (props) => (
-                    <strong {...props} className="font-semibold" />
+                  em: ({ children, ...props }) => (
+                    <em {...props} className="italic text-gray-600">
+                      {children}
+                    </em>
                   ),
-                  em: (props) => (
-                    <em {...props} className="italic" />
+                  blockquote: ({ children, ...props }) => (
+                    <blockquote {...props} className="border-l-4 border-blue-500 pl-4 italic text-gray-600 bg-blue-50 py-2 rounded-r">
+                      {children}
+                    </blockquote>
                   ),
-                  blockquote: (props) => (
-                    <blockquote {...props} className="border-l-4 border-gray-300 pl-4 italic text-gray-600" />
+                  code: ({ children, ...props }) => (
+                    <code {...props} className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">
+                      {children}
+                    </code>
                   ),
-                  code: (props) => (
-                    <code {...props} className="bg-gray-100 px-1 py-0.5 rounded text-sm" />
+                  pre: ({ children, ...props }) => (
+                    <pre {...props} className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-800 border">
+                      {children}
+                    </pre>
                   ),
-                  pre: (props) => (
-                    <pre {...props} className="bg-gray-100 p-4 rounded overflow-x-auto" />
-                  ),
-                  table: (props) => (
-                    <div className="overflow-x-auto">
-                      <table {...props} className="min-w-full border-collapse border border-gray-300" />
+                  table: ({ children, ...props }) => (
+                    <div className="overflow-x-auto mb-4">
+                      <table {...props} className="min-w-full border-collapse border border-gray-300">
+                        {children}
+                      </table>
                     </div>
                   ),
-                  th: (props) => (
-                    <th {...props} className="border border-gray-300 px-4 py-2 bg-gray-50 font-semibold" />
+                  th: ({ children, ...props }) => (
+                    <th {...props} className="border border-gray-300 px-4 py-2 bg-gray-50 font-semibold text-gray-900 text-left">
+                      {children}
+                    </th>
                   ),
-                  td: (props) => (
-                    <td {...props} className="border border-gray-300 px-4 py-2" />
+                  td: ({ children, ...props }) => (
+                    <td {...props} className="border border-gray-300 px-4 py-2 text-gray-700">
+                      {children}
+                    </td>
+                  ),
+                  a: ({ children, href, ...props }) => (
+                    <a {...props} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 hover:text-blue-800 underline">
+                      {children}
+                    </a>
+                  ),
+                  hr: ({ ...props }) => (
+                    <hr {...props} className="border-t border-gray-300 my-6" />
                   ),
                 }}
-              >{iaReport}</ReactMarkdown>
+              >
+                {iaReport}
+              </ReactMarkdown>
             </div>
           </div>
 
@@ -570,4 +608,5 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
   );
 };
 
+export default ResultadosPage;
 export default ResultadosPage;
