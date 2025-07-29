@@ -128,6 +128,8 @@ En todas las secciones del informe debes aplicar tu conocimiento en neuroinclusi
 • **IMPORTANTE**: En todas las listas numeradas, el número debe aparecer en la misma línea que el título o contenido, NO en una línea separada
 • **IMPORTANTE**: Usa el formato "1. Título del elemento" en lugar de "1.\nTítulo del elemento"
 • **IMPORTANTE**: Mantén coherencia en el formato de numeración en todo el documento
+• **IMPORTANTE**: Usa formato profesional con espaciado adecuado entre secciones
+• **IMPORTANTE**: Para los indicadores de calidad del CV, usa estrellas: "Formato: ★★★☆☆"
 
 **TONO EMOCIONAL:**
 • Mantén un equilibrio entre realismo y optimismo
@@ -178,6 +180,7 @@ El informe debe seguir exactamente la siguiente estructura y contenido:
 ### Idiomas
 • Incluye los idiomas y niveles extraídos del CV.
 • Cita específicamente cada idioma detectado con su nivel.
+• **FORMATO**: Si no hay idiomas detectados, usa: "- **Idiomas:** No se detectaron idiomas específicos en el CV. Sería útil incluir esta información."
 
 ### Proyectos y logros
 • Describe los proyectos detectados en el CV.
@@ -186,8 +189,10 @@ El informe debe seguir exactamente la siguiente estructura y contenido:
 
 ### Análisis de estructura y calidad
 • Valora la estructura, coherencia, claridad y diseño del CV basándote en el análisis automático.
-• Incluye iconos o indicadores para representar formato, claridad, información clave y ortografía.
+• Incluye indicadores con estrellas (★) para representar formato, claridad, información clave y ortografía.
+• Usa el formato: "Formato: ★★★☆☆" (5 estrellas máximo, estrellas llenas para buenos aspectos, vacías para áreas de mejora).
 • Cita específicamente las fortalezas y debilidades detectadas en el análisis.
+• **FORMATO**: Para la estructura del CV, usa: "- **Estructura y diseño del CV:** [descripción]. [evaluación]"
 
 ### Recomendaciones de mejora
 • Proporciona recomendaciones personalizadas basadas en el análisis automático del CV.
@@ -201,6 +206,8 @@ El informe debe seguir exactamente la siguiente estructura y contenido:
 • Ten en cuenta el nivel de confianza del candidato para reforzar su autoconfianza y validar sus percepciones.
 • Cita específicamente las fortalezas detectadas en el análisis automático del CV.
 • **FORMATO**: Usa listas numeradas con el formato "1. Nombre de la fortaleza" (número y título en la misma línea)
+• **FORMATO**: Incluye el porcentaje: "1. Resiliencia y flexibilidad (80%)"
+• **FORMATO**: Agrupa por niveles: "**Fortalezas destacadas:**" para nivel alto, "**Áreas intermedias:**" para nivel medio
 
 ## 4. Áreas de mejora (blandas y técnicas) y consejos
 • Selecciona hasta cuatro habilidades blandas con nivel "bajo" o "medio" de la sección de habilidades evaluadas.
@@ -209,6 +216,8 @@ El informe debe seguir exactamente la siguiente estructura y contenido:
 • Distingue entre habilidades blandas y técnicas cuando corresponda, ofreciendo estrategias distintas para cada una.
 • Cita específicamente las debilidades detectadas en el análisis automático del CV.
 • **FORMATO**: Usa listas numeradas con el formato "1. Nombre del área de mejora" (número y título en la misma línea)
+• **FORMATO**: Incluye el porcentaje: "1. Liderazgo (48%)"
+• **FORMATO**: Usa el título: "**Áreas de mejora:**"
 
 ## 5. Sugerencias laborales
 • Basándote en las preferencias laborales del candidato, los resultados de los minijuegos (sección "LOGS DE JUEGOS") y el análisis detallado del CV, sugiere:
@@ -236,6 +245,14 @@ El informe debe seguir exactamente la siguiente estructura y contenido:
 • Ejemplo correcto: "1. Resiliencia y flexibilidad (80%)"
 • Ejemplo incorrecto: "1.\nResiliencia y flexibilidad (80%)"
 • Mantén esta coherencia en todo el documento
+• Usa espaciado adecuado entre secciones (líneas en blanco)
+• Para los indicadores de calidad del CV, usa estrellas: "Formato: ★★★☆☆", "Claridad: ★★★☆☆", "Información clave: ★★☆☆☆", "Ortografía: ★★★★★"
+• Estructura las listas con viñetas (-) para subelementos
+• Usa **negrita** para destacar títulos de secciones y elementos importantes
+• **IMPORTANTE**: Para las viñetas, usa el formato "- **Título:** Descripción" (título y descripción en la misma línea)
+• **IMPORTANTE**: NO pongas viñetas en líneas separadas del contenido
+• **IMPORTANTE**: Usa el formato correcto: "- **Idiomas:** No se detectaron idiomas específicos en el CV"
+• **IMPORTANTE**: Evita el formato incorrecto: "-\n**Idiomas:** No se detectaron idiomas específicos en el CV"
 """
 
     # Llamada a la API con timeout extendido

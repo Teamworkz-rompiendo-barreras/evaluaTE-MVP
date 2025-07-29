@@ -567,6 +567,38 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
                   hr: ({ ...props }) => (
                     <hr {...props} className="border-t border-gray-300 my-6" />
                   ),
+                  // Componente personalizado para renderizar texto con estrellas coloreadas
+                  p: ({ children, ...props }) => {
+                    if (typeof children === 'string' && children.includes('★')) {
+                      const coloredText = children.replace(
+                        /(★+)(☆*)/g,
+                        (match, filledStars, emptyStars) => {
+                          const filledCount = filledStars.length;
+                          const totalCount = filledCount + emptyStars.length;
+                          const percentage = (filledCount / totalCount) * 100;
+                          
+                          let colorClass = 'text-gray-400'; // Por defecto gris
+                          if (percentage >= 80) colorClass = 'text-green-500'; // Verde para excelente
+                          else if (percentage >= 60) colorClass = 'text-yellow-500'; // Amarillo para bueno
+                          else if (percentage >= 40) colorClass = 'text-orange-500'; // Naranja para regular
+                          else colorClass = 'text-red-500'; // Rojo para malo
+                          
+                          return `<span class="${colorClass} font-bold">${filledStars}</span><span class="text-gray-300">${emptyStars}</span>`;
+                        }
+                      );
+                      return (
+                        <p {...props} 
+                           className="text-gray-700 leading-relaxed mb-4 text-justify"
+                           dangerouslySetInnerHTML={{ __html: coloredText }}
+                        />
+                      );
+                    }
+                    return (
+                      <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">
+                        {children}
+                      </p>
+                    );
+                  },
                 }}
               >
                 {iaReport}
