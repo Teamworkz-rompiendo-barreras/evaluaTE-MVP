@@ -5,14 +5,76 @@ const SOFT_SKILLS = [
   "Toma de decisiones",
   "Pensamiento analítico",
   "Creatividad",
-  "Trabajo en equipo",
+  "Influencia social",
   "Curiosidad y aprendizaje",
   "Resiliencia y flexibilidad",
   "Autoconciencia",
   "Empatía",
-  "Comunicación",
-  "Gestión del tiempo"
+  "Pensamiento Crítico",
+  "Liderazgo"
 ];
+
+// Función para dividir etiquetas largas en múltiples líneas
+const renderTick = (tick) => {
+  const { x, y, value } = tick;
+  
+  // Dividir el texto en palabras
+  const words = value.split(' ');
+  
+  // Si tiene más de 2 palabras, dividir en líneas
+  if (words.length > 2) {
+    const lines = [];
+    let currentLine = '';
+    
+    words.forEach((word, index) => {
+      if (currentLine.length + word.length > 12) {
+        if (currentLine) lines.push(currentLine.trim());
+        currentLine = word;
+      } else {
+        currentLine += (currentLine ? ' ' : '') + word;
+      }
+      
+      if (index === words.length - 1 && currentLine) {
+        lines.push(currentLine.trim());
+      }
+    });
+    
+    // Renderizar múltiples líneas
+    return lines.map((line, index) => (
+      <text
+        key={index}
+        x={x}
+        y={y + (index * 14)}
+        textAnchor="middle"
+        dominantBaseline="middle"
+        style={{
+          fontSize: '11px',
+          fontWeight: 500,
+          fill: '#666'
+        }}
+      >
+        {line}
+      </text>
+    ));
+  }
+  
+  // Para etiquetas cortas, renderizar normalmente
+  return (
+    <text
+      x={x}
+      y={y}
+      textAnchor="middle"
+      dominantBaseline="middle"
+      style={{
+        fontSize: '12px',
+        fontWeight: 500,
+        fill: '#666'
+      }}
+    >
+      {value}
+    </text>
+  );
+};
 
 /**
  * RadarChart
@@ -43,15 +105,15 @@ export default function RadarChart({ userScores, averageScores }) {
   }
 
   return (
-    <div style={{ height: 400, width: '100%' }}>
+    <div style={{ height: 500, width: '100%' }}>
       <ResponsiveRadar
         data={radarData}
         keys={keys}
         indexBy="softskill"
         valueFormat=">-.0f"
-        margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
+        margin={{ top: 60, right: 120, bottom: 60, left: 120 }}
         borderColor={{ from: 'color' }}
-        gridLabelOffset={20}
+        gridLabelOffset={50}
         dotSize={12}
         dotColor={{ theme: 'background' }}
         dotBorderWidth={2}
@@ -61,6 +123,19 @@ export default function RadarChart({ userScores, averageScores }) {
         blendMode="multiply"
         animate={true}
         isInteractive={true}
+        renderTick={renderTick}
+        theme={{
+          text: {
+            fontSize: 12,
+            fontWeight: 500,
+          },
+          grid: {
+            line: {
+              stroke: '#ddd',
+              strokeWidth: 1,
+            },
+          },
+        }}
         legends={[
           {
             anchor: 'top-left',

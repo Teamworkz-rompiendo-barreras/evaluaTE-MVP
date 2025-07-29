@@ -422,7 +422,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
           <ul className="space-y-1">
             {(report?.softSkills ?? []).map((skill, idx) => (
               <li key={idx}>
-                <span className="font-medium">{skill.skill}:</span> {skill.level} ({skill.score}% confianza)
+                <span className="font-medium">{skill.skill}:</span> {skill.score}%
               </li>
             ))}
           </ul>
