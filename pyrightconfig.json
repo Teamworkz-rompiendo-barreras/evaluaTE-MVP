@@ -16,10 +16,14 @@
   "exclude": [
     "backend/venv",
     "**/venv",
+    ".venv",
+    "**/.venv",
     "__pycache__",
     "*.pyc",
     ".pytest_cache",
-    "node_modules"
+    "node_modules",
+    "**/site-packages",
+    "**/lib/python*/site-packages"
   ],
   "extraPaths": [
     "./backend/venv/lib/python3.11/site-packages",

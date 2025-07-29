@@ -77,7 +77,7 @@ jobs:
           action: upload
           app_location: "."
           api_location: ""
-          output_location: "dist"
+          output_location: ""
           skip_app_build: true
           skip_api_build: true
 
@@ -93,6 +93,6 @@ jobs:
           action: close
           app_location: "."
           api_location: ""
-          output_location: "dist"
+          output_location: ""
           skip_app_build: true
           skip_api_build: true 
