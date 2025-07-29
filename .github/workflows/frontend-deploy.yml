@@ -47,6 +47,30 @@ jobs:
         working-directory: ./nuevo-frontend
         run: npm run build
 
+      - name: Copy Static Web Apps config
+        run: cp nuevo-frontend/staticwebapp.config.json nuevo-frontend/dist/
+
+      - name: Verify build output
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Verificando contenido del directorio dist:"
+          ls -la dist/
+          echo "Verificando index.html:"
+          if [ -f "dist/index.html" ]; then
+            echo "✅ index.html encontrado"
+            cat dist/index.html | head -5
+          else
+            echo "❌ index.html no encontrado"
+            exit 1
+          fi
+          echo "Verificando staticwebapp.config.json:"
+          if [ -f "dist/staticwebapp.config.json" ]; then
+            echo "✅ staticwebapp.config.json encontrado"
+          else
+            echo "❌ staticwebapp.config.json no encontrado"
+            exit 1
+          fi
+
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
         with:
@@ -69,13 +93,34 @@ jobs:
           name: frontend-build
           path: ./dist
 
+      - name: Verify build artifacts
+        run: |
+          echo "Contenido del directorio dist:"
+          ls -la dist/
+          echo "Verificando index.html:"
+          if [ -f "dist/index.html" ]; then
+            echo "✅ index.html encontrado"
+            echo "Primeras líneas del index.html:"
+            head -5 dist/index.html
+          else
+            echo "❌ index.html no encontrado"
+            exit 1
+          fi
+          echo "Verificando staticwebapp.config.json:"
+          if [ -f "dist/staticwebapp.config.json" ]; then
+            echo "✅ staticwebapp.config.json encontrado"
+          else
+            echo "❌ staticwebapp.config.json no encontrado"
+            exit 1
+          fi
+
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: "."
+          app_location: "dist"
           api_location: ""
           output_location: ""
           skip_app_build: true
@@ -91,7 +136,7 @@ jobs:
         with:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
           action: close
-          app_location: "."
+          app_location: "dist"
           api_location: ""
           output_location: ""
           skip_app_build: true
