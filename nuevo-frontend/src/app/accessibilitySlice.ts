@@ -7,6 +7,7 @@ export interface AccessibilityState {
   showPictograms: boolean;
   contrastLevel: 'normal' | 'alto' | 'muy-alto';
   fontScale: number;
+  fontFamily: 'sans' | 'dyslexic' | 'readable';
 }
 
 const initialState: AccessibilityState = {
@@ -15,6 +16,7 @@ const initialState: AccessibilityState = {
   showPictograms: false,
   contrastLevel: 'normal',
   fontScale: 100,
+  fontFamily: 'sans',
 };
 
 export const accessibilitySlice = createSlice({
@@ -36,6 +38,9 @@ export const accessibilitySlice = createSlice({
     setFontScale: (state, action: PayloadAction<number>) => {
       state.fontScale = action.payload;
     },
+    setFontFamily: (state, action: PayloadAction<'sans' | 'dyslexic' | 'readable'>) => {
+      state.fontFamily = action.payload;
+    },
     toggleContrast: (state) => {
       const levels: ('normal' | 'alto' | 'muy-alto')[] = ['normal', 'alto', 'muy-alto'];
       const currentIndex = levels.indexOf(state.contrastLevel);
@@ -51,6 +56,7 @@ export const {
   setShowPictograms,
   setContrastLevel,
   setFontScale,
+  setFontFamily,
   toggleContrast,
 } = accessibilitySlice.actions;
 

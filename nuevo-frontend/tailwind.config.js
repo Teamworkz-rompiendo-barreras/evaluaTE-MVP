@@ -22,16 +22,60 @@ export default {
         info: '#2196F3',
       },
       fontFamily: {
-        sans: ['Inter', 'Atkinson Hyperlegible', 'Arial', 'sans-serif'],
-        heading: ['Poppins', 'Inter', 'Arial', 'sans-serif'],
+        // Fuentes principales - ordenadas por accesibilidad cognitiva
+        sans: [
+          'OpenDyslexic',           // Fuente específica para dislexia
+          'Atkinson Hyperlegible',  // Fuente de alta legibilidad
+          'Comic Sans MS',          // Fuente amigable para dislexia
+          'Verdana',                // Fuente clara y espaciada
+          'Arial',                  // Fallback universal
+          'sans-serif'
+        ],
+        // Fuentes para encabezados - más legibles
+        heading: [
+          'OpenDyslexic',
+          'Atkinson Hyperlegible',
+          'Verdana',
+          'Arial',
+          'sans-serif'
+        ],
+        // Fuente específica para dislexia
+        dyslexic: [
+          'OpenDyslexic',
+          'Comic Sans MS',
+          'Verdana',
+          'Arial',
+          'sans-serif'
+        ],
+        // Fuente de alta legibilidad
+        readable: [
+          'Atkinson Hyperlegible',
+          'OpenDyslexic',
+          'Verdana',
+          'Arial',
+          'sans-serif'
+        ],
+        // Fuente para código - mantener monospace
+        mono: [
+          'Monaco',
+          'Menlo',
+          'Ubuntu Mono',
+          'Consolas',
+          'monospace'
+        ]
       },
       fontSize: {
-        xs: ['0.75rem', { lineHeight: '1rem' }],
-        sm: ['0.875rem', { lineHeight: '1.25rem' }],
-        base: ['1rem', { lineHeight: '1.5rem' }],
-        lg: ['1.125rem', { lineHeight: '1.75rem' }],
-        xl: ['1.25rem', { lineHeight: '1.75rem' }],
-        '2xl': ['1.5rem', { lineHeight: '2rem' }],
+        xs: ['0.75rem', { lineHeight: '1.2rem' }],
+        sm: ['0.875rem', { lineHeight: '1.4rem' }],
+        base: ['1rem', { lineHeight: '1.6rem' }],
+        lg: ['1.125rem', { lineHeight: '1.8rem' }],
+        xl: ['1.25rem', { lineHeight: '2rem' }],
+        '2xl': ['1.5rem', { lineHeight: '2.2rem' }],
+        // Tamaños específicos para accesibilidad
+        'accessible-sm': ['1rem', { lineHeight: '1.6rem' }],
+        'accessible-base': ['1.125rem', { lineHeight: '1.8rem' }],
+        'accessible-lg': ['1.25rem', { lineHeight: '2rem' }],
+        'accessible-xl': ['1.5rem', { lineHeight: '2.2rem' }],
       },
       spacing: {
         '72': '18rem',

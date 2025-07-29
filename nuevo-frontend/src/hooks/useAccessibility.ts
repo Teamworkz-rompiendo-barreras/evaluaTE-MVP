@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../app/store";
-import { toggleContrast, setFontScale } from "../app/accessibilitySlice";
+import { toggleContrast, setFontScale, setFontFamily } from "../app/accessibilitySlice";
 
 export const useAccessibility = () => {
   const dispatch = useDispatch();
@@ -21,7 +21,28 @@ export const useAccessibility = () => {
 
     // Ajusta la escala de fuente
     html.style.fontSize = `${accessibility.fontScale}%`;
-  }, [accessibility.contrastLevel, accessibility.fontScale]);
+
+    // Ajusta la familia de fuente según la selección
+    const fontClasses = {
+      sans: 'font-sans',
+      dyslexic: 'font-dyslexic',
+      readable: 'font-readable'
+    };
+
+    // Remover clases de fuente anteriores
+    Object.values(fontClasses).forEach(className => {
+      html.classList.remove(className);
+    });
+
+    // Agregar la clase de fuente seleccionada
+    if (accessibility.fontFamily && fontClasses[accessibility.fontFamily as keyof typeof fontClasses]) {
+      html.classList.add(fontClasses[accessibility.fontFamily as keyof typeof fontClasses]);
+    } else {
+      // Fallback a fuente estándar
+      html.classList.add('font-sans');
+    }
+
+  }, [accessibility.contrastLevel, accessibility.fontScale, accessibility.fontFamily]);
 
   const setContrastLevel = (_level: 'normal' | 'high') => {
     dispatch(toggleContrast());
@@ -33,6 +54,10 @@ export const useAccessibility = () => {
 
   const setFontScaleHandler = (scale: number) => {
     dispatch(setFontScale(scale));
+  };
+
+  const setFontFamilyHandler = (family: string) => {
+    dispatch(setFontFamily(family));
   };
 
   const setVisualHelp = (_enabled: boolean) => {
@@ -50,5 +75,6 @@ export const useAccessibility = () => {
     setTimeExtensions,
     toggleContrast: toggleContrastHandler,
     setFontScale: setFontScaleHandler,
+    setFontFamily: setFontFamilyHandler,
   };
 };

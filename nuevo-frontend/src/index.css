@@ -3,17 +3,25 @@
 @tailwind components;
 @tailwind utilities;
 
-/* Estilos globales personalizados (opcional) */
+/* Importar fuentes accesibles */
+@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+
+/* Estilos globales personalizados para accesibilidad cognitiva */
 
 html,
 body {
   @apply font-sans text-neutral-dark bg-neutral-light antialiased;
+  /* Mejoras para accesibilidad cognitiva */
+  font-size: 16px; /* Tamaño base accesible */
+  line-height: 1.6; /* Espaciado de línea cómodo */
+  letter-spacing: 0.01em; /* Espaciado de letras ligeramente aumentado */
 }
 
 * {
   @apply box-border;
 }
 
+/* Encabezados con mejor accesibilidad */
 h1,
 h2,
 h3,
@@ -21,55 +29,101 @@ h4,
 h5,
 h6 {
   @apply font-bold;
+  /* Mejoras específicas para accesibilidad cognitiva */
+  line-height: 1.4; /* Espaciado más amplio para encabezados */
+  letter-spacing: 0.02em; /* Mayor espaciado de letras */
+  margin-bottom: 1rem; /* Espaciado consistente */
 }
 
 h1 {
   @apply text-3xl md:text-4xl;
+  font-size: clamp(1.75rem, 4vw, 2.5rem); /* Tamaño responsivo */
 }
 
 h2 {
   @apply text-2xl md:text-3xl;
+  font-size: clamp(1.5rem, 3vw, 2rem);
 }
 
+/* Párrafos con mejor legibilidad */
 p {
   @apply mb-4;
+  /* Mejoras para accesibilidad cognitiva */
+  line-height: 1.7; /* Espaciado de línea más amplio */
+  max-width: 65ch; /* Ancho máximo para mejor legibilidad */
+  text-align: justify; /* Texto justificado para mejor flujo */
 }
 
+/* Enlaces con mejor accesibilidad */
 a {
   @apply text-primary hover:text-secondary transition-colors;
   cursor: pointer;
+  /* Mejoras para accesibilidad cognitiva */
+  text-decoration: underline; /* Subrayado siempre visible */
+  text-underline-offset: 0.2em; /* Espaciado del subrayado */
+  text-decoration-thickness: 2px; /* Subrayado más grueso */
 }
 
+/* Botones con mejor accesibilidad */
 button {
   @apply rounded font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50;
+  /* Mejoras para accesibilidad cognitiva */
+  min-height: 44px; /* Tamaño mínimo para toque */
+  min-width: 44px; /* Tamaño mínimo para toque */
+  padding: 0.75rem 1.5rem; /* Padding más generoso */
+  font-size: 1rem; /* Tamaño de fuente accesible */
 }
 
 button:hover {
   @apply shadow-md;
+  transform: translateY(-1px); /* Feedback visual sutil */
 }
 
+/* Campos de entrada con mejor accesibilidad */
 input,
 select,
 textarea {
   @apply border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary;
+  /* Mejoras para accesibilidad cognitiva */
+  font-size: 1rem; /* Tamaño de fuente accesible */
+  line-height: 1.5; /* Espaciado de línea cómodo */
+  min-height: 44px; /* Altura mínima para toque */
+  padding: 0.75rem 1rem; /* Padding más generoso */
 }
 
+/* Contenedores con mejor accesibilidad */
 .container {
   @apply max-w-5xl mx-auto px-4;
+  /* Mejoras para accesibilidad cognitiva */
+  max-width: 1200px; /* Ancho máximo para evitar líneas muy largas */
 }
 
 .card {
   @apply bg-white p-6 rounded-lg shadow-md;
+  /* Mejoras para accesibilidad cognitiva */
+  border: 2px solid transparent; /* Borde para mejor definición */
+  transition: border-color 0.2s ease; /* Transición suave */
+}
+
+.card:hover {
+  border-color: #e5e7eb; /* Borde visible al hacer hover */
 }
 
 .card-header {
   @apply text-xl font-semibold mb-4;
+  /* Mejoras para accesibilidad cognitiva */
+  color: #1f2937; /* Color más oscuro para mejor contraste */
+  border-bottom: 2px solid #e5e7eb; /* Separador visual */
+  padding-bottom: 0.5rem; /* Espaciado adicional */
 }
 
 .card-body {
   @apply space-y-4;
+  /* Mejoras para accesibilidad cognitiva */
+  line-height: 1.7; /* Espaciado de línea más amplio */
 }
 
+/* Clases de utilidad para accesibilidad */
 .bg-primary {
   background-color: #374BA6;
 }
@@ -88,10 +142,16 @@ textarea {
 
 .btn-primary {
   @apply bg-primary text-white hover:bg-[#2d3f96] active:bg-[#2a3b8c];
+  /* Mejoras para accesibilidad cognitiva */
+  font-weight: 600; /* Peso de fuente más visible */
+  text-transform: none; /* Sin transformación de texto */
 }
 
 .btn-secondary {
   @apply bg-secondary text-black hover:bg-[#eac65a] active:bg-[#dbc74d];
+  /* Mejoras para accesibilidad cognitiva */
+  font-weight: 600; /* Peso de fuente más visible */
+  text-transform: none; /* Sin transformación de texto */
 }
 
 .rounded {
@@ -102,15 +162,92 @@ textarea {
   @apply shadow-lg;
 }
 
-/* Scrollbar personalizado (opcional) */
+/* Estilos específicos para accesibilidad cognitiva */
+.text-accessible {
+  font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', 'Verdana', 'Arial', sans-serif;
+  font-size: 1.125rem; /* Tamaño ligeramente mayor */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+.text-dyslexic-friendly {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', 'Verdana', 'Arial', sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  letter-spacing: 0.03em; /* Espaciado de letras más amplio */
+}
+
+/* Scrollbar personalizado para accesibilidad */
 ::-webkit-scrollbar {
-  width: 8px;
+  width: 12px; /* Scrollbar más ancho */
 }
 
 ::-webkit-scrollbar-track {
   @apply bg-gray-100;
+  border-radius: 6px; /* Bordes redondeados */
 }
 
 ::-webkit-scrollbar-thumb {
   @apply bg-primary rounded-full;
+  border: 2px solid #f3f4f6; /* Borde para mejor definición */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #2d3f96; /* Color más oscuro al hacer hover */
+}
+
+/* Estilos para modo de alto contraste */
+.high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast * {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.high-contrast a {
+  color: #ffff00 !important; /* Amarillo para enlaces */
+  text-decoration: underline !important;
+}
+
+.high-contrast button {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Estilos para reducir movimiento (prefers-reduced-motion) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Estilos para modo oscuro con accesibilidad */
+@media (prefers-color-scheme: dark) {
+  html,
+  body {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .card {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+  
+  input,
+  select,
+  textarea {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
 }
