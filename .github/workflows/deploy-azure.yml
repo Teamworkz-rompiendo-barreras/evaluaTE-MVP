@@ -1,10 +1,12 @@
-name: Deploy Backend to Azure App Service
+name: Deploy Backend to Azure App Service (DEPRECATED)
 
 on:
-  push:
-    branches: [ main, master ]
-  pull_request:
-    branches: [ main, master ]
+  # Disabled to avoid conflicts with main_evaluador-backend.yml
+  # push:
+  #   branches: [ main, master ]
+  # pull_request:
+  #   branches: [ main, master ]
+  workflow_dispatch:
 
 env:
   AZURE_WEBAPP_NAME: evaluador-backend
