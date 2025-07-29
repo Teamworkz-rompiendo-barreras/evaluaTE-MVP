@@ -8,6 +8,7 @@ import { buildApiUrl, API_CONFIG } from '../config/api';
 import ReactMarkdown from 'react-markdown';
 import { useMemo } from 'react';
 import '../styles/print.css';
+import '../styles/report.css'; // Importar los nuevos estilos
 
 
 // Tipo para los datos del radar
@@ -472,37 +473,68 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
       {/* Informe de la IA y formulario de feedback */}
       {iaReport && (
         <>
-          <div className="bg-white rounded-lg shadow-md p-8 mb-8 prose max-w-none overflow-visible print-report-section print-page-break-inside-avoid">
-            <ReactMarkdown
-              components={{
-                a: (props) => (
-                  <a {...props} target="_blank" rel="noopener noreferrer">
-                    {props.children}
-                  </a>
-                ),
-                p: (props) => (
-                  <p {...props} className="mb-4" />
-                ),
-                h1: (props) => (
-                  <h1 {...props} className="mb-6 mt-8" />
-                ),
-                h2: (props) => (
-                  <h2 {...props} className="mb-4 mt-6" />
-                ),
-                h3: (props) => (
-                  <h3 {...props} className="mb-3 mt-5" />
-                ),
-                ul: (props) => (
-                  <ul {...props} className="mb-4 space-y-2" />
-                ),
-                ol: (props) => (
-                  <ol {...props} className="mb-4 space-y-2" />
-                ),
-                li: (props) => (
-                  <li {...props} className="mb-2" />
-                ),
-              }}
-            >{iaReport}</ReactMarkdown>
+          <div className="informe-empleabilidad report-container">
+            <div className="report-content">
+              <ReactMarkdown
+                components={{
+                  a: (props) => (
+                    <a {...props} target="_blank" rel="noopener noreferrer">
+                      {props.children}
+                    </a>
+                  ),
+                  p: (props) => (
+                    <p {...props} className="mb-4" />
+                  ),
+                  h1: (props) => (
+                    <h1 {...props} className="mb-6 mt-8" />
+                  ),
+                  h2: (props) => (
+                    <h2 {...props} className="mb-4 mt-6" />
+                  ),
+                  h3: (props) => (
+                    <h3 {...props} className="mb-3 mt-5" />
+                  ),
+                  h4: (props) => (
+                    <h4 {...props} className="mb-2 mt-4" />
+                  ),
+                  ul: (props) => (
+                    <ul {...props} className="mb-4 space-y-2" />
+                  ),
+                  ol: (props) => (
+                    <ol {...props} className="mb-4 space-y-2" />
+                  ),
+                  li: (props) => (
+                    <li {...props} className="mb-2" />
+                  ),
+                  strong: (props) => (
+                    <strong {...props} className="font-semibold" />
+                  ),
+                  em: (props) => (
+                    <em {...props} className="italic" />
+                  ),
+                  blockquote: (props) => (
+                    <blockquote {...props} className="border-l-4 border-gray-300 pl-4 italic text-gray-600" />
+                  ),
+                  code: (props) => (
+                    <code {...props} className="bg-gray-100 px-1 py-0.5 rounded text-sm" />
+                  ),
+                  pre: (props) => (
+                    <pre {...props} className="bg-gray-100 p-4 rounded overflow-x-auto" />
+                  ),
+                  table: (props) => (
+                    <div className="overflow-x-auto">
+                      <table {...props} className="min-w-full border-collapse border border-gray-300" />
+                    </div>
+                  ),
+                  th: (props) => (
+                    <th {...props} className="border border-gray-300 px-4 py-2 bg-gray-50 font-semibold" />
+                  ),
+                  td: (props) => (
+                    <td {...props} className="border border-gray-300 px-4 py-2" />
+                  ),
+                }}
+              >{iaReport}</ReactMarkdown>
+            </div>
           </div>
 
           {!feedbackSent && (

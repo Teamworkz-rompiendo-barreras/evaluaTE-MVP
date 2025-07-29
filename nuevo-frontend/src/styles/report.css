@@ -1,0 +1,443 @@
+/* Estilos específicos para el informe de empleabilidad */
+
+/* Contenedor principal del informe */
+.report-container {
+  max-width: 100%;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Estilos para el contenido del markdown */
+.report-content {
+  font-family: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+  line-height: 1.6;
+  color: #374151;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Encabezados */
+.report-content h1 {
+  font-size: 2rem;
+  font-weight: 700;
+  color: #1f2937;
+  margin: 2rem 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  break-after: avoid;
+}
+
+.report-content h2 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #374151;
+  margin: 1.5rem 0 1rem 0;
+  break-after: avoid;
+}
+
+.report-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 1.25rem 0 0.75rem 0;
+  break-after: avoid;
+}
+
+.report-content h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 1rem 0 0.5rem 0;
+  break-after: avoid;
+}
+
+/* Párrafos */
+.report-content p {
+  margin-bottom: 1rem;
+  text-align: justify;
+  line-height: 1.7;
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+}
+
+/* Listas */
+.report-content ul,
+.report-content ol {
+  margin: 1rem 0;
+  padding-left: 1.5rem;
+  line-height: 1.6;
+}
+
+.report-content li {
+  margin-bottom: 0.5rem;
+  line-height: 1.6;
+  text-align: left;
+}
+
+.report-content ul li {
+  list-style-type: disc;
+}
+
+.report-content ol li {
+  list-style-type: decimal;
+}
+
+/* Listas anidadas */
+.report-content ul ul,
+.report-content ol ol,
+.report-content ul ol,
+.report-content ol ul {
+  margin: 0.5rem 0;
+  padding-left: 1.5rem;
+}
+
+/* Enlaces */
+.report-content a {
+  color: #2563eb;
+  text-decoration: underline;
+  word-break: break-all;
+}
+
+.report-content a:hover {
+  color: #1d4ed8;
+}
+
+/* Código inline */
+.report-content code {
+  background-color: #f3f4f6;
+  padding: 0.125rem 0.25rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875em;
+  word-break: break-all;
+}
+
+/* Bloques de código */
+.report-content pre {
+  background-color: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  overflow-x: auto;
+  margin: 1rem 0;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+  font-size: 0.875rem;
+  line-height: 1.5;
+}
+
+.report-content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+}
+
+/* Citas */
+.report-content blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding-left: 1rem;
+  margin: 1rem 0;
+  font-style: italic;
+  color: #6b7280;
+}
+
+/* Tablas */
+.report-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1rem 0;
+  overflow-x: auto;
+  display: block;
+}
+
+.report-content table th,
+.report-content table td {
+  border: 1px solid #d1d5db;
+  padding: 0.75rem;
+  text-align: left;
+  vertical-align: top;
+  word-wrap: break-word;
+  max-width: 200px;
+}
+
+.report-content table th {
+  background-color: #f9fafb;
+  font-weight: 600;
+  color: #374151;
+}
+
+/* Imágenes */
+.report-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1rem 0;
+}
+
+/* Separadores horizontales */
+.report-content hr {
+  border: none;
+  border-top: 1px solid #e5e7eb;
+  margin: 2rem 0;
+}
+
+/* Texto resaltado */
+.report-content strong {
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.report-content em {
+  font-style: italic;
+  color: #4b5563;
+}
+
+/* Contenedores especiales */
+.report-highlight {
+  background-color: #fef3c7;
+  border: 1px solid #f59e0b;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.report-warning {
+  background-color: #fef2f2;
+  border: 1px solid #ef4444;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+.report-info {
+  background-color: #eff6ff;
+  border: 1px solid #3b82f6;
+  border-radius: 0.5rem;
+  padding: 1rem;
+  margin: 1rem 0;
+}
+
+/* Responsive design */
+@media (max-width: 768px) {
+  .report-content {
+    font-size: 0.95rem;
+    line-height: 1.5;
+  }
+  
+  .report-content h1 {
+    font-size: 1.75rem;
+  }
+  
+  .report-content h2 {
+    font-size: 1.375rem;
+  }
+  
+  .report-content h3 {
+    font-size: 1.125rem;
+  }
+  
+  .report-content ul,
+  .report-content ol {
+    padding-left: 1.25rem;
+  }
+  
+  .report-content table {
+    font-size: 0.875rem;
+  }
+  
+  .report-content table th,
+  .report-content table td {
+    padding: 0.5rem;
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .report-content {
+    font-size: 0.9rem;
+    line-height: 1.4;
+  }
+  
+  .report-content h1 {
+    font-size: 1.5rem;
+  }
+  
+  .report-content h2 {
+    font-size: 1.25rem;
+  }
+  
+  .report-content h3 {
+    font-size: 1.125rem;
+  }
+  
+  .report-content ul,
+  .report-content ol {
+    padding-left: 1rem;
+  }
+  
+  .report-content table {
+    font-size: 0.8rem;
+  }
+  
+  .report-content table th,
+  .report-content table td {
+    padding: 0.375rem;
+    max-width: 120px;
+  }
+}
+
+/* Estilos para impresión */
+@media print {
+  .report-content {
+    font-size: 12pt;
+    line-height: 1.4;
+    color: #000;
+  }
+  
+  .report-content h1 {
+    font-size: 18pt;
+    page-break-after: avoid;
+  }
+  
+  .report-content h2 {
+    font-size: 16pt;
+    page-break-after: avoid;
+  }
+  
+  .report-content h3 {
+    font-size: 14pt;
+    page-break-after: avoid;
+  }
+  
+  .report-content p {
+    margin-bottom: 0.75rem;
+    text-align: justify;
+  }
+  
+  .report-content ul,
+  .report-content ol {
+    margin: 0.75rem 0;
+  }
+  
+  .report-content li {
+    margin-bottom: 0.25rem;
+  }
+  
+  .report-content table {
+    page-break-inside: avoid;
+  }
+  
+  .report-content table th,
+  .report-content table td {
+    padding: 0.5rem;
+    font-size: 10pt;
+  }
+  
+  /* Evitar cortes de palabras */
+  .report-content {
+    word-break: keep-all;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+  
+  /* Saltos de página */
+  .report-content h1,
+  .report-content h2 {
+    page-break-after: avoid;
+  }
+  
+  .report-content h3,
+  .report-content h4 {
+    page-break-after: avoid;
+  }
+  
+  .report-content p,
+  .report-content ul,
+  .report-content ol {
+    page-break-inside: avoid;
+  }
+}
+
+/* Estilos específicos para el contenedor del informe */
+.informe-empleabilidad {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 2rem;
+  margin-bottom: 2rem;
+  overflow: hidden;
+}
+
+/* Mejoras para el texto largo */
+.informe-empleabilidad .report-content {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+}
+
+/* Ajustes para listas largas */
+.informe-empleabilidad .report-content ul li,
+.informe-empleabilidad .report-content ol li {
+  margin-bottom: 0.75rem;
+  padding-left: 0.5rem;
+  text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+}
+
+/* Mejoras para párrafos largos */
+.informe-empleabilidad .report-content p {
+  text-align: justify;
+  hyphens: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 100%;
+}
+
+/* Ajustes para tablas responsivas */
+.informe-empleabilidad .report-content table {
+  min-width: 100%;
+  overflow-x: auto;
+  display: block;
+}
+
+.informe-empleabilidad .report-content table th,
+.informe-empleabilidad .report-content table td {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 200px;
+}
+
+/* Estilos para el modo oscuro (si se implementa) */
+@media (prefers-color-scheme: dark) {
+  .report-content {
+    color: #e5e7eb;
+  }
+  
+  .report-content h1,
+  .report-content h2,
+  .report-content h3,
+  .report-content h4 {
+    color: #f9fafb;
+  }
+  
+  .report-content strong {
+    color: #f9fafb;
+  }
+  
+  .report-content code {
+    background-color: #374151;
+    color: #e5e7eb;
+  }
+  
+  .report-content pre {
+    background-color: #1f2937;
+    border-color: #4b5563;
+  }
+}
