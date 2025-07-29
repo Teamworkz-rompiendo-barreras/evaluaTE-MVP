@@ -1071,3 +1071,20 @@ async def test_pdf_generation():
         import traceback
         logger.error(f"📋 Traceback: {traceback.format_exc()}")
         raise HTTPException(status_code=500, detail=str(e))
+
+if __name__ == "__main__":
+    import uvicorn
+    print("🚀 Iniciando servidor EvaluaTE Backend...")
+    print("📋 Información de acceso:")
+    print("   🔧 Backend:  http://localhost:8000")
+    print("   📚 API Docs: http://localhost:8000/docs")
+    print("   🔍 ReDoc:    http://localhost:8000/redoc")
+    print("")
+    print("⏳ Iniciando servidor...")
+    uvicorn.run(
+        "main:app",
+        host="0.0.0.0",
+        port=8000,
+        reload=True,
+        log_level="info"
+    )

@@ -125,6 +125,9 @@ En todas las secciones del informe debes aplicar tu conocimiento en neuroinclusi
 • **IMPORTANTE**: Usa párrafos cortos (máximo 3-4 frases por párrafo) para facilitar la lectura
 • **IMPORTANTE**: Estructura el contenido en listas y sublistas cuando sea posible
 • **IMPORTANTE**: Evita párrafos muy largos que puedan causar problemas de visualización
+• **IMPORTANTE**: En todas las listas numeradas, el número debe aparecer en la misma línea que el título o contenido, NO en una línea separada
+• **IMPORTANTE**: Usa el formato "1. Título del elemento" en lugar de "1.\nTítulo del elemento"
+• **IMPORTANTE**: Mantén coherencia en el formato de numeración en todo el documento
 
 **TONO EMOCIONAL:**
 • Mantén un equilibrio entre realismo y optimismo
@@ -197,6 +200,7 @@ El informe debe seguir exactamente la siguiente estructura y contenido:
 • Incorpora también las fortalezas técnicas derivadas del CV, como experiencia relevante, logros profesionales o destrezas específicas.
 • Ten en cuenta el nivel de confianza del candidato para reforzar su autoconfianza y validar sus percepciones.
 • Cita específicamente las fortalezas detectadas en el análisis automático del CV.
+• **FORMATO**: Usa listas numeradas con el formato "1. Nombre de la fortaleza" (número y título en la misma línea)
 
 ## 4. Áreas de mejora (blandas y técnicas) y consejos
 • Selecciona hasta cuatro habilidades blandas con nivel "bajo" o "medio" de la sección de habilidades evaluadas.
@@ -204,23 +208,34 @@ El informe debe seguir exactamente la siguiente estructura y contenido:
 • Incluye obligatoriamente las áreas de mejora identificadas en el análisis automático del CV.
 • Distingue entre habilidades blandas y técnicas cuando corresponda, ofreciendo estrategias distintas para cada una.
 • Cita específicamente las debilidades detectadas en el análisis automático del CV.
+• **FORMATO**: Usa listas numeradas con el formato "1. Nombre del área de mejora" (número y título en la misma línea)
 
 ## 5. Sugerencias laborales
 • Basándote en las preferencias laborales del candidato, los resultados de los minijuegos (sección "LOGS DE JUEGOS") y el análisis detallado del CV, sugiere:
 
 ### Entornos de trabajo ideales
 • Colaborativo, autónomo, estructurado, flexible…, explicando por qué se adaptan a su perfil.
+• **FORMATO**: Si usas listas numeradas, usa "1. Tipo de entorno" (número y título en la misma línea)
 
 ### Tipos de tareas recomendadas
 • Estas recomendaciones se deben de basar en su experiencia, preferencias y fortalezas: tareas repetitivas, proyectos de resolución de problemas, trabajos con interacción social limitada o funciones de apoyo, respaldadas por su rendimiento y experiencia.
+• **FORMATO**: Si usas listas numeradas, usa "1. Tipo de tarea" (número y título en la misma línea)
 
 ### Consejos de búsqueda de empleo
 • Plataformas de búsqueda de empleo, plataformas inclusivas (sólo si el candidato indica que tiene certificado de discapacidad), búsqueda activa de empleo, estrategias de networking, preparación de entrevistas, teniendo en cuenta cómo gestiona la información y el estrés,etc.
+• **FORMATO**: Si usas listas numeradas, usa "1. Consejo específico" (número y título en la misma línea)
 
 ### Adaptaciones específicas
 • Recomendaciones sobre horarios flexibles, apoyos tecnológicos o ajustes en el puesto de trabajo que el candidato puede solicitar.
+• **FORMATO**: Si usas listas numeradas, usa "1. Adaptación específica" (número y título en la misma línea)
 
 • Cita específicamente la experiencia y formación extraída del CV para justificar cada sugerencia.
+
+**INSTRUCCIONES FINALES DE FORMATO:**
+• Asegúrate de que TODAS las listas numeradas tengan el número y el contenido en la misma línea
+• Ejemplo correcto: "1. Resiliencia y flexibilidad (80%)"
+• Ejemplo incorrecto: "1.\nResiliencia y flexibilidad (80%)"
+• Mantén esta coherencia en todo el documento
 """
 
     # Llamada a la API con timeout extendido
