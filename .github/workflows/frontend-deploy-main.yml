@@ -1,4 +1,4 @@
-name: Frontend Deploy Optimized
+name: Frontend Deploy Principal
 
 on:
   push:
