@@ -775,6 +775,66 @@ async def analyze_cv(
         logger.info(f"Análisis obtenido: {len(cv_analysis)} elementos")
         logger.info(f"Datos completos extraídos: {len(full_cv_data)} secciones")
         
+        # Convertir educación de diccionarios a strings si es necesario
+        def convert_education_to_strings(education_list):
+            """Convierte lista de diccionarios de educación a lista de strings"""
+            if not education_list:
+                return []
+            
+            education_strings = []
+            for edu in education_list:
+                if isinstance(edu, dict):
+                    # Extraer título y otros campos relevantes
+                    title = edu.get('title', '')
+                    institution = edu.get('institution', '')
+                    period = edu.get('period', '')
+                    
+                    # Construir string descriptivo
+                    edu_string = title
+                    if institution:
+                        edu_string += f" - {institution}"
+                    if period:
+                        edu_string += f" ({period})"
+                    
+                    education_strings.append(edu_string)
+                elif isinstance(edu, str):
+                    education_strings.append(edu)
+                else:
+                    # Convertir a string si es otro tipo
+                    education_strings.append(str(edu))
+            
+            return education_strings
+        
+        # Convertir experiencia de diccionarios a strings si es necesario
+        def convert_experience_to_strings(experience_list):
+            """Convierte lista de diccionarios de experiencia a lista de strings"""
+            if not experience_list:
+                return []
+            
+            experience_strings = []
+            for exp in experience_list:
+                if isinstance(exp, dict):
+                    # Extraer posición y otros campos relevantes
+                    position = exp.get('position', '')
+                    company = exp.get('company', '')
+                    period = exp.get('period', '')
+                    
+                    # Construir string descriptivo
+                    exp_string = position
+                    if company:
+                        exp_string += f" - {company}"
+                    if period:
+                        exp_string += f" ({period})"
+                    
+                    experience_strings.append(exp_string)
+                elif isinstance(exp, str):
+                    experience_strings.append(exp)
+                else:
+                    # Convertir a string si es otro tipo
+                    experience_strings.append(str(exp))
+            
+            return experience_strings
+        
         # Verificar que tenemos un análisis válido
         if not cv_analysis or not all(key in cv_analysis for key in ["strengths", "weaknesses", "feedback"]):
             logger.warning("Análisis incompleto, generando análisis básico")
@@ -788,7 +848,7 @@ async def analyze_cv(
                 "coherence": "regular",
                 "experience": "limitada",
                 "skills": cv_info.get("software", []),
-                "education": cv_info.get("educacion", []),
+                "education": convert_education_to_strings(cv_info.get("educacion", [])),
                 "alerts": ["Análisis automático - revisar información extraída"]
             }
         else:
@@ -803,7 +863,7 @@ async def analyze_cv(
                 "coherence": cv_analysis.get("coherence", ""),
                 "experience": cv_analysis.get("experience", ""),
                 "skills": cv_analysis.get("skills", []),
-                "education": cv_analysis.get("education", []),
+                "education": convert_education_to_strings(cv_analysis.get("education", [])),
                 "alerts": cv_analysis.get("alerts", [])
             }
         
