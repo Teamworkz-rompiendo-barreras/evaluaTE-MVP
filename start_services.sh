@@ -23,16 +23,14 @@ check_directory() {
 activate_venv() {
     echo -e "${BLUE}🔍 Verificando entorno virtual...${NC}"
     
-    if [ ! -d "backend/venv" ]; then
+    if [ ! -d ".venv" ]; then
         echo -e "${RED}❌ Entorno virtual no encontrado${NC}"
         echo -e "${YELLOW}🔧 Creando entorno virtual...${NC}"
-        cd backend
-        python3 -m venv venv
-        cd ..
+        python3 -m venv .venv
     fi
     
     echo -e "${GREEN}✅ Activando entorno virtual...${NC}"
-    source backend/venv/bin/activate
+    source .venv/bin/activate
     
     # Verificar que el entorno está activado
     if [ -z "$VIRTUAL_ENV" ]; then
@@ -58,7 +56,16 @@ check_critical_deps() {
     local missing_deps=()
     
     for dep in "${critical_deps[@]}"; do
-        if ! python -c "import ${dep//-/_}" 2>/dev/null; then
+        # Mapear nombres de paquetes a nombres de módulos
+        local module_name
+        case $dep in
+            "python-dotenv") module_name="dotenv" ;;
+            "PyMuPDF") module_name="fitz" ;;
+            "Pillow") module_name="PIL" ;;
+            *) module_name="${dep//-/_}" ;;
+        esac
+        
+        if ! python -c "import $module_name" 2>/dev/null; then
             echo -e "${YELLOW}⚠️  Faltante: $dep${NC}"
             missing_deps+=("$dep")
         else
@@ -72,7 +79,16 @@ check_critical_deps() {
         
         # Verificar instalación
         for dep in "${missing_deps[@]}"; do
-            if python -c "import ${dep//-/_}" 2>/dev/null; then
+            # Mapear nombres de paquetes a nombres de módulos
+            local module_name
+            case $dep in
+                "python-dotenv") module_name="dotenv" ;;
+                "PyMuPDF") module_name="fitz" ;;
+                "Pillow") module_name="PIL" ;;
+                *) module_name="${dep//-/_}" ;;
+            esac
+            
+            if python -c "import $module_name" 2>/dev/null; then
                 echo -e "${GREEN}✅ $dep instalado correctamente${NC}"
             else
                 echo -e "${RED}❌ Error instalando $dep${NC}"

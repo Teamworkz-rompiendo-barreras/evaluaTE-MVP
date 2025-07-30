@@ -10,10 +10,10 @@ if [ ! -f "backend/main.py" ]; then
     exit 1
 fi
 
-# Activar entorno virtual del backend
-if [ -d "backend/venv" ]; then
-    echo "✅ Activando entorno virtual del backend..."
-    source backend/venv/bin/activate
+# Activar entorno virtual
+if [ -d ".venv" ]; then
+    echo "✅ Activando entorno virtual..."
+    source .venv/bin/activate
     echo "🎉 Entorno activado. Ahora puedes ejecutar:"
     echo "   python backend/main.py"
     echo "   uvicorn backend.main:app --reload"

@@ -46,7 +46,16 @@ check_python_deps() {
     local missing_deps=()
     
     for dep in "${critical_deps[@]}"; do
-        if ! python -c "import ${dep//-/_}" 2>/dev/null; then
+        # Mapear nombres de paquetes a nombres de módulos
+        local module_name
+        case $dep in
+            "python-dotenv") module_name="dotenv" ;;
+            "PyMuPDF") module_name="fitz" ;;
+            "Pillow") module_name="PIL" ;;
+            *) module_name="${dep//-/_}" ;;
+        esac
+        
+        if ! python -c "import $module_name" 2>/dev/null; then
             echo -e "${YELLOW}⚠️  Faltante: $dep${NC}"
             missing_deps+=("$dep")
         else
@@ -57,12 +66,30 @@ check_python_deps() {
     # Instalar dependencias faltantes
     if [ ${#missing_deps[@]} -gt 0 ]; then
         echo -e "${YELLOW}📦 Instalando dependencias faltantes en $venv_name...${NC}"
+        
+        # Verificar que estamos en un entorno virtual
+        if [ -z "$VIRTUAL_ENV" ]; then
+            echo -e "${RED}❌ Error: No estás en un entorno virtual${NC}"
+            echo -e "${YELLOW}💡 Activa el entorno virtual primero:${NC}"
+            echo -e "   source .venv/bin/activate"
+            return 1
+        fi
+        
         pip install "${missing_deps[@]}"
         
         # Verificar instalación
         echo -e "${BLUE}🔍 Verificando instalación...${NC}"
         for dep in "${missing_deps[@]}"; do
-            if python -c "import ${dep//-/_}" 2>/dev/null; then
+            # Mapear nombres de paquetes a nombres de módulos
+            local module_name
+            case $dep in
+                "python-dotenv") module_name="dotenv" ;;
+                "PyMuPDF") module_name="fitz" ;;
+                "Pillow") module_name="PIL" ;;
+                *) module_name="${dep//-/_}" ;;
+            esac
+            
+            if python -c "import $module_name" 2>/dev/null; then
                 echo -e "${GREEN}✅ $dep instalado correctamente${NC}"
             else
                 echo -e "${RED}❌ Error instalando $dep${NC}"
@@ -111,7 +138,7 @@ check_structure() {
     local required_dirs=(
         "backend"
         "nuevo-frontend"
-        "backend/venv"
+        ".venv"
         "backend/uploads"
     )
     
@@ -142,10 +169,10 @@ if [ ! -f "backend/main.py" ]; then
     exit 1
 fi
 
-# Activar entorno virtual del backend
-if [ -d "backend/venv" ]; then
-    echo "✅ Activando entorno virtual del backend..."
-    source backend/venv/bin/activate
+# Activar entorno virtual
+if [ -d ".venv" ]; then
+    echo "✅ Activando entorno virtual..."
+    source .venv/bin/activate
     echo "🎉 Entorno activado. Ahora puedes ejecutar:"
     echo "   python backend/main.py"
     echo "   uvicorn backend.main:app --reload"
@@ -169,7 +196,7 @@ check_services() {
     else
         echo -e "${YELLOW}⚠️  Backend no está ejecutándose${NC}"
         echo -e "${BLUE}💡 Para iniciar el backend:${NC}"
-        echo -e "   source backend/venv/bin/activate"
+        echo -e "   source .venv/bin/activate"
         echo -e "   cd backend && python main.py"
     fi
     
@@ -190,8 +217,8 @@ main() {
     # Verificar estructura
     check_structure
     
-    # Verificar dependencias en backend/venv
-    check_python_deps "backend/venv" "backend/venv"
+    # Verificar dependencias en .venv
+    check_python_deps ".venv" ".venv"
     
     # Verificar variables de entorno
     check_env_vars
@@ -205,7 +232,7 @@ main() {
     echo -e "${GREEN}🎉 Verificación completada!${NC}"
     echo -e "${BLUE}💡 Próximos pasos:${NC}"
     echo -e "   1. Configura las variables de entorno en backend/.env"
-    echo -e "   2. Activa el entorno: source backend/venv/bin/activate"
+    echo -e "   2. Activa el entorno: source .venv/bin/activate"
     echo -e "   3. Inicia el backend: cd backend && python main.py"
     echo -e "   4. Inicia el frontend: cd nuevo-frontend && npm run dev"
 }

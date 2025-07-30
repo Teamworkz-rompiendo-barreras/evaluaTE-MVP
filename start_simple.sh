@@ -1,6 +1,6 @@
 #!/bin/bash
 
-# Script de inicio simplificado para EvaluaTE
+# Script simplificado para iniciar EvaluaTE
 echo "🚀 Iniciando EvaluaTE de forma simplificada..."
 
 # Colores para output
@@ -21,28 +21,88 @@ check_directory() {
 
 # Función para activar entorno virtual
 activate_venv() {
-    echo -e "${BLUE}🔍 Activando entorno virtual...${NC}"
+    echo -e "${BLUE}🔍 Verificando entorno virtual...${NC}"
     
-    if [ ! -d "backend/venv" ]; then
+    if [ ! -d ".venv" ]; then
         echo -e "${RED}❌ Entorno virtual no encontrado${NC}"
         echo -e "${YELLOW}🔧 Creando entorno virtual...${NC}"
-        cd backend
-        python3 -m venv venv
-        cd ..
+        python3 -m venv .venv
     fi
     
-    source backend/venv/bin/activate
+    echo -e "${GREEN}✅ Activando entorno virtual...${NC}"
+    source .venv/bin/activate
     
+    # Verificar que el entorno está activado
     if [ -z "$VIRTUAL_ENV" ]; then
         echo -e "${RED}❌ Error: No se pudo activar el entorno virtual${NC}"
         exit 1
     fi
     
-    echo -e "${GREEN}✅ Entorno virtual activado: $VIRTUAL_ENV${NC}"
+    echo -e "${GREEN}🎉 Entorno virtual activado: $VIRTUAL_ENV${NC}"
+}
+
+# Función para verificar dependencias críticas
+check_deps() {
+    echo -e "${BLUE}📋 Verificando dependencias críticas...${NC}"
+    
+    local critical_deps=(
+        "fastapi"
+        "uvicorn"
+        "openai"
+        "PyMuPDF"
+        "python-dotenv"
+    )
+    
+    local missing_deps=()
+    
+    for dep in "${critical_deps[@]}"; do
+        # Mapear nombres de paquetes a nombres de módulos
+        local module_name
+        case $dep in
+            "python-dotenv") module_name="dotenv" ;;
+            "PyMuPDF") module_name="fitz" ;;
+            "Pillow") module_name="PIL" ;;
+            *) module_name="${dep//-/_}" ;;
+        esac
+        
+        if ! python -c "import $module_name" 2>/dev/null; then
+            echo -e "${YELLOW}⚠️  Faltante: $dep${NC}"
+            missing_deps+=("$dep")
+        else
+            echo -e "${GREEN}✅ $dep${NC}"
+        fi
+    done
+    
+    if [ ${#missing_deps[@]} -gt 0 ]; then
+        echo -e "${YELLOW}📦 Instalando dependencias faltantes...${NC}"
+        pip install "${missing_deps[@]}"
+        
+        # Verificar instalación
+        for dep in "${missing_deps[@]}"; do
+            # Mapear nombres de paquetes a nombres de módulos
+            local module_name
+            case $dep in
+                "python-dotenv") module_name="dotenv" ;;
+                "PyMuPDF") module_name="fitz" ;;
+                "Pillow") module_name="PIL" ;;
+                *) module_name="${dep//-/_}" ;;
+            esac
+            
+            if python -c "import $module_name" 2>/dev/null; then
+                echo -e "${GREEN}✅ $dep instalado correctamente${NC}"
+            else
+                echo -e "${RED}❌ Error instalando $dep${NC}"
+                echo -e "${YELLOW}💡 Ejecuta: ./fix_dependencies.sh${NC}"
+                exit 1
+            fi
+        done
+    fi
 }
 
 # Función para verificar archivo .env
-check_env_file() {
+check_env() {
+    echo -e "${BLUE}🔐 Verificando archivo .env...${NC}"
+    
     if [ ! -f "backend/.env" ]; then
         echo -e "${YELLOW}⚠️  Archivo .env no encontrado${NC}"
         echo -e "${BLUE}📝 Creando archivo .env de ejemplo...${NC}"
@@ -103,9 +163,20 @@ start_backend() {
 
 # Función para iniciar frontend
 start_frontend() {
-    echo -e "${BLUE}🎨 Iniciando frontend...${NC}"
+    echo -e "${BLUE}🚀 Iniciando frontend...${NC}"
+    
+    if [ ! -d "nuevo-frontend" ]; then
+        echo -e "${RED}❌ Directorio nuevo-frontend no encontrado${NC}"
+        return 1
+    fi
     
     cd nuevo-frontend
+    
+    # Verificar si node_modules existe
+    if [ ! -d "node_modules" ]; then
+        echo -e "${YELLOW}⚠️  node_modules no encontrado, instalando dependencias...${NC}"
+        npm install
+    fi
     
     # Verificar si el puerto 5173 está ocupado
     if lsof -Pi :5173 -sTCP:LISTEN -t >/dev/null ; then
@@ -129,8 +200,8 @@ start_frontend() {
             break
         fi
         if [ $i -eq 30 ]; then
-            echo -e "${RED}❌ Timeout: Frontend no respondió en 30 segundos${NC}"
-            exit 1
+            echo -e "${YELLOW}⚠️  Timeout: Frontend no respondió en 30 segundos${NC}"
+            break
         fi
         sleep 1
     done
@@ -138,46 +209,64 @@ start_frontend() {
 
 # Función para mostrar información final
 show_info() {
-    echo -e "${GREEN}🎉 ¡EvaluaTE iniciado correctamente!${NC}"
+    echo -e "${GREEN}🎉 ¡Servicios iniciados correctamente!${NC}"
     echo -e "${BLUE}📋 Información de acceso:${NC}"
-    echo -e "   🌐 Frontend: ${GREEN}http://localhost:5173${NC}"
-    echo -e "   🔧 Backend:  ${GREEN}http://localhost:8000${NC}"
-    echo -e "   📚 API Docs: ${GREEN}http://localhost:8000/docs${NC}"
-    echo ""
-    echo -e "${YELLOW}💡 Para detener los servicios:${NC}"
-    echo -e "   Presiona Ctrl+C en esta terminal"
-    echo ""
-    echo -e "${BLUE}🔍 Para ver logs:${NC}"
-    echo -e "   Backend:  tail -f backend/logs/app.log"
-    echo -e "   Frontend: cd nuevo-frontend && npm run dev"
+    echo -e "   🌐 Frontend: http://localhost:5173"
+    echo -e "   🔧 Backend: http://localhost:8000"
+    echo -e "   📚 API Docs: http://localhost:8000/docs"
+    echo -e ""
+    echo -e "${BLUE}💡 Comandos útiles:${NC}"
+    echo -e "   📊 Ver logs del backend: tail -f backend/logs/app.log"
+    echo -e "   🛑 Detener servicios: pkill -f 'python main.py' && pkill -f 'vite'"
+    echo -e "   🔄 Reiniciar: ./start_simple.sh"
+    echo -e ""
+    echo -e "${YELLOW}⚠️  Para detener los servicios, presiona Ctrl+C${NC}"
 }
 
 # Función para limpiar al salir
 cleanup() {
-    echo -e "${YELLOW}🛑 Deteniendo servicios...${NC}"
-    if [ ! -z "$BACKEND_PID" ]; then
-        kill $BACKEND_PID 2>/dev/null || true
-    fi
-    if [ ! -z "$FRONTEND_PID" ]; then
-        kill $FRONTEND_PID 2>/dev/null || true
-    fi
-    pkill -f "uvicorn.*main:app" 2>/dev/null || true
-    pkill -f "vite" 2>/dev/null || true
+    echo -e "${BLUE}🛑 Deteniendo servicios...${NC}"
+    kill $BACKEND_PID 2>/dev/null || true
+    kill $FRONTEND_PID 2>/dev/null || true
+    pkill -f "python main.py" || true
+    pkill -f "vite" || true
     echo -e "${GREEN}✅ Servicios detenidos${NC}"
     exit 0
 }
 
-# Configurar trap para limpiar al salir
-trap cleanup SIGINT SIGTERM
+# Capturar Ctrl+C
+trap cleanup SIGINT
 
-# Ejecutar funciones principales
-check_directory
-activate_venv
-check_env_file
-start_backend
-start_frontend
-show_info
+# Función principal
+main() {
+    echo -e "${BLUE}🚀 Iniciando EvaluaTE...${NC}"
+    
+    # Verificar directorio
+    check_directory
+    
+    # Activar entorno virtual
+    activate_venv
+    
+    # Verificar dependencias críticas
+    check_deps
+    
+    # Verificar archivo .env
+    check_env
+    
+    # Iniciar backend
+    start_backend
+    
+    # Iniciar frontend
+    start_frontend
+    
+    # Mostrar información
+    show_info
+    
+    # Mantener el script ejecutándose
+    while true; do
+        sleep 1
+    done
+}
 
-# Mantener el script ejecutándose
-echo -e "${BLUE}⏳ Servicios ejecutándose... Presiona Ctrl+C para detener${NC}"
-wait 
+# Ejecutar función principal
+main "$@" 
