@@ -264,6 +264,44 @@ def test_ocr_functionality():
         print_error(f"Error verificando OCR: {str(e)}")
         return False
 
+def test_document_intelligence():
+    """Prueba Azure AI Document Intelligence"""
+    try:
+        print_info("Verificando Azure AI Document Intelligence...")
+        
+        # Verificar configuración
+        endpoint = os.getenv('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT')
+        key = os.getenv('AZURE_DOCUMENT_INTELLIGENCE_KEY')
+        
+        if not endpoint or not key:
+            print_warning("Document Intelligence no configurado")
+            return False
+        
+        # Intentar importar y configurar
+        try:
+            from azure.ai.formrecognizer import DocumentAnalysisClient
+            from azure.core.credentials import AzureKeyCredential
+            
+            client = DocumentAnalysisClient(
+                endpoint=endpoint,
+                credential=AzureKeyCredential(key)
+            )
+            
+            print_success("Document Intelligence configurado correctamente")
+            return True
+            
+        except ImportError:
+            print_warning("Document Intelligence no disponible (dependencias no instaladas)")
+            return False
+            
+        except Exception as e:
+            print_error(f"Error en Document Intelligence: {str(e)}")
+            return False
+            
+    except Exception as e:
+        print_error(f"Error probando Document Intelligence: {str(e)}")
+        return False
+
 def generate_test_report():
     """Genera un reporte de verificación"""
     print_header("REPORTE DE VERIFICACIÓN")
@@ -309,6 +347,10 @@ def generate_test_report():
             ocr_ok = test_ocr_functionality()
             report["pruebas"]["ocr"] = ocr_ok
             
+            # Probar Document Intelligence
+            doc_intelligence_ok = test_document_intelligence()
+            report["pruebas"]["document_intelligence"] = doc_intelligence_ok
+            
             # Generar recomendaciones
             if not azure_ok:
                 report["recomendaciones"].append("Configurar Azure OpenAI correctamente")
@@ -320,6 +362,8 @@ def generate_test_report():
                 report["recomendaciones"].append("Revisar endpoints del backend")
             if not ocr_ok:
                 report["recomendaciones"].append("Instalar dependencias de OCR")
+            if not doc_intelligence_ok:
+                report["recomendaciones"].append("Configurar Azure AI Document Intelligence para mejor análisis de CVs")
                 
         else:
             print_error(f"Faltan variables de configuración: {', '.join(missing)}")

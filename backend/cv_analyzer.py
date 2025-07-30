@@ -588,12 +588,35 @@ def extract_basic_cv_data_from_text(text: str) -> Dict[str, Any]:
         "voluntariado": []
     }
 
+# Importar Document Intelligence
+try:
+    from document_intelligence import analyze_cv_with_document_intelligence
+    DOCUMENT_INTELLIGENCE_AVAILABLE = True
+except ImportError:
+    DOCUMENT_INTELLIGENCE_AVAILABLE = False
+    print("⚠️ Document Intelligence no disponible, usando método tradicional")
+
 def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     """
-    Extrae y analiza información de un CV en PDF usando IA avanzada
+    Extrae y analiza información de un CV en PDF usando Azure AI Document Intelligence
+    como método principal, con fallback al método tradicional
     """
     try:
-        print("🚀 Iniciando análisis avanzado de CV...")
+        print("🚀 Iniciando análisis de CV...")
+        
+        # Intentar usar Document Intelligence primero
+        if DOCUMENT_INTELLIGENCE_AVAILABLE:
+            print("🤖 Intentando análisis con Azure AI Document Intelligence...")
+            result = analyze_cv_with_document_intelligence(pdf_buffer)
+            
+            if not result.get("error") and result.get("document_intelligence_used"):
+                print("✅ Análisis completado con Document Intelligence")
+                return result
+            else:
+                print("⚠️ Document Intelligence no disponible o falló, usando método tradicional")
+        
+        # Fallback al método tradicional
+        print("📄 Usando método tradicional de extracción...")
         
         # Extraer texto del PDF con OCR avanzado
         print("📄 Extrayendo texto del PDF...")
@@ -605,7 +628,8 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "error": "No se pudo extraer texto del PDF. El archivo puede estar corrupto o ser una imagen sin texto.",
                 "cv_info": {},
                 "analysis": {},
-                "raw_text": ""
+                "raw_text": "",
+                "document_intelligence_used": False
             }
         
         print(f"✅ Texto extraído: {len(text)} caracteres")
@@ -659,7 +683,8 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "cv_info": cv_info,
             "analysis": analysis,
             "raw_text": text[:1000],  # Primeros 1000 caracteres para debug
-            "full_cv_data": cv_data  # Datos completos extraídos por IA
+            "full_cv_data": cv_data,  # Datos completos extraídos por IA
+            "document_intelligence_used": False
         }
         
     except Exception as e:
@@ -670,7 +695,8 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "error": f"Error al procesar el PDF: {str(e)}",
             "cv_info": {},
             "analysis": {},
-            "raw_text": ""
+            "raw_text": "",
+            "document_intelligence_used": False
         }
 
 if __name__ == "__main__":

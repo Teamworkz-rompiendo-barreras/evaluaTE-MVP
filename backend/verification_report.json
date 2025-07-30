@@ -1,5 +1,5 @@
 {
-  "fecha": "2025-07-30T13:34:07.603556",
+  "fecha": "2025-07-30T19:50:45.277047",
   "configuracion": {
     "archivo_env": true,
     "variables_faltantes": [],
@@ -9,10 +9,11 @@
     "azure_connection": true,
     "cv_analysis": true,
     "report_generation": true,
-    "endpoints": false,
-    "ocr": true
+    "endpoints": true,
+    "ocr": true,
+    "document_intelligence": false
   },
   "recomendaciones": [
-    "Revisar endpoints del backend"
+    "Configurar Azure AI Document Intelligence para mejor análisis de CVs"
   ]
 }
