@@ -1,54 +1,18 @@
-name: Deploy Backend to Azure App Service (DEPRECATED)
+name: Deploy Backend to Azure App Service (DISABLED)
+
+# This workflow is completely disabled to avoid npm ci errors
+# The backend is a Python project, not a Node.js project
 
 on:
-  # Disabled to avoid conflicts with main_evaluador-backend.yml
-  # push:
-  #   branches: [ main, master ]
-  # pull_request:
-  #   branches: [ main, master ]
   workflow_dispatch:
-
-env:
-  AZURE_WEBAPP_NAME: evaluador-backend
-  AZURE_WEBAPP_PACKAGE_PATH: './backend-deploy'
-  NODE_VERSION: '18.x'
+    # This workflow is disabled to avoid conflicts
 
 jobs:
   build-and-deploy:
     runs-on: ubuntu-latest
     steps:
-    - name: Checkout code
-      uses: actions/checkout@v4
-
-    - name: Set up Node.js
-      uses: actions/setup-node@v4
-      with:
-        node-version: ${{ env.NODE_VERSION }}
-        cache: 'npm'
-        cache-dependency-path: backend/package-lock.json
-
-    - name: Install backend dependencies
-      working-directory: ./backend
-      run: npm ci
-
-    - name: Build backend (TypeScript)
-      working-directory: ./backend
-      run: npm run build
-
-    - name: Prepare deployment package
+    - name: This workflow is disabled
       run: |
-        mkdir -p backend-deploy
-        cp -r backend/dist backend-deploy/
-        cp backend/package.json backend-deploy/
-        cp backend/web.config backend-deploy/
-        # Agrega aquí otros archivos necesarios si los usas (por ejemplo, uploads, templates, etc.)
-
-    - name: Listar archivos a desplegar
-      run: ls -lR backend-deploy
-
-    - name: Deploy to Azure App Service
-      uses: azure/webapps-deploy@v3
-      with:
-        app-name: ${{ env.AZURE_WEBAPP_NAME }}
-        publish-profile: ${{ secrets.AZURE_WEBAPP_PUBLISH_PROFILE }}
-        package: ${{ env.AZURE_WEBAPP_PACKAGE_PATH }}
+        echo "This workflow is disabled to avoid npm ci errors"
+        echo "The backend is a Python project, not a Node.js project"
+        exit 0
