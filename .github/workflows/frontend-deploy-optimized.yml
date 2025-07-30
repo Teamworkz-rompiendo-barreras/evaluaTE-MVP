@@ -1,0 +1,169 @@
+name: Frontend Deploy Optimized
+
+on:
+  push:
+    branches:
+      - main
+  pull_request:
+    types: [opened, synchronize, reopened, closed]
+    branches:
+      - main
+
+env:
+  NODE_VERSION: '20.x'
+  NPM_CONFIG_CACHE: /tmp/.npm
+  NPM_CONFIG_PREFER_OFFLINE: true
+  NPM_CONFIG_AUDIT: false
+  NPM_CONFIG_FUND: false
+
+jobs:
+  build_and_test:
+    if: >
+      github.event_name == 'push' ||
+      (github.event_name == 'pull_request' && github.event.action != 'closed')
+    runs-on: ubuntu-latest
+    name: Build & Test Frontend
+
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Setup Node.js (Sin caché problemático)
+        uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          # NO usar cache para evitar errores de resolución de rutas
+          # cache: 'npm'
+          # cache-dependency-path: nuevo-frontend/package-lock.json
+
+      - name: Configure npm para CI
+        run: |
+          echo "Configurando npm para CI..."
+          npm config set prefer-offline true
+          npm config set audit false
+          npm config set fund false
+          npm config set loglevel error
+          echo "✅ npm configurado"
+
+      - name: Install dependencies (Robusto)
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Instalando dependencias..."
+          # Limpiar cache de npm si existe
+          npm cache clean --force || true
+          # Instalar con configuración robusta
+          npm install --no-audit --no-fund --prefer-offline
+          echo "✅ Dependencias instaladas"
+
+      - name: Verify TypeScript
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Verificando TypeScript..."
+          npx tsc --noEmit
+          echo "✅ TypeScript OK"
+
+      - name: Run lint
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Ejecutando lint..."
+          npm run lint
+          echo "✅ Lint OK"
+
+      - name: Run tests
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Ejecutando tests..."
+          npm run test -- --run --coverage
+          echo "✅ Tests OK"
+
+      - name: Build project
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Construyendo proyecto..."
+          npm run build
+          echo "✅ Build completado"
+
+      - name: Copy config files
+        run: |
+          echo "Copiando archivos de configuración..."
+          cp nuevo-frontend/staticwebapp.config.json nuevo-frontend/dist/
+          echo "✅ Configuración copiada"
+
+      - name: Verify build artifacts
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Verificando artefactos..."
+          ls -la dist/
+          echo ""
+          echo "Verificando archivos críticos:"
+          [ -f "dist/index.html" ] && echo "✅ index.html" || (echo "❌ index.html" && exit 1)
+          [ -f "dist/staticwebapp.config.json" ] && echo "✅ staticwebapp.config.json" || (echo "❌ staticwebapp.config.json" && exit 1)
+          [ -d "dist/assets" ] && echo "✅ assets/" || (echo "❌ assets/" && exit 1)
+          echo "✅ Todos los archivos críticos presentes"
+
+      - name: Upload artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: nuevo-frontend/dist
+          retention-days: 1
+
+  deploy_to_azure:
+    needs: build_and_test
+    if: github.event_name == 'push'
+    runs-on: ubuntu-latest
+    name: Deploy to Azure
+    timeout-minutes: 10
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./dist
+
+      - name: Verify deployment artifacts
+        run: |
+          echo "Verificando artefactos para deploy..."
+          ls -la dist/
+          [ -f "dist/index.html" ] && echo "✅ index.html listo" || (echo "❌ index.html faltante" && exit 1)
+          [ -f "dist/staticwebapp.config.json" ] && echo "✅ staticwebapp.config.json listo" || (echo "❌ staticwebapp.config.json faltante" && exit 1)
+          echo "✅ Artefactos verificados"
+
+      - name: Deploy to Azure Static Web Apps (Optimizado)
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "dist"
+          api_location: ""
+          output_location: ""
+          skip_app_build: true
+          skip_api_build: true
+          # Configuraciones adicionales para evitar deploy cancelado
+          deployment_environment: production
+          is_static_export: true
+
+  close_pull_request:
+    if: github.event_name == 'pull_request' && github.event.action == 'closed'
+    runs-on: ubuntu-latest
+    name: Close PR Environment
+    timeout-minutes: 5
+    
+    steps:
+      - name: Close Pull Request
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
+          action: close
+          app_location: "dist"
+          api_location: ""
+          output_location: ""
+          skip_app_build: true
+          skip_api_build: true 
