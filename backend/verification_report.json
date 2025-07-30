@@ -1,0 +1,18 @@
+{
+  "fecha": "2025-07-30T13:34:07.603556",
+  "configuracion": {
+    "archivo_env": true,
+    "variables_faltantes": [],
+    "azure_configurado": true
+  },
+  "pruebas": {
+    "azure_connection": true,
+    "cv_analysis": true,
+    "report_generation": true,
+    "endpoints": false,
+    "ocr": true
+  },
+  "recomendaciones": [
+    "Revisar endpoints del backend"
+  ]
+}

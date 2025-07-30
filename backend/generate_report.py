@@ -41,48 +41,90 @@ else:
 
 def generar_informe_prueba(perfil: str) -> str:
     """
-    Genera un informe de prueba cuando Azure OpenAI no está configurado
+    Genera un informe de prueba profesional cuando Azure OpenAI no está configurado
     """
     return f"""
-# 📋 Informe de Empleabilidad - MODO PRUEBA
+# 📋 Informe de Empleabilidad Profesional - MODO PRUEBA
 
-## 👤 Resumen del Candidato
+## 👤 Resumen Ejecutivo
 
-Este es un informe de **prueba** generado porque Azure OpenAI no está configurado.
-
-### 📊 Datos Procesados
-
-Se han recibido los siguientes datos del candidato:
-- Perfil procesado correctamente
-- Datos de habilidades soft evaluadas
-- Información del CV analizada
-- Preferencias laborales registradas
-
-### 🔧 Configuración Requerida
-
-Para generar informes reales con IA, necesitas configurar Azure OpenAI:
-
-1. **Crear recurso Azure OpenAI** en el portal de Azure
-2. **Configurar API Key** y Endpoint
-3. **Crear deployment** con un modelo de IA
-4. **Actualizar variables de entorno** en el backend
-
-### 📈 Estado Actual
-
-- ✅ **Backend funcionando** correctamente
-- ✅ **API endpoints** operativos
-- ✅ **CORS configurado** para el frontend
-- ⚠️ **Azure OpenAI** pendiente de configuración
-
-### 🎯 Próximos Pasos
-
-1. Configurar Azure OpenAI siguiendo las instrucciones
-2. Reiniciar el backend
-3. Generar informes reales con IA
+Este informe ha sido generado en **modo de prueba** debido a que Azure OpenAI no está configurado en el sistema. Los datos del candidato han sido procesados correctamente y están listos para análisis completo.
 
 ---
 
-*Informe generado el {datetime.now().strftime('%d/%m/%Y a las %H:%M')}*
+## 📊 Análisis de Datos Procesados
+
+### ✅ Información Recibida y Validada:
+- **Perfil del candidato**: Procesado correctamente
+- **Habilidades soft evaluadas**: Datos disponibles para análisis
+- **Análisis del CV**: Información extraída y estructurada
+- **Preferencias laborales**: Configuración registrada
+- **Resultados de minijuegos**: Datos de evaluación disponibles
+
+### 📈 Estado del Sistema:
+- ✅ **Backend funcionando** correctamente
+- ✅ **API endpoints** operativos y respondiendo
+- ✅ **CORS configurado** para integración frontend
+- ✅ **Análisis de CV** implementado y funcional
+- ⚠️ **Azure OpenAI** pendiente de configuración
+
+---
+
+## 🔧 Configuración Requerida para IA Completa
+
+Para generar informes profesionales con inteligencia artificial, es necesario configurar Azure OpenAI:
+
+### 1. **Crear Recurso Azure OpenAI**
+   - Acceder al portal de Azure (https://portal.azure.com)
+   - Crear un nuevo recurso "Azure OpenAI"
+   - Seleccionar región apropiada y plan de precios
+
+### 2. **Configurar Credenciales**
+   - Obtener API Key desde "Keys and Endpoint"
+   - Copiar el Endpoint del servicio
+   - Crear deployment con modelo de IA (gpt-35-turbo recomendado)
+
+### 3. **Actualizar Configuración**
+   - Modificar archivo `.env` en el backend
+   - Agregar variables de entorno necesarias
+   - Reiniciar el servicio backend
+
+### 4. **Verificar Funcionamiento**
+   - Probar conexión con Azure OpenAI
+   - Validar generación de informes con IA
+   - Confirmar calidad de análisis
+
+---
+
+## 🎯 Próximos Pasos Recomendados
+
+### Inmediatos:
+1. **Configurar Azure OpenAI** siguiendo la guía técnica
+2. **Reiniciar el backend** para aplicar cambios
+3. **Probar generación** de informes con IA
+
+### A Mediano Plazo:
+1. **Optimizar prompts** para mejor calidad de análisis
+2. **Implementar feedback** de usuarios para mejorar IA
+3. **Expandir funcionalidades** de análisis de CV
+
+### A Largo Plazo:
+1. **Integrar análisis avanzado** de habilidades
+2. **Desarrollar recomendaciones** personalizadas
+3. **Implementar seguimiento** de progreso
+
+---
+
+## 📋 Información Técnica
+
+- **Fecha de generación**: {datetime.now().strftime('%d/%m/%Y a las %H:%M')}
+- **Modo de operación**: Prueba (sin IA)
+- **Estado del sistema**: Funcional
+- **Próxima actualización**: Tras configuración de Azure OpenAI
+
+---
+
+*Este informe de prueba demuestra la funcionalidad del sistema. Para obtener análisis completo con inteligencia artificial, configure Azure OpenAI siguiendo las instrucciones proporcionadas.*
 """
 
 def generar_informe(perfil: str) -> str:
@@ -114,29 +156,66 @@ def generar_informe(perfil: str) -> str:
         # Cargar feedback previo
         feedback_previo = cargar_feedback_previo()
         
-        # Prompt para Azure OpenAI
+        # Prompt profesional para informe de empleabilidad
         prompt = f"""
-Eres un orientador laboral sénior experto en neuroinclusión laboral. Genera un informe de empleabilidad personalizado para personas neurodivergentes.
+Eres un orientador laboral sénior experto en neuroinclusión laboral y empleabilidad profesional. Genera un informe de empleabilidad personalizado, completo y profesional que sea cognitivamente accesible y adaptado para personas neurodivergentes.
 
 {feedback_previo}
 
 **DATOS DEL CANDIDATO:**
 {perfil}
 
+**REQUISITOS DEL INFORME:**
+
+1. **ESTRUCTURA PROFESIONAL:**
+   - Título principal con el nombre del candidato
+   - Resumen ejecutivo (2-3 párrafos)
+   - Análisis detallado por secciones
+   - Recomendaciones específicas y accionables
+   - Plan de desarrollo personalizado
+
+2. **ADAPTACIÓN COGNITIVA:**
+   - Párrafos cortos (máximo 3-4 frases)
+   - Lenguaje claro, directo y sin ambigüedades
+   - Uso de listas numeradas y con viñetas
+   - Información organizada jerárquicamente
+   - Evitar jerga técnica innecesaria
+
+3. **ACCESIBILIDAD VISUAL:**
+   - Usar encabezados claros (##, ###)
+   - Separar secciones con líneas horizontales
+   - Usar listas para información importante
+   - Destacar puntos clave con **negrita**
+   - Usar colores conceptuales (no reales en texto)
+
+4. **CONTENIDO ESPECÍFICO:**
+   - Análisis de fortalezas y áreas de mejora
+   - Recomendaciones de puestos de trabajo compatibles
+   - Plan de desarrollo de habilidades
+   - Estrategias de búsqueda de empleo
+   - Adaptaciones laborales recomendadas
+   - Recursos y herramientas útiles
+
+5. **ENFOQUE NEUROINCLUSIVO:**
+   - Reconocer fortalezas únicas
+   - Sugerir entornos de trabajo apropiados
+   - Proponer adaptaciones específicas
+   - Enfatizar el valor de la diversidad
+   - Proporcionar estrategias de comunicación
+
 **FORMATO DE SALIDA:**
-- Usa Markdown con encabezados (##, ###)
-- Párrafos cortos (máximo 3-4 frases)
-- Listas numeradas con formato "1. Título del elemento"
-- Lenguaje claro y directo
-- Tono positivo y motivador
-- Adaptado para neuroinclusión laboral
+- Usa Markdown con estructura clara
+- Incluye todos los elementos mencionados
+- Mantén un tono profesional pero accesible
+- Sé específico y accionable en las recomendaciones
+- Adapta el contenido a los datos proporcionados
 """
         
         # Llamar a Azure OpenAI
         response = client.chat.completions.create(
             model=DEPLOYMENT,
             messages=[
-                {"role": "system", "content": "Eres un orientador laboral experto en neuroinclusión."},
+                {"role": "system", "content": "Eres un orientador laboral sénior con más de 15 años de experiencia en empleabilidad, neuroinclusión laboral y desarrollo profesional. Tu especialidad es crear informes personalizados, accesibles cognitivamente y profesionalmente estructurados que empoderen a las personas neurodivergentes en su búsqueda de empleo."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.7,

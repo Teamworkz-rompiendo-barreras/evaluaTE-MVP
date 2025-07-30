@@ -145,90 +145,98 @@ def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
     try:
         print("🤖 Iniciando análisis con Azure OpenAI...")
         
-        # Prompt optimizado para análisis de CV
+        # Prompt profesional y completo para análisis de CV
         prompt = f"""
-Eres un experto en análisis de CVs y recursos humanos. Analiza el siguiente texto extraído de un CV y extrae toda la información relevante de manera estructurada.
+Eres un experto en análisis de CVs y recursos humanos con más de 15 años de experiencia. Tu tarea es analizar el siguiente texto extraído de un CV y extraer toda la información relevante de manera estructurada y profesional.
 
 TEXTO DEL CV:
-{text[:4000]}  # Limitar a 4000 caracteres para evitar tokens excesivos
+{text[:4000]}
 
-INSTRUCCIONES:
-1. Identifica TODA la información relevante sin importar la estructura del CV
-2. Busca información en cualquier formato o disposición
-3. Maneja diferentes idiomas (español e inglés)
-4. Interpreta fechas en cualquier formato
-5. Identifica empresas, cargos, responsabilidades, logros
-6. Extrae habilidades técnicas y blandas
-7. Detecta formación académica y certificaciones
-8. Identifica idiomas y niveles
-9. Busca información de contacto
+INSTRUCCIONES DETALLADAS:
+1. **Información Personal**: Extrae nombre completo, email, teléfono, ubicación, LinkedIn, portfolio
+2. **Experiencia Laboral**: Identifica empresas, cargos, fechas (inicio-fin), responsabilidades, logros cuantificables, tecnologías utilizadas
+3. **Formación Académica**: Títulos, instituciones, fechas, calificaciones, proyectos destacados
+4. **Habilidades Técnicas**: Lenguajes de programación, frameworks, herramientas, bases de datos, metodologías
+5. **Habilidades Blandas**: Comunicación, liderazgo, trabajo en equipo, resolución de problemas, adaptabilidad
+6. **Idiomas**: Idiomas y niveles (nativo, avanzado, intermedio, básico)
+7. **Certificaciones**: Certificaciones profesionales, cursos, acreditaciones
+8. **Proyectos**: Proyectos personales o profesionales con descripción, tecnologías, resultados
+9. **Logros**: Premios, reconocimientos, publicaciones, contribuciones destacadas
+10. **Intereses**: Áreas de interés profesional, hobbies relevantes
+
+REQUISITOS ESPECÍFICOS:
+- Maneja CVs en español e inglés indistintamente
+- Interpreta fechas en cualquier formato (MM/YYYY, YYYY-MM, etc.)
+- Identifica información aunque esté mal formateada o desordenada
+- Extrae habilidades aunque no estén en una sección específica
+- Detecta experiencia relevante aunque no esté claramente etiquetada
+- Identifica logros cuantificables (porcentajes, números, métricas)
 
 Devuelve SOLO un JSON válido con esta estructura exacta:
 
 {{
   "contacto": {{
-    "nombre": "Nombre completo detectado",
-    "email": "Email si está presente",
-    "telefono": "Teléfono si está presente",
-    "ubicacion": "Ubicación si está presente"
+    "nombre": "string",
+    "email": "string",
+    "telefono": "string",
+    "ubicacion": "string",
+    "linkedin": "string",
+    "portfolio": "string"
   }},
   "experiencia_laboral": [
     {{
-      "empresa": "Nombre de la empresa",
-      "cargo": "Título del puesto",
-      "fecha_inicio": "Fecha de inicio (cualquier formato)",
-      "fecha_fin": "Fecha de fin o 'actualidad'",
-      "descripcion": "Descripción de responsabilidades y logros",
-      "logros": ["Logro 1", "Logro 2"],
-      "tecnologias": ["Tecnología 1", "Tecnología 2"]
+      "empresa": "string",
+      "cargo": "string",
+      "fecha_inicio": "string",
+      "fecha_fin": "string",
+      "responsabilidades": ["string"],
+      "logros": ["string"],
+      "tecnologias": ["string"]
     }}
   ],
   "formacion_academica": [
     {{
-      "titulo": "Título o certificación",
-      "institucion": "Institución educativa",
-      "fecha_inicio": "Fecha de inicio",
-      "fecha_fin": "Fecha de fin o 'actualidad'",
-      "nivel": "Grado, Máster, Certificación, etc."
+      "titulo": "string",
+      "institucion": "string",
+      "fecha_inicio": "string",
+      "fecha_fin": "string",
+      "calificacion": "string",
+      "proyectos": ["string"]
     }}
   ],
-  "habilidades_tecnicas": ["Habilidad 1", "Habilidad 2"],
-  "habilidades_blandas": ["Habilidad 1", "Habilidad 2"],
+  "habilidades_tecnicas": ["string"],
+  "habilidades_blandas": ["string"],
   "idiomas": [
     {{
-      "idioma": "Nombre del idioma",
-      "nivel": "Nivel (Básico, Intermedio, Avanzado, Nativo)"
+      "idioma": "string",
+      "nivel": "string"
     }}
   ],
-  "certificaciones": ["Certificación 1", "Certificación 2"],
+  "certificaciones": [
+    {{
+      "nombre": "string",
+      "institucion": "string",
+      "fecha": "string"
+    }}
+  ],
   "proyectos": [
     {{
-      "nombre": "Nombre del proyecto",
-      "descripcion": "Descripción del proyecto",
-      "tecnologias": ["Tecnología 1", "Tecnología 2"],
-      "fecha": "Fecha si está disponible"
+      "nombre": "string",
+      "descripcion": "string",
+      "tecnologias": ["string"],
+      "resultados": ["string"]
     }}
   ],
-  "resumen_profesional": "Resumen profesional si está presente",
-  "intereses": ["Interés 1", "Interés 2"],
-  "voluntariado": [
-    {{
-      "organizacion": "Nombre de la organización",
-      "cargo": "Cargo o función",
-      "fecha_inicio": "Fecha de inicio",
-      "fecha_fin": "Fecha de fin o 'actualidad'",
-      "descripcion": "Descripción de las actividades"
-    }}
-  ]
+  "logros": ["string"],
+  "intereses": ["string"]
 }}
 
 IMPORTANTE:
-- Si no encuentras información para algún campo, usa array vacío [] o string vacío ""
-- Interpreta fechas en cualquier formato (2020-2023, Enero 2020, 01/2020, etc.)
-- Identifica empresas y cargos aunque no estén claramente separados
-- Extrae habilidades técnicas de cualquier contexto (experiencia, proyectos, formación)
-- Maneja CVs en español e inglés
-- Si hay información ambigua, inclúyela en el campo más apropiado
+- Si no encuentras información para algún campo, usa null o array vacío
+- Mantén la estructura JSON exacta
+- No agregues campos adicionales
+- Usa arrays vacíos [] en lugar de null para listas
+- Asegúrate de que el JSON sea válido
 """
 
         print("📤 Enviando solicitud a Azure OpenAI...")
@@ -239,7 +247,7 @@ IMPORTANTE:
         response = client.chat.completions.create(
             model=DEPLOYMENT,
             messages=[
-                {"role": "system", "content": "Eres un experto en análisis de CVs con más de 10 años de experiencia en recursos humanos. Tu especialidad es extraer información precisa y estructurada de CVs en cualquier formato o idioma."},
+                {"role": "system", "content": "Eres un experto en análisis de CVs con más de 15 años de experiencia en recursos humanos y tecnología. Tu especialidad es extraer información precisa y estructurada de CVs en cualquier formato, idioma o estructura. Siempre devuelves JSON válido y bien estructurado."},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.1,
