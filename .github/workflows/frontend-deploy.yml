@@ -20,102 +20,30 @@ jobs:
     steps:
       - name: Checkout code
         uses: actions/checkout@v4
-        with:
-          submodules: true
-          lfs: false
 
       - name: Setup Node.js
         uses: actions/setup-node@v4
         with:
           node-version: '20.x'
-          cache: 'npm'
-          cache-dependency-path: nuevo-frontend/package-lock.json
-
-      - name: Verify package-lock.json exists
-        working-directory: ./nuevo-frontend
-        run: |
-          echo "Verificando archivos de dependencias..."
-          ls -la package*.json
-          if [ ! -f "package-lock.json" ]; then
-            echo "❌ package-lock.json no encontrado. Generando..."
-            npm install
-          else
-            echo "✅ package-lock.json encontrado"
-          fi
 
       - name: Install dependencies
         working-directory: ./nuevo-frontend
-        run: |
-          echo "Instalando dependencias..."
-          npm ci --prefer-offline --no-audit
-          echo "✅ Dependencias instaladas correctamente"
-
-      - name: Verify TypeScript configuration
-        working-directory: ./nuevo-frontend
-        run: |
-          echo "Verificando configuración de TypeScript..."
-          npx tsc --noEmit
-          echo "✅ TypeScript configurado correctamente"
+        run: npm install
 
       - name: Run lint
         working-directory: ./nuevo-frontend
-        run: |
-          echo "Ejecutando linting..."
-          npm run lint
-          echo "✅ Linting completado"
+        run: npm run lint
 
-      - name: Run unit tests
+      - name: Run tests
         working-directory: ./nuevo-frontend
-        run: |
-          echo "Ejecutando tests unitarios..."
-          npm run test -- --run --coverage
-          echo "✅ Tests unitarios completados"
+        run: npm run test -- --run --coverage
 
       - name: Build frontend
         working-directory: ./nuevo-frontend
-        run: |
-          echo "Construyendo frontend..."
-          npm run build
-          echo "✅ Build completado"
+        run: npm run build
 
       - name: Copy Static Web Apps config
-        run: |
-          echo "Copiando configuración de Static Web Apps..."
-          cp nuevo-frontend/staticwebapp.config.json nuevo-frontend/dist/
-          echo "✅ Configuración copiada"
-
-      - name: Verify build output
-        working-directory: ./nuevo-frontend
-        run: |
-          echo "Verificando contenido del directorio dist:"
-          ls -la dist/
-          echo ""
-          echo "Verificando index.html:"
-          if [ -f "dist/index.html" ]; then
-            echo "✅ index.html encontrado"
-            echo "Primeras líneas del index.html:"
-            head -5 dist/index.html
-          else
-            echo "❌ index.html no encontrado"
-            exit 1
-          fi
-          echo ""
-          echo "Verificando staticwebapp.config.json:"
-          if [ -f "dist/staticwebapp.config.json" ]; then
-            echo "✅ staticwebapp.config.json encontrado"
-          else
-            echo "❌ staticwebapp.config.json no encontrado"
-            exit 1
-          fi
-          echo ""
-          echo "Verificando assets:"
-          if [ -d "dist/assets" ]; then
-            echo "✅ Directorio assets encontrado"
-            ls -la dist/assets/ | head -10
-          else
-            echo "❌ Directorio assets no encontrado"
-            exit 1
-          fi
+        run: cp nuevo-frontend/staticwebapp.config.json nuevo-frontend/dist/
 
       - name: Upload build artifacts
         uses: actions/upload-artifact@v4
@@ -138,38 +66,6 @@ jobs:
         with:
           name: frontend-build
           path: ./dist
-
-      - name: Verify build artifacts
-        run: |
-          echo "Contenido del directorio dist:"
-          ls -la dist/
-          echo ""
-          echo "Verificando index.html:"
-          if [ -f "dist/index.html" ]; then
-            echo "✅ index.html encontrado"
-            echo "Primeras líneas del index.html:"
-            head -5 dist/index.html
-          else
-            echo "❌ index.html no encontrado"
-            exit 1
-          fi
-          echo ""
-          echo "Verificando staticwebapp.config.json:"
-          if [ -f "dist/staticwebapp.config.json" ]; then
-            echo "✅ staticwebapp.config.json encontrado"
-          else
-            echo "❌ staticwebapp.config.json no encontrado"
-            exit 1
-          fi
-          echo ""
-          echo "Verificando assets:"
-          if [ -d "dist/assets" ]; then
-            echo "✅ Directorio assets encontrado"
-            ls -la dist/assets/ | head -5
-          else
-            echo "❌ Directorio assets no encontrado"
-            exit 1
-          fi
 
       - name: Deploy to Azure Static Web Apps
         uses: Azure/static-web-apps-deploy@v1
