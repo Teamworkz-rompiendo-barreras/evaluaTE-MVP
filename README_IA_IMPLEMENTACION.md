@@ -121,22 +121,27 @@ python verify_ai_setup.py
 
 ### **2. Informes de Empleabilidad Profesionales**
 
-#### **Estructura del Informe:**
-1. **Resumen Ejecutivo** - Visión general del candidato
-2. **Análisis de Fortalezas** - Puntos destacados
-3. **Áreas de Mejora** - Oportunidades de desarrollo
-4. **Recomendaciones de Puestos** - Empleos compatibles
-5. **Plan de Desarrollo** - Pasos específicos
-6. **Adaptaciones Laborales** - Sugerencias de inclusión
-7. **Recursos Útiles** - Herramientas y formación
+#### **Estructura del Informe (11 apartados):**
+1. **Datos Personales Básicos** - Información de contacto y ubicación
+2. **Resumen del CV** - Experiencia, formación y logros principales
+3. **Preferencias Laborales** - Áreas de interés y necesidades específicas
+4. **Fortalezas** - Basadas en minijuegos y análisis del CV
+5. **Áreas de Mejora y Consejos** - Basadas en resultados de minijuegos
+6. **Roles Profesionales Sugeridos** - Puestos compatibles con rangos salariales
+7. **Consejos para Búsqueda de Empleo** - Estrategias y plataformas inclusivas
+8. **Análisis de CV** - Evaluación con estrellas (★★★★★) de formato, claridad, coherencia, información clave y ortografía
+9. **Plan de Acción** - Corto, medio y largo plazo
+10. **Herramientas Útiles y Tecnología** - Plataformas, recursos y aplicaciones
+11. **Mensaje Final** - Motivacional y personalizado
 
-#### **Adaptaciones Cognitivas:**
-- **Párrafos cortos** (máximo 3-4 frases)
-- **Lenguaje claro** y directo
-- **Estructura jerárquica** clara
-- **Listas numeradas** para información importante
-- **Evitar jerga técnica** innecesaria
-- **Uso de colores conceptuales** para organización
+#### **Características del Formato:**
+- **Estructura clara** con 11 apartados numerados
+- **Análisis visual** con estrellas amarillas (★★★★★) para evaluación de CV
+- **Lenguaje profesional** pero accesible
+- **Recomendaciones específicas** y accionables
+- **Tono optimista pero realista** sin expectativas fantasiosas
+- **Inclusión de plataformas de empleo inclusivo** cuando corresponde
+- **Mensaje final motivacional** personalizado
 
 ### **3. Integración con Minijuegos**
 
