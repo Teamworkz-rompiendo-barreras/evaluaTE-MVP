@@ -31,43 +31,89 @@ jobs:
           cache: 'npm'
           cache-dependency-path: nuevo-frontend/package-lock.json
 
+      - name: Verify package-lock.json exists
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Verificando archivos de dependencias..."
+          ls -la package*.json
+          if [ ! -f "package-lock.json" ]; then
+            echo "❌ package-lock.json no encontrado. Generando..."
+            npm install
+          else
+            echo "✅ package-lock.json encontrado"
+          fi
+
       - name: Install dependencies
         working-directory: ./nuevo-frontend
-        run: npm ci
+        run: |
+          echo "Instalando dependencias..."
+          npm ci --prefer-offline --no-audit
+          echo "✅ Dependencias instaladas correctamente"
+
+      - name: Verify TypeScript configuration
+        working-directory: ./nuevo-frontend
+        run: |
+          echo "Verificando configuración de TypeScript..."
+          npx tsc --noEmit
+          echo "✅ TypeScript configurado correctamente"
 
       - name: Run lint
         working-directory: ./nuevo-frontend
-        run: npm run lint
+        run: |
+          echo "Ejecutando linting..."
+          npm run lint
+          echo "✅ Linting completado"
 
       - name: Run unit tests
         working-directory: ./nuevo-frontend
-        run: npm run test -- --run --coverage
+        run: |
+          echo "Ejecutando tests unitarios..."
+          npm run test -- --run --coverage
+          echo "✅ Tests unitarios completados"
 
       - name: Build frontend
         working-directory: ./nuevo-frontend
-        run: npm run build
+        run: |
+          echo "Construyendo frontend..."
+          npm run build
+          echo "✅ Build completado"
 
       - name: Copy Static Web Apps config
-        run: cp nuevo-frontend/staticwebapp.config.json nuevo-frontend/dist/
+        run: |
+          echo "Copiando configuración de Static Web Apps..."
+          cp nuevo-frontend/staticwebapp.config.json nuevo-frontend/dist/
+          echo "✅ Configuración copiada"
 
       - name: Verify build output
         working-directory: ./nuevo-frontend
         run: |
           echo "Verificando contenido del directorio dist:"
           ls -la dist/
+          echo ""
           echo "Verificando index.html:"
           if [ -f "dist/index.html" ]; then
             echo "✅ index.html encontrado"
-            cat dist/index.html | head -5
+            echo "Primeras líneas del index.html:"
+            head -5 dist/index.html
           else
             echo "❌ index.html no encontrado"
             exit 1
           fi
+          echo ""
           echo "Verificando staticwebapp.config.json:"
           if [ -f "dist/staticwebapp.config.json" ]; then
             echo "✅ staticwebapp.config.json encontrado"
           else
             echo "❌ staticwebapp.config.json no encontrado"
+            exit 1
+          fi
+          echo ""
+          echo "Verificando assets:"
+          if [ -d "dist/assets" ]; then
+            echo "✅ Directorio assets encontrado"
+            ls -la dist/assets/ | head -10
+          else
+            echo "❌ Directorio assets no encontrado"
             exit 1
           fi
 
@@ -97,6 +143,7 @@ jobs:
         run: |
           echo "Contenido del directorio dist:"
           ls -la dist/
+          echo ""
           echo "Verificando index.html:"
           if [ -f "dist/index.html" ]; then
             echo "✅ index.html encontrado"
@@ -106,11 +153,21 @@ jobs:
             echo "❌ index.html no encontrado"
             exit 1
           fi
+          echo ""
           echo "Verificando staticwebapp.config.json:"
           if [ -f "dist/staticwebapp.config.json" ]; then
             echo "✅ staticwebapp.config.json encontrado"
           else
             echo "❌ staticwebapp.config.json no encontrado"
+            exit 1
+          fi
+          echo ""
+          echo "Verificando assets:"
+          if [ -d "dist/assets" ]; then
+            echo "✅ Directorio assets encontrado"
+            ls -la dist/assets/ | head -5
+          else
+            echo "❌ Directorio assets no encontrado"
             exit 1
           fi
 

@@ -9,6 +9,7 @@ import ReactMarkdown from 'react-markdown';
 import { useMemo } from 'react';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
+import '../styles/stars.css'; // Importar estilos para estrellas
 
 
 // Tipo para los datos del radar
@@ -563,31 +564,91 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
                   hr: ({ ...props }) => (
                     <hr {...props} className="border-t border-gray-300 my-6" />
                   ),
-                  // Componente personalizado para renderizar texto con estrellas coloreadas
+                                    // Componente personalizado para renderizar texto con estrellas coloreadas
                   p: ({ children, ...props }) => {
                     if (typeof children === 'string' && children.includes('★')) {
-                      const coloredText = children.replace(
-                        /(★+)(☆*)/g,
-                        (match, filledStars, emptyStars) => {
-                          const filledCount = filledStars.length;
-                          const totalCount = filledCount + emptyStars.length;
-                          const percentage = (filledCount / totalCount) * 100;
-                          
-                          let colorClass = 'text-gray-400'; // Por defecto gris
-                          if (percentage >= 80) colorClass = 'text-green-500'; // Verde para excelente
-                          else if (percentage >= 60) colorClass = 'text-yellow-500'; // Amarillo para bueno
-                          else if (percentage >= 40) colorClass = 'text-orange-500'; // Naranja para regular
-                          else colorClass = 'text-red-500'; // Rojo para malo
-                          
-                          return `<span class="${colorClass} font-bold">${filledStars}</span><span class="text-gray-300">${emptyStars}</span>`;
-                        }
-                      );
-                      return (
-                        <p {...props} 
-                           className="text-gray-700 leading-relaxed mb-4 text-justify"
-                           dangerouslySetInnerHTML={{ __html: coloredText }}
-                        />
-                      );
+                      // Verificar si es una línea de indicadores de calidad
+                      if (children.includes('Formato:') || children.includes('Claridad:') || children.includes('Información clave:') || children.includes('Ortografía:')) {
+                        // Dividir el texto en partes para renderizar las estrellas con colores
+                        const parts = children.split(/((?:★+)(?:☆*))/g);
+                        
+                                                 return (
+                           <div {...props} className="quality-indicators">
+                             <div className="text-gray-700 leading-relaxed">
+                               {parts.map((part, index) => {
+                                 const starMatch = part.match(/(★+)(☆*)/);
+                                 if (starMatch) {
+                                   const [, filledStars, emptyStars] = starMatch;
+                                   const filledCount = filledStars.length;
+                                   const totalCount = filledCount + emptyStars.length;
+                                   const percentage = (filledCount / totalCount) * 100;
+                                   
+                                   let colorClass = 'star-very-poor'; // Por defecto
+                                   if (percentage >= 90) colorClass = 'star-excellent'; // Verde esmeralda para excepcional
+                                   else if (percentage >= 80) colorClass = 'star-very-good'; // Verde para excelente
+                                   else if (percentage >= 70) colorClass = 'star-good'; // Verde lima para muy bueno
+                                   else if (percentage >= 60) colorClass = 'star-average'; // Amarillo para bueno
+                                   else if (percentage >= 50) colorClass = 'star-regular'; // Naranja para regular
+                                   else if (percentage >= 40) colorClass = 'star-below-average'; // Naranja para regular-bajo
+                                   else if (percentage >= 30) colorClass = 'star-poor'; // Rojo claro para bajo
+                                   else colorClass = 'star-very-poor'; // Rojo para muy bajo
+                                   
+                                   return (
+                                     <span key={index}>
+                                       <span className={`${colorClass} star-filled`}>
+                                         {filledStars}
+                                       </span>
+                                       <span className="star-empty">
+                                         {emptyStars}
+                                       </span>
+                                     </span>
+                                   );
+                                 }
+                                 return part;
+                               })}
+                             </div>
+                           </div>
+                         );
+                      } else {
+                        // Para otras estrellas en el texto, usar el renderizado normal
+                        const parts = children.split(/((?:★+)(?:☆*))/g);
+                        
+                                                 return (
+                           <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">
+                             {parts.map((part, index) => {
+                               const starMatch = part.match(/(★+)(☆*)/);
+                               if (starMatch) {
+                                 const [, filledStars, emptyStars] = starMatch;
+                                 const filledCount = filledStars.length;
+                                 const totalCount = filledCount + emptyStars.length;
+                                 const percentage = (filledCount / totalCount) * 100;
+                                 
+                                 let colorClass = 'star-very-poor'; // Por defecto
+                                 if (percentage >= 90) colorClass = 'star-excellent'; // Verde esmeralda para excepcional
+                                 else if (percentage >= 80) colorClass = 'star-very-good'; // Verde para excelente
+                                 else if (percentage >= 70) colorClass = 'star-good'; // Verde lima para muy bueno
+                                 else if (percentage >= 60) colorClass = 'star-average'; // Amarillo para bueno
+                                 else if (percentage >= 50) colorClass = 'star-regular'; // Naranja para regular
+                                 else if (percentage >= 40) colorClass = 'star-below-average'; // Naranja para regular-bajo
+                                 else if (percentage >= 30) colorClass = 'star-poor'; // Rojo claro para bajo
+                                 else colorClass = 'star-very-poor'; // Rojo para muy bajo
+                                 
+                                 return (
+                                   <span key={index}>
+                                     <span className={`${colorClass} star-filled`}>
+                                       {filledStars}
+                                     </span>
+                                     <span className="star-empty">
+                                       {emptyStars}
+                                     </span>
+                                   </span>
+                                 );
+                               }
+                               return part;
+                             })}
+                           </p>
+                         );
+                      }
                     }
                     return (
                       <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">

@@ -1,0 +1,121 @@
+/* Estilos específicos para las estrellas de calidad con colores */
+
+/* Colores para las estrellas llenas */
+.star-excellent {
+  color: #059669 !important; /* text-emerald-600 */
+}
+
+.star-very-good {
+  color: #10b981 !important; /* text-green-500 */
+}
+
+.star-good {
+  color: #84cc16 !important; /* text-lime-500 */
+}
+
+.star-average {
+  color: #eab308 !important; /* text-yellow-500 */
+}
+
+.star-regular {
+  color: #fb923c !important; /* text-orange-400 */
+}
+
+.star-below-average {
+  color: #f97316 !important; /* text-orange-500 */
+}
+
+.star-poor {
+  color: #f87171 !important; /* text-red-400 */
+}
+
+.star-very-poor {
+  color: #dc2626 !important; /* text-red-600 */
+}
+
+/* Estrellas vacías */
+.star-empty {
+  color: #d1d5db !important; /* text-gray-300 */
+}
+
+/* Estilos para el contenedor de indicadores de calidad */
+.quality-indicators {
+  background-color: #f9fafb !important;
+  border-left: 4px solid #3b82f6 !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+/* Estilos para las estrellas */
+.star-filled {
+  font-weight: bold !important;
+  font-size: 1.25rem !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+.star-empty {
+  font-size: 1.25rem !important;
+}
+
+/* Estilos para el texto de los indicadores */
+.quality-indicators .text-gray-700 {
+  color: #374151 !important;
+  line-height: 1.6 !important;
+}
+
+/* Responsive para móviles */
+@media (max-width: 768px) {
+  .star-filled,
+  .star-empty {
+    font-size: 1.125rem !important;
+  }
+  
+  .quality-indicators {
+    padding: 0.75rem !important;
+  }
+}
+
+/* Estilos para impresión */
+@media print {
+  .star-excellent {
+    color: #059669 !important;
+  }
+  
+  .star-very-good {
+    color: #10b981 !important;
+  }
+  
+  .star-good {
+    color: #84cc16 !important;
+  }
+  
+  .star-average {
+    color: #eab308 !important;
+  }
+  
+  .star-regular {
+    color: #fb923c !important;
+  }
+  
+  .star-below-average {
+    color: #f97316 !important;
+  }
+  
+  .star-poor {
+    color: #f87171 !important;
+  }
+  
+  .star-very-poor {
+    color: #dc2626 !important;
+  }
+  
+  .star-empty {
+    color: #d1d5db !important;
+  }
+  
+  .quality-indicators {
+    background-color: #f9fafb !important;
+    border-left: 4px solid #3b82f6 !important;
+  }
+} 
