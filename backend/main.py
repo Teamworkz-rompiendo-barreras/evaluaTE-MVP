@@ -892,6 +892,53 @@ async def analyze_cv(
                 proj_count = len(full_cv_data["proyectos"])
                 analysis_data["feedback"] += f" Se detectaron {proj_count} proyectos."
         
+        # MEJORAR: Incluir todos los datos extraídos por Document Intelligence
+        if cv_info:
+            # Agregar información de contacto a las fortalezas
+            if cv_info.get("contacto"):
+                contact_info = cv_info["contacto"]
+                if contact_info.get("email"):
+                    analysis_data["strengths"].append(f"Email de contacto: {contact_info['email']}")
+                if contact_info.get("phone"):
+                    analysis_data["strengths"].append(f"Teléfono de contacto: {contact_info['phone']}")
+            
+            # Agregar idiomas a las habilidades
+            if cv_info.get("idiomas"):
+                for idioma in cv_info["idiomas"]:
+                    analysis_data["skills"].append(f"Idioma: {idioma}")
+            
+            # Agregar software a las habilidades
+            if cv_info.get("software"):
+                for software in cv_info["software"]:
+                    analysis_data["skills"].append(f"Software: {software}")
+            
+            # Agregar experiencia detallada
+            if cv_info.get("experiencia"):
+                for exp in cv_info["experiencia"]:
+                    if isinstance(exp, dict):
+                        exp_str = f"Experiencia: {exp.get('position', '')} - {exp.get('company', '')} ({exp.get('period', '')})"
+                    else:
+                        exp_str = f"Experiencia: {exp}"
+                    analysis_data["strengths"].append(exp_str)
+            
+            # Agregar educación detallada
+            if cv_info.get("educacion"):
+                for edu in cv_info["educacion"]:
+                    if isinstance(edu, dict):
+                        edu_str = f"Educación: {edu.get('title', '')} - {edu.get('institution', '')} ({edu.get('year', '')})"
+                    else:
+                        edu_str = f"Educación: {edu}"
+                    analysis_data["strengths"].append(edu_str)
+            
+            # Agregar proyectos
+            if cv_info.get("proyectos"):
+                for proj in cv_info["proyectos"]:
+                    if isinstance(proj, dict):
+                        proj_str = f"Proyecto: {proj.get('name', '')}"
+                    else:
+                        proj_str = f"Proyecto: {proj}"
+                    analysis_data["strengths"].append(proj_str)
+        
         logger.info(f"Análisis de CV completado para usuario {userId}")
         logger.info(f"Resultado final: {len(analysis_data.get('strengths', []))} fortalezas, {len(analysis_data.get('weaknesses', []))} debilidades")
         
