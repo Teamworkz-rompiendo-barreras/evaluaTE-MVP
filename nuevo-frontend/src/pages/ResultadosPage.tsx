@@ -60,6 +60,9 @@ const ResultadosPage: React.FC = () => {
       console.log('  • report?.softSkills:', report?.softSkills);
       console.log('  • cvAnalysis:', cvAnalysis);
       console.log('  • game?.completedGames:', game?.completedGames);
+      console.log('  • personal.softSkills:', personal.softSkills);
+      console.log('  • personal.jobPreferences:', personal.jobPreferences);
+      console.log('  • personal.cvAnalysis:', personal.cvAnalysis);
       
       try {
         const requestBody = {
@@ -232,31 +235,41 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
     setDownloadingPdf(true);
     setPdfError('');
     
+    // Debug: Log de los datos que se van a enviar al PDF
+    console.log('📄 DEBUG - Datos para PDF:');
+    console.log('  • report?.softSkills:', report?.softSkills);
+    console.log('  • personal.softSkills:', personal.softSkills);
+    console.log('  • cvAnalysis:', cvAnalysis);
+    console.log('  • report?.jobPreferences:', report?.jobPreferences);
+    console.log('  • game?.completedGames:', game?.completedGames);
+    
     try {
       const requestBody = {
         userId: report?.userId || 'user',
         fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-        softSkills: (report?.softSkills ?? []).map(skill => ({
+        softSkills: (personal.softSkills ?? []).map(skill => ({
           skill: skill.skill,
           score: skill.score ?? 0,
           level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
           confidence: skill.confidence ?? skill.score ?? 0,
         })),
-        cvAnalysis: cvAnalysis ? {
-          strengths: cvAnalysis.strengths ?? [],
-          weaknesses: cvAnalysis.weaknesses ?? [],
-          feedback: cvAnalysis.feedback ?? '',
-          structure: cvAnalysis.structure ?? 'regular',
-          coherence: cvAnalysis.coherence ?? 'regular',
-          experience: cvAnalysis.experience ?? 'regular',
-          skills: cvAnalysis.skills ?? [],
-          education: cvAnalysis.education ?? [],
-          alerts: cvAnalysis.alerts ?? [],
+        cvAnalysis: personal.cvAnalysis ? {
+          strengths: personal.cvAnalysis.strengths ?? [],
+          weaknesses: personal.cvAnalysis.weaknesses ?? [],
+          feedback: personal.cvAnalysis.feedback ?? '',
+          structure: personal.cvAnalysis.structure ?? 'regular',
+          coherence: personal.cvAnalysis.coherence ?? 'regular',
+          experience: personal.cvAnalysis.experience ?? 'regular',
+          skills: personal.cvAnalysis.skills ?? [],
+          education: personal.cvAnalysis.education ?? [],
+          alerts: personal.cvAnalysis.alerts ?? [],
         } : null,
-        jobPreferences: report?.jobPreferences || null,
+        jobPreferences: personal.jobPreferences || null,
         completedGames: game?.completedGames || [],
         logs: []
       };
+      
+      console.log('📄 DEBUG - Request body para PDF:', requestBody);
 
       const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_DOWNLOAD), {
         method: 'POST',

@@ -162,10 +162,9 @@ export const personalSlice = createSlice({
 
     // Guarda habilidades blandas evaluadas
     saveSoftSkills(state, action: PayloadAction<SoftSkillResult[]>) {
-      return {
-        ...state,
-        softSkills: [...state.softSkills, ...action.payload],
-      };
+      // Reemplazar completamente las habilidades soft en lugar de agregar
+      state.softSkills = action.payload;
+      console.log('💾 Habilidades soft guardadas:', action.payload);
     },
 
     // Registra decisiones tomadas durante escenas
@@ -280,7 +279,7 @@ export const personalSlice = createSlice({
         cvAnalysis: state.cvAnalysis,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        completedGames: Array.from({ length: state.unlockedGames }, (_, i) => i + 1),
+        completedGames: Array.from({ length: state.unlockedGames }, (_, i) => String(i + 1)),
         level,
         recommendations,
         adjustedScore: employabilityScore,
