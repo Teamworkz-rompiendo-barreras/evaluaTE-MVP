@@ -999,6 +999,44 @@ async def generate_pdf_report(request: EmployabilityReportRequest):
     """
     logger.info(f"🔄 Iniciando generación de PDF para usuario: {request.fullName}")
     
+    # LOGS DE DEPURACIÓN - Verificar qué datos están llegando
+    logger.info(f"📊 DATOS RECIBIDOS:")
+    logger.info(f"   - userId: {request.userId}")
+    logger.info(f"   - fullName: {request.fullName}")
+    logger.info(f"   - softSkills count: {len(request.softSkills)}")
+    logger.info(f"   - cvAnalysis: {request.cvAnalysis is not None}")
+    logger.info(f"   - jobPreferences: {request.jobPreferences is not None}")
+    logger.info(f"   - completedGames count: {len(request.completedGames)}")
+    logger.info(f"   - logs count: {len(request.logs)}")
+    
+    # Log detallado de habilidades soft
+    if request.softSkills:
+        logger.info("   - Soft Skills detalladas:")
+        for i, skill in enumerate(request.softSkills):
+            logger.info(f"     {i+1}. {skill.skill}: {skill.score}% (nivel: {skill.level}, confianza: {skill.confidence}%)")
+    else:
+        logger.info("   - ⚠️ NO HAY HABILIDADES SOFT")
+    
+    # Log detallado del análisis de CV
+    if request.cvAnalysis:
+        logger.info("   - CV Analysis detallado:")
+        logger.info(f"     - strengths: {len(request.cvAnalysis.strengths or [])} elementos")
+        logger.info(f"     - weaknesses: {len(request.cvAnalysis.weaknesses or [])} elementos")
+        logger.info(f"     - skills: {len(request.cvAnalysis.skills or [])} elementos")
+        logger.info(f"     - education: {len(request.cvAnalysis.education or [])} elementos")
+    else:
+        logger.info("   - ⚠️ NO HAY ANÁLISIS DE CV")
+    
+    # Log detallado de preferencias laborales
+    if request.jobPreferences:
+        logger.info("   - Job Preferences detallado:")
+        logger.info(f"     - areas: {len(request.jobPreferences.areas)} elementos")
+        logger.info(f"     - needs: {len(request.jobPreferences.needs)} elementos")
+        logger.info(f"     - workMode: {request.jobPreferences.workMode}")
+        logger.info(f"     - availability: {request.jobPreferences.availability}")
+    else:
+        logger.info("   - ⚠️ NO HAY PREFERENCIAS LABORALES")
+    
     try:
         logger.info("📦 Importando servicio de PDF...")
         # Importar el servicio de PDF
@@ -1074,6 +1112,23 @@ LOGS DE JUEGOS:
             },
             "informeProfesional": informe_profesional  # Incluir el informe profesional de IA
         }
+        
+        # LOGS DETALLADOS DE LOS DATOS QUE SE ENVÍAN AL PDF
+        logger.info("📋 DATOS ENVIADOS AL PDF:")
+        logger.info(f"   - gameData count: {len(pdf_data['gameData'])}")
+        logger.info(f"   - cvAnalysis keys: {list(pdf_data['cvAnalysis'].keys()) if pdf_data['cvAnalysis'] else 'vacío'}")
+        logger.info(f"   - jobPreferences keys: {list(pdf_data['jobPreferences'].keys()) if pdf_data['jobPreferences'] else 'vacío'}")
+        logger.info(f"   - userInfo: {pdf_data['userInfo']}")
+        logger.info(f"   - informeProfesional length: {len(pdf_data['informeProfesional'])} caracteres")
+        
+        # Log detallado de gameData
+        if pdf_data['gameData']:
+            logger.info("   - GameData detallado:")
+            for i, skill in enumerate(pdf_data['gameData']):
+                logger.info(f"     {i+1}. {skill.get('skill', 'N/A')}: {skill.get('score', 0)}%")
+        else:
+            logger.info("   - ⚠️ GAMEDATA VACÍO")
+        
         logger.info(f"📋 Datos preparados: {len(request.softSkills)} habilidades, CV: {bool(request.cvAnalysis)}, Preferencias: {bool(request.jobPreferences)}")
         
         # Generar el PDF
