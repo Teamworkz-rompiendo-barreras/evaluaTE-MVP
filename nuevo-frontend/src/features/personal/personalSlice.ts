@@ -279,7 +279,7 @@ export const personalSlice = createSlice({
         cvAnalysis: state.cvAnalysis,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
-        completedGames: Array.from({ length: state.unlockedGames }, (_, i) => String(i + 1)),
+        completedGames: Array.from({ length: state.unlockedGames }, (_, i) => i + 1),
         level,
         recommendations,
         adjustedScore: employabilityScore,
