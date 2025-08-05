@@ -150,11 +150,15 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
     };
     // Solo llamar si hay datos suficientes
     // Modificado para ser más permisivo: solo requiere softSkills
-    if (report?.softSkills && report.softSkills.length > 0) {
-              // Condición cumplida - Ejecutando fetchIaReport
+    if (report?.softSkills && Array.isArray(report.softSkills) && report.softSkills.length > 0) {
+      // Condición cumplida - Ejecutando fetchIaReport
       fetchIaReport();
     } else {
-              // Condición no cumplida - No se ejecuta fetchIaReport
+      // Condición no cumplida - No se ejecuta fetchIaReport
+      console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
+      console.log('  • report?.softSkills:', report?.softSkills);
+      console.log('  • report?.softSkills.length:', report?.softSkills?.length);
+      console.log('  • Array.isArray(report?.softSkills):', Array.isArray(report?.softSkills));
     }
   }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
 
