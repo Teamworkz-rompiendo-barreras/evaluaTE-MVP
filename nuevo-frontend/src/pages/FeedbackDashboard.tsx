@@ -5,7 +5,12 @@ interface FeedbackItem {
   informe: string;
   rating: string;
   comment: string;
-  userData: unknown;
+  userData: {
+    minigames?: Array<unknown>;
+    preferences?: {
+      areas?: string[];
+    };
+  };
   timestamp: string;
 }
 

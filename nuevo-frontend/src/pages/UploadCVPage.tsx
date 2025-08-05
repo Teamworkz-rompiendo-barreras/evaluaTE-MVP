@@ -1,23 +1,33 @@
 // src/pages/UploadCVPage.tsx
-import React, { useState } from 'react'
-import { useSelector, useDispatch } from 'react-redux'
-import { useNavigate, Link } from 'react-router-dom'
-
-// Importamos las acciones desde personalSlice
-import { saveCV, saveCvAnalysis, generateFinalReport } from '../features/personal/personalSlice'
+import React, { useState } from 'react';
+import { useDispatch } from 'react-redux';
+import { Link, useNavigate } from 'react-router-dom';
+import { saveCV, saveCvAnalysis } from '../features/personal/personalSlice';
+import { useAppSelector } from '../app/hooks';
+import type { RootState } from '../app/store';
 import { buildApiUrl, API_CONFIG } from '../config/api';
 
+interface CvAnalysis {
+  feedback: string;
+  strengths?: string[];
+  skills?: string[];
+  weaknesses?: string[];
+  structure?: string;
+  coherence?: string;
+  experience?: string;
+  education?: string[];
+  alerts?: string[];
+}
+
 export default function UploadCVPage() {
-  const dispatch = useDispatch()
-  const navigate = useNavigate()
+  const dispatch = useDispatch();
+  const navigate = useNavigate();
+  const [file, setFile] = useState<File | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
 
-  // Seleccionamos el archivo del CV desde el estado
-  const cvFile = useSelector((state: unknown) => (state as { personal: { cvFile: { fileName: string; fileContent: string } | null } }).personal.cvFile)
-  const cvAnalysis = useSelector((state: unknown) => (state as { personal: { cvAnalysis: unknown } }).personal.cvAnalysis)
-
-  const [file, setFile] = useState<File | null>(null)
-  const [isLoading, setIsLoading] = useState(false)
-  const [error, setError] = useState<string | null>(null)
+  const cvFile = useAppSelector((state: RootState) => state.personal.cvFile);
+  const cvAnalysis = useAppSelector((state: RootState) => state.personal.cvAnalysis) as CvAnalysis | null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null) // Limpiar errores anteriores
@@ -86,8 +96,8 @@ export default function UploadCVPage() {
           throw new Error('El servidor devolvió un análisis de CV inválido');
         }
         
-        // Guardar el análisis en el estado de Redux
-        dispatch(saveCvAnalysis(cvAnalysis));
+                  // Guardar el análisis en el estado de Redux
+          dispatch(saveCvAnalysis(cvAnalysis));
                   // Análisis de CV guardado en Redux
         
         // Verificar que se guardó correctamente
@@ -135,13 +145,13 @@ export default function UploadCVPage() {
       
       // Crear un análisis básico para errores de conexión
       dispatch(saveCvAnalysis({
-        strengths: [],
-        weaknesses: [],
         feedback: 'No se pudo conectar con el servidor para analizar el CV',
+        strengths: [],
+        skills: [],
+        weaknesses: [],
         structure: 'regular',
         coherence: 'regular',
         experience: 'regular',
-        skills: [],
         education: [],
         alerts: ['Error de conexión al analizar el CV']
       }));
@@ -152,7 +162,7 @@ export default function UploadCVPage() {
 
     // Generar reporte final después de subir el CV
             // Generando reporte final...
-    dispatch(generateFinalReport())
+    // dispatch(generateFinalReport()) // This line was removed as per the new_code, as generateFinalReport is no longer imported.
     navigate('/resultados')
   }
 
@@ -205,7 +215,7 @@ export default function UploadCVPage() {
             onClick={() => {
               // Generar reporte si no existe
               if (!cvFile) {
-                dispatch(generateFinalReport())
+                // dispatch(generateFinalReport()) // This line was removed as per the new_code, as generateFinalReport is no longer imported.
               }
               navigate('/resultados')
             }}

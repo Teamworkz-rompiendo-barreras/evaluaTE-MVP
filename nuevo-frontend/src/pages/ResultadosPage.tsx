@@ -2,16 +2,23 @@
 import React, { useEffect, useState } from 'react';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
+import { buildApiUrl, API_CONFIG } from '../config/api';
 import { ResponsiveRadar } from '@nivo/radar';
 import logo from '../assets/Logo_teamworkz.png';
-import { buildApiUrl, API_CONFIG } from '../config/api';
 import ReactMarkdown from 'react-markdown';
 import { useMemo } from 'react';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
 import '../styles/stars.css'; // Importar estilos para estrellas
-import { debugState, validateSoftSkills } from '../utils/debug-state';
+import { validateSoftSkills } from '../utils/debug-state';
 
+// Definir tipos locales para evitar importaciones problemáticas
+interface SoftSkillResult {
+  skill: string;
+  score: number;
+  level: string;
+  confidence?: number;
+}
 
 // Tipo para los datos del radar
 interface RadarDataItem {
@@ -45,8 +52,7 @@ const ResultadosPage: React.FC = () => {
   const game = useAppSelector((state: RootState) => state.game);
 
   // Debug logging usando la utilidad (comentado para producción)
-  // const fullState = useAppSelector((state: RootState) => state);
-  // debugState(fullState, 'Estado actual en ResultadosPage');
+  // debugState(state, 'ResultadosPage');
 
   // Estado para el informe IA
   const [iaReport, setIaReport] = useState<string>('');
@@ -63,7 +69,7 @@ const ResultadosPage: React.FC = () => {
         const requestBody = {
           userId: report?.userId || 'user',
           fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-          softSkills: (personal.softSkills ?? []).map(skill => ({
+          softSkills: (personal.softSkills ?? []).map((skill: SoftSkillResult) => ({
             skill: skill.skill,
             score: skill.score ?? 0,
             level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
@@ -122,7 +128,7 @@ ${data.recommendations.nextSteps.map((step: string) => `- ${step}`).join('\n')}
 ## Análisis Detallado
 
 ### Habilidades Evaluadas
-${personal.softSkills.map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
+${personal.softSkills.map((skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${data.report.jobPreferences.areas?.join(', ') || 'No especificadas'}
@@ -242,11 +248,11 @@ ${personal.softSkills.map((skill) => `- **${skill.skill}**: ${skill.score}% (${s
       const requestBody = {
         userId: report?.userId || 'user',
         fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-        softSkills: (personal.softSkills ?? []).map(skill => ({
+        softSkills: (personal.softSkills ?? []).map((skill: SoftSkillResult) => ({
           skill: skill.skill,
           score: skill.score ?? 0,
           level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
-          confidence: skill.confidence ?? skill.score ?? 0,
+          confidence: (skill as any).confidence ?? skill.score ?? 0,
         })),
         cvAnalysis: personal.cvAnalysis ? {
           strengths: personal.cvAnalysis.strengths ?? [],
@@ -429,7 +435,7 @@ ${personal.softSkills.map((skill) => `- **${skill.skill}**: ${skill.score}% (${s
         <div className="w-full md:w-1/2">
           <h3 className="font-semibold mb-2">Resumen de niveles:</h3>
           <ul className="space-y-1">
-            {(personal.softSkills ?? []).map((skill, idx) => (
+            {(personal.softSkills ?? []).map((skill: SoftSkillResult, idx: number) => (
               <li key={idx}>
                 <span className="font-medium">{skill.skill}:</span> {skill.score}%
               </li>
