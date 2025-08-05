@@ -54,15 +54,7 @@ const ResultadosPage: React.FC = () => {
       setLoadingIa(true);
       setErrorIa('');
       
-      // Debug: Log del estado actual
-      console.log('🔍 DEBUG - Estado del frontend:');
-      console.log('  • report?.jobPreferences:', report?.jobPreferences);
-      console.log('  • report?.softSkills:', report?.softSkills);
-      console.log('  • cvAnalysis:', cvAnalysis);
-      console.log('  • game?.completedGames:', game?.completedGames);
-      console.log('  • personal.softSkills:', personal.softSkills);
-      console.log('  • personal.jobPreferences:', personal.jobPreferences);
-      console.log('  • personal.cvAnalysis:', personal.cvAnalysis);
+          // Estado del frontend verificado
       
       try {
         const requestBody = {
@@ -149,7 +141,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
           setErrorIa('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
         } else {
           // Si hay otros errores pero el informe se generó, no mostrar error
-          console.warn('Advertencia en generación de informe:', err);
+          // Advertencia en generación de informe
           // No establecer errorIa para que no se muestre el mensaje de error
         }
       } finally {
@@ -159,12 +151,10 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
     // Solo llamar si hay datos suficientes
     // Modificado para ser más permisivo: solo requiere softSkills
     if (report?.softSkills && report.softSkills.length > 0) {
-      console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
+              // Condición cumplida - Ejecutando fetchIaReport
       fetchIaReport();
     } else {
-      console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
-      console.log('  • report?.softSkills:', report?.softSkills);
-      console.log('  • report?.softSkills.length:', report?.softSkills?.length);
+              // Condición no cumplida - No se ejecuta fetchIaReport
     }
   }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
 
@@ -235,13 +225,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
     setDownloadingPdf(true);
     setPdfError('');
     
-    // Debug: Log de los datos que se van a enviar al PDF
-    console.log('📄 DEBUG - Datos para PDF:');
-    console.log('  • report?.softSkills:', report?.softSkills);
-    console.log('  • personal.softSkills:', personal.softSkills);
-    console.log('  • cvAnalysis:', cvAnalysis);
-    console.log('  • report?.jobPreferences:', report?.jobPreferences);
-    console.log('  • game?.completedGames:', game?.completedGames);
+    // Datos para PDF preparados
     
     try {
       const requestBody = {
@@ -269,7 +253,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
         logs: []
       };
       
-      console.log('📄 DEBUG - Request body para PDF:', requestBody);
+              // Request body para PDF preparado
 
       const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_DOWNLOAD), {
         method: 'POST',
@@ -301,7 +285,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
       window.URL.revokeObjectURL(url);
       
     } catch (error) {
-      console.error('Error descargando PDF:', error);
+              // Error descargando PDF
       setPdfError('Error al descargar el PDF. Por favor, inténtalo de nuevo.');
     } finally {
       setDownloadingPdf(false);

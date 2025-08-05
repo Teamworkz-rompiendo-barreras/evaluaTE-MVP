@@ -68,14 +68,31 @@ except Exception as e:
     # En caso de que el paquete openai no esté disponible o haya fallo
     print(f"⚠️ Error configurando Azure OpenAI: {e}")
 
-# Importaciones para OCR
-try:
-    import pytesseract  # type: ignore
-    from PIL import Image  # type: ignore
+# Importaciones para OCR (carga lazy)
+OCR_AVAILABLE = False
+_pytesseract_imported = False
+_pil_imported = False
+
+def _import_ocr_dependencies():
+    """Importa dependencias de OCR solo cuando se necesitan"""
+    global OCR_AVAILABLE, _pytesseract_imported, _pil_imported
+    
+    if not _pytesseract_imported:
+        try:
+            import pytesseract  # type: ignore
+            _pytesseract_imported = True
+        except ImportError:
+            return False
+    
+    if not _pil_imported:
+        try:
+            from PIL import Image  # type: ignore
+            _pil_imported = True
+        except ImportError:
+            return False
+    
     OCR_AVAILABLE = True
-except ImportError:
-    OCR_AVAILABLE = False
-    print("⚠️ OCR no disponible. Instala pytesseract y Pillow para mejor soporte de PDFs escaneados.")
+    return True
 
 def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> str:
     """
@@ -95,7 +112,7 @@ def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> str:
             # Si hay texto suficiente, usarlo
             if len(page_text.strip()) > 20:
                 text += page_text + "\n"
-            elif OCR_AVAILABLE:
+            elif _import_ocr_dependencies():
                 # Usar OCR para páginas sin texto o con poco texto
                 try:
                     # Obtener imagen de alta resolución

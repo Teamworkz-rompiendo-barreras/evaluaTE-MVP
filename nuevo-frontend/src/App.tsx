@@ -1,5 +1,4 @@
 // src/App.tsx
-import React from 'react'
 import { BrowserRouter, Routes, Route, Navigate, Outlet } from 'react-router-dom'
 
 // Páginas principales
@@ -74,6 +73,16 @@ export default function App() {
         {/* Escena de minijuego específico */}
         <Route
           path="/game/:id"
+          element={
+            <ProtectedRoute step="games">
+              <GameScenePage />
+            </ProtectedRoute>
+          }
+        />
+        
+        {/* Ruta alternativa para compatibilidad */}
+        <Route
+          path="/games/:id"
           element={
             <ProtectedRoute step="games">
               <GameScenePage />

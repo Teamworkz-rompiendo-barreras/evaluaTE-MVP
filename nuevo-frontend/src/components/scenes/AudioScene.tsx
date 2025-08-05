@@ -31,7 +31,7 @@ const AudioScene: React.FC<AudioSceneProps> = ({
     setTimeout(() => setIsPlaying(false), 3000); // Simulación
   };
 
-  const handleAnswerSelect = (questionId: string, optionId: string) => {
+  const handleAnswerSelect = (_questionId: string, optionId: string) => {
     setSelectedAnswer(optionId);
     setTimeout(() => {
       onComplete(optionId);

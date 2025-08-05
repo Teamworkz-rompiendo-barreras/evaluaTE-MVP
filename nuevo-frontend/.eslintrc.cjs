@@ -9,7 +9,6 @@ module.exports = {
     browser: true,
     node: true,
     es2021: true,
-    jest: true,
   },
   plugins: [
     '@typescript-eslint',
@@ -29,7 +28,7 @@ module.exports = {
     'react-hooks/exhaustive-deps': 'warn',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'warn',
-    'no-console': 'warn',
+    'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
     'prefer-const': 'error',
     'no-var': 'error',
     'no-undef': 'off',

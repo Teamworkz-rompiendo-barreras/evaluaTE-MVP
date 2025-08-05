@@ -48,7 +48,7 @@ export const store = configureStore({
       serializableCheck: false,
       immutableCheck: false,
     }).concat(scenesApi.middleware),
-  devTools: process.env.NODE_ENV !== 'production',
+  devTools: import.meta.env.DEV,
 });
 
 // Persistor para guardar estado local

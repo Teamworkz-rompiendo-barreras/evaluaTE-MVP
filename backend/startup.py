@@ -6,79 +6,89 @@ Configura el entorno y ejecuta la aplicación FastAPI
 
 import os
 import sys
-import uvicorn
+import subprocess
 from pathlib import Path
 
-def setup_environment():
-    """Configura el entorno para Azure"""
-    print("🔧 Configurando entorno para Azure...")
+def check_environment():
+    """Verifica que las variables de entorno críticas estén configuradas"""
+    required_vars = [
+        'AZURE_OPENAI_API_KEY',
+        'AZURE_OPENAI_ENDPOINT', 
+        'AZURE_OPENAI_DEPLOYMENT',
+        'AZURE_OPENAI_API_VERSION'
+    ]
     
-    # Configurar variables de entorno para Azure
-    port = int(os.environ.get('PORT', 8000))
-    host = os.environ.get('HOST', '0.0.0.0')
+    missing_vars = []
+    for var in required_vars:
+        if not os.getenv(var):
+            missing_vars.append(var)
     
-    print(f"📡 Puerto configurado: {port}")
-    print(f"🌐 Host configurado: {host}")
+    if missing_vars:
+        print("❌ Variables de entorno faltantes:")
+        for var in missing_vars:
+            print(f"   - {var}")
+        print("\n⚠️ La aplicación funcionará en modo de prueba sin IA avanzada")
+        print("Para funcionalidad completa, configura las variables en el archivo .env")
+        return False
     
-    return host, port
+    print("✅ Variables de entorno críticas configuradas")
+    return True
 
 def check_dependencies():
     """Verifica que las dependencias estén instaladas"""
-    print("📦 Verificando dependencias...")
-    
     required_packages = [
         'fastapi',
         'uvicorn',
-        'openai',
         'pypdf',
-        'pydantic',
-        'python-dotenv'
+        'openai'
     ]
     
     missing_packages = []
     for package in required_packages:
         try:
-            __import__(package.replace('-', '_'))
-            print(f"✅ {package}")
+            __import__(package)
         except ImportError:
             missing_packages.append(package)
-            print(f"❌ {package} - FALTANTE")
     
     if missing_packages:
-        print(f"\n❌ Faltan dependencias: {', '.join(missing_packages)}")
-        print("Ejecuta: pip install -r requirements.txt")
+        print("❌ Dependencias faltantes:")
+        for package in missing_packages:
+            print(f"   - {package}")
+        print("\nEjecuta: pip install -r requirements.txt")
         return False
     
+    print("✅ Dependencias verificadas")
     return True
 
 def main():
-    """Función principal"""
-    print("🚀 Iniciando EvaluaTE Backend en Azure...")
+    print("🚀 Iniciando EvaluaTE Backend...")
     print("=" * 50)
     
-    # Verificar dependencias
-    if not check_dependencies():
+    # Verificar entorno
+    env_ok = check_environment()
+    deps_ok = check_dependencies()
+    
+    if not deps_ok:
         print("❌ Error: Faltan dependencias")
         sys.exit(1)
     
-    # Configurar entorno
-    host, port = setup_environment()
+    if not env_ok:
+        print("⚠️ Advertencia: Variables de entorno no configuradas")
+        print("La aplicación funcionará en modo de prueba")
     
     print("\n✅ Todo configurado correctamente")
-    print(f"🌐 Servidor iniciando en: http://{host}:{port}")
-    print(f"📚 API Docs: http://{host}:{port}/docs")
-    print(f"🔍 ReDoc: http://{host}:{port}/redoc")
+    print("🚀 Iniciando servidor...")
     
     # Iniciar servidor
     try:
-        uvicorn.run(
-            "main:app",
-            host=host,
-            port=port,
-            reload=False,  # Deshabilitar reload en producción
-            log_level="info"
-        )
-    except Exception as e:
+        subprocess.run([
+            sys.executable, "-m", "uvicorn", 
+            "main:app", 
+            "--host", "0.0.0.0", 
+            "--port", "8000",
+            "--reload"
+        ], check=True)
+    except subprocess.CalledProcessError as e:
         print(f"❌ Error iniciando servidor: {e}")
         sys.exit(1)
 

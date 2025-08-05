@@ -68,17 +68,17 @@ export default function UploadCVPage() {
       formData.append('jobPreferences', JSON.stringify({}));
       formData.append('completedGames', JSON.stringify([]));
       
-      console.log('📤 Enviando CV para análisis...');
+      // Enviando CV para análisis...
       const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_ANALYZE), {
         method: 'POST',
         body: formData
       });
       
-      console.log('📥 Respuesta del servidor:', res.status, res.statusText);
+              // Respuesta del servidor recibida
       
       if (res.ok) {
         const cvAnalysis = await res.json();
-        console.log('✅ Análisis de CV recibido:', cvAnalysis);
+                  // Análisis de CV recibido exitosamente
         
         // Verificar que el análisis tiene la estructura esperada
         if (!cvAnalysis || typeof cvAnalysis !== 'object') {
@@ -88,18 +88,17 @@ export default function UploadCVPage() {
         
         // Guardar el análisis en el estado de Redux
         dispatch(saveCvAnalysis(cvAnalysis));
-        console.log('✅ Análisis de CV guardado en Redux');
+                  // Análisis de CV guardado en Redux
         
         // Verificar que se guardó correctamente
         if (cvAnalysis && (cvAnalysis.strengths?.length > 0 || cvAnalysis.skills?.length > 0 || cvAnalysis.weaknesses?.length > 0)) {
-          console.log('✅ CV analizado con datos reales');
+          // CV analizado con datos reales
         } else {
-          console.log('⚠️ CV analizado pero sin datos significativos');
+                      // CV analizado pero sin datos significativos
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
-        console.error('❌ Error del servidor:', errorData);
-        console.error('❌ Status:', res.status, res.statusText);
+                  // Error del servidor en análisis de CV
         
         // Crear un análisis básico con información del error
         const fallbackAnalysis = {
@@ -115,7 +114,7 @@ export default function UploadCVPage() {
         };
         
         dispatch(saveCvAnalysis(fallbackAnalysis));
-        console.log('⚠️ Usando análisis de fallback');
+                  // Usando análisis de fallback
         
         // Mostrar error específico al usuario
         if (errorData.detail) {
@@ -125,11 +124,11 @@ export default function UploadCVPage() {
         }
       }
     } catch (err) {
-      console.error('❌ Error de conexión:', err);
+              // Error de conexión en análisis de CV
       // No mostrar error al usuario si es un error de conexión con Azure OpenAI
       // ya que esto es normal cuando no está configurado
       if (err instanceof Error && err.message?.includes('Azure OpenAI no configurado')) {
-        console.log('ℹ️ Azure OpenAI no configurado, usando análisis básico');
+        // Azure OpenAI no configurado, usando análisis básico
       } else {
         setError('Error de conexión. Por favor, verifica tu conexión a internet e inténtalo de nuevo.');
       }
@@ -152,7 +151,7 @@ export default function UploadCVPage() {
     }
 
     // Generar reporte final después de subir el CV
-    console.log('📋 Generando reporte final...');
+            // Generando reporte final...
     dispatch(generateFinalReport())
     navigate('/resultados')
   }

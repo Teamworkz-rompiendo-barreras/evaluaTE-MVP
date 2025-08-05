@@ -301,20 +301,31 @@ async def root():
     """Endpoint raíz"""
     return {"message": "Bienvenida/o a EvaluaTE MVP", "status": "running"}
 
+@app.get("/health")
+async def health_check():
+    """Endpoint de health check para monitoreo"""
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "EvaluaTE Backend",
+        "version": "1.0.0"
+    }
+
 # Middleware CORS
 app.add_middleware(
     CORSMiddleware,
     allow_origins=[
         "http://localhost:3005",
-        "http://localhost:3006",
+        "http://localhost:3006", 
         "http://localhost:5173",
         "https://yellow-mud-0b6281c1e.6.azurestaticapps.net",
         "https://*.azurestaticapps.net",
         "https://*.azurewebsites.net"
     ],
     allow_credentials=True,
-    allow_methods=["*"],
+    allow_methods=["GET", "POST", "PUT", "DELETE", "OPTIONS"],
     allow_headers=["*"],
+    max_age=3600,  # Cache preflight requests for 1 hour
 )
 
 @app.post("/api/logs/scene", response_model=Dict[str, Any])
@@ -463,11 +474,9 @@ LOGS DE JUEGOS:
         )
     except Exception as e:
         logger.error(f"❌ Error generando informe profesional: {str(e)}")
-        import traceback
-        logger.error(f"📋 Traceback: {traceback.format_exc()}")
         raise HTTPException(
             status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, 
-            detail=f"Error generando informe: {str(e)}"
+            detail="Error interno del servidor. Por favor, inténtalo de nuevo."
         )
 
 @app.get("/api/informe-ia")
@@ -603,9 +612,7 @@ LOGS DE JUEGOS:
 
     except Exception as e:
         logger.error(f"❌ Error generando informe profesional: {str(e)}")
-        import traceback
-        logger.error(f"📋 Traceback: {traceback.format_exc()}")
-        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail=str(e))
+        raise HTTPException(status_code=status.HTTP_500_INTERNAL_SERVER_ERROR, detail="Error interno del servidor. Por favor, inténtalo de nuevo.")
 
 @app.post("/api/informe-ia/feedback")
 async def receive_feedback(request: FeedbackRequest):
@@ -714,6 +721,20 @@ async def analyze_cv(
     jobPreferences: str = Form(...),  # JSON stringified object
     completedGames: str = Form(...),  # JSON stringified array
 ):
+    # Validar parámetros de entrada
+    if not userId or not userId.strip():
+        raise HTTPException(status_code=400, detail="userId es requerido")
+    
+    if not fullName or not fullName.strip():
+        raise HTTPException(status_code=400, detail="fullName es requerido")
+    
+    # Validar JSON strings
+    try:
+        soft_skills_data = json.loads(softSkills) if softSkills else []
+        job_preferences_data = json.loads(jobPreferences) if jobPreferences else {}
+        completed_games_data = json.loads(completedGames) if completedGames else []
+    except json.JSONDecodeError:
+        raise HTTPException(status_code=400, detail="Formato JSON inválido en los parámetros")
     """
     Analiza un CV subido y devuelve un análisis estructurado usando IA avanzada.
     """
@@ -725,6 +746,10 @@ async def analyze_cv(
         if not file.filename or not file.filename.lower().endswith('.pdf'):
             raise HTTPException(status_code=400, detail="Solo se permiten archivos PDF")
         
+        # Verificar tamaño del archivo (máximo 10MB)
+        if file.size and file.size > 10 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="El archivo es demasiado grande. Máximo 10MB")
+        
         # Leer el contenido del archivo
         contents = await file.read()
         logger.info(f"Contenido leído: {len(contents)} bytes")
@@ -734,6 +759,15 @@ async def analyze_cv(
             pdf_reader = PdfReader(io.BytesIO(contents))
             if len(pdf_reader.pages) == 0:
                 raise HTTPException(status_code=400, detail="El archivo PDF está vacío")
+            
+            # Verificar que el PDF contiene texto o es escaneado
+            total_text = ""
+            for page in pdf_reader.pages:
+                total_text += page.extract_text() or ""
+            
+            if not total_text.strip() and len(pdf_reader.pages) > 0:
+                logger.info("PDF escaneado detectado, se usará OCR")
+            
             logger.info(f"PDF válido con {len(pdf_reader.pages)} páginas")
         except Exception as e:
             logger.error(f"Error al validar PDF: {str(e)}")
@@ -1211,10 +1245,24 @@ async def test_pdf_generation():
         logger.info(f"📏 Tamaño del buffer: {len(pdf_buffer)} bytes")
         
         logger.info("📁 Creando archivo temporal...")
-        # Crear archivo temporal
+        # Crear archivo temporal con limpieza automática
         with tempfile.NamedTemporaryFile(delete=False, suffix='.pdf') as tmp_file:
             tmp_file.write(pdf_buffer)
             tmp_file_path = tmp_file.name
+        
+        # Programar limpieza automática del archivo temporal
+        def cleanup_temp_file():
+            try:
+                if os.path.exists(tmp_file_path):
+                    os.unlink(tmp_file_path)
+                    logger.info(f"✅ Archivo temporal limpiado: {tmp_file_path}")
+            except Exception as e:
+                logger.warning(f"⚠️ No se pudo limpiar archivo temporal {tmp_file_path}: {e}")
+        
+        # Usar atexit para limpieza automática al finalizar
+        import atexit
+        atexit.register(cleanup_temp_file)
+        
         logger.info(f"✅ Archivo temporal creado: {tmp_file_path}")
         
         logger.info("🚀 Preparando respuesta...")
@@ -1236,17 +1284,52 @@ async def test_pdf_generation():
 
 if __name__ == "__main__":
     import uvicorn
+    import os
+    
     print("🚀 Iniciando servidor EvaluaTE Backend...")
     print("📋 Información de acceso:")
     print("   🔧 Backend:  http://localhost:8000")
     print("   📚 API Docs: http://localhost:8000/docs")
     print("   🔍 ReDoc:    http://localhost:8000/redoc")
     print("")
-    print("⏳ Iniciando servidor...")
-    uvicorn.run(
-        "main:app",
-        host="0.0.0.0",
-        port=8000,
-        reload=True,
-        log_level="info"
-    )
+    
+    # Detectar si estamos en modo producción
+    is_production = os.getenv("PRODUCTION", "false").lower() == "true"
+    
+    if is_production:
+        print("🚀 Iniciando servidor en MODO PRODUCCIÓN...")
+        try:
+            from production import validate_production_environment, get_production_settings
+            validate_production_environment()
+            settings = get_production_settings()
+            print("✅ Entorno de producción validado")
+        except ImportError:
+            print("⚠️ Archivo de configuración de producción no encontrado")
+            settings = {"debug": False, "reload": False, "workers": 1}
+        except ValueError as e:
+            print(f"❌ Error en configuración de producción: {e}")
+            sys.exit(1)
+        
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=settings.get("reload", False),
+            log_level="warning",
+            timeout_keep_alive=120,
+            timeout_graceful_shutdown=60,
+            access_log=False,
+            workers=settings.get("workers", 1)
+        )
+    else:
+        print("🚀 Iniciando servidor en MODO DESARROLLO...")
+        uvicorn.run(
+            "main:app",
+            host="0.0.0.0",
+            port=8000,
+            reload=True,
+            log_level="info",
+            timeout_keep_alive=65,
+            timeout_graceful_shutdown=30,
+            access_log=True
+        )

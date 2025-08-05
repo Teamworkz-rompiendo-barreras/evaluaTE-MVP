@@ -26,7 +26,7 @@ const WelcomePage: React.FC = () => {
         Comenzar
       </button>
       {/* Bloque de depuración solo visible en desarrollo */}
-      {process.env.NODE_ENV !== 'production' && (
+      {import.meta.env.DEV && (
         <div style={{ marginTop: 32, textAlign: 'left', background: '#f5f5f5', padding: 16, borderRadius: 8, fontSize: 14 }}>
           <strong>Depuración (solo desarrollo):</strong>
           <pre style={{ whiteSpace: 'pre-wrap', wordBreak: 'break-all' }}>
