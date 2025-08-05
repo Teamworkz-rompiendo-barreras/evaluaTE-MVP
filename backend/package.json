@@ -6,7 +6,7 @@
   "scripts": {
     "start": "python3 startup-azure.py",
     "dev": "python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
-    "build": "pip install -r requirements.txt",
+    "build": "pip install -r requirements-azure.txt",
     "test": "echo 'No tests configured'"
   },
   "engines": {
