@@ -131,9 +131,9 @@ ${data.recommendations.nextSteps.map((step: string) => `- ${step}`).join('\n')}
 ${personal.softSkills.map((skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
 
 ### Preferencias Laborales
-- **Áreas de interés**: ${data.report.jobPreferences.areas?.join(', ') || 'No especificadas'}
-- **Modalidad de trabajo**: ${data.report.jobPreferences.workMode || 'No especificada'}
-- **Disponibilidad**: ${data.report.jobPreferences.availability || 'No especificada'}
+- **Áreas de interés**: ${data.report.jobPreferences?.areas?.join(', ') || 'No especificadas'}
+- **Modalidad de trabajo**: ${data.report.jobPreferences?.workMode || 'No especificada'}
+- **Disponibilidad**: ${data.report.jobPreferences?.availability || 'No especificada'}
 
 ---
 *Informe generado el ${new Date(data.createdAt).toLocaleDateString('es-ES')}*

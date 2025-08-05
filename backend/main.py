@@ -242,6 +242,31 @@ async def get_feedback_stats():
         "negative_feedback": 0
     }
 
+@app.post("/api/pdf/analyze-cv")
+async def analyze_cv_pdf(file: UploadFile = File(...)):
+    """Analiza un CV en formato PDF"""
+    try:
+        logger.info(f"Analizando CV PDF: {file.filename}")
+        
+        # Simular análisis de CV
+        analysis = CvAnalysis(
+            strengths=["Experiencia en desarrollo web", "Conocimientos de JavaScript", "Trabajo en equipo"],
+            weaknesses=["Falta de experiencia en proyectos grandes", "Necesita mejorar documentación"],
+            feedback="CV bien estructurado con buenas habilidades técnicas",
+            structure="buena",
+            coherence="buena", 
+            experience="regular",
+            skills=["JavaScript", "React", "HTML", "CSS"],
+            education=["Ingeniería Informática", "Bootcamp Desarrollo Web"],
+            alerts=["Considerar agregar más proyectos personales"]
+        )
+        
+        return analysis.dict()
+        
+    except Exception as e:
+        logger.error(f"Error analizando CV: {str(e)}")
+        raise HTTPException(status_code=500, detail=str(e))
+
 @app.post("/api/upload-cv")
 async def upload_cv(file: UploadFile = File(...)):
     """Sube un CV para análisis"""
