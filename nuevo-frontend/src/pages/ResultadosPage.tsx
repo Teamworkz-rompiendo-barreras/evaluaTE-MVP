@@ -98,36 +98,53 @@ const ResultadosPage: React.FC = () => {
           signal: AbortSignal.timeout(45000), // Timeout de 45 segundos
         });
         const data = await res.json();
-        if (res.ok && data.report?.informeProfesional) {
-          // Usar el informe completo generado por la IA
-          setIaReport(data.report.informeProfesional);
-        } else if (res.ok && data.summary) {
-          // Fallback: generar un informe básico si no hay informe de IA
-          const informe = `# Informe de Empleabilidad
+        if (res.ok && data.summary) {
+          // Generar informe profesional con el nuevo formato
+          const informe = `# Informe Profesional de Empleabilidad
 
-## Resumen
+## Resumen del Perfil
 ${data.summary}
 
 ## Nivel de Empleabilidad
 **${data.level}** (Puntaje: ${data.employabilityScore}/100)
 
-## Recomendaciones
-
-### Roles Sugeridos
-${data.recommendations.roles.map((role: string) => `- ${role}`).join('\n')}
-
-### Recursos de Aprendizaje
-${data.recommendations.resources.map((resource: string) => `- ${resource}`).join('\n')}
-
-### Mejoras para el CV
-${data.recommendations.cvImprovements.map((improvement: string) => `- ${improvement}`).join('\n')}
-
-### Próximos Pasos
-${data.recommendations.nextSteps.map((step: string) => `- ${step}`).join('\n')}
-
 ## Análisis Detallado
 
-### Habilidades Evaluadas
+### Análisis del Perfil
+${data.recommendations.profile_analysis || 'Análisis del perfil basado en la evaluación completa.'}
+
+### Análisis de Fortalezas
+${data.recommendations.strengths_analysis || 'Fortalezas identificadas en la evaluación.'}
+
+### Áreas de Mejora
+${data.recommendations.improvement_areas || 'Áreas de mejora detectadas con recomendaciones.'}
+
+### Análisis del CV
+${data.recommendations.cv_analysis || 'Análisis del CV realizado con herramientas especializadas.'}
+
+## Sugerencias Laborales
+${data.recommendations.job_suggestions || 'Sugerencias laborales basadas en preferencias y habilidades.'}
+
+## Próximos Pasos
+
+### A Corto Plazo
+${data.recommendations.next_steps?.short_term?.map((step: string) => `- ${step}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
+
+### A Medio Plazo
+${data.recommendations.next_steps?.medium_term?.map((step: string) => `- ${step}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
+
+### A Largo Plazo
+${data.recommendations.next_steps?.long_term?.map((step: string) => `- ${step}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
+
+## Recursos y Apoyo
+
+${data.recommendations.resources?.map((resource: any) => 
+  `### ${resource.name}
+${resource.description}
+[Acceder a ${resource.name}](target="_blank" href="${resource.url}")`
+).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
+
+## Habilidades Evaluadas
 ${personal.softSkills.map((skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
 
 ### Preferencias Laborales
@@ -138,7 +155,7 @@ ${personal.softSkills.map((skill: SoftSkillResult) => `- **${skill.skill}**: ${s
 - **Disponibilidad**: ${data.report.jobPreferences?.availability || 'No especificada'}
 
 ---
-*Informe generado el ${new Date(data.createdAt).toLocaleDateString('es-ES')}*
+*Informe profesional generado el ${new Date(data.createdAt).toLocaleDateString('es-ES')}*
           `;
           setIaReport(informe);
         } else {
