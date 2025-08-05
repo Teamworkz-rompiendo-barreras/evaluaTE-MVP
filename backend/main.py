@@ -190,11 +190,19 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         # Generar resumen
         summary = f"Basado en tu evaluación, tu nivel de empleabilidad es {level} con un puntaje de {employability_score}/100."
 
-        # Crear reporte
+        # Crear reporte con jobPreferences incluido
         report = {
             "userId": request.userId,
             "fullName": request.fullName,
             "softSkills": [skill.dict() for skill in request.softSkills],
+            "jobPreferences": request.jobPreferences.dict() if request.jobPreferences else {
+                "areas": [],
+                "needs": [],
+                "workMode": "remoto",
+                "availability": "completa",
+                "willingToRelocate": False,
+                "hasDisabilityCert": False
+            },
             "employabilityScore": employability_score,
             "level": level,
             "createdAt": datetime.now().isoformat()
