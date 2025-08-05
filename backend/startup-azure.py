@@ -38,9 +38,9 @@ def main():
     port = os.getenv('PORT', '8080')
     logger.info(f"🌐 Puerto: {port}")
     
-    # Verificar que main.py existe
-    if not os.path.exists('main.py'):
-        logger.error("❌ No se encontró main.py")
+    # Verificar que main-simple.py existe
+    if not os.path.exists('main-simple.py'):
+        logger.error("❌ No se encontró main-simple.py")
         sys.exit(1)
     
     logger.info("✅ Configuración verificada")
@@ -50,7 +50,7 @@ def main():
         # Iniciar uvicorn con configuración robusta
         subprocess.run([
             sys.executable, "-m", "uvicorn", 
-            "main:app", 
+            "main-simple:app", 
             "--host", "0.0.0.0", 
             "--port", port,
             "--log-level", "info",
