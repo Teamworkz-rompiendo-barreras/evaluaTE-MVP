@@ -21,29 +21,8 @@ export const debugState = (state: unknown) => {
   }
 };
 
+import { validateSoftSkillsArray } from './data-validation';
+
 export const validateSoftSkills = (softSkills: unknown[]): boolean => {
-  if (!softSkills || !Array.isArray(softSkills)) {
-    // console.log('❌ softSkills no es un array:', softSkills);
-    return false;
-  }
-  
-  if (softSkills.length === 0) {
-    // console.log('❌ softSkills está vacío');
-    return false;
-  }
-  
-  const validSkills = softSkills.every(skill => 
-    skill && 
-    typeof (skill as { skill: unknown }).skill === 'string' && 
-    typeof (skill as { score: unknown }).score === 'number' && 
-    typeof (skill as { level: unknown }).level === 'string'
-  );
-  
-  if (!validSkills) {
-    // console.log('❌ softSkills tiene elementos inválidos:', softSkills);
-    return false;
-  }
-  
-  // console.log('✅ softSkills es válido:', softSkills);
-  return true;
+  return validateSoftSkillsArray(softSkills);
 }; 

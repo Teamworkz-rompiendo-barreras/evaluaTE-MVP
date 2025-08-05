@@ -2,6 +2,7 @@
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
 import type { CvAnalysis, JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
 import type { UserDecision } from '../../types/skills'; // Adjust the import path as needed
+import { filterValidSoftSkills } from '../../utils/data-validation';
 
 // Define SceneLog type if not imported from elsewhere
 export interface SceneLog {
@@ -210,10 +211,18 @@ export const personalSlice = createSlice({
 
     // Genera informe final basado en todo el progreso
     generateFinalReport(state) {
-      const totalSoftSkills = state.softSkills.length;
-      const highSkills = state.softSkills.filter(skill => skill.level === 'alto').length;
-      const mediumSkills = state.softSkills.filter(skill => skill.level === 'medio').length;
-      const lowSkills = state.softSkills.filter(skill => skill.level === 'bajo').length;
+      // Validación del estado antes de procesar usando utilidades especializadas
+      const validSkills = filterValidSoftSkills(state.softSkills);
+      
+      if (validSkills.length === 0) {
+        console.warn('generateFinalReport: No hay softSkills válidos para generar el informe');
+        return;
+      }
+
+      const totalSoftSkills = validSkills.length;
+      const highSkills = validSkills.filter(skill => skill.level === 'alto').length;
+      const mediumSkills = validSkills.filter(skill => skill.level === 'medio').length;
+      const lowSkills = validSkills.filter(skill => skill.level === 'bajo').length;
 
       let employabilityScore = 0;
       if (totalSoftSkills > 0) {
@@ -240,17 +249,17 @@ export const personalSlice = createSlice({
 
       // Recomendaciones personalizadas
       const recommendationsObj = getRecommendationsFromProfile({
-        softSkills: state.softSkills,
+        softSkills: validSkills,
         cvAnalysis: state.cvAnalysis,
         preferences: state.jobPreferences as JobPreference,
         hasDisabilityCert: state.hasDisabilityCert,
       });
-      // Flatten recommendations object into a string array
+      // Flatten recommendations object into a string array with proper null/undefined handling
       const recommendations: string[] = [
-        ...recommendationsObj.roles.map(role => `Rol recomendado: ${role}`),
-        ...recommendationsObj.resources.map(resource => `Recurso sugerido: ${resource}`),
-        ...recommendationsObj.cvImprovements.map(improvement => `Mejora de CV: ${improvement}`),
-        ...recommendationsObj.nextSteps.map(step => `Próximo paso: ${step}`),
+        ...(recommendationsObj.roles || []).map(role => `Rol recomendado: ${role}`),
+        ...(recommendationsObj.resources || []).map(resource => `Recurso sugerido: ${resource}`),
+        ...(recommendationsObj.cvImprovements || []).map(improvement => `Mejora de CV: ${improvement}`),
+        ...(recommendationsObj.nextSteps || []).map(step => `Próximo paso: ${step}`),
       ];
 
       // Actualiza el estado del informe
@@ -258,7 +267,7 @@ export const personalSlice = createSlice({
         userId: 'user-ester-2025',
         firstName: state.firstName,
         lastName: state.lastName,
-        softSkills: state.softSkills,
+        softSkills: validSkills,
         employabilityScore,
         jobPreferences:
           typeof state.jobPreferences === 'string'
@@ -300,23 +309,42 @@ function getRecommendationsFromProfile(params: {
   preferences: JobPreference;
   hasDisabilityCert: boolean;
 }) {
+  // Validación de parámetros de entrada usando utilidades especializadas
+  const validSkills = filterValidSoftSkills(params.softSkills);
+  
+  if (validSkills.length === 0) {
+    console.warn('getRecommendationsFromProfile: No hay softSkills válidos');
+    return {
+      roles: [],
+      resources: [],
+      cvImprovements: [],
+      nextSteps: ['Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias'],
+    };
+  }
+
   const roles: string[] = [];
   const resources: string[] = [];
   const cvImprovements: string[] = [];
   const nextSteps: string[] = [];
 
   // Ejemplo de lógica básica – puedes expandir esto desde backend o IA
-  if (params.softSkills.some(skill => skill.level === 'alto')) {
+  if (validSkills.some(skill => skill.level === 'alto')) {
     roles.push('Desarrollador frontend');
     roles.push('Soporte técnico');
     resources.push('Platzi');
     resources.push('Microsoft Learn');
   }
 
-  if (params.cvAnalysis && Array.isArray(params.cvAnalysis) && params.cvAnalysis.length) {
-    cvImprovements.push(...params.cvAnalysis);
+  // Validación segura de cvAnalysis
+  if (params.cvAnalysis && Array.isArray(params.cvAnalysis) && params.cvAnalysis.length > 0) {
+    // Filtrar elementos válidos antes de agregarlos
+    const validCvImprovements = params.cvAnalysis.filter(item => 
+      item && typeof item === 'string' && item.trim().length > 0
+    );
+    cvImprovements.push(...validCvImprovements);
   }
 
+  // Siempre agregar pasos básicos
   nextSteps.push('Completar todos los juegos', 'Actualizar tu CV', 'Revisar tus preferencias');
 
   return {
