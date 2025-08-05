@@ -99,7 +99,7 @@ class EmployabilityReportRequest(BaseModel):
 
 class ReportResponse(BaseModel):
     report: Dict[str, Any]
-    recommendations: Dict[str, List[str]]
+    recommendations: Dict[str, Any]  # Cambiado para aceptar estructura compleja
     employabilityScore: int
     level: str
     summary: str
