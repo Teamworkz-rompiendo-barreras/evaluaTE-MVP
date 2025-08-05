@@ -138,11 +138,13 @@ ${data.recommendations.next_steps?.long_term?.map((step: string) => `- ${step}`)
 
 ## Recursos y Apoyo
 
-${data.recommendations.resources?.map((resource: any) => 
-  `### ${resource.name}
+${(data.recommendations.resources && Array.isArray(data.recommendations.resources) && data.recommendations.resources.length > 0)
+  ? data.recommendations.resources.map((resource: any) => 
+      `### ${resource.name}
 ${resource.description}
 [Acceder a ${resource.name}](target="_blank" href="${resource.url}")`
-).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
+    ).join('\n\n')
+  : '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
 
 ## Habilidades Evaluadas
 ${personal.softSkills.map((skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
