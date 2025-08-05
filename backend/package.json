@@ -1,16 +1,16 @@
 {
   "name": "evaluador-backend",
   "version": "1.0.0",
-  "description": "Backend de EvaluaTE MVP",
+  "description": "Backend de EvaluaTE MVP - Python/FastAPI",
   "main": "startup.py",
   "scripts": {
     "start": "python startup.py",
     "dev": "python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
-    "build": "echo 'No build step required for Python'",
+    "build": "pip install -r requirements.txt",
     "test": "echo 'No tests configured'"
   },
   "engines": {
-    "node": ">=18.0.0"
+    "python": "3.12.x"
   },
   "keywords": ["python", "fastapi", "azure"],
   "author": "Teamworkz",
