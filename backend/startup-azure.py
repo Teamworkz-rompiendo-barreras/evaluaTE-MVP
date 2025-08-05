@@ -15,6 +15,39 @@ logging.basicConfig(
 )
 logger = logging.getLogger(__name__)
 
+def install_dependencies():
+    """Instalar dependencias si no están disponibles"""
+    try:
+        logger.info("🔧 Verificando dependencias...")
+        
+        # Intentar importar dependencias críticas
+        try:
+            import fastapi
+            import uvicorn
+            logger.info("✅ Dependencias ya instaladas")
+            return True
+        except ImportError:
+            logger.info("📦 Instalando dependencias...")
+            
+            # Determinar qué archivo de requirements usar
+            requirements_file = 'requirements-azure.txt' if os.path.exists('requirements-azure.txt') else 'requirements.txt'
+            
+            # Instalar dependencias
+            result = subprocess.run([
+                sys.executable, "-m", "pip", "install", "-r", requirements_file
+            ], capture_output=True, text=True)
+            
+            if result.returncode == 0:
+                logger.info("✅ Dependencias instaladas correctamente")
+                return True
+            else:
+                logger.error(f"❌ Error instalando dependencias: {result.stderr}")
+                return False
+                
+    except Exception as e:
+        logger.error(f"❌ Error en instalación de dependencias: {e}")
+        return False
+
 def check_dependencies():
     """Verificar que las dependencias estén instaladas"""
     try:
@@ -29,7 +62,12 @@ def check_dependencies():
 def main():
     logger.info("🚀 Iniciando EvaluaTE Backend en Azure...")
     
-    # Verificar dependencias
+    # Instalar dependencias si es necesario
+    if not install_dependencies():
+        logger.error("❌ No se pudieron instalar las dependencias")
+        sys.exit(1)
+    
+    # Verificar dependencias después de la instalación
     if not check_dependencies():
         logger.error("❌ Faltan dependencias críticas")
         sys.exit(1)

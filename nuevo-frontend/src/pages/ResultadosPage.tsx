@@ -10,6 +10,7 @@ import { useMemo } from 'react';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
 import '../styles/stars.css'; // Importar estilos para estrellas
+import { debugState, validateSoftSkills } from '../utils/debug-state';
 
 
 // Tipo para los datos del radar
@@ -42,6 +43,10 @@ const ResultadosPage: React.FC = () => {
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
+
+  // Debug logging usando la utilidad
+  const fullState = useAppSelector((state: RootState) => state);
+  debugState(fullState, 'Estado actual en ResultadosPage');
 
   // Estado para el informe IA
   const [iaReport, setIaReport] = useState<string>('');
@@ -147,16 +152,20 @@ ${personal.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.score}%
       }
     };
     // Solo llamar si hay datos suficientes
-    // Modificado para ser más permisivo: solo requiere softSkills
-    if (personal.softSkills && Array.isArray(personal.softSkills) && personal.softSkills.length > 0) {
+    // Verificar tanto personal.softSkills como report?.softSkills
+    const hasPersonalSoftSkills = validateSoftSkills(personal.softSkills);
+    const hasReportSoftSkills = validateSoftSkills(report?.softSkills || []);
+    const hasSoftSkills = hasPersonalSoftSkills || hasReportSoftSkills;
+    
+    if (hasSoftSkills) {
       // Condición cumplida - Ejecutando fetchIaReport
+      console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
       fetchIaReport();
     } else {
       // Condición no cumplida - No se ejecuta fetchIaReport
       console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
-      console.log('  • personal.softSkills:', personal.softSkills);
-      console.log('  • personal.softSkills.length:', personal.softSkills?.length);
-      console.log('  • Array.isArray(personal.softSkills):', Array.isArray(personal.softSkills));
+      console.log('  • hasPersonalSoftSkills:', hasPersonalSoftSkills);
+      console.log('  • hasReportSoftSkills:', hasReportSoftSkills);
     }
   }, [report?.jobPreferences, personal.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
 
