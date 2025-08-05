@@ -128,13 +128,19 @@ ${data.recommendations.job_suggestions || 'Sugerencias laborales basadas en pref
 ## Próximos Pasos
 
 ### A Corto Plazo
-${data.recommendations.next_steps?.short_term?.map((step: string) => `- ${step}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
+${(data.recommendations.next_steps?.short_term && Array.isArray(data.recommendations.next_steps.short_term) && data.recommendations.next_steps.short_term.length > 0)
+  ? data.recommendations.next_steps.short_term.map((step: string) => `- ${step}`).join('\n')
+  : '- Actualizar CV\n- Crear perfil en LinkedIn'}
 
 ### A Medio Plazo
-${data.recommendations.next_steps?.medium_term?.map((step: string) => `- ${step}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
+${(data.recommendations.next_steps?.medium_term && Array.isArray(data.recommendations.next_steps.medium_term) && data.recommendations.next_steps.medium_term.length > 0)
+  ? data.recommendations.next_steps.medium_term.map((step: string) => `- ${step}`).join('\n')
+  : '- Completar formación específica\n- Ampliar red profesional'}
 
 ### A Largo Plazo
-${data.recommendations.next_steps?.long_term?.map((step: string) => `- ${step}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
+${(data.recommendations.next_steps?.long_term && Array.isArray(data.recommendations.next_steps.long_term) && data.recommendations.next_steps.long_term.length > 0)
+  ? data.recommendations.next_steps.long_term.map((step: string) => `- ${step}`).join('\n')
+  : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
 
 ## Recursos y Apoyo
 
@@ -147,7 +153,9 @@ ${resource.description}
   : '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
 
 ## Habilidades Evaluadas
-${personal.softSkills.map((skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
+${(personal.softSkills && Array.isArray(personal.softSkills) && personal.softSkills.length > 0)
+  ? personal.softSkills.map((skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')
+  : 'No se evaluaron habilidades soft'}
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${(data.report.jobPreferences && Array.isArray(data.report.jobPreferences.areas) && data.report.jobPreferences.areas.length > 0)
