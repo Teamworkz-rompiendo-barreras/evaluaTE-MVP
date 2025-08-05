@@ -5,7 +5,7 @@ interface FeedbackItem {
   informe: string;
   rating: string;
   comment: string;
-  userData: any;
+  userData: unknown;
   timestamp: string;
 }
 

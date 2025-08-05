@@ -2,46 +2,48 @@
  * Utilidad para debuggear el estado de Redux
  */
 
-export const debugState = (state: any, label: string = 'Estado') => {
-  console.log(`🔍 DEBUG - ${label}:`);
-  console.log('  • Estado completo:', state);
+export const debugState = (state: unknown, label = 'Estado') => {
+  // console.log(`🔍 DEBUG - ${label}:`);
+  // console.log('  • Estado completo:', state);
   
-  if (state.personal) {
-    console.log('  • personal.softSkills:', state.personal.softSkills);
-    console.log('  • personal.softSkills.length:', state.personal.softSkills?.length);
-    console.log('  • personal.report:', state.personal.report);
-    console.log('  • personal.report?.softSkills:', state.personal.report?.softSkills);
-    console.log('  • personal.report?.softSkills.length:', state.personal.report?.softSkills?.length);
+  if (state && typeof state === 'object' && 'personal' in state) {
+    const personalState = (state as { personal: unknown }).personal;
+    // console.log('  • personal.softSkills:', personalState?.softSkills);
+    // console.log('  • personal.softSkills.length:', personalState?.softSkills?.length);
+    // console.log('  • personal.report:', personalState?.report);
+    // console.log('  • personal.report?.softSkills:', personalState?.report?.softSkills);
+    // console.log('  • personal.report?.softSkills.length:', personalState?.report?.softSkills?.length);
   }
   
-  if (state.game) {
-    console.log('  • game.completedGames:', state.game.completedGames);
+  if (state && typeof state === 'object' && 'game' in state) {
+    const gameState = (state as { game: unknown }).game;
+    // console.log('  • game.completedGames:', gameState?.completedGames);
   }
 };
 
-export const validateSoftSkills = (softSkills: any[]): boolean => {
+export const validateSoftSkills = (softSkills: unknown[]): boolean => {
   if (!softSkills || !Array.isArray(softSkills)) {
-    console.log('❌ softSkills no es un array:', softSkills);
+    // console.log('❌ softSkills no es un array:', softSkills);
     return false;
   }
   
   if (softSkills.length === 0) {
-    console.log('❌ softSkills está vacío');
+    // console.log('❌ softSkills está vacío');
     return false;
   }
   
   const validSkills = softSkills.every(skill => 
     skill && 
-    typeof skill.skill === 'string' && 
-    typeof skill.score === 'number' && 
-    typeof skill.level === 'string'
+    typeof (skill as { skill: unknown }).skill === 'string' && 
+    typeof (skill as { score: unknown }).score === 'number' && 
+    typeof (skill as { level: unknown }).level === 'string'
   );
   
   if (!validSkills) {
-    console.log('❌ softSkills tiene elementos inválidos:', softSkills);
+    // console.log('❌ softSkills tiene elementos inválidos:', softSkills);
     return false;
   }
   
-  console.log('✅ softSkills es válido:', softSkills);
+  // console.log('✅ softSkills es válido:', softSkills);
   return true;
 }; 

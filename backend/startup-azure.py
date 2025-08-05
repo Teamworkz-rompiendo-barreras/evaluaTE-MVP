@@ -27,22 +27,45 @@ def install_dependencies():
             logger.info("✅ Dependencias ya instaladas")
             return True
         except ImportError:
-            logger.info("📦 Instalando dependencias...")
+            logger.info("📦 Verificando entorno virtual...")
+            
+            # Verificar si estamos en un entorno virtual
+            if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
+                logger.info("✅ Entorno virtual detectado")
+            else:
+                logger.warning("⚠️ No se detectó entorno virtual. Intentando usar pip del sistema...")
             
             # Determinar qué archivo de requirements usar
             requirements_file = 'requirements-azure.txt' if os.path.exists('requirements-azure.txt') else 'requirements.txt'
             
-            # Instalar dependencias
-            result = subprocess.run([
-                sys.executable, "-m", "pip", "install", "-r", requirements_file
-            ], capture_output=True, text=True)
+            # Intentar instalar dependencias con diferentes métodos
+            pip_commands = [
+                [sys.executable, "-m", "pip", "install", "-r", requirements_file],
+                [sys.executable, "-m", "pip", "install", "--user", "-r", requirements_file],
+                ["pip3", "install", "-r", requirements_file]
+            ]
             
-            if result.returncode == 0:
-                logger.info("✅ Dependencias instaladas correctamente")
-                return True
-            else:
-                logger.error(f"❌ Error instalando dependencias: {result.stderr}")
-                return False
+            for cmd in pip_commands:
+                try:
+                    logger.info(f"📦 Intentando: {' '.join(cmd)}")
+                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
+                    
+                    if result.returncode == 0:
+                        logger.info("✅ Dependencias instaladas correctamente")
+                        return True
+                    else:
+                        logger.warning(f"⚠️ Comando falló: {result.stderr}")
+                        continue
+                        
+                except subprocess.TimeoutExpired:
+                    logger.warning("⚠️ Timeout en instalación, intentando siguiente método...")
+                    continue
+                except FileNotFoundError:
+                    logger.warning("⚠️ Comando no encontrado, intentando siguiente método...")
+                    continue
+            
+            logger.error("❌ No se pudieron instalar las dependencias con ningún método")
+            return False
                 
     except Exception as e:
         logger.error(f"❌ Error en instalación de dependencias: {e}")

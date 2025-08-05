@@ -13,7 +13,7 @@ export default function UploadCVPage() {
 
   // Seleccionamos el archivo del CV desde el estado
   const cvFile = useSelector((state: unknown) => (state as { personal: { cvFile: { fileName: string; fileContent: string } | null } }).personal.cvFile)
-  const cvAnalysis = useSelector((state: unknown) => (state as { personal: { cvAnalysis: any } }).personal.cvAnalysis)
+  const cvAnalysis = useSelector((state: unknown) => (state as { personal: { cvAnalysis: unknown } }).personal.cvAnalysis)
 
   const [file, setFile] = useState<File | null>(null)
   const [isLoading, setIsLoading] = useState(false)
@@ -82,7 +82,7 @@ export default function UploadCVPage() {
         
         // Verificar que el análisis tiene la estructura esperada
         if (!cvAnalysis || typeof cvAnalysis !== 'object') {
-          console.error('❌ Análisis de CV inválido:', cvAnalysis);
+          // console.error('❌ Análisis de CV inválido:', cvAnalysis);
           throw new Error('El servidor devolvió un análisis de CV inválido');
         }
         

@@ -22,8 +22,8 @@ def test_imports():
         'pydantic',
         'openai',
         'pypdf',
-        'python-multipart',
-        'python-dotenv',
+        'multipart',
+        'dotenv',
         'reportlab',
         'PIL',
         'httpx'

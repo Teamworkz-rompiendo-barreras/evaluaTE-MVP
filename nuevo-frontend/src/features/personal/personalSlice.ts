@@ -164,7 +164,7 @@ export const personalSlice = createSlice({
     saveSoftSkills(state, action: PayloadAction<SoftSkillResult[]>) {
       // Reemplazar completamente las habilidades soft en lugar de agregar
       state.softSkills = action.payload;
-      console.log('💾 Habilidades soft guardadas:', action.payload);
+      // console.log('💾 Habilidades soft guardadas:', action.payload);
     },
 
     // Registra decisiones tomadas durante escenas

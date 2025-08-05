@@ -44,9 +44,9 @@ const ResultadosPage: React.FC = () => {
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
 
-  // Debug logging usando la utilidad
-  const fullState = useAppSelector((state: RootState) => state);
-  debugState(fullState, 'Estado actual en ResultadosPage');
+  // Debug logging usando la utilidad (comentado para producción)
+  // const fullState = useAppSelector((state: RootState) => state);
+  // debugState(fullState, 'Estado actual en ResultadosPage');
 
   // Estado para el informe IA
   const [iaReport, setIaReport] = useState<string>('');
@@ -122,7 +122,7 @@ ${data.recommendations.nextSteps.map((step: string) => `- ${step}`).join('\n')}
 ## Análisis Detallado
 
 ### Habilidades Evaluadas
-${personal.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
+${personal.softSkills.map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${data.report.jobPreferences.areas?.join(', ') || 'No especificadas'}
@@ -159,15 +159,15 @@ ${personal.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.score}%
     
     if (hasSoftSkills) {
       // Condición cumplida - Ejecutando fetchIaReport
-      console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
+      // console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
       fetchIaReport();
     } else {
       // Condición no cumplida - No se ejecuta fetchIaReport
-      console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
-      console.log('  • hasPersonalSoftSkills:', hasPersonalSoftSkills);
-      console.log('  • hasReportSoftSkills:', hasReportSoftSkills);
+      // console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
+      // console.log('  • hasPersonalSoftSkills:', hasPersonalSoftSkills);
+      // console.log('  • hasReportSoftSkills:', hasReportSoftSkills);
     }
-  }, [report?.jobPreferences, personal.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
+  }, [report?.jobPreferences, personal.softSkills, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
 
   // Estado para feedback
   const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
