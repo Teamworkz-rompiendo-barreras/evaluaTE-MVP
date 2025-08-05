@@ -54,13 +54,11 @@ const ResultadosPage: React.FC = () => {
       setLoadingIa(true);
       setErrorIa('');
       
-          // Estado del frontend verificado
-      
       try {
         const requestBody = {
           userId: report?.userId || 'user',
           fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-          softSkills: (report?.softSkills ?? []).map(skill => ({
+          softSkills: (personal.softSkills ?? []).map(skill => ({
             skill: skill.skill,
             score: skill.score ?? 0,
             level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
@@ -119,7 +117,7 @@ ${data.recommendations.nextSteps.map((step: string) => `- ${step}`).join('\n')}
 ## Análisis Detallado
 
 ### Habilidades Evaluadas
-${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
+${personal.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')}
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${data.report.jobPreferences.areas?.join(', ') || 'No especificadas'}
@@ -150,17 +148,17 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
     };
     // Solo llamar si hay datos suficientes
     // Modificado para ser más permisivo: solo requiere softSkills
-    if (report?.softSkills && Array.isArray(report.softSkills) && report.softSkills.length > 0) {
+    if (personal.softSkills && Array.isArray(personal.softSkills) && personal.softSkills.length > 0) {
       // Condición cumplida - Ejecutando fetchIaReport
       fetchIaReport();
     } else {
       // Condición no cumplida - No se ejecuta fetchIaReport
       console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
-      console.log('  • report?.softSkills:', report?.softSkills);
-      console.log('  • report?.softSkills.length:', report?.softSkills?.length);
-      console.log('  • Array.isArray(report?.softSkills):', Array.isArray(report?.softSkills));
+      console.log('  • personal.softSkills:', personal.softSkills);
+      console.log('  • personal.softSkills.length:', personal.softSkills?.length);
+      console.log('  • Array.isArray(personal.softSkills):', Array.isArray(personal.softSkills));
     }
-  }, [report?.jobPreferences, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
+  }, [report?.jobPreferences, personal.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
 
   // Estado para feedback
   const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
@@ -178,7 +176,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
           informe: iaReport,
           rating: feedback.rating,
           comment: feedback.comment,
-          userData: { preferences: report?.jobPreferences, minigames: report?.softSkills, cvAnalysis },
+          userData: { preferences: report?.jobPreferences, minigames: personal.softSkills, cvAnalysis },
         }),
       });
       if (res.ok) {
@@ -388,7 +386,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
 
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
-    : processRadarData(report?.softSkills ?? []);
+    : processRadarData(personal.softSkills ?? []);
   const radar = (
     <div className="bg-white rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid">
       <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>
@@ -422,7 +420,7 @@ ${data.report.softSkills.map((skill: any) => `- **${skill.skill}**: ${skill.scor
         <div className="w-full md:w-1/2">
           <h3 className="font-semibold mb-2">Resumen de niveles:</h3>
           <ul className="space-y-1">
-            {(report?.softSkills ?? []).map((skill, idx) => (
+            {(personal.softSkills ?? []).map((skill, idx) => (
               <li key={idx}>
                 <span className="font-medium">{skill.skill}:</span> {skill.score}%
               </li>

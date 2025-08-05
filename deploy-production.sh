@@ -138,7 +138,7 @@ AZURE_OPENAI_API_VERSION=${AZURE_OPENAI_API_VERSION:-2024-02-15-preview}
 DATABASE_URL=${DATABASE_URL:-}
 
 # Configuración del servidor
-PORT=8000
+PORT=8080
 HOST=0.0.0.0
 EOF
 
@@ -176,6 +176,7 @@ echo "   ✅ Backend: Dependencias instaladas y verificadas"
 echo "   ✅ Frontend: Construido para producción"
 echo "   ✅ Seguridad: Configuración verificada"
 echo "   ✅ Configuración: Archivos de producción creados"
+echo "   ✅ Puerto: Configurado para Azure (8080)"
 echo ""
 echo "🚀 Próximos pasos:"
 echo "   1. Configura las variables de entorno en tu plataforma de despliegue"
@@ -184,7 +185,7 @@ echo "   3. Configura el despliegue automático"
 echo "   4. Monitorea los logs en producción"
 echo ""
 echo "📚 Documentación:"
-echo "   - Backend API: http://tu-dominio:8000/docs"
+echo "   - Backend API: http://tu-dominio:8080/docs"
 echo "   - Frontend: http://tu-dominio"
 echo ""
 

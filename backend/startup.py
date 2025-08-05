@@ -76,6 +76,10 @@ def main():
         print("⚠️ Advertencia: Variables de entorno no configuradas")
         print("La aplicación funcionará en modo de prueba")
     
+    # Obtener puerto de la variable de entorno (Azure usa PORT=8080)
+    port = os.getenv('PORT', '8000')
+    print(f"🌐 Usando puerto: {port}")
+    
     print("\n✅ Todo configurado correctamente")
     print("🚀 Iniciando servidor...")
     
@@ -85,7 +89,7 @@ def main():
             sys.executable, "-m", "uvicorn", 
             "main:app", 
             "--host", "0.0.0.0", 
-            "--port", "8000",
+            "--port", port,
             "--reload"
         ], check=True)
     except subprocess.CalledProcessError as e:

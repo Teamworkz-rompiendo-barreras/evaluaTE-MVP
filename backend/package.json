@@ -2,10 +2,10 @@
   "name": "evaluador-backend",
   "version": "1.0.0",
   "description": "Backend de EvaluaTE MVP - Python/FastAPI",
-  "main": "startup.py",
+  "main": "startup-azure.py",
   "scripts": {
-    "start": "python startup.py",
-    "dev": "python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
+    "start": "python3 startup-azure.py",
+    "dev": "python3 -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload",
     "build": "pip install -r requirements.txt",
     "test": "echo 'No tests configured'"
   },

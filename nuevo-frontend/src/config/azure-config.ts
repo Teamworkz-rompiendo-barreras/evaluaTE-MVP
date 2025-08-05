@@ -7,7 +7,7 @@ export const AZURE_CONFIG = {
            import.meta.env.PROD;
   },
   
-  // URL del backend en Azure
+  // URL del backend en Azure (sin puerto, Azure maneja el enrutamiento)
   AZURE_BACKEND_URL: 'https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net',
   
   // URL local para desarrollo
