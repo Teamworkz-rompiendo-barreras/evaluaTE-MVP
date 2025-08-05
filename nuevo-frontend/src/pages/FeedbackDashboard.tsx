@@ -223,7 +223,7 @@ const FeedbackDashboard: React.FC = () => {
                       <div className="bg-gray-50 p-3 rounded text-sm">
                         <p><strong>Habilidades evaluadas:</strong> {selectedFeedback.userData.minigames?.length || 0}</p>
                         {selectedFeedback.userData.preferences?.areas && (
-                          <p><strong>Áreas de interés:</strong> {selectedFeedback.userData.preferences.areas.join(', ')}</p>
+<p><strong>Áreas de interés:</strong> {selectedFeedback.userData.preferences?.areas?.join(', ')}</p>
                         )}
                       </div>
                     </div>

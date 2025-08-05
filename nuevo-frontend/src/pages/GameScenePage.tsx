@@ -55,7 +55,7 @@ const GameScenePage: React.FC = () => {
     const hasPreferences = personal?.jobPreferences && (
       typeof personal.jobPreferences === 'string' 
         ? personal.jobPreferences.trim() !== ''
-        : personal.jobPreferences.areas && personal.jobPreferences.areas.length > 0
+        : personal.jobPreferences?.areas && personal.jobPreferences?.areas?.length > 0
     );
     
     // Los datos personales están completamente completos cuando se tienen tanto contact como preferences

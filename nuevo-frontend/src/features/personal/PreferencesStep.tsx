@@ -37,7 +37,7 @@ export default function PreferencesStep() {
     mode: 'onChange', // Validación en tiempo real
     defaultValues: {
       jobPreferences: typeof current.jobPreferences === 'object' && current.jobPreferences?.areas?.[0]
-        ? current.jobPreferences.areas[0]
+? current.jobPreferences?.areas?.[0]
         : (typeof current.jobPreferences === 'string' ? current.jobPreferences : ''),
       workMode: current.workMode || 'remoto',
       availability: current.availability || 'completa',

@@ -23,8 +23,8 @@ export default function ProtectedRoute({ step, children }: Props) {
     (
       typeof personal.jobPreferences === 'string'
         ? personal.jobPreferences.trim() !== ''
-        : Array.isArray(personal.jobPreferences.areas)
-          ? personal.jobPreferences.areas.length > 0 && personal.jobPreferences.areas[0].trim() !== ''
+        : Array.isArray(personal.jobPreferences?.areas)
+? personal.jobPreferences?.areas?.length > 0 && personal.jobPreferences?.areas?.[0]?.trim() !== ''
           : false
     )
   );
