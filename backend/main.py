@@ -14,6 +14,27 @@ import os
 import logging
 import tempfile
 
+# Cargar variables de entorno desde .env
+try:
+    from dotenv import load_dotenv
+    load_dotenv()
+    print("✅ Archivo .env cargado correctamente")
+except ImportError:
+    print("⚠️ python-dotenv no está instalado, usando variables de entorno del sistema")
+except Exception as e:
+    print(f"⚠️ Error cargando .env: {e}")
+
+# Limpiar variables de proxy del sistema que pueden causar problemas
+import os
+if 'HTTP_PROXY' in os.environ:
+    del os.environ['HTTP_PROXY']
+if 'HTTPS_PROXY' in os.environ:
+    del os.environ['HTTPS_PROXY']
+if 'ALL_PROXY' in os.environ:
+    del os.environ['ALL_PROXY']
+
+print("✅ Variables de proxy del sistema limpiadas")
+
 # Configurar logging
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
@@ -23,6 +44,18 @@ API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+
+# Configurar NO_PROXY específicamente para el endpoint de Azure OpenAI
+if ENDPOINT:
+    # Extraer el dominio del endpoint (ej: teamworkzevaluate-openai.openai.azure.com)
+    from urllib.parse import urlparse
+    parsed_url = urlparse(ENDPOINT)
+    domain = parsed_url.netloc
+    os.environ['NO_PROXY'] = domain
+    print(f"✅ NO_PROXY configurado para: {domain}")
+else:
+    os.environ['NO_PROXY'] = '*.openai.azure.com'
+    print("✅ NO_PROXY configurado para *.openai.azure.com")
 
 # Log de configuración
 logger.info("🔧 Configurando EvaluaTE Backend...")
@@ -36,6 +69,8 @@ client = None
 if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
     try:
         from openai import AzureOpenAI
+        
+        # Configuración mínima sin argumentos problemáticos
         client = AzureOpenAI(
             api_key=API_KEY, 
             api_version=API_VERSION, 
@@ -44,7 +79,22 @@ if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
         logger.info("✅ Azure OpenAI configurado correctamente")
     except Exception as e:
         logger.warning(f"⚠️ Error configurando Azure OpenAI: {e}")
-        client = None
+        # Intentar configuración alternativa
+        try:
+            import os
+            # Forzar configuración de entorno para evitar proxies
+            os.environ['NO_PROXY'] = '*'
+            os.environ['no_proxy'] = '*'
+            
+            client = AzureOpenAI(
+                api_key=API_KEY, 
+                api_version=API_VERSION, 
+                azure_endpoint=ENDPOINT
+            )
+            logger.info("✅ Azure OpenAI configurado correctamente (configuración alternativa)")
+        except Exception as e2:
+            logger.warning(f"⚠️ Error en configuración alternativa: {e2}")
+            client = None
 
 # Tipos compartidos
 class SoftSkillResult(BaseModel):
@@ -572,4 +622,4 @@ async def upload_cv(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    uvicorn.run(app, host="0.0.0.0", port=8080)
