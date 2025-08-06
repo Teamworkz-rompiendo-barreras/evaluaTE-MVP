@@ -135,34 +135,34 @@ ${data.summary}
 ## Análisis Detallado
 
 ### Análisis del Perfil
-${data.recommendations.profile_analysis || 'Análisis del perfil basado en la evaluación completa.'}
+${data.recommendations?.profile_analysis || 'Análisis del perfil basado en la evaluación completa.'}
 
 ### Análisis de Fortalezas
-${data.recommendations.strengths_analysis || 'Fortalezas identificadas en la evaluación.'}
+${data.recommendations?.strengths_analysis || 'Fortalezas identificadas en la evaluación.'}
 
 ### Áreas de Mejora
-${data.recommendations.improvement_areas || 'Áreas de mejora detectadas con recomendaciones.'}
+${data.recommendations?.improvement_areas || 'Áreas de mejora detectadas con recomendaciones.'}
 
 ### Análisis del CV
-${data.recommendations.cv_analysis || 'Análisis del CV realizado con herramientas especializadas.'}
+${data.recommendations?.cv_analysis || 'Análisis del CV realizado con herramientas especializadas.'}
 
 ## Sugerencias Laborales
-${data.recommendations.job_suggestions || 'Sugerencias laborales basadas en preferencias y habilidades.'}
+${data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en preferencias y habilidades.'}
 
 ## Próximos Pasos
 
 ### A Corto Plazo
-${safeMapWithValidation(data.recommendations.next_steps?.short_term, (step: string) => `- ${step}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
+${safeMapWithValidation(data.recommendations?.next_steps?.short_term, (step: string) => `- ${step}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
 
 ### A Medio Plazo
-${safeMapWithValidation(data.recommendations.next_steps?.medium_term, (step: string) => `- ${step}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
+${safeMapWithValidation(data.recommendations?.next_steps?.medium_term, (step: string) => `- ${step}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
 
 ### A Largo Plazo
-${safeMapWithValidation(data.recommendations.next_steps?.long_term, (step: string) => `- ${step}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
+${safeMapWithValidation(data.recommendations?.next_steps?.long_term, (step: string) => `- ${step}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
 
 ## Recursos y Apoyo
 
-${safeMapWithValidation(data.recommendations.resources, (resource: any) => 
+${safeMapWithValidation(data.recommendations?.resources, (resource: any) => 
       `### ${resource.name}
 ${resource.description}
 [Acceder a ${resource.name}](target="_blank" href="${resource.url}")`
