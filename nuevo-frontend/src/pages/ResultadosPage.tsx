@@ -122,6 +122,7 @@ const ResultadosPage: React.FC = () => {
           signal: AbortSignal.timeout(45000), // Timeout de 45 segundos
         });
         const data = await res.json();
+        console.log('🔍 DEBUG - Respuesta del backend:', data);
         if (res.ok && data && data.summary && data.recommendations) {
           // Generar informe profesional con el nuevo formato
           const informe = `# Informe Profesional de Empleabilidad
@@ -173,7 +174,7 @@ ${safeMap(personal.softSkills || [], (skill: SoftSkillResult) => `- **${skill.sk
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${(data.report?.jobPreferences?.areas && Array.isArray(data.report.jobPreferences.areas) && data.report.jobPreferences.areas.length > 0)
-  ? data.report.jobPreferences.areas.join(', ')
+  ? (data.report.jobPreferences.areas || []).join(', ')
   : 'No especificadas'}
 - **Modalidad de trabajo**: ${data.report?.jobPreferences?.workMode || 'No especificada'}
 - **Disponibilidad**: ${data.report?.jobPreferences?.availability || 'No especificada'}
