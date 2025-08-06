@@ -43,14 +43,25 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 }
 
 // Función helper para mapeo seguro
-function safeMapWithValidation<T, R>(
-  array: T[] | undefined | null,
-  mapper: (item: T, index: number) => R
-): R[] {
-  if (Array.isArray(array)) {
-    return array.map(mapper);
-  } else {
-    console.warn("Variable is not an array, cannot call map. Returning empty array.");
+
+
+// Función más robusta para manejar datos anidados de recomendaciones
+function safeGetRecommendations(data: any, path: string): any[] {
+  try {
+    const keys = path.split('.');
+    let current = data;
+    
+    for (const key of keys) {
+      if (current && typeof current === 'object' && key in current) {
+        current = current[key];
+      } else {
+        return [];
+      }
+    }
+    
+    return Array.isArray(current) ? current : [];
+  } catch (error) {
+    console.warn(`Error accessing path ${path}:`, error);
     return [];
   }
 }
@@ -118,9 +129,13 @@ const ResultadosPage: React.FC = () => {
         });
         const data = await res.json();
         console.log('🔍 DEBUG - Respuesta del backend:', data);
+        console.log('🔍 DEBUG - data.recommendations:', data?.recommendations);
+        console.log('🔍 DEBUG - data.recommendations?.next_steps:', data?.recommendations?.next_steps);
+        console.log('🔍 DEBUG - data.recommendations?.resources:', data?.recommendations?.resources);
         if (res.ok && data && data.summary && data.recommendations) {
           // Generar informe profesional con el nuevo formato
-          const informe = `# Informe Profesional de Empleabilidad
+          try {
+            const informe = `# Informe Profesional de Empleabilidad
 
 ## Resumen del Perfil
 ${data.summary}
@@ -148,36 +163,40 @@ ${data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en pre
 ## Próximos Pasos
 
 ### A Corto Plazo
-${safeMapWithValidation(data.recommendations?.next_steps?.short_term, (step: string) => `- ${step}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
+${safeGetRecommendations(data, 'recommendations.next_steps.short_term').map((step: string) => `- ${step}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
 
 ### A Medio Plazo
-${safeMapWithValidation(data.recommendations?.next_steps?.medium_term, (step: string) => `- ${step}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
+${safeGetRecommendations(data, 'recommendations.next_steps.medium_term').map((step: string) => `- ${step}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
 
 ### A Largo Plazo
-${safeMapWithValidation(data.recommendations?.next_steps?.long_term, (step: string) => `- ${step}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
+${safeGetRecommendations(data, 'recommendations.next_steps.long_term').map((step: string) => `- ${step}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
 
 ## Recursos y Apoyo
 
-${safeMapWithValidation(data.recommendations?.resources, (resource: any) => 
-      `### ${resource.name}
-${resource.description}
-[Acceder a ${resource.name}](target="_blank" href="${resource.url}")`
+${safeGetRecommendations(data, 'recommendations.resources').map((resource: any) => 
+      `### ${resource.name || 'Recurso'}
+${resource.description || 'Descripción no disponible'}
+[Acceder a ${resource.name || 'Recurso'}](target="_blank" href="${resource.url || '#'}")`
     ).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
 
 ## Habilidades Evaluadas
 ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
 
 ### Preferencias Laborales
-- **Áreas de interés**: ${(data.report?.jobPreferences?.areas && Array.isArray(data.report.jobPreferences.areas) && data.report.jobPreferences.areas.length > 0)
+- **Áreas de interés**: ${(data?.report?.jobPreferences?.areas && Array.isArray(data.report.jobPreferences.areas) && data.report.jobPreferences.areas.length > 0)
   ? (data.report.jobPreferences.areas || []).join(', ')
   : 'No especificadas'}
-- **Modalidad de trabajo**: ${data.report?.jobPreferences?.workMode || 'No especificada'}
-- **Disponibilidad**: ${data.report?.jobPreferences?.availability || 'No especificada'}
+- **Modalidad de trabajo**: ${data?.report?.jobPreferences?.workMode || 'No especificada'}
+- **Disponibilidad**: ${data?.report?.jobPreferences?.availability || 'No especificada'}
 
 ---
 *Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*
           `;
-          setIaReport(informe);
+            setIaReport(informe);
+          } catch (error) {
+            console.error('Error generando informe:', error);
+            setErrorIa('Error al generar el informe. Se generará un informe básico.');
+          }
         } else {
           setErrorIa('No se pudo generar el informe IA.');
         }
