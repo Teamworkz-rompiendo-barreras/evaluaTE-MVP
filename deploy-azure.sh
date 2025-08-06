@@ -102,11 +102,11 @@ fi
 
 # Instalar dependencias
 log_info "Instalando dependencias del frontend..."
-npm ci --production
+npm ci
 
 # Construir para producción
 log_info "Construyendo aplicación para producción..."
-npx tsc && npx vite build
+npm run build
 
 # Verificar que la construcción fue exitosa
 if [ ! -d "dist" ]; then
