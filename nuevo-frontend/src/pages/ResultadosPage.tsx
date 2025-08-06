@@ -47,6 +47,19 @@ function extractRadarData(markdown: string): RadarDataItem[] {
   return [];
 }
 
+// Función helper para mapeo seguro
+function safeMapWithValidation<T, R>(
+  array: T[] | undefined | null,
+  mapper: (item: T, index: number) => R
+): R[] {
+  if (Array.isArray(array)) {
+    return array.map(mapper);
+  } else {
+    console.warn("Variable is not an array, cannot call map. Returning empty array.");
+    return [];
+  }
+}
+
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
@@ -139,29 +152,21 @@ ${data.recommendations.job_suggestions || 'Sugerencias laborales basadas en pref
 ## Próximos Pasos
 
 ### A Corto Plazo
-${(data.recommendations.next_steps?.short_term && Array.isArray(data.recommendations.next_steps.short_term) && data.recommendations.next_steps.short_term.length > 0)
-  ? data.recommendations.next_steps.short_term.map((step: string) => `- ${step}`).join('\n')
-  : '- Actualizar CV\n- Crear perfil en LinkedIn'}
+${safeMapWithValidation(data.recommendations.next_steps?.short_term, (step: string) => `- ${step}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
 
 ### A Medio Plazo
-${(data.recommendations.next_steps?.medium_term && Array.isArray(data.recommendations.next_steps.medium_term) && data.recommendations.next_steps.medium_term.length > 0)
-  ? data.recommendations.next_steps.medium_term.map((step: string) => `- ${step}`).join('\n')
-  : '- Completar formación específica\n- Ampliar red profesional'}
+${safeMapWithValidation(data.recommendations.next_steps?.medium_term, (step: string) => `- ${step}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
 
 ### A Largo Plazo
-${(data.recommendations.next_steps?.long_term && Array.isArray(data.recommendations.next_steps.long_term) && data.recommendations.next_steps.long_term.length > 0)
-  ? data.recommendations.next_steps.long_term.map((step: string) => `- ${step}`).join('\n')
-  : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
+${safeMapWithValidation(data.recommendations.next_steps?.long_term, (step: string) => `- ${step}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
 
 ## Recursos y Apoyo
 
-${(data.recommendations.resources && Array.isArray(data.recommendations.resources) && data.recommendations.resources.length > 0)
-  ? data.recommendations.resources.map((resource: any) => 
+${safeMapWithValidation(data.recommendations.resources, (resource: any) => 
       `### ${resource.name}
 ${resource.description}
 [Acceder a ${resource.name}](target="_blank" href="${resource.url}")`
-    ).join('\n\n')
-  : '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
+    ).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
 
 ## Habilidades Evaluadas
 ${safeMap(personal.softSkills, (skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
@@ -422,6 +427,11 @@ ${safeMap(personal.softSkills, (skill: SoftSkillResult) => `- **${skill.skill}**
 
   // Función para eliminar duplicados y asegurar claves únicas
   const processRadarData = (data: Array<{ skill?: string; softskill?: string; score: number }>) => {
+    if (!Array.isArray(data)) {
+      console.warn("processRadarData: data is not an array, returning empty array");
+      return [];
+    }
+    
     const seen = new Set();
     return data
       .map(item => ({
