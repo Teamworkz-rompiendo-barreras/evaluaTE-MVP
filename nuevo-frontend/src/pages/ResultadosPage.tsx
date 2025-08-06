@@ -93,7 +93,7 @@ const ResultadosPage: React.FC = () => {
         const requestBody = {
           userId: report?.userId || 'user',
           fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-          softSkills: (Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult) => ({
+          softSkills: (personal.softSkills && Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult) => ({
             skill: skill.skill,
             score: skill.score ?? 0,
             level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
@@ -169,7 +169,7 @@ ${resource.description}
     ).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
 
 ## Habilidades Evaluadas
-${safeMap(personal.softSkills, (skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
+${safeMap(personal.softSkills || [], (skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${(data.report.jobPreferences && Array.isArray(data.report.jobPreferences.areas) && data.report.jobPreferences.areas.length > 0)
@@ -291,7 +291,7 @@ ${safeMap(personal.softSkills, (skill: SoftSkillResult) => `- **${skill.skill}**
       const requestBody = {
         userId: report?.userId || 'user',
         fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-        softSkills: (Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult) => ({
+        softSkills: (personal.softSkills && Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult) => ({
           skill: skill.skill,
           score: skill.score ?? 0,
           level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
@@ -483,7 +483,7 @@ ${safeMap(personal.softSkills, (skill: SoftSkillResult) => `- **${skill.skill}**
         <div className="w-full md:w-1/2">
           <h3 className="font-semibold mb-2">Resumen de niveles:</h3>
           <ul className="space-y-1">
-            {(Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult, idx: number) => (
+            {(personal.softSkills && Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult, idx: number) => (
               <li key={idx}>
                 <span className="font-medium">{skill.skill}:</span> {skill.score}%
               </li>
