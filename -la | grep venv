@@ -1,0 +1,20 @@
+[33m66fcdad[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mmain[m[33m, [m[1;31morigin/main[m[33m)[m Corregir error de acceso a propiedades undefined en generación de informe IA
+[33ma70f16a[m Agregar documentación completa del flujo de evaluación y archivos de prueba
+[33m4314e38[m fix: Corregir errores de TypeScript y ESLint - Implementar tipos seguros en safeGetRecommendations
+[33m1a50d08[m fix: Revisión profunda del error de map - Implementar safeGetRecommendations y manejo robusto de datos anidados
+[33m74b8e68[m fix: Corregir error de map en undefined - Usar filterValidSoftSkills para validar datos antes de procesar
+[33mdfe98fb[m feat: Agregar debug para identificar error de map() en informe IA
+[33mdea105c[m fix: Agregar verificaciones robustas para prevenir errores de undefined en map()
+[33m2996431[m fix: Corregir carga de variables de entorno en script deploy-azure
+[33m08da2f2[m fix: Solucionar errores de undefined en map() y script deploy-azure
+[33mbed8159[m fix: Corregir errores de undefined en ResultadosPage y script deploy-azure
+[33m1fd8485[m fix: Corregir script deploy-azure.sh para usar npm run build en lugar de npx tsc directo
+[33m619201d[m Fix TypeError: Apply Array.isArray() checks to all .map() calls and update backend port to 8080
+[33m0bb7868[m fix: Implementar solución definitiva para TypeError en .map() con validación de arrays
+[33mc376693[m fix: Corregir TypeError en .map() con variables undefined
+[33m9247f02[m 🔧 Solucionado bug de generación de informe final - Arreglado error TypeError: Cannot read properties of undefined (reading 'map') - Restaurado generateFinalReport() en UploadCVPage - Agregado safeMap para manejo robusto de arrays - Agregado generación automática de report en ResultadosPage - Mejorada validación de softSkills
+[33mb4295a5[m 🔧 SOLUCIÓN DEFINITIVA: Corregido error 'Cannot read properties of undefined (reading map)' - Implementado sistema robusto de validación de datos - Agregadas utilidades de validación type-safe - Mejorada robustez en generación de informes - Prevención de errores de runtime
+[33m53abacf[m FIX: Add robust checks for all map operations in ResultadosPage to prevent undefined errors
+[33m6ffaee6[m FIX: Add robust check for resources array in ResultadosPage to prevent map error
+[33m84c1c05[m FIX: Update ReportResponse model to accept complex recommendations structure
+[33m61fcac1[m FEATURE: Implement professional AI-powered employability report with CV analysis using Azure Document Intelligence
