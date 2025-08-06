@@ -11,17 +11,12 @@ import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
 import '../styles/stars.css'; // Importar estilos para estrellas
 import { validateSoftSkills } from '../utils/debug-state';
-import { safeMap } from '../utils/data-validation';
+import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport } from '../features/personal/personalSlice';
 
 // Definir tipos locales para evitar importaciones problemáticas
-interface SoftSkillResult {
-  skill: string;
-  score: number;
-  level: string;
-  confidence?: number;
-}
+
 
 // Tipo para los datos del radar
 interface RadarDataItem {
@@ -93,11 +88,11 @@ const ResultadosPage: React.FC = () => {
         const requestBody = {
           userId: report?.userId || 'user',
           fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-          softSkills: (personal.softSkills && Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult) => ({
+          softSkills: filterValidSoftSkills(personal.softSkills || []).map((skill) => ({
             skill: skill.skill,
-            score: skill.score ?? 0,
+            score: skill.score,
             level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
-            confidence: skill.confidence ?? skill.score ?? 0,
+            confidence: skill.confidence,
           })),
           cvAnalysis: cvAnalysis ? {
             strengths: cvAnalysis.strengths ?? [],
@@ -170,7 +165,7 @@ ${resource.description}
     ).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
 
 ## Habilidades Evaluadas
-${safeMap(personal.softSkills || [], (skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
+${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${(data.report?.jobPreferences?.areas && Array.isArray(data.report.jobPreferences.areas) && data.report.jobPreferences.areas.length > 0)
@@ -292,11 +287,11 @@ ${safeMap(personal.softSkills || [], (skill: SoftSkillResult) => `- **${skill.sk
       const requestBody = {
         userId: report?.userId || 'user',
         fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-        softSkills: (personal.softSkills && Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult) => ({
+        softSkills: filterValidSoftSkills(personal.softSkills || []).map((skill) => ({
           skill: skill.skill,
-          score: skill.score ?? 0,
+          score: skill.score,
           level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
-          confidence: (skill as any).confidence ?? skill.score ?? 0,
+          confidence: skill.confidence,
         })),
         cvAnalysis: personal.cvAnalysis ? {
           strengths: personal.cvAnalysis.strengths ?? [],
@@ -450,7 +445,7 @@ ${safeMap(personal.softSkills || [], (skill: SoftSkillResult) => `- **${skill.sk
 
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
-    : processRadarData(personal.softSkills ?? []);
+    : processRadarData(filterValidSoftSkills(personal.softSkills || []));
   const radar = (
     <div className="bg-white rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid">
       <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>
@@ -484,7 +479,7 @@ ${safeMap(personal.softSkills || [], (skill: SoftSkillResult) => `- **${skill.sk
         <div className="w-full md:w-1/2">
           <h3 className="font-semibold mb-2">Resumen de niveles:</h3>
           <ul className="space-y-1">
-            {(personal.softSkills && Array.isArray(personal.softSkills) ? personal.softSkills : []).map((skill: SoftSkillResult, idx: number) => (
+            {filterValidSoftSkills(personal.softSkills || []).map((skill, idx: number) => (
               <li key={idx}>
                 <span className="font-medium">{skill.skill}:</span> {skill.score}%
               </li>
