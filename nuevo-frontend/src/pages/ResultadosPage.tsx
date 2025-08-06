@@ -11,6 +11,9 @@ import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
 import '../styles/stars.css'; // Importar estilos para estrellas
 import { validateSoftSkills } from '../utils/debug-state';
+import { safeMap } from '../utils/data-validation';
+import { useDispatch } from 'react-redux';
+import { generateFinalReport } from '../features/personal/personalSlice';
 
 // Definir tipos locales para evitar importaciones problemáticas
 interface SoftSkillResult {
@@ -45,6 +48,7 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 }
 
 const ResultadosPage: React.FC = () => {
+  const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
   const cvAnalysis = personal?.cvAnalysis;
   const report = personal?.report;
@@ -53,6 +57,13 @@ const ResultadosPage: React.FC = () => {
 
   // Debug logging usando la utilidad (comentado para producción)
   // debugState(state, 'ResultadosPage');
+
+  // Generar report si no existe
+  useEffect(() => {
+    if (!report && personal.softSkills && personal.softSkills.length > 0) {
+      dispatch(generateFinalReport());
+    }
+  }, [report, personal.softSkills, dispatch]);
 
   // Estado para el informe IA
   const [iaReport, setIaReport] = useState<string>('');
@@ -153,9 +164,7 @@ ${resource.description}
   : '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
 
 ## Habilidades Evaluadas
-${(personal.softSkills && Array.isArray(personal.softSkills) && personal.softSkills.length > 0)
-  ? personal.softSkills.map((skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')
-  : 'No se evaluaron habilidades soft'}
+${safeMap(personal.softSkills, (skill: SoftSkillResult) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${(data.report.jobPreferences && Array.isArray(data.report.jobPreferences.areas) && data.report.jobPreferences.areas.length > 0)
@@ -242,7 +251,7 @@ ${(personal.softSkills && Array.isArray(personal.softSkills) && personal.softSki
 
   // Efecto para animar la barra de progreso
   useEffect(() => {
-    let interval: NodeJS.Timeout | null = null;
+    let interval: ReturnType<typeof setInterval> | null = null;
     if (loadingIa) {
       setProgress(0);
       interval = setInterval(() => {

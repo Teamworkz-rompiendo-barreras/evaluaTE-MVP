@@ -2,7 +2,7 @@
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
-import { saveCV, saveCvAnalysis } from '../features/personal/personalSlice';
+import { saveCV, saveCvAnalysis, generateFinalReport } from '../features/personal/personalSlice';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { buildApiUrl, API_CONFIG } from '../config/api';
@@ -161,8 +161,8 @@ export default function UploadCVPage() {
     }
 
     // Generar reporte final después de subir el CV
-            // Generando reporte final...
-    // dispatch(generateFinalReport()) // This line was removed as per the new_code, as generateFinalReport is no longer imported.
+    // Generando reporte final...
+    dispatch(generateFinalReport())
     navigate('/resultados')
   }
 
@@ -215,7 +215,7 @@ export default function UploadCVPage() {
             onClick={() => {
               // Generar reporte si no existe
               if (!cvFile) {
-                // dispatch(generateFinalReport()) // This line was removed as per the new_code, as generateFinalReport is no longer imported.
+                dispatch(generateFinalReport())
               }
               navigate('/resultados')
             }}
