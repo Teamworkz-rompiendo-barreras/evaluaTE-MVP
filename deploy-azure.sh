@@ -33,6 +33,12 @@ if [ ! -f "backend/main.py" ] || [ ! -f "nuevo-frontend/package.json" ]; then
     exit 1
 fi
 
+# Cargar variables de entorno del backend si existe
+if [ -f "backend/.env" ]; then
+    log_info "Cargando variables de entorno desde backend/.env..."
+    source backend/.env
+fi
+
 # Verificar variables de entorno
 log_info "Verificando variables de entorno..."
 if [ -z "$AZURE_OPENAI_API_KEY" ]; then
@@ -136,12 +142,6 @@ cd ..
 
 # Crear archivo de configuración de producción
 log_info "Creando configuración de producción..."
-
-# Leer valores del archivo .env del backend si existe
-if [ -f "backend/.env" ]; then
-    log_info "Leyendo configuración desde backend/.env..."
-    source backend/.env
-fi
 
 cat > .env.production << EOF
 # Configuración de producción para Azure
