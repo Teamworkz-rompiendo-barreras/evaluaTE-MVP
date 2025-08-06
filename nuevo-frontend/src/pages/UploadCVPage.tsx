@@ -182,7 +182,7 @@ export default function UploadCVPage() {
               <div className="mt-2">
                 <strong className="text-green-700">Fortalezas:</strong>
                 <ul className="list-disc list-inside text-green-600">
-                  {(cvAnalysis.strengths || []).map((strength: string, index: number) => (
+                  {(Array.isArray(cvAnalysis.strengths) ? cvAnalysis.strengths : []).map((strength: string, index: number) => (
                     <li key={index}>{strength}</li>
                   ))}
                 </ul>
@@ -192,7 +192,7 @@ export default function UploadCVPage() {
               <div className="mt-2">
                 <strong className="text-purple-700">Habilidades detectadas:</strong>
                 <ul className="list-disc list-inside text-purple-600">
-                  {(cvAnalysis.skills || []).map((skill: string, index: number) => (
+                  {(Array.isArray(cvAnalysis.skills) ? cvAnalysis.skills : []).map((skill: string, index: number) => (
                     <li key={index}>{skill}</li>
                   ))}
                 </ul>

@@ -65,7 +65,7 @@ const GameDashboardPage: React.FC = () => {
 
         {/* Grid de minijuegos - DINÁMICO */}
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-5 gap-6">
-          {games.map((g, idx) => (
+          {(Array.isArray(games) ? games : []).map((g, idx) => (
             <GameCard
               key={g.id}
               game={g}

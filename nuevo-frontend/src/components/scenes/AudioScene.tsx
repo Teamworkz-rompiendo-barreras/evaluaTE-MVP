@@ -60,11 +60,11 @@ const AudioScene: React.FC<AudioSceneProps> = ({
 
       {/* Preguntas */}
       <div className="questions space-y-4">
-        {audioConfig.questions.map((question) => (
+        {(Array.isArray(audioConfig.questions) ? audioConfig.questions : []).map((question) => (
           <div key={question.id} className="question-card p-4 border rounded">
             <h3 className="font-semibold mb-3">{question.question}</h3>
             <div className="options space-y-2">
-              {question.options.map((option) => (
+              {(Array.isArray(question.options) ? question.options : []).map((option) => (
                 <button
                   key={option.id}
                   onClick={() => handleAnswerSelect(question.id, option.id)}

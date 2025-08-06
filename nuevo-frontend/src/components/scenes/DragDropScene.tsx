@@ -90,7 +90,7 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
       <div className="available-items mb-6">
         <h3 className="text-lg font-semibold mb-3">Elementos disponibles:</h3>
         <div className="flex flex-wrap gap-3">
-          {availableItems().map((item) => (
+          {(Array.isArray(availableItems()) ? availableItems() : []).map((item) => (
             <div
               key={item.id}
               draggable
@@ -118,7 +118,7 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
       <div className="drop-zones">
         <h3 className="text-lg font-semibold mb-3">Organiza los elementos:</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {dragDropConfig.targetZones.map((zone) => (
+          {(Array.isArray(dragDropConfig.targetZones) ? dragDropConfig.targetZones : []).map((zone) => (
             <div
               key={zone.id}
               onDragOver={handleDragOver}
@@ -135,7 +135,7 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
               
               {/* Elementos colocados en esta zona */}
               <div className="space-y-2">
-                {getItemsInZone(zone.id).map((item) => (
+                {(Array.isArray(getItemsInZone(zone.id)) ? getItemsInZone(zone.id) : []).map((item) => (
                   <div
                     key={item.id}
                     className={`placed-item p-2 bg-green-100 border border-green-300 rounded ${

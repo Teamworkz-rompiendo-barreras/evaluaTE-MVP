@@ -57,11 +57,11 @@ const convertGameToScene = (gameId: string): Scene | null => {
       {
         text: firstScene.description,
         type: 'multiple-choice',
-        options: firstScene.options?.map(opt => ({
+        options: (Array.isArray(firstScene.options) ? firstScene.options : []).map(opt => ({
           text: opt.text,
           skillImpact: { [game.softSkill]: opt.score / 100 },
           feedback: opt.feedback || ''
-        })) || []
+        }))
       }
     ]
   }
@@ -75,7 +75,7 @@ export const scenesApi = createApi({
     getScenes: builder.query<Scene[], void>({
       queryFn: () => {
         // Retornar escenas convertidas de los juegos
-        const scenes = games.slice(0, 10).map((game, index) => ({
+        const scenes = (Array.isArray(games) ? games.slice(0, 10) : []).map((game, index) => ({
           id: index,
           title: game.title,
           steps: [{

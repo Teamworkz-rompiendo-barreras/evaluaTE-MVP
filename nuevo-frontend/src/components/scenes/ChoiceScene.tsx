@@ -55,7 +55,7 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
   return (
     <div className="choice-scene">
       <div className="options-container space-y-4">
-        {(scene.options || []).map((option: GameOption) => (
+        {(Array.isArray(scene.options) ? scene.options : []).map((option: GameOption) => (
           <div
             key={option.id}
             className={`option-card p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${

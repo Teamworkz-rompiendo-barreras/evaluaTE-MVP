@@ -56,7 +56,7 @@ const VisualExplorationScene: React.FC<VisualExplorationSceneProps> = ({
           }}
         >
           {/* Áreas interactivas */}
-          {visualConfig.interactiveAreas.map((area) => (
+          {(Array.isArray(visualConfig.interactiveAreas) ? visualConfig.interactiveAreas : []).map((area) => (
             <div
               key={area.id}
               onClick={() => handleAreaClick(area)}

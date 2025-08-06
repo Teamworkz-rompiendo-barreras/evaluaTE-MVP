@@ -16,7 +16,7 @@ export interface Game {
 }
 
 export const fixGameScenes = (games: Game[]): Game[] => {
-  return games.map((game: Game) => {
+  return (Array.isArray(games) ? games : []).map((game: Game) => {
     // Buscar la escena feedback-final
     const feedbackFinalIndex = game.scenes.findIndex((scene: Scene) => scene.id === 'feedback-final');
     
