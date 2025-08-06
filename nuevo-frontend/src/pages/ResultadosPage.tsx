@@ -46,14 +46,14 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 
 
 // Función más robusta para manejar datos anidados de recomendaciones
-function safeGetRecommendations(data: any, path: string): any[] {
+function safeGetRecommendations(data: unknown, path: string): unknown[] {
   try {
     const keys = path.split('.');
-    let current = data;
+    let current = data as Record<string, unknown>;
     
     for (const key of keys) {
       if (current && typeof current === 'object' && key in current) {
-        current = current[key];
+        current = current[key] as Record<string, unknown>;
       } else {
         return [];
       }
@@ -163,21 +163,22 @@ ${data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en pre
 ## Próximos Pasos
 
 ### A Corto Plazo
-${safeGetRecommendations(data, 'recommendations.next_steps.short_term').map((step: string) => `- ${step}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
+${safeGetRecommendations(data, 'recommendations.next_steps.short_term').map((step: unknown) => `- ${String(step)}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
 
 ### A Medio Plazo
-${safeGetRecommendations(data, 'recommendations.next_steps.medium_term').map((step: string) => `- ${step}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
+${safeGetRecommendations(data, 'recommendations.next_steps.medium_term').map((step: unknown) => `- ${String(step)}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
 
 ### A Largo Plazo
-${safeGetRecommendations(data, 'recommendations.next_steps.long_term').map((step: string) => `- ${step}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
+${safeGetRecommendations(data, 'recommendations.next_steps.long_term').map((step: unknown) => `- ${String(step)}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
 
 ## Recursos y Apoyo
 
-${safeGetRecommendations(data, 'recommendations.resources').map((resource: any) => 
-      `### ${resource.name || 'Recurso'}
-${resource.description || 'Descripción no disponible'}
-[Acceder a ${resource.name || 'Recurso'}](target="_blank" href="${resource.url || '#'}")`
-    ).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
+${safeGetRecommendations(data, 'recommendations.resources').map((resource: unknown) => {
+      const res = resource as { name?: string; description?: string; url?: string };
+      return `### ${res.name || 'Recurso'}
+${res.description || 'Descripción no disponible'}
+[Acceder a ${res.name || 'Recurso'}](target="_blank" href="${res.url || '#'}")`;
+    }).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
 
 ## Habilidades Evaluadas
 ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
