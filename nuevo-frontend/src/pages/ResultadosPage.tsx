@@ -184,9 +184,10 @@ ${res.description || 'Descripción no disponible'}
 ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
 
 ### Preferencias Laborales
-- **Áreas de interés**: ${(data?.report?.jobPreferences?.areas && Array.isArray(data.report.jobPreferences.areas) && data.report.jobPreferences.areas.length > 0)
-  ? (data.report.jobPreferences.areas || []).join(', ')
-  : 'No especificadas'}
+- **Áreas de interés**: ${(() => {
+    const areas = data?.report?.jobPreferences?.areas;
+    return (areas && Array.isArray(areas) && areas.length > 0) ? areas.join(', ') : 'No especificadas';
+  })()}
 - **Modalidad de trabajo**: ${data?.report?.jobPreferences?.workMode || 'No especificada'}
 - **Disponibilidad**: ${data?.report?.jobPreferences?.availability || 'No especificada'}
 
