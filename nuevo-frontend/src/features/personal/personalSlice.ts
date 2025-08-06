@@ -256,10 +256,10 @@ export const personalSlice = createSlice({
       });
       // Flatten recommendations object into a string array with proper null/undefined handling
       const recommendations: string[] = [
-        ...(recommendationsObj.roles || []).map(role => `Rol recomendado: ${role}`),
-        ...(recommendationsObj.resources || []).map(resource => `Recurso sugerido: ${resource}`),
-        ...(recommendationsObj.cvImprovements || []).map(improvement => `Mejora de CV: ${improvement}`),
-        ...(recommendationsObj.nextSteps || []).map(step => `Próximo paso: ${step}`),
+        ...((recommendationsObj.roles || []) || []).map(role => `Rol recomendado: ${role}`),
+        ...((recommendationsObj.resources || []) || []).map(resource => `Recurso sugerido: ${resource}`),
+        ...((recommendationsObj.cvImprovements || []) || []).map(improvement => `Mejora de CV: ${improvement}`),
+        ...((recommendationsObj.nextSteps || []) || []).map(step => `Próximo paso: ${step}`),
       ];
 
       // Actualiza el estado del informe

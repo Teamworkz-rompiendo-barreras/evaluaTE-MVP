@@ -80,7 +80,7 @@ const ResultadosPage: React.FC = () => {
         const requestBody = {
           userId: report?.userId || 'user',
           fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-          softSkills: (personal.softSkills ?? []).map((skill: SoftSkillResult) => ({
+          softSkills: ((personal.softSkills ?? []) || []).map((skill: SoftSkillResult) => ({
             skill: skill.skill,
             score: skill.score ?? 0,
             level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
@@ -286,7 +286,7 @@ ${safeMap(personal.softSkills, (skill: SoftSkillResult) => `- **${skill.skill}**
       const requestBody = {
         userId: report?.userId || 'user',
         fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-        softSkills: (personal.softSkills ?? []).map((skill: SoftSkillResult) => ({
+        softSkills: ((personal.softSkills ?? []) || []).map((skill: SoftSkillResult) => ({
           skill: skill.skill,
           score: skill.score ?? 0,
           level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
@@ -473,7 +473,7 @@ ${safeMap(personal.softSkills, (skill: SoftSkillResult) => `- **${skill.skill}**
         <div className="w-full md:w-1/2">
           <h3 className="font-semibold mb-2">Resumen de niveles:</h3>
           <ul className="space-y-1">
-            {(personal.softSkills ?? []).map((skill: SoftSkillResult, idx: number) => (
+            {((personal.softSkills ?? []) || []).map((skill: SoftSkillResult, idx: number) => (
               <li key={idx}>
                 <span className="font-medium">{skill.skill}:</span> {skill.score}%
               </li>

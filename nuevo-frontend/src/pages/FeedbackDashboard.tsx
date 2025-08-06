@@ -166,7 +166,7 @@ const FeedbackDashboard: React.FC = () => {
               <h2 className="text-xl font-semibold text-gray-900">Feedback Reciente</h2>
             </div>
             <div className="divide-y divide-gray-200">
-              {stats?.recent_feedback.map((feedback, index) => (
+              {(stats?.recent_feedback || []).map((feedback, index) => (
                 <div
                   key={index}
                   className="p-6 hover:bg-gray-50 cursor-pointer transition-colors"
@@ -255,7 +255,7 @@ const FeedbackDashboard: React.FC = () => {
             </div>
             <div className="p-6">
               <div className="space-y-3">
-                {stats.common_comments.map((comment, index) => (
+                {(stats?.common_comments || []).map((comment, index) => (
                   <div key={index} className="bg-gray-50 p-3 rounded">
                     <p className="text-gray-700">{comment}</p>
                   </div>
