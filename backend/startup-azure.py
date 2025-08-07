@@ -16,63 +16,27 @@ logging.basicConfig(
 logger = logging.getLogger(__name__)
 
 def install_dependencies():
-    """Instalar dependencias si no están disponibles"""
+    """Verificar dependencias sin instalar (más rápido para Azure)"""
     try:
         logger.info("🔧 Verificando dependencias...")
         
-        # Intentar importar dependencias críticas
+        # Solo verificar que las dependencias críticas estén disponibles
         try:
             import fastapi
             import uvicorn
             logger.info("✅ Dependencias ya instaladas")
             return True
-        except ImportError:
-            logger.info("📦 Verificando entorno virtual...")
-            
-            # Verificar si estamos en un entorno virtual
-            if hasattr(sys, 'real_prefix') or (hasattr(sys, 'base_prefix') and sys.base_prefix != sys.prefix):
-                logger.info("✅ Entorno virtual detectado")
-            else:
-                logger.warning("⚠️ No se detectó entorno virtual. Intentando usar pip del sistema...")
-            
-            # Determinar qué archivo de requirements usar
-            requirements_file = 'requirements-azure.txt' if os.path.exists('requirements-azure.txt') else 'requirements.txt'
-            
-            # Intentar instalar dependencias con diferentes métodos
-            pip_commands = [
-                [sys.executable, "-m", "pip", "install", "-r", requirements_file],
-                [sys.executable, "-m", "pip", "install", "--user", "-r", requirements_file],
-                ["pip3", "install", "-r", requirements_file]
-            ]
-            
-            for cmd in pip_commands:
-                try:
-                    logger.info(f"📦 Intentando: {' '.join(cmd)}")
-                    result = subprocess.run(cmd, capture_output=True, text=True, timeout=60)
-                    
-                    if result.returncode == 0:
-                        logger.info("✅ Dependencias instaladas correctamente")
-                        return True
-                    else:
-                        logger.warning(f"⚠️ Comando falló: {result.stderr}")
-                        continue
-                        
-                except subprocess.TimeoutExpired:
-                    logger.warning("⚠️ Timeout en instalación, intentando siguiente método...")
-                    continue
-                except FileNotFoundError:
-                    logger.warning("⚠️ Comando no encontrado, intentando siguiente método...")
-                    continue
-            
-            logger.error("❌ No se pudieron instalar las dependencias con ningún método")
+        except ImportError as e:
+            logger.error(f"❌ Dependencias faltantes: {e}")
+            logger.error("❌ Las dependencias deben instalarse durante el despliegue, no al inicio")
             return False
                 
     except Exception as e:
-        logger.error(f"❌ Error en instalación de dependencias: {e}")
+        logger.error(f"❌ Error verificando dependencias: {e}")
         return False
 
 def check_dependencies():
-    """Verificar que las dependencias estén instaladas"""
+    """Verificar que las dependencias estén instaladas (versión rápida)"""
     try:
         import fastapi
         import uvicorn
@@ -85,12 +49,7 @@ def check_dependencies():
 def main():
     logger.info("🚀 Iniciando EvaluaTE Backend en Azure...")
     
-    # Instalar dependencias si es necesario
-    if not install_dependencies():
-        logger.error("❌ No se pudieron instalar las dependencias")
-        sys.exit(1)
-    
-    # Verificar dependencias después de la instalación
+    # Verificar dependencias rápidamente
     if not check_dependencies():
         logger.error("❌ Faltan dependencias críticas")
         sys.exit(1)
@@ -108,14 +67,15 @@ def main():
     logger.info("🚀 Iniciando servidor FastAPI...")
     
     try:
-        # Iniciar uvicorn con configuración robusta
+        # Iniciar uvicorn con configuración optimizada para Azure
         subprocess.run([
             sys.executable, "-m", "uvicorn", 
             "main:app", 
             "--host", "0.0.0.0", 
             "--port", port,
             "--log-level", "info",
-            "--timeout-keep-alive", "120"
+            "--timeout-keep-alive", "120",
+            "--workers", "1"
         ], check=True)
     except subprocess.CalledProcessError as e:
         logger.error(f"❌ Error iniciando servidor: {e}")
