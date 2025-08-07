@@ -369,8 +369,11 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     """
     
     try:
+        # Limpiar el nombre del deployment para evitar problemas con espacios
+        deployment_name = DEPLOYMENT.strip()
+        
         response = client.chat.completions.create(
-            model=DEPLOYMENT,
+            model=deployment_name,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=2000,
@@ -593,8 +596,11 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
         }}
         """
         
+        # Limpiar el nombre del deployment para evitar problemas con espacios
+        deployment_name = DEPLOYMENT.strip()
+        
         response = client.chat.completions.create(
-            model=DEPLOYMENT,
+            model=deployment_name,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=1000,
