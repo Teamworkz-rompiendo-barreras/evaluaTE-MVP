@@ -61,6 +61,35 @@ class ImprovedDocumentIntelligenceService:
         """Verifica si el servicio está configurado correctamente"""
         return self.client is not None
     
+    def _validate_document_intelligence_response(self, result) -> bool:
+        """Valida que la respuesta de Document Intelligence sea correcta"""
+        try:
+            # Verificar que el resultado existe
+            if not result:
+                logger.error("❌ Resultado de Document Intelligence es None")
+                return False
+            
+            # Verificar que tiene el atributo content
+            if not hasattr(result, 'content'):
+                logger.error("❌ Resultado no tiene atributo 'content'")
+                return False
+            
+            # Verificar que el contenido no esté vacío
+            if not result.content or not result.content.strip():
+                logger.error("❌ Contenido de Document Intelligence está vacío")
+                return False
+            
+            # Verificar que tiene páginas (opcional)
+            if hasattr(result, 'pages') and not result.pages:
+                logger.warning("⚠️ Document Intelligence no detectó páginas")
+            
+            logger.info("✅ Respuesta de Document Intelligence válida")
+            return True
+            
+        except Exception as e:
+            logger.error(f"❌ Error validando respuesta de Document Intelligence: {e}")
+            return False
+
     def analyze_cv_with_improved_intelligence(self, pdf_buffer: bytes) -> Dict[str, Any]:
         """
         Analiza un CV usando Azure AI Document Intelligence con parsing mejorado
@@ -84,10 +113,18 @@ class ImprovedDocumentIntelligenceService:
             try:
                 # Analizar documento
                 with open(temp_file_path, "rb") as document:
+                    logger.info("📄 Iniciando análisis con Azure AI Document Intelligence...")
                     poller = self.client.begin_analyze_document(
-                        "prebuilt-document", document
+                        "prebuilt-layout", document
                     )
                     result = poller.result()
+                    logger.info("✅ Análisis de Document Intelligence completado")
+                
+                # Validar la respuesta de Document Intelligence
+                if not self._validate_document_intelligence_response(result):
+                    raise ValueError("Respuesta inválida de Document Intelligence")
+                
+                logger.info(f"📝 Texto extraído: {len(result.content)} caracteres")
                 
                 # Extraer datos estructurados mejorados
                 cv_data = self._extract_improved_structured_data(result)
@@ -954,22 +991,56 @@ class ImprovedDocumentIntelligenceService:
     
     def _build_improved_compatible_result(self, cv_data: Dict[str, Any], analysis: Dict[str, Any], raw_text: str) -> Dict[str, Any]:
         """Construye resultado compatible con el formato esperado"""
-        return {
-            "cv_info": {
-                "contacto": cv_data.get("contacto", {}),
-                "software": cv_data.get("habilidades_tecnicas", []),
-                "idiomas": [f"{lang.get('idioma', '')} ({lang.get('nivel', '')})" for lang in cv_data.get("idiomas", [])],
-                "perfil": cv_data.get("resumen_profesional", ""),
-                "experiencia": cv_data.get("experiencia", []),
-                "educacion": cv_data.get("educacion", []),
-                "habilidades": [],  # Soft skills se manejan por separado
-                "proyectos": cv_data.get("proyectos", [])
-            },
-            "analysis": analysis,
-            "raw_text": raw_text[:1000],  # Primeros 1000 caracteres
-            "full_cv_data": cv_data,
-            "document_intelligence_used": True
-        }
+        try:
+            # Validar que los datos sean válidos
+            if not isinstance(cv_data, dict):
+                logger.warning("⚠️ cv_data no es un diccionario válido")
+                cv_data = {}
+            
+            if not isinstance(analysis, dict):
+                logger.warning("⚠️ analysis no es un diccionario válido")
+                analysis = {}
+            
+            # Construir resultado con validación
+            result = {
+                "cv_info": {
+                    "contacto": cv_data.get("contacto", {}),
+                    "software": cv_data.get("habilidades_tecnicas", []),
+                    "idiomas": [f"{lang.get('idioma', '')} ({lang.get('nivel', '')})" for lang in cv_data.get("idiomas", []) if isinstance(lang, dict)],
+                    "perfil": cv_data.get("resumen_profesional", ""),
+                    "experiencia": cv_data.get("experiencia", []),
+                    "educacion": cv_data.get("educacion", []),
+                    "habilidades": [],  # Soft skills se manejan por separado
+                    "proyectos": cv_data.get("proyectos", [])
+                },
+                "analysis": analysis,
+                "raw_text": raw_text[:1000] if raw_text else "",  # Primeros 1000 caracteres
+                "full_cv_data": cv_data,
+                "document_intelligence_used": True
+            }
+            
+            logger.info("✅ Resultado compatible construido exitosamente")
+            return result
+            
+        except Exception as e:
+            logger.error(f"❌ Error construyendo resultado compatible: {e}")
+            # Devolver resultado básico en caso de error
+            return {
+                "cv_info": {
+                    "contacto": {},
+                    "software": [],
+                    "idiomas": [],
+                    "perfil": "",
+                    "experiencia": [],
+                    "educacion": [],
+                    "habilidades": [],
+                    "proyectos": []
+                },
+                "analysis": {"error": f"Error en procesamiento: {str(e)}"},
+                "raw_text": raw_text[:1000] if raw_text else "",
+                "full_cv_data": {},
+                "document_intelligence_used": True
+            }
 
 # Función de conveniencia
 def analyze_cv_with_improved_intelligence(pdf_buffer: bytes) -> Dict[str, Any]:

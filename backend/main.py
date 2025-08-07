@@ -496,8 +496,8 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> CvAnalysis:
         from azure.core.credentials import AzureKeyCredential
         
         # Configuración de Azure Document Intelligence
-        endpoint = os.getenv("AZURE_FORM_RECOGNIZER_ENDPOINT")
-        key = os.getenv("AZURE_FORM_RECOGNIZER_KEY")
+        endpoint = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
+        key = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")
         
         if not endpoint or not key:
             raise Exception("Azure Form Recognizer no configurado")
@@ -505,7 +505,7 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> CvAnalysis:
         client = DocumentAnalysisClient(endpoint=endpoint, credential=AzureKeyCredential(key))
         
         with open(file_path, "rb") as document:
-            poller = client.begin_analyze_document("prebuilt-document", document)
+            poller = client.begin_analyze_document("prebuilt-layout", document)
             result = poller.result()
         
         # Extraer texto del documento
