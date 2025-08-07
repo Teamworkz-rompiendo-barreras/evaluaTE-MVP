@@ -373,7 +373,8 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             model=DEPLOYMENT,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
-            max_tokens=2000
+            max_tokens=2000,
+            timeout=60  # Timeout de 60 segundos para Azure OpenAI
         )
         
         import json
@@ -596,7 +597,8 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
             model=DEPLOYMENT,
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
-            max_tokens=1000
+            max_tokens=1000,
+            timeout=60  # Timeout de 60 segundos para Azure OpenAI
         )
         
         # Parsear respuesta JSON

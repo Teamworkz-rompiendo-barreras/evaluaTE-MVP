@@ -74,7 +74,8 @@ def main():
             "--host", "0.0.0.0", 
             "--port", port,
             "--log-level", "info",
-            "--timeout-keep-alive", "120",
+            "--timeout-keep-alive", "300",
+            "--timeout-graceful-shutdown", "60",
             "--workers", "1"
         ], check=True)
     except subprocess.CalledProcessError as e:
