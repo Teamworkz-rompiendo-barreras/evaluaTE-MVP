@@ -373,7 +373,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         deployment_name = DEPLOYMENT.strip()
         
         response = client.chat.completions.create(
-            model=deployment_name,
+            deployment_id=deployment_name,  # Usar deployment_id en lugar de model
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=2000,
@@ -600,7 +600,7 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
         deployment_name = DEPLOYMENT.strip()
         
         response = client.chat.completions.create(
-            model=deployment_name,
+            deployment_id=deployment_name,  # Usar deployment_id en lugar de model
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=1000,
