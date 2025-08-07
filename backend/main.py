@@ -17,6 +17,14 @@ import tempfile
 # Cargar variables de entorno desde .env
 try:
     from dotenv import load_dotenv
+    import os
+    # Mostrar directorio actual y buscar archivo .env
+    current_dir = os.getcwd()
+    env_file = os.path.join(current_dir, '.env')
+    print(f"🔍 DEBUG - Directorio actual: {current_dir}")
+    print(f"🔍 DEBUG - Buscando archivo .env en: {env_file}")
+    print(f"🔍 DEBUG - ¿Existe archivo .env?: {os.path.exists(env_file)}")
+    
     load_dotenv()
     print("✅ Archivo .env cargado correctamente")
 except ImportError:
@@ -44,6 +52,12 @@ API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
 ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+
+# Debug: Mostrar valores cargados
+print(f"🔍 DEBUG - API_KEY: {API_KEY}")
+print(f"🔍 DEBUG - ENDPOINT: {ENDPOINT}")
+print(f"🔍 DEBUG - DEPLOYMENT: {DEPLOYMENT}")
+print(f"🔍 DEBUG - API_VERSION: {API_VERSION}")
 
 # Configurar NO_PROXY específicamente para el endpoint de Azure OpenAI
 if ENDPOINT:
