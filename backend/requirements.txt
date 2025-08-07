@@ -2,7 +2,7 @@ fastapi==0.104.1
 uvicorn[standard]==0.24.0
 python-dotenv==1.0.0
 pypdf==3.17.4
-openai==1.84.0
+openai==1.99.1
 python-multipart==0.0.20
 pytesseract==0.3.13
 pillow==11.3.0
