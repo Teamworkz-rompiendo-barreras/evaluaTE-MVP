@@ -102,12 +102,14 @@ jobs:
           [ -d "dist/assets" ] && echo "✅ assets/" || (echo "❌ assets/" && exit 1)
           echo "✅ Todos los archivos críticos presentes"
 
-      - name: Upload artifacts
+      - name: Upload artifacts (Optimizado)
         uses: actions/upload-artifact@v4
         with:
           name: frontend-build
           path: nuevo-frontend/dist
           retention-days: 1
+          # Comprimir para reducir tamaño
+          compression-level: 9
 
   deploy_to_azure:
     needs: build_and_test
