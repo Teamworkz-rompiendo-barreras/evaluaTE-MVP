@@ -467,6 +467,7 @@ async def get_feedback_stats():
 @app.post("/api/pdf/analyze-cv")
 async def analyze_cv_pdf(file: UploadFile = File(...)):
     """Analiza un CV en formato PDF usando Azure Document Intelligence"""
+    temp_file_path = None
     try:
         logger.info(f"Analizando CV PDF: {file.filename}")
         
@@ -479,19 +480,14 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             temp_file_path = temp_file.name
         
         try:
-                    # Analizar con Azure Document Intelligence si está configurado
-        try:
+            # Analizar con Azure Document Intelligence si está configurado
             analysis = await analyze_cv_with_azure(temp_file_path, file.filename)
         except Exception as e:
             logger.warning(f"Azure Document Intelligence no disponible, usando fallback: {e}")
             # Fallback: análisis básico con PyMuPDF
             analysis = await analyze_cv_with_pymupdf(temp_file_path, file.filename)
-            
-            return analysis.dict()
-            
-        finally:
-            # Limpiar archivo temporal
-            os.unlink(temp_file_path)
+        
+        return analysis.dict()
         
     except Exception as e:
         logger.error(f"Error analizando CV: {str(e)}")
@@ -507,6 +503,14 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             education=["Formación detectada"],
             alerts=["Error en análisis automático"]
         ).dict()
+    
+    finally:
+        # Limpiar archivo temporal
+        if temp_file_path and os.path.exists(temp_file_path):
+            try:
+                os.unlink(temp_file_path)
+            except Exception as e:
+                logger.warning(f"Error eliminando archivo temporal: {e}")
 
 async def analyze_cv_with_azure(file_path: str, filename: str) -> CvAnalysis:
     """Analiza CV usando Azure Document Intelligence"""
