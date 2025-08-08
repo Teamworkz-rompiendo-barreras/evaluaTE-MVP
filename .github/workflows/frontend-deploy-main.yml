@@ -102,14 +102,13 @@ jobs:
           [ -d "dist/assets" ] && echo "✅ assets/" || (echo "❌ assets/" && exit 1)
           echo "✅ Todos los archivos críticos presentes"
 
-      # TEMPORALMENTE DESHABILITADO - Artifacts causan problemas de cuota
-      # - name: Upload artifacts (Optimizado)
-      #   uses: actions/upload-artifact@v4
-      #   with:
-      #     name: frontend-build
-      #     path: nuevo-frontend/dist
-      #     retention-days: 1
-      #     compression-level: 9
+      - name: Upload artifacts (Optimizado)
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-build
+          path: nuevo-frontend/dist
+          retention-days: 1
+          compression-level: 9
 
   deploy_to_azure:
     needs: build_and_test
@@ -122,26 +121,18 @@ jobs:
       - name: Checkout code
         uses: actions/checkout@v4
 
-      # TEMPORALMENTE DESHABILITADO - Usar build directo
-      # - name: Download artifacts
-      #   uses: actions/download-artifact@v4
-      #   with:
-      #     name: frontend-build
-      #     path: ./dist
-      
-      - name: Build project for deployment
-        working-directory: ./nuevo-frontend
-        run: |
-          echo "Construyendo proyecto para deploy..."
-          npm run build
-          echo "✅ Build completado para deploy"
+      - name: Download artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: frontend-build
+          path: ./dist
 
       - name: Verify deployment artifacts
         run: |
           echo "Verificando artefactos para deploy..."
-          ls -la nuevo-frontend/dist/
-          [ -f "nuevo-frontend/dist/index.html" ] && echo "✅ index.html listo" || (echo "❌ index.html faltante" && exit 1)
-          [ -f "nuevo-frontend/dist/staticwebapp.config.json" ] && echo "✅ staticwebapp.config.json listo" || (echo "❌ staticwebapp.config.json faltante" && exit 1)
+          ls -la dist/
+          [ -f "dist/index.html" ] && echo "✅ index.html listo" || (echo "❌ index.html faltante" && exit 1)
+          [ -f "dist/staticwebapp.config.json" ] && echo "✅ staticwebapp.config.json listo" || (echo "❌ staticwebapp.config.json faltante" && exit 1)
           echo "✅ Artefactos verificados"
 
       - name: Deploy to Azure Static Web Apps (Optimizado)
@@ -150,7 +141,7 @@ jobs:
           azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
           repo_token: ${{ secrets.GITHUB_TOKEN }}
           action: upload
-          app_location: "nuevo-frontend/dist"
+          app_location: "dist"
           api_location: ""
           output_location: ""
           skip_app_build: true
