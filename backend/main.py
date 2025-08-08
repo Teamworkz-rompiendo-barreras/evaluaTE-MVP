@@ -479,12 +479,13 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             temp_file_path = temp_file.name
         
         try:
-            # Analizar con Azure Document Intelligence si está configurado
-            if client:
-                analysis = await analyze_cv_with_azure(temp_file_path, file.filename)
-            else:
-                # Fallback: análisis básico con PyMuPDF
-                analysis = await analyze_cv_with_pymupdf(temp_file_path, file.filename)
+                    # Analizar con Azure Document Intelligence si está configurado
+        try:
+            analysis = await analyze_cv_with_azure(temp_file_path, file.filename)
+        except Exception as e:
+            logger.warning(f"Azure Document Intelligence no disponible, usando fallback: {e}")
+            # Fallback: análisis básico con PyMuPDF
+            analysis = await analyze_cv_with_pymupdf(temp_file_path, file.filename)
             
             return analysis.dict()
             
@@ -518,11 +519,14 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> CvAnalysis:
         key = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")
         
         if not endpoint or not key:
+            logger.warning("Azure Document Intelligence no configurado - variables de entorno faltantes")
             raise Exception("Azure Form Recognizer no configurado")
         
+        logger.info(f"Conectando a Azure Document Intelligence: {endpoint}")
         client = DocumentAnalysisClient(endpoint=endpoint, credential=AzureKeyCredential(key))
         
         with open(file_path, "rb") as document:
+            logger.info("Iniciando análisis de documento...")
             poller = client.begin_analyze_document("prebuilt-layout", document)
             result = poller.result()
         
@@ -531,6 +535,8 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> CvAnalysis:
         for page in result.pages:
             for line in page.lines:
                 text_content += line.content + "\n"
+        
+        logger.info(f"Texto extraído: {len(text_content)} caracteres")
         
         # Analizar contenido con IA
         return await analyze_cv_content_with_ai(text_content, filename)
