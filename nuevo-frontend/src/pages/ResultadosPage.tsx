@@ -69,9 +69,16 @@ function safeGetRecommendations(data: unknown, path: string): unknown[] {
       }
     }
     
-    const result = Array.isArray(current) ? current : [];
-    console.log(`🔍 DEBUG - Resultado final para ${path}:`, result);
-    return result;
+    // CORRECCIÓN: Asegurar que siempre retornamos un array válido
+    if (Array.isArray(current)) {
+      // Filtrar elementos nulos o undefined
+      const result = current.filter(item => item != null && item !== undefined);
+      console.log(`🔍 DEBUG - Resultado final para ${path}:`, result);
+      return result;
+    } else {
+      console.log(`🔍 DEBUG - Resultado no es array, retornando []`);
+      return [];
+    }
   } catch (error) {
     console.warn(`Error accessing path ${path}:`, error);
     return [];
@@ -191,22 +198,58 @@ ${data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en pre
 ## Próximos Pasos
 
 ### A Corto Plazo
-${(safeGetRecommendations(data, 'recommendations.next_steps.short_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
+${(() => {
+  try {
+    const steps = safeGetRecommendations(data, 'recommendations.next_steps.short_term') || [];
+    return Array.isArray(steps) && steps.length > 0 
+      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
+      : '- Actualizar CV\n- Crear perfil en LinkedIn';
+  } catch (e) {
+    return '- Actualizar CV\n- Crear perfil en LinkedIn';
+  }
+})()}
 
 ### A Medio Plazo
-${(safeGetRecommendations(data, 'recommendations.next_steps.medium_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
+${(() => {
+  try {
+    const steps = safeGetRecommendations(data, 'recommendations.next_steps.medium_term') || [];
+    return Array.isArray(steps) && steps.length > 0 
+      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
+      : '- Completar formación específica\n- Ampliar red profesional';
+  } catch (e) {
+    return '- Completar formación específica\n- Ampliar red profesional';
+  }
+})()}
 
 ### A Largo Plazo
-${(safeGetRecommendations(data, 'recommendations.next_steps.long_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
+${(() => {
+  try {
+    const steps = safeGetRecommendations(data, 'recommendations.next_steps.long_term') || [];
+    return Array.isArray(steps) && steps.length > 0 
+      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
+      : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo';
+  } catch (e) {
+    return '- Desarrollar especialización\n- Buscar oportunidades de liderazgo';
+  }
+})()}
 
 ## Recursos y Apoyo
 
-${(safeGetRecommendations(data, 'recommendations.resources') || []).map((resource: unknown) => {
-      const res = resource as { name?: string; description?: string; url?: string };
-      return `### ${res.name || 'Recurso'}
+${(() => {
+  try {
+    const resources = safeGetRecommendations(data, 'recommendations.resources') || [];
+    return Array.isArray(resources) && resources.length > 0 
+      ? resources.filter(resource => resource != null).map((resource: unknown) => {
+          const res = resource as { name?: string; description?: string; url?: string };
+          return `### ${res.name || 'Recurso'}
 ${res.description || 'Descripción no disponible'}
 [Acceder a ${res.name || 'Recurso'}](target="_blank" href="${res.url || '#'}")`;
-    }).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}
+        }).join('\n\n')
+      : '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online';
+  } catch (e) {
+    return '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online';
+  }
+})()}
 
 ## Habilidades Evaluadas
 ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
