@@ -380,9 +380,31 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             timeout=60  # Timeout de 60 segundos para Azure OpenAI
         )
         
+        # Obtener y loggear la respuesta cruda
+        raw_content = response.choices[0].message.content
+        logger.info(f"Respuesta cruda de Azure OpenAI: {repr(raw_content[:500])}...")
+        
+        if not raw_content or not raw_content.strip():
+            logger.error("Azure OpenAI devolvió respuesta vacía")
+            raise Exception("Respuesta vacía de Azure OpenAI")
+        
+        # Limpiar la respuesta antes de parsear
+        content_to_parse = raw_content.strip()
+        
+        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto)
+        import re
+        json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
+        if json_match:
+            content_to_parse = json_match.group(0)
+        
         import json
-        report_data = json.loads(response.choices[0].message.content)
-        return report_data
+        try:
+            report_data = json.loads(content_to_parse)
+            return report_data
+        except json.JSONDecodeError as je:
+            logger.error(f"Error parseando JSON: {je}")
+            logger.error(f"Contenido que causó el error: {repr(content_to_parse[:1000])}")
+            raise Exception(f"Error parseando respuesta JSON: {je}")
         
     except Exception as e:
         logger.error(f"Error generando informe con IA: {e}")
@@ -617,11 +639,32 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
             timeout=60  # Timeout de 60 segundos para Azure OpenAI
         )
         
+        # Obtener y loggear la respuesta cruda
+        raw_content = response.choices[0].message.content
+        logger.info(f"Respuesta cruda de Azure OpenAI (CV): {repr(raw_content[:500])}...")
+        
+        if not raw_content or not raw_content.strip():
+            logger.error("Azure OpenAI devolvió respuesta vacía para análisis de CV")
+            raise Exception("Respuesta vacía de Azure OpenAI")
+        
+        # Limpiar la respuesta antes de parsear
+        content_to_parse = raw_content.strip()
+        
+        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto)
+        import re
+        json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
+        if json_match:
+            content_to_parse = json_match.group(0)
+        
         # Parsear respuesta JSON
         import json
-        analysis_data = json.loads(response.choices[0].message.content)
-        
-        return CvAnalysis(**analysis_data)
+        try:
+            analysis_data = json.loads(content_to_parse)
+            return CvAnalysis(**analysis_data)
+        except json.JSONDecodeError as je:
+            logger.error(f"Error parseando JSON en análisis CV: {je}")
+            logger.error(f"Contenido que causó el error: {repr(content_to_parse[:1000])}")
+            raise Exception(f"Error parseando respuesta JSON: {je}")
         
     except Exception as e:
         logger.error(f"Error en análisis con IA: {e}")
