@@ -48,18 +48,30 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 // Función más robusta para manejar datos anidados de recomendaciones
 function safeGetRecommendations(data: unknown, path: string): unknown[] {
   try {
+    console.log(`🔍 DEBUG - safeGetRecommendations llamada con path: ${path}`);
+    console.log(`🔍 DEBUG - data:`, data);
+    
+    if (!data || typeof data !== 'object') {
+      console.log(`🔍 DEBUG - data no es objeto, retornando []`);
+      return [];
+    }
+    
     const keys = path.split('.');
     let current = data as Record<string, unknown>;
     
     for (const key of keys) {
+      console.log(`🔍 DEBUG - Navegando clave: ${key}, current:`, current);
       if (current && typeof current === 'object' && key in current) {
         current = current[key] as Record<string, unknown>;
       } else {
+        console.log(`🔍 DEBUG - Clave ${key} no encontrada, retornando []`);
         return [];
       }
     }
     
-    return Array.isArray(current) ? current : [];
+    const result = Array.isArray(current) ? current : [];
+    console.log(`🔍 DEBUG - Resultado final para ${path}:`, result);
+    return result;
   } catch (error) {
     console.warn(`Error accessing path ${path}:`, error);
     return [];
@@ -167,17 +179,17 @@ ${data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en pre
 ## Próximos Pasos
 
 ### A Corto Plazo
-${safeGetRecommendations(data, 'recommendations.next_steps.short_term').map((step: unknown) => `- ${String(step)}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
+${(safeGetRecommendations(data, 'recommendations.next_steps.short_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}
 
 ### A Medio Plazo
-${safeGetRecommendations(data, 'recommendations.next_steps.medium_term').map((step: unknown) => `- ${String(step)}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
+${(safeGetRecommendations(data, 'recommendations.next_steps.medium_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}
 
 ### A Largo Plazo
-${safeGetRecommendations(data, 'recommendations.next_steps.long_term').map((step: unknown) => `- ${String(step)}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
+${(safeGetRecommendations(data, 'recommendations.next_steps.long_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}
 
 ## Recursos y Apoyo
 
-${safeGetRecommendations(data, 'recommendations.resources').map((resource: unknown) => {
+${(safeGetRecommendations(data, 'recommendations.resources') || []).map((resource: unknown) => {
       const res = resource as { name?: string; description?: string; url?: string };
       return `### ${res.name || 'Recurso'}
 ${res.description || 'Descripción no disponible'}
