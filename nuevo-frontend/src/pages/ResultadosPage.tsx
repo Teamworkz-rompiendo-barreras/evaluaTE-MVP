@@ -121,10 +121,12 @@ const ResultadosPage: React.FC = () => {
         
         // Si no hay softSkills, proporcionar datos básicos para que el informe se genere
         const softSkillsToSend = validSoftSkills.length > 0 ? validSoftSkills.map((skill) => ({
-          skill: skill.skill,
-          score: skill.score,
-          level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
-          confidence: skill.confidence,
+          skill: skill.skill || 'Habilidad no definida',
+          score: skill.score || 0,
+          level: (typeof skill.level === 'string' && skill.level.trim()) 
+            ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) 
+            : 'Bajo',
+          confidence: skill.confidence || 0.5,
         })) : [{
           skill: "Motivación profesional",
           score: 70,
@@ -252,7 +254,16 @@ ${res.description || 'Descripción no disponible'}
 })()}
 
 ## Habilidades Evaluadas
-${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}
+${(() => {
+  try {
+    const validSkills = filterValidSoftSkills(personal.softSkills || []);
+    return validSkills.length > 0 
+      ? validSkills.map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')
+      : 'No se evaluaron habilidades soft';
+  } catch (e) {
+    return 'Error al procesar habilidades soft';
+  }
+})()}
 
 ### Preferencias Laborales
 - **Áreas de interés**: ${(() => {
@@ -395,12 +406,22 @@ ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.s
       const requestBody = {
         userId: report?.userId || 'user',
         fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-        softSkills: filterValidSoftSkills(personal.softSkills || []).map((skill) => ({
-          skill: skill.skill,
-          score: skill.score,
-          level: typeof skill.level === 'string' ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) : 'Bajo',
-          confidence: skill.confidence,
-        })),
+        softSkills: (() => {
+          try {
+            const validSkills = filterValidSoftSkills(personal.softSkills || []);
+            return validSkills.map((skill) => ({
+              skill: skill.skill || 'Habilidad no definida',
+              score: skill.score || 0,
+              level: (typeof skill.level === 'string' && skill.level.trim()) 
+                ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) 
+                : 'Bajo',
+              confidence: skill.confidence || 0.5,
+            }));
+          } catch (e) {
+            console.error('Error procesando softSkills para PDF:', e);
+            return [];
+          }
+        })(),
         cvAnalysis: personal.cvAnalysis ? {
           strengths: personal.cvAnalysis.strengths ?? [],
           weaknesses: personal.cvAnalysis.weaknesses ?? [],
@@ -587,11 +608,18 @@ ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.s
         <div className="w-full md:w-1/2">
           <h3 className="font-semibold mb-2">Resumen de niveles:</h3>
           <ul className="space-y-1">
-            {filterValidSoftSkills(personal.softSkills || []).map((skill, idx: number) => (
-              <li key={idx}>
-                <span className="font-medium">{skill.skill}:</span> {skill.score}%
-              </li>
-            ))}
+            {(() => {
+              try {
+                const validSkills = filterValidSoftSkills(personal.softSkills || []);
+                return validSkills.map((skill, idx: number) => (
+                  <li key={idx}>
+                    <span className="font-medium">{skill.skill}:</span> {skill.score}%
+                  </li>
+                ));
+              } catch (e) {
+                return <li key="error">Error al cargar habilidades</li>;
+              }
+            })()}
           </ul>
           <p className="font-semibold mt-2">
             Puntaje global de empleabilidad: {report?.employabilityScore ?? '-'}
@@ -650,16 +678,28 @@ ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.s
             <p><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
             <p><strong>Puntaje de empleabilidad:</strong> {report?.employabilityScore ?? 'Calculando...'}</p>
             
-            {filterValidSoftSkills(personal.softSkills || []).length > 0 && (
-              <div className="mt-3">
-                <h4 className="font-semibold">Habilidades evaluadas:</h4>
-                <ul className="list-disc list-inside">
-                  {filterValidSoftSkills(personal.softSkills || []).map((skill, idx) => (
-                    <li key={idx}><strong>{skill.skill}:</strong> {skill.score}% ({skill.level})</li>
-                  ))}
-                </ul>
-              </div>
-            )}
+            {(() => {
+              try {
+                const validSkills = filterValidSoftSkills(personal.softSkills || []);
+                return validSkills.length > 0 && (
+                  <div className="mt-3">
+                    <h4 className="font-semibold">Habilidades evaluadas:</h4>
+                    <ul className="list-disc list-inside">
+                      {validSkills.map((skill, idx) => (
+                        <li key={idx}><strong>{skill.skill}:</strong> {skill.score}% ({skill.level})</li>
+                      ))}
+                    </ul>
+                  </div>
+                );
+              } catch (e) {
+                return (
+                  <div className="mt-3">
+                    <h4 className="font-semibold">Habilidades evaluadas:</h4>
+                    <p>Error al cargar habilidades</p>
+                  </div>
+                );
+              }
+            })()}
             
             <p className="mt-3 text-sm text-gray-600">
               Actualiza esta página en unos segundos para ver el informe completo.
