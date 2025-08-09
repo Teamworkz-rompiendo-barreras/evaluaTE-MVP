@@ -20,18 +20,29 @@ export const AZURE_CONFIG = {
   
   // Obtener la URL correcta del backend
   getBackendUrl: () => {
+    console.log('🔍 DEBUG - Detectando URL del backend...');
+    console.log('🔍 DEBUG - window.location.hostname:', window.location.hostname);
+    console.log('🔍 DEBUG - import.meta.env.PROD:', import.meta.env.PROD);
+    console.log('🔍 DEBUG - import.meta.env.VITE_API_URL:', import.meta.env.VITE_API_URL);
+    
     // Si hay una variable de entorno configurada, usarla
     if (import.meta.env.VITE_API_URL) {
+      console.log('✅ DEBUG - Usando VITE_API_URL:', import.meta.env.VITE_API_URL);
       return import.meta.env.VITE_API_URL;
     }
     
     // Si estamos en Azure, usar el backend de Azure
-    if (AZURE_CONFIG.isAzureEnvironment()) {
+    const isAzure = AZURE_CONFIG.isAzureEnvironment();
+    console.log('🔍 DEBUG - isAzureEnvironment():', isAzure);
+    
+    if (isAzure) {
+      console.log('✅ DEBUG - Usando Azure backend:', AZURE_CONFIG.AZURE_BACKEND_URL);
       return AZURE_CONFIG.AZURE_BACKEND_URL;
     }
     
-    // Por defecto, usar localhost:8080 (pero el sistema puede detectar otros puertos)
-    return AZURE_CONFIG.LOCAL_BACKEND_URLS[0];
+    // TEMPORAL: Forzar uso de Azure backend para debugging
+    console.log('⚠️ DEBUG - FORZANDO uso de Azure backend para debugging');
+    return AZURE_CONFIG.AZURE_BACKEND_URL;
   },
   
   // Función para detectar backend disponible (usada en desarrollo)
