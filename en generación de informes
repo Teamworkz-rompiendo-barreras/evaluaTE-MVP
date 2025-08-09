@@ -1,0 +1,90 @@
+[1mdiff --git a/nuevo-frontend/src/pages/ResultadosPage.tsx b/nuevo-frontend/src/pages/ResultadosPage.tsx[m
+[1mindex ff69651..4b012b5 100644[m
+[1m--- a/nuevo-frontend/src/pages/ResultadosPage.tsx[m
+[1m+++ b/nuevo-frontend/src/pages/ResultadosPage.tsx[m
+[36m@@ -69,9 +69,16 @@[m [mfunction safeGetRecommendations(data: unknown, path: string): unknown[] {[m
+       }[m
+     }[m
+     [m
+[31m-    const result = Array.isArray(current) ? current : [];[m
+[31m-    console.log(`🔍 DEBUG - Resultado final para ${path}:`, result);[m
+[31m-    return result;[m
+[32m+[m[32m    // CORRECCIÓN: Asegurar que siempre retornamos un array válido[m
+[32m+[m[32m    if (Array.isArray(current)) {[m
+[32m+[m[32m      // Filtrar elementos nulos o undefined[m
+[32m+[m[32m      const result = current.filter(item => item != null && item !== undefined);[m
+[32m+[m[32m      console.log(`🔍 DEBUG - Resultado final para ${path}:`, result);[m
+[32m+[m[32m      return result;[m
+[32m+[m[32m    } else {[m
+[32m+[m[32m      console.log(`🔍 DEBUG - Resultado no es array, retornando []`);[m
+[32m+[m[32m      return [];[m
+[32m+[m[32m    }[m
+   } catch (error) {[m
+     console.warn(`Error accessing path ${path}:`, error);[m
+     return [];[m
+[36m@@ -191,22 +198,58 @@[m [m${data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en pre[m
+ ## Próximos Pasos[m
+ [m
+ ### A Corto Plazo[m
+[31m-${(safeGetRecommendations(data, 'recommendations.next_steps.short_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Actualizar CV\n- Crear perfil en LinkedIn'}[m
+[32m+[m[32m${(() => {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const steps = safeGetRecommendations(data, 'recommendations.next_steps.short_term') || [];[m
+[32m+[m[32m    return Array.isArray(steps) && steps.length > 0[m[41m [m
+[32m+[m[32m      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')[m
+[32m+[m[32m      : '- Actualizar CV\n- Crear perfil en LinkedIn';[m
+[32m+[m[32m  } catch (e) {[m
+[32m+[m[32m    return '- Actualizar CV\n- Crear perfil en LinkedIn';[m
+[32m+[m[32m  }[m
+[32m+[m[32m})()}[m
+ [m
+ ### A Medio Plazo[m
+[31m-${(safeGetRecommendations(data, 'recommendations.next_steps.medium_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Completar formación específica\n- Ampliar red profesional'}[m
+[32m+[m[32m${(() => {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const steps = safeGetRecommendations(data, 'recommendations.next_steps.medium_term') || [];[m
+[32m+[m[32m    return Array.isArray(steps) && steps.length > 0[m[41m [m
+[32m+[m[32m      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')[m
+[32m+[m[32m      : '- Completar formación específica\n- Ampliar red profesional';[m
+[32m+[m[32m  } catch (e) {[m
+[32m+[m[32m    return '- Completar formación específica\n- Ampliar red profesional';[m
+[32m+[m[32m  }[m
+[32m+[m[32m})()}[m
+ [m
+ ### A Largo Plazo[m
+[31m-${(safeGetRecommendations(data, 'recommendations.next_steps.long_term') || []).map((step: unknown) => `- ${String(step)}`).join('\n') || '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'}[m
+[32m+[m[32m${(() => {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const steps = safeGetRecommendations(data, 'recommendations.next_steps.long_term') || [];[m
+[32m+[m[32m    return Array.isArray(steps) && steps.length > 0[m[41m [m
+[32m+[m[32m      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')[m
+[32m+[m[32m      : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo';[m
+[32m+[m[32m  } catch (e) {[m
+[32m+[m[32m    return '- Desarrollar especialización\n- Buscar oportunidades de liderazgo';[m
+[32m+[m[32m  }[m
+[32m+[m[32m})()}[m
+ [m
+ ## Recursos y Apoyo[m
+ [m
+[31m-${(safeGetRecommendations(data, 'recommendations.resources') || []).map((resource: unknown) => {[m
+[31m-      const res = resource as { name?: string; description?: string; url?: string };[m
+[31m-      return `### ${res.name || 'Recurso'}[m
+[32m+[m[32m${(() => {[m
+[32m+[m[32m  try {[m
+[32m+[m[32m    const resources = safeGetRecommendations(data, 'recommendations.resources') || [];[m
+[32m+[m[32m    return Array.isArray(resources) && resources.length > 0[m[41m [m
+[32m+[m[32m      ? resources.filter(resource => resource != null).map((resource: unknown) => {[m
+[32m+[m[32m          const res = resource as { name?: string; description?: string; url?: string };[m
+[32m+[m[32m          return `### ${res.name || 'Recurso'}[m
+ ${res.description || 'Descripción no disponible'}[m
+ [Acceder a ${res.name || 'Recurso'}](target="_blank" href="${res.url || '#'}")`;[m
+[31m-    }).join('\n\n') || '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online'}[m
+[32m+[m[32m        }).join('\n\n')[m
+[32m+[m[32m      : '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online';[m
+[32m+[m[32m  } catch (e) {[m
+[32m+[m[32m    return '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online';[m
+[32m+[m[32m  }[m
+[32m+[m[32m})()}[m
+ [m
+ ## Habilidades Evaluadas[m
+ ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n') || 'No se evaluaron habilidades soft'}[m
