@@ -1,3 +1,0 @@
-language: python
-pythonVersion: '3.12'
-startupCommand: python startup.py 
