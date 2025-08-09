@@ -391,11 +391,18 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         # Limpiar la respuesta antes de parsear
         content_to_parse = raw_content.strip()
         
-        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto)
+        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto o markdown)
         import re
-        json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
-        if json_match:
-            content_to_parse = json_match.group(0)
+        
+        # Primero, intentar extraer contenido entre ```json y ```
+        json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
+        if json_code_block_match:
+            content_to_parse = json_code_block_match.group(1).strip()
+        else:
+            # Si no hay bloque de código, buscar el JSON directamente
+            json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
+            if json_match:
+                content_to_parse = json_match.group(0)
         
         import json
         try:
@@ -650,11 +657,18 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
         # Limpiar la respuesta antes de parsear
         content_to_parse = raw_content.strip()
         
-        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto)
+        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto o markdown)
         import re
-        json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
-        if json_match:
-            content_to_parse = json_match.group(0)
+        
+        # Primero, intentar extraer contenido entre ```json y ```
+        json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
+        if json_code_block_match:
+            content_to_parse = json_code_block_match.group(1).strip()
+        else:
+            # Si no hay bloque de código, buscar el JSON directamente
+            json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
+            if json_match:
+                content_to_parse = json_match.group(0)
         
         # Parsear respuesta JSON
         import json
