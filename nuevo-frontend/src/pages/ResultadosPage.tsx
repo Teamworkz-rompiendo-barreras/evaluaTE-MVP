@@ -129,9 +129,13 @@ const ResultadosPage: React.FC = () => {
         });
         const data = await res.json();
         console.log('🔍 DEBUG - Respuesta del backend:', data);
-        console.log('🔍 DEBUG - data.recommendations:', data?.recommendations);
-        console.log('🔍 DEBUG - data.recommendations?.next_steps:', data?.recommendations?.next_steps);
-        console.log('🔍 DEBUG - data.recommendations?.resources:', data?.recommendations?.resources);
+        console.log('🔍 DEBUG - res.ok:', res.ok);
+        console.log('🔍 DEBUG - data exists:', !!data);
+        console.log('🔍 DEBUG - data.summary exists:', !!data?.summary);
+        console.log('🔍 DEBUG - data.summary value:', data?.summary);
+        console.log('🔍 DEBUG - data.recommendations exists:', !!data?.recommendations);
+        console.log('🔍 DEBUG - data.recommendations value:', data?.recommendations);
+        console.log('🔍 DEBUG - Condition result:', res.ok && data && data.summary && data.recommendations);
         if (res.ok && data && data.summary && data.recommendations) {
           // Generar informe profesional con el nuevo formato
           try {
@@ -194,12 +198,20 @@ ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.s
 ---
 *Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*
           `;
+            console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', informe.length);
+            console.log('✅ DEBUG - Primeros 200 caracteres:', informe.substring(0, 200));
             setIaReport(informe);
+            console.log('✅ DEBUG - Estado iaReport actualizado');
           } catch (error) {
-            console.error('Error generando informe:', error);
+            console.error('❌ Error generando informe:', error);
             setErrorIa('Error al generar el informe. Se generará un informe básico.');
           }
         } else {
+          console.log('❌ DEBUG - Condición falló. Motivos:');
+          console.log('  - res.ok:', res.ok);
+          console.log('  - data:', !!data);
+          console.log('  - data.summary:', !!data?.summary);
+          console.log('  - data.recommendations:', !!data?.recommendations);
           setErrorIa('No se pudo generar el informe IA.');
         }
       } catch (err) {
@@ -550,6 +562,7 @@ ${filterValidSoftSkills(personal.softSkills || []).map((skill) => `- **${skill.s
       {radar}
 
       {/* Informe de la IA y formulario de feedback */}
+      {(() => { console.log('🔍 DEBUG - Estado actual iaReport:', !!iaReport, 'Longitud:', iaReport?.length || 0); return null; })()}
       {iaReport && (
         <>
           <div className="informe-empleabilidad report-container">
