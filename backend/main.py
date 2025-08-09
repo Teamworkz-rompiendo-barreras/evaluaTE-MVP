@@ -230,7 +230,8 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         # Calcular puntaje de empleabilidad
         total_skills = len(request.softSkills)
         if total_skills == 0:
-            employability_score = 50
+            # SOLUCIÓN: Dar puntaje base más alto para usuarios sin habilidades evaluadas
+            employability_score = 60  # Cambio de 50 a 60 para ser más optimista
         else:
             total_score = sum(skill.score for skill in request.softSkills)
             employability_score = total_score // total_skills
@@ -459,18 +460,29 @@ def generate_basic_report(request: EmployabilityReportRequest, employability_sco
             "description": "Recursos específicos para personas con discapacidad"
         })
     
+    # SOLUCIÓN: Informe básico más detallado y útil
+    skills_summary = ""
+    if len(request.softSkills) > 0:
+        skills_summary = f" Has completado la evaluación de {len(request.softSkills)} habilidades soft."
+    else:
+        skills_summary = " Aunque no se han evaluado habilidades específicas, tienes potencial para desarrollarte profesionalmente."
+    
+    cv_info = ""
+    if request.cvAnalysis:
+        cv_info = " Tu CV ha sido analizado y contiene información valiosa para tu desarrollo profesional."
+    
     return {
-        "summary": f"Basado en tu evaluación, tu nivel de empleabilidad es {level} con un puntaje de {employability_score}/100.",
+        "summary": f"Basado en la información disponible, tu nivel de empleabilidad es {level} con un puntaje de {employability_score}/100.{skills_summary}{cv_info}",
         "recommendations": {
-            "profile_analysis": f"Perfil de {request.fullName} con {len(request.softSkills)} habilidades evaluadas.",
-            "strengths_analysis": "Fortalezas identificadas en los minijuegos de evaluación.",
-            "improvement_areas": "Áreas de mejora detectadas con recomendaciones específicas.",
-            "cv_analysis": "Análisis del CV realizado con herramientas especializadas.",
-            "job_suggestions": "Sugerencias laborales basadas en preferencias y habilidades.",
+            "profile_analysis": f"Perfil de {request.fullName}{skills_summary} Tu perfil muestra potencial para el crecimiento profesional y hay varias áreas donde puedes destacar.",
+            "strengths_analysis": "Fortalezas identificadas incluyen tu motivación para completar una evaluación profesional y tu interés en el desarrollo personal. Esto demuestra proactividad y compromiso con tu crecimiento profesional.",
+            "improvement_areas": "Las principales áreas de mejora incluyen: completar evaluaciones de habilidades soft adicionales, optimizar tu CV según estándares actuales, y definir claramente tus objetivos profesionales a corto y largo plazo.",
+            "cv_analysis": f"{'Tu CV ha sido analizado y ' if request.cvAnalysis else ''}Para mejorar tu CV, considera: usar un formato limpio y profesional, incluir palabras clave relevantes para tu sector, cuantificar tus logros cuando sea posible, y mantener la información actualizada.",
+            "job_suggestions": f"Basado en {'tus preferencias laborales y ' if request.jobPreferences else ''}tu perfil, considera explorar roles que coincidan con tus intereses y habilidades. Es importante investigar las tendencias del mercado laboral en tu área de interés.",
             "next_steps": {
-                "short_term": ["Actualizar CV", "Crear perfil en LinkedIn"],
-                "medium_term": ["Completar formación específica", "Ampliar red profesional"],
-                "long_term": ["Desarrollar especialización", "Buscar oportunidades de liderazgo"]
+                "short_term": ["Actualizar y optimizar tu CV", "Crear o mejorar tu perfil en LinkedIn", "Definir tus objetivos profesionales", "Investigar empresas de interés"],
+                "medium_term": ["Completar formación específica en tu área", "Ampliar tu red profesional", "Obtener certificaciones relevantes", "Practicar habilidades de entrevista"],
+                "long_term": ["Desarrollar una especialización", "Buscar oportunidades de liderazgo", "Considerar formación avanzada", "Planificar tu carrera a 5 años"]
             },
             "resources": resources
         }
