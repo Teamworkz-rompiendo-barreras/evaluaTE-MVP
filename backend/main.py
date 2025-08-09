@@ -723,4 +723,9 @@ async def upload_cv(file: UploadFile = File(...)):
 
 if __name__ == "__main__":
     import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8080)
+    # Usar variables de entorno para host y puerto, con fallbacks
+    host = os.getenv("HOST", "0.0.0.0")
+    port = int(os.getenv("PORT", "8080"))
+    
+    logger.info(f"🚀 Iniciando servidor en {host}:{port}")
+    uvicorn.run(app, host=host, port=port)
