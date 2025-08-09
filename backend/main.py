@@ -267,7 +267,7 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             "createdAt": datetime.now().isoformat()
         }
 
-        return ReportResponse(
+        response_data = ReportResponse(
             report=report,
             recommendations=professional_report["recommendations"],
             employabilityScore=employability_score,
@@ -275,6 +275,12 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             summary=professional_report["summary"],
             createdAt=datetime.now().isoformat()
         )
+        
+        logger.info(f"Respuesta final del informe generada exitosamente para {request.userId}")
+        logger.info(f"Summary presente: {'✅' if response_data.summary else '❌'}")
+        logger.info(f"Recommendations presente: {'✅' if response_data.recommendations else '❌'}")
+        
+        return response_data
 
     except Exception as e:
         logger.error(f"Error generando informe: {str(e)}")
@@ -398,15 +404,21 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
         if json_code_block_match:
             content_to_parse = json_code_block_match.group(1).strip()
+            logger.info(f"JSON extraído de bloque de código para informe: {repr(content_to_parse[:200])}...")
         else:
             # Si no hay bloque de código, buscar el JSON directamente
             json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
             if json_match:
                 content_to_parse = json_match.group(0)
+                logger.info(f"JSON extraído directamente para informe: {repr(content_to_parse[:200])}...")
+            else:
+                logger.error(f"No se pudo extraer JSON de la respuesta de informe: {repr(content_to_parse[:500])}")
+                raise Exception("No se encontró JSON válido en la respuesta")
         
         import json
         try:
             report_data = json.loads(content_to_parse)
+            logger.info(f"JSON parseado exitosamente para informe. Claves: {list(report_data.keys()) if isinstance(report_data, dict) else 'No es dict'}")
             return report_data
         except json.JSONDecodeError as je:
             logger.error(f"Error parseando JSON: {je}")
