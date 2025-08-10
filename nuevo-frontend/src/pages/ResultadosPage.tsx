@@ -168,8 +168,9 @@ const ResultadosPage: React.FC = () => {
         console.log('🔍 DEBUG - data.summary value:', data?.summary);
         console.log('🔍 DEBUG - data.recommendations exists:', !!data?.recommendations);
         console.log('🔍 DEBUG - data.recommendations value:', data?.recommendations);
-        console.log('🔍 DEBUG - Condition result:', res.ok && data && data.summary && data.recommendations);
-        if (res.ok && data && data.summary && data.recommendations) {
+        console.log('🔍 DEBUG - Condition result:', res.ok && !!data?.summary);
+        // Relajar condición: con que exista summary mostramos el informe; el resto es opcional
+        if (res.ok && data && data.summary) {
           // Generar informe profesional con el nuevo formato
           try {
             const informe = `# Informe Profesional de Empleabilidad
