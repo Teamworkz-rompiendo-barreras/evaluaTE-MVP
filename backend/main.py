@@ -3,7 +3,7 @@
 
 from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, Form
 from fastapi.middleware.cors import CORSMiddleware
-from fastapi.responses import JSONResponse, FileResponse
+from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 import uvicorn
 from typing import List, Optional, Dict, Any
@@ -115,7 +115,8 @@ class SoftSkillResult(BaseModel):
     skill: str
     score: int
     level: str  # 'bajo', 'medio', 'alto'
-    confidence: int
+    # Confianza expresada en porcentaje 0-100. Admitimos float para ser tolerantes con el cliente
+    confidence: float = Field(ge=0, le=100)
 
 class CvAnalysis(BaseModel):
     strengths: List[str] = Field(description="Puntos fuertes del CV")
@@ -566,6 +567,38 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
                 os.unlink(temp_file_path)
             except Exception as e:
                 logger.warning(f"Error eliminando archivo temporal: {e}")
+
+@app.post("/api/pdf/generate-report")
+async def generate_pdf_endpoint(payload: Dict[str, Any]):
+    """Genera y devuelve el PDF del informe de empleabilidad.
+
+    Espera un JSON con al menos:
+    - userInfo: { fullName, userId }
+    - gameData: lista de habilidades (skill, score, level, confidence)
+    - cvAnalysis: objeto de análisis de CV
+    - jobPreferences: preferencias laborales
+    - informeProfesional: string Markdown/Texto
+    """
+    try:
+        # Importar on-demand para evitar fallos en arranque si faltan dependencias
+        from pdf_service import create_employability_pdf
+
+        # Generar PDF
+        pdf_bytes = create_employability_pdf(payload)
+
+        # Responder como fichero descargable
+        filename_safe = (
+            (payload.get("userInfo", {}) or {}).get("fullName", "informe")
+        ) or "informe"
+        filename_safe = filename_safe.replace(" ", "_")
+
+        headers = {
+            "Content-Disposition": f"attachment; filename=informe_empleabilidad_{filename_safe}.pdf"
+        }
+        return StreamingResponse(io.BytesIO(pdf_bytes), media_type="application/pdf", headers=headers)
+    except Exception as e:
+        logger.error(f"Error generando PDF: {e}")
+        raise HTTPException(status_code=500, detail="No se pudo generar el PDF")
 
 async def analyze_cv_with_azure(file_path: str, filename: str) -> CvAnalysis:
     """Analiza CV usando Azure Document Intelligence"""
