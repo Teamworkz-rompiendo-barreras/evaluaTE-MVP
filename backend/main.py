@@ -384,7 +384,9 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             messages=[{"role": "user", "content": prompt}],
             temperature=0.7,
             max_tokens=2000,
-            timeout=60  # Timeout de 60 segundos para Azure OpenAI
+            timeout=60,  # Timeout de 60 segundos para Azure OpenAI
+            # Forzar que el modelo devuelva un objeto JSON válido
+            response_format={"type": "json_object"}
         )
         
         # Obtener y loggear la respuesta cruda
