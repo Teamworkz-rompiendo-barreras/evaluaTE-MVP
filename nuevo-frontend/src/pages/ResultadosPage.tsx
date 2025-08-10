@@ -1,5 +1,5 @@
 // src/pages/ResultadosPage.tsx
-import React, { useEffect, useState } from 'react';
+import React, { useEffect, useState, useRef } from 'react';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { buildApiUrl, API_CONFIG } from '../config/api';
@@ -107,6 +107,7 @@ const ResultadosPage: React.FC = () => {
   const [iaReport, setIaReport] = useState<string>('');
   const [loadingIa, setLoadingIa] = useState<boolean>(false);
   const [errorIa, setErrorIa] = useState<string>('');
+  const fetchedRef = useRef(false);
 
   // Llamar al endpoint de IA al cargar la página
   useEffect(() => {
@@ -120,18 +121,32 @@ const ResultadosPage: React.FC = () => {
         const validSoftSkills = filterValidSoftSkills(personal.softSkills || []);
         
         // Si no hay softSkills, proporcionar datos básicos para que el informe se genere
+        const normalizeLevel = (value: unknown): 'bajo' | 'medio' | 'alto' => {
+          if (typeof value !== 'string') return 'medio';
+          const v = value.trim().toLowerCase();
+          if (v === 'alto') return 'alto';
+          if (v === 'bajo') return 'bajo';
+          return 'medio';
+        };
+
+        const toPercentInt = (value: unknown): number => {
+          // Acepta 0-1 o 0-100. Convierte a entero 0-100 seguro
+          const num = Number(value);
+          if (Number.isNaN(num)) return 0;
+          const perc = num <= 1 ? num * 100 : num;
+          return Math.max(0, Math.min(100, Math.round(perc)));
+        };
+
         const softSkillsToSend = validSoftSkills.length > 0 ? validSoftSkills.map((skill) => ({
           skill: skill.skill || 'Habilidad no definida',
-          score: skill.score || 0,
-          level: (typeof skill.level === 'string' && skill.level.trim()) 
-            ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) 
-            : 'Bajo',
-          confidence: skill.confidence || 0.5,
+          score: Number(skill.score) || 0,
+          level: normalizeLevel(skill.level),
+          confidence: toPercentInt(skill.confidence),
         })) : [{
-          skill: "Motivación profesional",
+          skill: 'Motivación profesional',
           score: 70,
-          level: "Medio",
-          confidence: 0.8,
+          level: 'medio',
+          confidence: 80,
         }];
 
         const requestBody = {
@@ -326,14 +341,18 @@ ${(() => {
     
     // NUEVO: También permitir generar informe si hay datos básicos del usuario
     const hasBasicUserData = (report?.firstName && report?.lastName) || 
-                            (personal.cvAnalysis) || 
+                            (cvAnalysis) || 
                             (report?.jobPreferences);
     
+    if (fetchedRef.current) {
+      return;
+    }
     if (hasSoftSkills || hasBasicUserData) {
       // Condición cumplida - Ejecutando fetchIaReport
       console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
       console.log('  • hasSoftSkills:', hasSoftSkills);
       console.log('  • hasBasicUserData:', hasBasicUserData);
+      fetchedRef.current = true;
       fetchIaReport();
     } else {
       // Condición no cumplida - No se ejecuta fetchIaReport
@@ -454,7 +473,14 @@ ${(() => {
       const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_DOWNLOAD), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify(requestBody),
+        body: JSON.stringify({
+          // Adaptar el contrato del backend de PDF
+          userInfo: { fullName: requestBody.fullName, userId: requestBody.userId },
+          gameData: requestBody.softSkills,
+          cvAnalysis: requestBody.cvAnalysis,
+          jobPreferences: requestBody.jobPreferences,
+          informeProfesional: iaReport,
+        }),
       });
 
       if (!response.ok) {

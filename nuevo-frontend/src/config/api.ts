@@ -9,7 +9,7 @@ export const API_CONFIG = {
   ENDPOINTS: {
     IA_REPORT: '/api/informe-ia',
     IA_FEEDBACK: '/api/informe-ia/feedback',
-    PDF_GENERATE: '/api/generate-report',
+    PDF_GENERATE: '/api/pdf/generate-report',
     PDF_UPLOAD: '/api/upload-cv',
     PDF_ANALYZE: '/api/pdf/analyze-cv',
     PDF_DOWNLOAD: '/api/pdf/generate-report'
