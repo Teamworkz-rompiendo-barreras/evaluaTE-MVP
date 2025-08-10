@@ -341,13 +341,13 @@ ${(() => {
     
     // NUEVO: También permitir generar informe si hay datos básicos del usuario
     const hasBasicUserData = (report?.firstName && report?.lastName) || 
-                            (personal.cvAnalysis) || 
+                            (cvAnalysis) || 
                             (report?.jobPreferences);
     
     if (fetchedRef.current) {
       return;
     }
-    if (hasSoftSkills || hasBasicUserData || true) {
+    if (hasSoftSkills || hasBasicUserData) {
       // Condición cumplida - Ejecutando fetchIaReport
       console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
       console.log('  • hasSoftSkills:', hasSoftSkills);
