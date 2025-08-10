@@ -158,7 +158,7 @@ const ResultadosPage: React.FC = () => {
           method: 'POST',
           headers: { 'Content-Type': 'application/json' },
           body: JSON.stringify(requestBody),
-          signal: AbortSignal.timeout(120000), // Timeout de 2 minutos
+          signal: AbortSignal.timeout(180000), // Timeout de 3 minutos
         });
         const data = await res.json();
         console.log('🔍 DEBUG - Respuesta del backend:', data);

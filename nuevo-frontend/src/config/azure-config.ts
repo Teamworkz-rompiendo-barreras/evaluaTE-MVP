@@ -51,7 +51,7 @@ export const AZURE_CONFIG = {
       try {
         const response = await fetch(`${url}/health`, { 
           method: 'GET',
-          signal: AbortSignal.timeout(2000) // 2 segundos timeout
+          signal: AbortSignal.timeout(5000) // Aumenta timeout de detección a 5s
         });
         if (response.ok) {
           console.log(`✅ Backend detectado en: ${url}`);
