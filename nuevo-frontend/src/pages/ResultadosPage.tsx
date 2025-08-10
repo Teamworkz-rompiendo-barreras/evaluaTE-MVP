@@ -283,7 +283,17 @@ ${(() => {
             console.log('✅ DEBUG - Estado iaReport actualizado');
           } catch (error) {
             console.error('❌ Error generando informe:', error);
-            setErrorIa('Error al generar el informe. Se generará un informe básico.');
+            // Fallback: construir un informe mínimo usando solo summary si está disponible
+            try {
+              const summaryText = typeof data?.summary === 'string' && data.summary.trim()
+                ? data.summary.trim()
+                : 'Tu informe personalizado está en proceso. A continuación tienes un resumen básico basado en tu evaluación.';
+              const minimal = `# Informe Profesional de Empleabilidad\n\n## Resumen del Perfil\n${summaryText}\n\n---\n*Informe generado automáticamente.*`;
+              setIaReport(minimal);
+              console.log('✅ DEBUG - Fallback de informe básico establecido');
+            } catch (e) {
+              setErrorIa('No se pudo generar el informe en este momento.');
+            }
           }
         } else {
           console.log('❌ DEBUG - Condición falló. Motivos:');
