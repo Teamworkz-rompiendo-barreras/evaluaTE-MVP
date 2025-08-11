@@ -34,7 +34,7 @@
     },
     {
       "route": "/*",
-      "serve": "/index.html",
+      "rewrite": "/index.html",
       "allowedRoles": ["anonymous"]
     }
   ],
@@ -81,10 +81,5 @@
   },
   "platform": {
     "apiRuntime": "node:20"
-  },
-  "deployment": {
-    "maxConcurrency": 1,
-    "retryCount": 3,
-    "timeout": "10m"
   }
 } 
