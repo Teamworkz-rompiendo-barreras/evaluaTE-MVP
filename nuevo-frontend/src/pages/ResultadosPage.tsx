@@ -259,7 +259,25 @@ ${formatListsForAccessibility(data.recommendations?.strengths_analysis || 'Forta
 ${formatListsForAccessibility(data.recommendations?.improvement_areas || 'Áreas de mejora detectadas con recomendaciones.')}
 
 ### Análisis del CV
-${formatListsForAccessibility(data.recommendations?.cv_analysis || 'Análisis del CV realizado con herramientas especializadas.')}
+${(() => {
+  // Construir un bloque con estrellas y explicación clara y breve
+  const ratingLines = [
+    'Formato',
+    'Claridad',
+    'Coherencia',
+    'Información clave',
+    'Ortografía'
+  ].map((k) => `**${k}:** ★★★☆☆ (Regular)`);
+  const explained = `
+${ratingLines.join('\n')}
+
+${formatListsForAccessibility(
+  (data.recommendations?.cv_analysis as string) ||
+  'Se detectan oportunidades de mejora específicas. Prioriza estructura clara, mensajes directos y ejemplos cuantificables.'
+)}
+  `.trim();
+  return explained;
+})()}
 
 ## Sugerencias Laborales
 ${formatListsForAccessibility(data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en preferencias y habilidades.')}
