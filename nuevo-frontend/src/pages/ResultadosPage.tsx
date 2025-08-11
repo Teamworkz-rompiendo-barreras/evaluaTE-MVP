@@ -858,52 +858,43 @@ ${res.description || 'Descripción no disponible'}
                   ),
                                     // Componente personalizado para renderizar texto con estrellas coloreadas
                   p: ({ children, ...props }) => {
-                    if (typeof children === 'string' && children.includes('★')) {
+                    if ((typeof children === 'string' || Array.isArray(children)) && String(children).includes('★')) {
                       // Verificar si es una línea de indicadores de calidad
-                      if (children.includes('Formato:') || children.includes('Claridad:') || children.includes('Información clave:') || children.includes('Ortografía:')) {
-                        // Dividir el texto en partes para renderizar las estrellas con colores
-                        const parts = children.split(/((?:★+)(?:☆*))/g);
-                        
-                                                 return (
-                           <div {...props} className="quality-indicators">
-                             <div className="text-gray-700 leading-relaxed">
-                               {parts.map((part, index) => {
-                                 const starMatch = part.match(/(★+)(☆*)/);
-                                 if (starMatch) {
-                                   const [, filledStars, emptyStars] = starMatch;
-                                   const filledCount = filledStars.length;
-                                   const totalCount = filledCount + emptyStars.length;
-                                   const percentage = (filledCount / totalCount) * 100;
-                                   
-                                   let colorClass = 'star-very-poor'; // Por defecto
-                                   if (percentage >= 90) colorClass = 'star-excellent'; // Verde esmeralda para excepcional
-                                   else if (percentage >= 80) colorClass = 'star-very-good'; // Verde para excelente
-                                   else if (percentage >= 70) colorClass = 'star-good'; // Verde lima para muy bueno
-                                   else if (percentage >= 60) colorClass = 'star-average'; // Amarillo para bueno
-                                   else if (percentage >= 50) colorClass = 'star-regular'; // Naranja para regular
-                                   else if (percentage >= 40) colorClass = 'star-below-average'; // Naranja para regular-bajo
-                                   else if (percentage >= 30) colorClass = 'star-poor'; // Rojo claro para bajo
-                                   else colorClass = 'star-very-poor'; // Rojo para muy bajo
-                                   
-                                   return (
-                                     <span key={index}>
-                                       <span className={`${colorClass} star-filled`}>
-                                         {filledStars}
-                                       </span>
-                                       <span className="star-empty">
-                                         {emptyStars}
-                                       </span>
-                                     </span>
-                                   );
-                                 }
-                                 return part;
-                               })}
-                             </div>
-                           </div>
-                         );
+                      const text = Array.isArray(children) ? children.join('') : String(children);
+                      if (text.includes('Formato:') || text.includes('Claridad:') || text.includes('Información clave:') || text.includes('Ortografía:')) {
+                        // Extraer pares etiqueta + estrellas y mostrarlos en columna
+                        const indicators: Array<{ label: string; stars: string }> = [];
+                        const re = /(Formato|Claridad|Coherencia|Información clave|Ortografía):\s*([★☆]+)/g;
+                        let m: RegExpExecArray | null;
+                        // eslint-disable-next-line no-cond-assign
+                        while ((m = re.exec(text)) !== null) {
+                          indicators.push({ label: m[1], stars: m[2] });
+                        }
+                        return (
+                          <div {...props} className="quality-indicators">
+                            <ul className="text-gray-700 leading-relaxed space-y-1">
+                              {indicators.length > 0 ? indicators.map((it, idx) => {
+                                const starMatch = it.stars.match(/(★+)(☆*)/);
+                                const filledStars = starMatch ? starMatch[1] : '';
+                                const emptyStars = starMatch ? starMatch[2] : '';
+                                return (
+                                  <li key={idx} className="flex items-center gap-2">
+                                    <span className="font-semibold">{it.label}:</span>
+                                    <span>
+                                      <span className="star-filled">{filledStars}</span>
+                                      <span className="star-empty">{emptyStars}</span>
+                                    </span>
+                                  </li>
+                                );
+                              }) : (
+                                <li className="text-gray-700">{text}</li>
+                              )}
+                            </ul>
+                          </div>
+                        );
                       } else {
                         // Para otras estrellas en el texto, usar el renderizado normal
-                        const parts = children.split(/((?:★+)(?:☆*))/g);
+                        const parts = String(children).split(/((?:★+)(?:☆*))/g);
                         
                                                  return (
                            <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">
