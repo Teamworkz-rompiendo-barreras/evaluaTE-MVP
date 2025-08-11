@@ -56,7 +56,7 @@ const GameDashboardPage: React.FC = () => {
         </div>
 
         {/* Contexto general de los minijuegos */}
-        <div className="bg-blue-50 p-4 rounded-lg mb-8">
+        <div className="bg-blue-50 p-4 rounded-lg mb-8 no-max-width">
           <h2 className="font-bold text-xl mb-2">¡Bienvenido/a al reto de habilidades blandas!</h2>
           <p className="text-gray-700">
             Aquí podrás poner a prueba y desarrollar tus habilidades clave para el mundo laboral a través de 10 minijuegos interactivos. Cada día te enfrentarás a una situación diferente, donde no hay respuestas incorrectas: solo formas distintas de afrontar los retos del trabajo. ¡Juega, aprende y descubre tu potencial!

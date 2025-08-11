@@ -105,6 +105,7 @@ const ResultadosPage: React.FC = () => {
 
   // Estado para el informe IA
   const [iaReport, setIaReport] = useState<string>('');
+  const [iaScore, setIaScore] = useState<number | undefined>(undefined);
   const [loadingIa, setLoadingIa] = useState<boolean>(false);
   const [errorIa, setErrorIa] = useState<string>('');
   const fetchedRef = useRef(false);
@@ -164,7 +165,7 @@ const ResultadosPage: React.FC = () => {
             education: cvAnalysis.education ?? [],
             alerts: cvAnalysis.alerts ?? [],
           } : null,
-          jobPreferences: report?.jobPreferences || null,
+          jobPreferences: personal.jobPreferences || report?.jobPreferences || null,
           completedGames: game?.completedGames || [],
           logs: []
         };
@@ -191,6 +192,7 @@ const ResultadosPage: React.FC = () => {
             const informe = `# Informe Profesional de Empleabilidad
 
 ## Resumen del Perfil
+**Candidato:** ${data?.report?.fullName || userFullName}
 ${data.summary}
 
 ## Nivel de Empleabilidad
@@ -261,11 +263,11 @@ ${(() => {
           const res = resource as { name?: string; description?: string; url?: string };
           return `### ${res.name || 'Recurso'}
 ${res.description || 'Descripción no disponible'}
-[Acceder a ${res.name || 'Recurso'}](target="_blank" href="${res.url || '#'}")`;
+[Acceder a ${res.name || 'Recurso'}](${res.url || '#'})`;
         }).join('\n\n')
-      : '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online';
+      : '### Recursos Generales\n- [LinkedIn](https://www.linkedin.com/learning/)\n- [InfoJobs](https://www.infojobs.net/)\n- [Platzi](https://platzi.com/)';
   } catch (e) {
-    return '### Recursos Generales\n- LinkedIn: Red profesional para networking\n- InfoJobs: Portal de empleo líder en España\n- Platzi: Plataforma de cursos online';
+    return '### Recursos Generales\n- [LinkedIn](https://www.linkedin.com/learning/)\n- [InfoJobs](https://www.infojobs.net/)\n- [Platzi](https://platzi.com/)';
   }
 })()}
 
@@ -283,6 +285,7 @@ ${res.description || 'Descripción no disponible'}
             console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', informe.length);
             console.log('✅ DEBUG - Primeros 200 caracteres:', informe.substring(0, 200));
             setIaReport(informe);
+            setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
             console.log('✅ DEBUG - Estado iaReport actualizado');
           } catch (error) {
             console.error('❌ Error generando informe:', error);
@@ -598,11 +601,12 @@ ${res.description || 'Descripción no disponible'}
   };
 
   const mergedSoftSkills = useMemo(() => filterValidSoftSkills(personal.softSkills || []), [personal.softSkills]);
-  const globalScore = useMemo(() => {
+  const computedScore = useMemo(() => {
     if (!mergedSoftSkills || mergedSoftSkills.length === 0) return undefined;
     const sum = mergedSoftSkills.reduce((acc, s) => acc + (Number(s.score) || 0), 0);
     return Math.round(sum / mergedSoftSkills.length);
   }, [mergedSoftSkills]);
+  const globalScore = iaScore ?? report?.employabilityScore ?? computedScore;
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
     : processRadarData(mergedSoftSkills);

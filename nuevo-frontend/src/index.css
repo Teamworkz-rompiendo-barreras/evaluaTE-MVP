@@ -1,5 +1,4 @@
-/* Importar fuentes accesibles */
-@import url('https://fonts.googleapis.com/css2?family=Atkinson+Hyperlegible:ital,wght@0,400;0,700;1,400;1,700&display=swap');
+/* Importar fuentes accesibles (se elimina import remoto por CSP). Usar fuentes locales/fallbacks. */
 
 /* src/index.css */
 @tailwind base;
@@ -50,8 +49,17 @@ p {
   @apply mb-4;
   /* Mejoras para accesibilidad cognitiva */
   line-height: 1.7; /* Espaciado de línea más amplio */
-  max-width: 65ch; /* Ancho máximo para mejor legibilidad */
+  /* Quitar límite global para evitar "cajones" con huecos. Aplicar límites solo en contenedores específicos */
   text-align: justify; /* Texto justificado para mejor flujo */
+}
+
+/* En contenedores del informe profesional y cajas informativas, los párrafos deben ocupar todo el ancho */
+.professional-report p,
+.no-max-width p,
+.print-report-section p,
+.card p,
+.bg-blue-50 p {
+  max-width: none;
 }
 
 /* Enlaces con mejor accesibilidad */
