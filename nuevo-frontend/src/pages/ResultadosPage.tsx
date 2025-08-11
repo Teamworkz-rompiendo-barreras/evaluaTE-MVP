@@ -858,9 +858,22 @@ ${res.description || 'Descripción no disponible'}
                   ),
                                     // Componente personalizado para renderizar texto con estrellas coloreadas
                   p: ({ children, ...props }) => {
-                    if ((typeof children === 'string' || Array.isArray(children)) && String(children).includes('★')) {
+                    // Utilidad para extraer texto plano desde nodos React
+                    const extractText = (node: unknown): string => {
+                      if (node == null) return '';
+                      if (typeof node === 'string' || typeof node === 'number') return String(node);
+                      if (Array.isArray(node)) return node.map(extractText).join('');
+                      // @ts-expect-error - acceso seguro a props.children si existe
+                      if (typeof node === 'object' && node.props && node.props.children) {
+                        // @ts-expect-error - children puede ser nodo o array
+                        return extractText(node.props.children);
+                      }
+                      return '';
+                    };
+
+                    const text = extractText(children);
+                    if (text.includes('★')) {
                       // Verificar si es una línea de indicadores de calidad
-                      const text = Array.isArray(children) ? children.join('') : String(children);
                       if (text.includes('Formato:') || text.includes('Claridad:') || text.includes('Información clave:') || text.includes('Ortografía:')) {
                         // Extraer pares etiqueta + estrellas y mostrarlos en columna
                         const indicators: Array<{ label: string; stars: string }> = [];
@@ -894,7 +907,7 @@ ${res.description || 'Descripción no disponible'}
                         );
                       } else {
                         // Para otras estrellas en el texto, usar el renderizado normal
-                        const parts = String(children).split(/((?:★+)(?:☆*))/g);
+                        const parts = text.split(/((?:★+)(?:☆*))/g);
                         
                                                  return (
                            <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">
