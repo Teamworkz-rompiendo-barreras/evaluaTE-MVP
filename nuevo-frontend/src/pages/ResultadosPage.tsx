@@ -386,9 +386,7 @@ ${res.description || 'Descripción no disponible'}
   // Estado para el progreso de la barra
   const [progress, setProgress] = useState(0);
 
-  // Estado para la descarga de PDF
-  const [downloadingPdf, setDownloadingPdf] = useState(false);
-  const [pdfError, setPdfError] = useState('');
+  // Eliminado: descarga de PDF (se usará impresión para descargar informe)
 
   // Efecto para animar la barra de progreso
   useEffect(() => {
@@ -416,94 +414,7 @@ ${res.description || 'Descripción no disponible'}
     };
   }, [loadingIa]);
 
-  // Función para descargar PDF
-  const handleDownloadPdf = async () => {
-    setDownloadingPdf(true);
-    setPdfError('');
-    
-    // Datos para PDF preparados
-    
-    try {
-      const requestBody = {
-        userId: report?.userId || 'user',
-        fullName: `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario',
-        softSkills: (() => {
-          try {
-            const validSkills = filterValidSoftSkills(personal.softSkills || []);
-            return validSkills.map((skill) => ({
-              skill: skill.skill || 'Habilidad no definida',
-              score: skill.score || 0,
-              level: (typeof skill.level === 'string' && skill.level.trim()) 
-                ? skill.level.charAt(0).toUpperCase() + skill.level.slice(1) 
-                : 'Bajo',
-              confidence: skill.confidence || 0.5,
-            }));
-          } catch (e) {
-            console.error('Error procesando softSkills para PDF:', e);
-            return [];
-          }
-        })(),
-        cvAnalysis: personal.cvAnalysis ? {
-          strengths: personal.cvAnalysis.strengths ?? [],
-          weaknesses: personal.cvAnalysis.weaknesses ?? [],
-          feedback: personal.cvAnalysis.feedback ?? '',
-          structure: personal.cvAnalysis.structure ?? 'regular',
-          coherence: personal.cvAnalysis.coherence ?? 'regular',
-          experience: personal.cvAnalysis.experience ?? 'regular',
-          skills: personal.cvAnalysis.skills ?? [],
-          education: personal.cvAnalysis.education ?? [],
-          alerts: personal.cvAnalysis.alerts ?? [],
-        } : null,
-        jobPreferences: personal.jobPreferences || null,
-        completedGames: game?.completedGames || [],
-        logs: []
-      };
-      
-              // Request body para PDF preparado
-
-      const response = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_DOWNLOAD), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          // Adaptar el contrato del backend de PDF
-          userInfo: { fullName: requestBody.fullName, userId: requestBody.userId },
-          gameData: requestBody.softSkills,
-          cvAnalysis: requestBody.cvAnalysis,
-          jobPreferences: requestBody.jobPreferences,
-          informeProfesional: iaReport,
-        }),
-      });
-
-      if (!response.ok) {
-        throw new Error(`Error ${response.status}: ${response.statusText}`);
-      }
-
-      // Obtener el blob del PDF
-      const blob = await response.blob();
-      
-      // Crear URL del blob
-      const url = window.URL.createObjectURL(blob);
-      
-      // Crear enlace de descarga
-      const link = document.createElement('a');
-      link.href = url;
-      link.download = `informe_empleabilidad_${requestBody.fullName.replace(/\s+/g, '_')}_${new Date().toISOString().slice(0, 10)}.pdf`;
-      
-      // Simular clic para descargar
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
-      
-      // Limpiar URL
-      window.URL.revokeObjectURL(url);
-      
-    } catch (error) {
-              // Error descargando PDF
-      setPdfError('Error al descargar el PDF. Por favor, inténtalo de nuevo.');
-    } finally {
-      setDownloadingPdf(false);
-    }
-  };
+  // Eliminado: lógica de descarga de PDF
 
   // Función para imprimir
   const handlePrint = () => {
@@ -521,33 +432,6 @@ ${res.description || 'Descripción no disponible'}
       {/* Botones de acción */}
       <div className="flex gap-4 mt-6 print-hidden">
         <button
-          onClick={handleDownloadPdf}
-          disabled={downloadingPdf || !iaReport}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            downloadingPdf || !iaReport
-              ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-blue-600 text-white hover:bg-blue-700'
-          }`}
-        >
-          {downloadingPdf ? (
-            <span className="flex items-center gap-2">
-              <svg className="animate-spin h-5 w-5" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" fill="none" />
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
-              </svg>
-              Generando PDF...
-            </span>
-          ) : (
-            <span className="flex items-center gap-2">
-              <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-              </svg>
-              Descargar PDF
-            </span>
-          )}
-        </button>
-        
-        <button
           onClick={handlePrint}
           disabled={!iaReport}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
@@ -560,17 +444,12 @@ ${res.description || 'Descripción no disponible'}
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
               <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
             </svg>
-            Imprimir
+            Descargar Informe
           </span>
         </button>
       </div>
       
-      {/* Mensaje de error del PDF */}
-      {pdfError && (
-        <div className="mt-4 p-3 bg-red-100 border border-red-400 text-red-700 rounded-lg print-hidden">
-          {pdfError}
-        </div>
-      )}
+      {/* Eliminado: mensaje de error del PDF */}
     </div>
   );
 
