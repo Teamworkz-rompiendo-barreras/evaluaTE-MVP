@@ -1,5 +1,6 @@
 // src/features/games/scenesApi.ts
 import { createApi, fetchBaseQuery } from '@reduxjs/toolkit/query/react'
+import { API_CONFIG, buildApiUrl } from '../../config/api'
 import { games } from '../../data/games'
 
 // Tipos esperados en cada opción
@@ -70,7 +71,8 @@ const convertGameToScene = (gameId: string): Scene | null => {
 // API para cargar escenas
 export const scenesApi = createApi({
   reducerPath: 'scenesApi',
-  baseQuery: fetchBaseQuery({ baseUrl: '/api' }),
+  // Forzar base absoluta del backend para producción (SWA) y dev
+  baseQuery: fetchBaseQuery({ baseUrl: API_CONFIG.BASE_URL }),
   endpoints: (builder) => ({
     getScenes: builder.query<Scene[], void>({
       queryFn: () => {
@@ -98,7 +100,8 @@ export const scenesApi = createApi({
     }),
     sendGameLog: builder.mutation<void, GameLog>({
       query: (log) => ({
-        url: '/analyze/log',
+        // Mapear al endpoint existente del backend
+        url: buildApiUrl('/api/logs/scene'),
         method: 'POST',
         body: log,
       }),
@@ -118,7 +121,7 @@ export const logSceneInteraction = async (
   step: number,
   choice: string
 ) => {
-  await fetch(`/api/logs/step`, {
+  await fetch(buildApiUrl('/api/logs/scene'), {
     method: 'POST',
     headers: { 'Content-Type': 'application/json' },
     body: JSON.stringify({ sceneId, step, choice }),

@@ -609,9 +609,10 @@ ${(() => {
       });
   };
 
+  const mergedSoftSkills = useMemo(() => filterValidSoftSkills(personal.softSkills || []), [personal.softSkills]);
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
-    : processRadarData(filterValidSoftSkills(personal.softSkills || []));
+    : processRadarData(mergedSoftSkills);
   const radar = (
     <div className="bg-white rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid">
       <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>

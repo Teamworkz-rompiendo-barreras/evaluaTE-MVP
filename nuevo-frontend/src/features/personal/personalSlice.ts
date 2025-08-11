@@ -163,9 +163,27 @@ export const personalSlice = createSlice({
 
     // Guarda habilidades blandas evaluadas
     saveSoftSkills(state, action: PayloadAction<SoftSkillResult[]>) {
-      // Reemplazar completamente las habilidades soft en lugar de agregar
-      state.softSkills = action.payload;
-      // console.log('💾 Habilidades soft guardadas:', action.payload);
+      // Fusionar por nombre de habilidad para conservar el histórico de minijuegos
+      const incoming = action.payload || [];
+      const bySkill: Record<string, SoftSkillResult> = {};
+
+      // Incluir existentes primero
+      for (const existing of state.softSkills || []) {
+        if (existing && existing.skill) {
+          bySkill[existing.skill] = existing;
+        }
+      }
+
+      // Mezclar entradas nuevas, priorizando el mayor score
+      for (const s of incoming) {
+        if (!s || !s.skill) continue;
+        const prev = bySkill[s.skill];
+        if (!prev || (typeof s.score === 'number' && s.score > (prev.score ?? 0))) {
+          bySkill[s.skill] = s;
+        }
+      }
+
+      state.softSkills = Object.values(bySkill);
     },
 
     // Registra decisiones tomadas durante escenas
