@@ -269,18 +269,6 @@ ${res.description || 'Descripción no disponible'}
   }
 })()}
 
-## Habilidades Evaluadas
-${(() => {
-  try {
-    const validSkills = filterValidSoftSkills(personal.softSkills || []);
-    return validSkills.length > 0 
-      ? validSkills.map((skill) => `- **${skill.skill}**: ${skill.score}% (${skill.level})`).join('\n')
-      : 'No se evaluaron habilidades soft';
-  } catch (e) {
-    return 'Error al procesar habilidades soft';
-  }
-})()}
-
 ### Preferencias Laborales
 - **Áreas de interés**: ${(() => {
     const areas = data?.report?.jobPreferences?.areas;
@@ -721,28 +709,7 @@ ${(() => {
             <p><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
             <p><strong>Puntaje de empleabilidad:</strong> {report?.employabilityScore ?? 'Calculando...'}</p>
             
-            {(() => {
-              try {
-                const validSkills = filterValidSoftSkills(personal.softSkills || []);
-                return validSkills.length > 0 && (
-                  <div className="mt-3">
-                    <h4 className="font-semibold">Habilidades evaluadas:</h4>
-                    <ul className="list-disc list-inside">
-                      {validSkills.map((skill, idx) => (
-                        <li key={idx}><strong>{skill.skill}:</strong> {skill.score}% ({skill.level})</li>
-                      ))}
-                    </ul>
-                  </div>
-                );
-              } catch (e) {
-                return (
-                  <div className="mt-3">
-                    <h4 className="font-semibold">Habilidades evaluadas:</h4>
-                    <p>Error al cargar habilidades</p>
-                  </div>
-                );
-              }
-            })()}
+            
             
             <p className="mt-3 text-sm text-gray-600">
               Actualiza esta página en unos segundos para ver el informe completo.
