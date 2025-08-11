@@ -48,11 +48,15 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 // Función más robusta para manejar datos anidados de recomendaciones
 function safeGetRecommendations(data: unknown, path: string): unknown[] {
   try {
-    console.log(`🔍 DEBUG - safeGetRecommendations llamada con path: ${path}`);
-    console.log(`🔍 DEBUG - data:`, data);
+    if (import.meta.env.MODE !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log(`🔍 DEBUG - safeGetRecommendations llamada con path: ${path}`);
+      // eslint-disable-next-line no-console
+      console.log(`🔍 DEBUG - data:`, data);
+    }
     
     if (!data || typeof data !== 'object') {
-      console.log(`🔍 DEBUG - data no es objeto, retornando []`);
+    // Debug opcional eliminado para producción
       return [];
     }
     
@@ -60,11 +64,11 @@ function safeGetRecommendations(data: unknown, path: string): unknown[] {
     let current = data as Record<string, unknown>;
     
     for (const key of keys) {
-      console.log(`🔍 DEBUG - Navegando clave: ${key}, current:`, current);
+    // Debug opcional eliminado para producción
       if (current && typeof current === 'object' && key in current) {
         current = current[key] as Record<string, unknown>;
       } else {
-        console.log(`🔍 DEBUG - Clave ${key} no encontrada, retornando []`);
+        // Debug opcional eliminado para producción
         return [];
       }
     }
@@ -73,14 +77,20 @@ function safeGetRecommendations(data: unknown, path: string): unknown[] {
     if (Array.isArray(current)) {
       // Filtrar elementos nulos o undefined
       const result = current.filter(item => item != null && item !== undefined);
-      console.log(`🔍 DEBUG - Resultado final para ${path}:`, result);
+    // Debug opcional eliminado para producción
       return result;
     } else {
-      console.log(`🔍 DEBUG - Resultado no es array, retornando []`);
+      if (import.meta.env.MODE !== 'production') {
+        // eslint-disable-next-line no-console
+        console.log(`🔍 DEBUG - Resultado no es array, retornando []`);
+      }
       return [];
     }
   } catch (error) {
-    console.warn(`Error accessing path ${path}:`, error);
+    if (import.meta.env.MODE !== 'production') {
+      // eslint-disable-next-line no-console
+      console.warn(`Error accessing path ${path}:`, error);
+    }
     return [];
   }
 }
@@ -92,7 +102,7 @@ function escapeRegExp(text: string): string {
 
 function removeLeadingName(summary: string, candidate: string): string {
   if (!summary || !candidate) return summary;
-  const pattern = new RegExp(`^${escapeRegExp(candidate)}[\s,.:;-]*`, 'i');
+  const pattern = new RegExp(`^${escapeRegExp(candidate)}[\\s,.:;-]*`, 'i');
   return summary.replace(pattern, '').trimStart();
 }
 
@@ -188,14 +198,24 @@ const ResultadosPage: React.FC = () => {
           signal: AbortSignal.timeout(180000), // Timeout de 3 minutos
         });
         const data = await res.json();
-        console.log('🔍 DEBUG - Respuesta del backend:', data);
-        console.log('🔍 DEBUG - res.ok:', res.ok);
-        console.log('🔍 DEBUG - data exists:', !!data);
-        console.log('🔍 DEBUG - data.summary exists:', !!data?.summary);
-        console.log('🔍 DEBUG - data.summary value:', data?.summary);
-        console.log('🔍 DEBUG - data.recommendations exists:', !!data?.recommendations);
-        console.log('🔍 DEBUG - data.recommendations value:', data?.recommendations);
-        console.log('🔍 DEBUG - Condition result:', res.ok && !!data?.summary);
+        if (import.meta.env.MODE !== 'production') {
+          // eslint-disable-next-line no-console
+          console.log('🔍 DEBUG - Respuesta del backend:', data);
+          // eslint-disable-next-line no-console
+          console.log('🔍 DEBUG - res.ok:', res.ok);
+          // eslint-disable-next-line no-console
+          console.log('🔍 DEBUG - data exists:', !!data);
+          // eslint-disable-next-line no-console
+          console.log('🔍 DEBUG - data.summary exists:', !!data?.summary);
+          // eslint-disable-next-line no-console
+          console.log('🔍 DEBUG - data.summary value:', data?.summary);
+          // eslint-disable-next-line no-console
+          console.log('🔍 DEBUG - data.recommendations exists:', !!data?.recommendations);
+          // eslint-disable-next-line no-console
+          console.log('🔍 DEBUG - data.recommendations value:', data?.recommendations);
+          // eslint-disable-next-line no-console
+          console.log('🔍 DEBUG - Condition result:', res.ok && !!data?.summary);
+        }
         // Relajar condición: con que exista summary mostramos el informe; el resto es opcional
         if (res.ok && data && data.summary) {
           // Generar informe profesional con el nuevo formato
@@ -295,13 +315,23 @@ ${res.description || 'Descripción no disponible'}
 ---
 *Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*
           `;
-            console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', informe.length);
-            console.log('✅ DEBUG - Primeros 200 caracteres:', informe.substring(0, 200));
+            if (import.meta.env.MODE !== 'production') {
+              // eslint-disable-next-line no-console
+              console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', informe.length);
+              // eslint-disable-next-line no-console
+              console.log('✅ DEBUG - Primeros 200 caracteres:', informe.substring(0, 200));
+            }
             setIaReport(informe);
             setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
-            console.log('✅ DEBUG - Estado iaReport actualizado');
+            if (import.meta.env.MODE !== 'production') {
+              // eslint-disable-next-line no-console
+              console.log('✅ DEBUG - Estado iaReport actualizado');
+            }
           } catch (error) {
-            console.error('❌ Error generando informe:', error);
+            if (import.meta.env.MODE !== 'production') {
+              // eslint-disable-next-line no-console
+              console.error('❌ Error generando informe:', error);
+            }
             // Fallback: construir un informe mínimo usando solo summary si está disponible
             try {
               const summaryText = typeof data?.summary === 'string' && data.summary.trim()
@@ -309,17 +339,27 @@ ${res.description || 'Descripción no disponible'}
                 : 'Tu informe personalizado está en proceso. A continuación tienes un resumen básico basado en tu evaluación.';
               const minimal = `# Informe Profesional de Empleabilidad\n\n## Resumen del Perfil\n${summaryText}\n\n---\n*Informe generado automáticamente.*`;
               setIaReport(minimal);
-              console.log('✅ DEBUG - Fallback de informe básico establecido');
+              if (import.meta.env.MODE !== 'production') {
+                // eslint-disable-next-line no-console
+                console.log('✅ DEBUG - Fallback de informe básico establecido');
+              }
             } catch (e) {
               setErrorIa('No se pudo generar el informe en este momento.');
             }
           }
         } else {
-          console.log('❌ DEBUG - Condición falló. Motivos:');
-          console.log('  - res.ok:', res.ok);
-          console.log('  - data:', !!data);
-          console.log('  - data.summary:', !!data?.summary);
-          console.log('  - data.recommendations:', !!data?.recommendations);
+          if (import.meta.env.MODE !== 'production') {
+            // eslint-disable-next-line no-console
+            console.log('❌ DEBUG - Condición falló. Motivos:');
+            // eslint-disable-next-line no-console
+            console.log('  - res.ok:', res.ok);
+            // eslint-disable-next-line no-console
+            console.log('  - data:', !!data);
+            // eslint-disable-next-line no-console
+            console.log('  - data.summary:', !!data?.summary);
+            // eslint-disable-next-line no-console
+            console.log('  - data.recommendations:', !!data?.recommendations);
+          }
           setErrorIa('No se pudo generar el informe IA.');
         }
       } catch (err) {
@@ -353,19 +393,30 @@ ${res.description || 'Descripción no disponible'}
     }
     if (hasSoftSkills || hasBasicUserData) {
       // Condición cumplida - Ejecutando fetchIaReport
-      console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
-      console.log('  • hasSoftSkills:', hasSoftSkills);
-      console.log('  • hasBasicUserData:', hasBasicUserData);
+      if (import.meta.env.MODE !== 'production') {
+        // eslint-disable-next-line no-console
+        console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
+        // eslint-disable-next-line no-console
+        console.log('  • hasSoftSkills:', hasSoftSkills);
+        // eslint-disable-next-line no-console
+        console.log('  • hasBasicUserData:', hasBasicUserData);
+      }
       fetchedRef.current = true;
       fetchIaReport();
     } else {
       // Condición no cumplida - No se ejecuta fetchIaReport
-      console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
-      console.log('  • hasPersonalSoftSkills:', hasPersonalSoftSkills);
-      console.log('  • hasReportSoftSkills:', hasReportSoftSkills);
-      console.log('  • hasBasicUserData:', hasBasicUserData);
+      if (import.meta.env.MODE !== 'production') {
+        // eslint-disable-next-line no-console
+        console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
+        // eslint-disable-next-line no-console
+        console.log('  • hasPersonalSoftSkills:', hasPersonalSoftSkills);
+        // eslint-disable-next-line no-console
+        console.log('  • hasReportSoftSkills:', hasReportSoftSkills);
+        // eslint-disable-next-line no-console
+        console.log('  • hasBasicUserData:', hasBasicUserData);
+      }
     }
-  }, [report?.jobPreferences, personal.softSkills, report?.softSkills, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
+  }, [report?.jobPreferences, personal.softSkills, report?.softSkills, personal.jobPreferences, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
 
   // Estado para feedback
   const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
@@ -473,7 +524,7 @@ ${res.description || 'Descripción no disponible'}
   // Función para eliminar duplicados y asegurar claves únicas
   const processRadarData = (data: Array<{ skill?: string; softskill?: string; score: number }>) => {
     if (!Array.isArray(data)) {
-      console.warn("processRadarData: data is not an array, returning empty array");
+      // Evitar logs en producción
       return [];
     }
     
@@ -592,7 +643,7 @@ ${res.description || 'Descripción no disponible'}
       {radar}
 
       {/* Informe de la IA y formulario de feedback */}
-      {(() => { console.log('🔍 DEBUG - Estado actual iaReport:', !!iaReport, 'Longitud:', iaReport?.length || 0); return null; })()}
+      {/* Estado iaReport disponible para debug en desarrollo */}
       
       {/* SOLUCIÓN: Mostrar informe básico si no hay iaReport después de cargar */}
       {!loadingIa && !iaReport && !errorIa && (

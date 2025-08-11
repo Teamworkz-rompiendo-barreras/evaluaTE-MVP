@@ -52,16 +52,13 @@ export const isValidSoftSkill = (skill: unknown): skill is {
   level: string;
   confidence?: number;
 } => {
-  return Boolean(
-    skill &&
-    typeof skill === 'object' &&
-    'skill' in skill &&
-    'score' in skill &&
-    'level' in skill &&
-    typeof (skill as any).skill === 'string' &&
-    typeof (skill as any).score === 'number' &&
-    typeof (skill as any).level === 'string' &&
-    ['alto', 'medio', 'bajo'].includes((skill as any).level)
+  if (!skill || typeof skill !== 'object') return false;
+  const s = skill as { skill?: unknown; score?: unknown; level?: unknown; confidence?: unknown };
+  return (
+    typeof s.skill === 'string' &&
+    typeof s.score === 'number' &&
+    typeof s.level === 'string' &&
+    ['alto', 'medio', 'bajo'].includes(s.level)
   );
 };
 
@@ -114,12 +111,12 @@ export const validateRecommendations = (recommendations: unknown): {
     };
   }
 
-  const rec = recommendations as any;
+  const rec = recommendations as Partial<{ roles: unknown[]; resources: unknown[]; cvImprovements: unknown[]; nextSteps: unknown[] }>;
   
   return {
-    roles: isArray(rec.roles) ? rec.roles.filter((r: unknown) => typeof r === 'string') : [],
-    resources: isArray(rec.resources) ? rec.resources.filter((r: unknown) => typeof r === 'string') : [],
-    cvImprovements: isArray(rec.cvImprovements) ? rec.cvImprovements.filter((r: unknown) => typeof r === 'string') : [],
-    nextSteps: isArray(rec.nextSteps) ? rec.nextSteps.filter((r: unknown) => typeof r === 'string') : [],
+    roles: isArray(rec.roles as string[]) ? (rec.roles as unknown[]).filter((r: unknown) => typeof r === 'string') as string[] : [],
+    resources: isArray(rec.resources as string[]) ? (rec.resources as unknown[]).filter((r: unknown) => typeof r === 'string') as string[] : [],
+    cvImprovements: isArray(rec.cvImprovements as string[]) ? (rec.cvImprovements as unknown[]).filter((r: unknown) => typeof r === 'string') as string[] : [],
+    nextSteps: isArray(rec.nextSteps as string[]) ? (rec.nextSteps as unknown[]).filter((r: unknown) => typeof r === 'string') as string[] : [],
   };
 }; 

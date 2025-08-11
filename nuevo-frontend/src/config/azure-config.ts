@@ -20,28 +20,41 @@ export const AZURE_CONFIG = {
   
   // Obtener la URL correcta del backend
   getBackendUrl: () => {
-    console.log('🔍 DEBUG - Detectando URL del backend...');
-    console.log('🔍 DEBUG - window.location.hostname:', window.location.hostname);
-    console.log('🔍 DEBUG - import.meta.env.PROD:', import.meta.env.PROD);
-    console.log('🔍 DEBUG - import.meta.env.VITE_API_URL:', import.meta.env.VITE_API_URL);
+    if (import.meta.env.MODE !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('🔍 DEBUG - Detectando URL del backend...');
+      // eslint-disable-next-line no-console
+      console.log('🔍 DEBUG - window.location.hostname:', window.location.hostname);
+      // eslint-disable-next-line no-console
+      console.log('🔍 DEBUG - import.meta.env.PROD:', import.meta.env.PROD);
+      // eslint-disable-next-line no-console
+      console.log('🔍 DEBUG - import.meta.env.VITE_API_URL:', import.meta.env.VITE_API_URL);
+    }
     
     // Si hay una variable de entorno configurada, usarla
     if (import.meta.env.VITE_API_URL) {
-      console.log('✅ DEBUG - Usando VITE_API_URL:', import.meta.env.VITE_API_URL);
+      // Evitar log en producción
       return import.meta.env.VITE_API_URL;
     }
     
     // Si estamos en Azure, usar el backend de Azure
     const isAzure = AZURE_CONFIG.isAzureEnvironment();
-    console.log('🔍 DEBUG - isAzureEnvironment():', isAzure);
+    // Evitar logs en producción; en desarrollo puedes descomentar si lo necesitas
+    void isAzure; // evitar warning no-console asociado
     
     if (isAzure) {
-      console.log('✅ DEBUG - Usando Azure backend:', AZURE_CONFIG.AZURE_BACKEND_URL);
+      if (import.meta.env.MODE !== 'production') {
+        // eslint-disable-next-line no-console
+        console.log('✅ DEBUG - Usando Azure backend:', AZURE_CONFIG.AZURE_BACKEND_URL);
+      }
       return AZURE_CONFIG.AZURE_BACKEND_URL;
     }
     
     // TEMPORAL: Forzar uso de Azure backend para debugging
-    console.log('⚠️ DEBUG - FORZANDO uso de Azure backend para debugging');
+    if (import.meta.env.MODE !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('⚠️ DEBUG - FORZANDO uso de Azure backend para debugging');
+    }
     return AZURE_CONFIG.AZURE_BACKEND_URL;
   },
   
@@ -54,14 +67,23 @@ export const AZURE_CONFIG = {
           signal: AbortSignal.timeout(5000) // Aumenta timeout de detección a 5s
         });
         if (response.ok) {
-          console.log(`✅ Backend detectado en: ${url}`);
+          if (import.meta.env.MODE !== 'production') {
+            // eslint-disable-next-line no-console
+            console.log(`✅ Backend detectado en: ${url}`);
+          }
           return url;
         }
       } catch (error) {
-        console.log(`❌ Backend no disponible en: ${url}`);
+        if (import.meta.env.MODE !== 'production') {
+          // eslint-disable-next-line no-console
+          console.log(`❌ Backend no disponible en: ${url}`);
+        }
       }
     }
-    console.log(`⚠️ No se detectó backend disponible, usando: ${AZURE_CONFIG.LOCAL_BACKEND_URLS[0]}`);
+    if (import.meta.env.MODE !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log(`⚠️ No se detectó backend disponible, usando: ${AZURE_CONFIG.LOCAL_BACKEND_URLS[0]}`);
+    }
     return AZURE_CONFIG.LOCAL_BACKEND_URLS[0];
   }
 }; 
