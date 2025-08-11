@@ -286,6 +286,8 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             "userId": request.userId,
             "fullName": request.fullName,
             "softSkills": [skill.dict() for skill in request.softSkills],
+            # Incluir cvAnalysis original si vino en la solicitud para mayor trazabilidad
+            "cvAnalysis": request.cvAnalysis.dict() if request.cvAnalysis else None,
             "jobPreferences": request.jobPreferences.dict() if request.jobPreferences else {
                 "areas": [],
                 "needs": [],
@@ -306,12 +308,24 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         except Exception:
             avg_score = employability_score
 
+        # Adjuntar análisis de CV si se subió durante el flujo (/api/pdf/analyze-cv)
+        final_recommendations = professional_report.get("recommendations", {}) if isinstance(professional_report, dict) else {}
+        try:
+            # Si existe un campo cvAnalysis enriquecido en el informe devuelto por IA, úsalo; si no, conservar el del request
+            enriched_cv = None
+            if isinstance(final_recommendations, dict):
+                enriched_cv = final_recommendations.get("cv_analysis_structured")
+            if not report.get("cvAnalysis") and enriched_cv and isinstance(enriched_cv, dict):
+                report["cvAnalysis"] = enriched_cv
+        except Exception:
+            pass
+
         response_data = ReportResponse(
             report=report,
-            recommendations=professional_report["recommendations"],
+            recommendations=final_recommendations,
             employabilityScore=avg_score,
             level=("alto" if avg_score >= 80 else ("medio" if avg_score >= 50 else "bajo")),
-            summary=professional_report["summary"],
+            summary=str(professional_report.get("summary", "")) if isinstance(professional_report, dict) else "",
             createdAt=datetime.now().isoformat()
         )
         
@@ -702,6 +716,23 @@ async def analyze_cv_with_pymupdf(file_path: str, filename: str) -> CvAnalysis:
 async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
     """Analiza el contenido del CV usando IA"""
     try:
+        # Chequeo de ortografía simple con fallback silencioso
+        spelling_issues: list[str] = []
+        try:
+            from spellchecker import SpellChecker  # type: ignore
+            sp = SpellChecker(language='es')
+            # Tomar palabras alfabéticas, minúsculas y sin tildes cambia mucho el diccionario; nos quedamos en lo básico
+            import re as _re
+            words = [w.lower() for w in _re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}", content)]
+            # Evaluar hasta cierto límite para rendimiento
+            sample = words[:3000]
+            miss = sp.unknown(sample)
+            # Guardar hasta 50 ejemplos
+            spelling_issues = sorted(list(miss))[:50]
+        except Exception:
+            # No bloquear el flujo si falla el corrector
+            spelling_issues = []
+
         if not client:
             # Fallback sin IA
             return CvAnalysis(
@@ -713,7 +744,7 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
                 experience="regular",
                 skills=["Habilidades detectadas"],
                 education=["Formación detectada"],
-                alerts=["Análisis sin IA disponible"]
+                alerts=( ["Análisis sin IA disponible"] + ([f"Faltas de ortografía potenciales: {', '.join(spelling_issues[:10])}"] if spelling_issues else []) )
             )
         
         # Prompt para análisis de CV
@@ -776,6 +807,12 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
         import json
         try:
             analysis_data = json.loads(content_to_parse)
+            # Inyectar pista de ortografía si no viene
+            if isinstance(analysis_data, dict):
+                if spelling_issues and not analysis_data.get('alerts'):
+                    analysis_data['alerts'] = [f"Faltas de ortografía potenciales: {', '.join(spelling_issues[:10])}"]
+                elif spelling_issues and isinstance(analysis_data.get('alerts'), list):
+                    analysis_data['alerts'] = analysis_data['alerts'] + [f"Faltas de ortografía potenciales: {', '.join(spelling_issues[:10])}"]
             return CvAnalysis(**analysis_data)
         except json.JSONDecodeError as je:
             logger.error(f"Error parseando JSON en análisis CV: {je}")

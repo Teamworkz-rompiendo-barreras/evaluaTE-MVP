@@ -9,4 +9,5 @@ pillow==11.3.0
 PyMuPDF==1.23.8
 reportlab==4.0.7
 azure-ai-formrecognizer==3.3.3
+pyspellchecker==0.8.1
 azure-storage-blob==12.19.0

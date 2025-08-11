@@ -129,16 +129,17 @@ function renderStars(score: number): string {
   return '★'.repeat(n) + '☆'.repeat(5 - n);
 }
 
-// Heurísticas simples para evaluar un CV sin IA (formato, claridad, coherencia, información clave, ortografía)
+  // Heurísticas simples para evaluar un CV sin IA (formato, claridad, coherencia, información clave, ortografía)
 type CvHeuristicInput = Partial<{
   strengths: string[];
   weaknesses: string[];
   skills: string[];
   education: string[];
   feedback: string;
+    alerts: string[];
 }> | null;
 
-function rateCv(cv: CvHeuristicInput): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
+  function rateCv(cv: CvHeuristicInput): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
   if (!cv || typeof cv !== 'object') {
     return { formato: 3, claridad: 3, coherencia: 3, infoClave: 3, ortografia: 3, razones: ['No se encontraron datos del CV.'] };
   }
@@ -161,13 +162,15 @@ function rateCv(cv: CvHeuristicInput): { formato: number; claridad: number; cohe
   const infoClave = (skills.length >= 5 ? 4 : 3) + (education.length >= 1 ? 1 : 0);
 
   // Ortografía: heurística básica (dobles espacios, signos mal cerrados, exceso de mayúsculas)
-  const doubleSpaces = /\s{2,}/.test(feedback);
-  const longAllCaps = /\b[A-ZÁÉÍÓÚÜÑ]{6,}\b/.test(feedback);
-  const punctuationIssues = /\s[,;:.]/.test(feedback);
+    const doubleSpaces = /\s{2,}/.test(feedback);
+    const longAllCaps = /\b[A-ZÁÉÍÓÚÜÑ]{6,}\b/.test(feedback);
+    const punctuationIssues = /\s[,;:.]/.test(feedback);
+    const spellingHint = Array.isArray(cv.alerts) && cv.alerts.join(' ').toLowerCase().includes('faltas de ortografía');
   let ortografiaBase = 4;
   if (doubleSpaces) ortografiaBase -= 1;
   if (longAllCaps) ortografiaBase -= 1;
   if (punctuationIssues) ortografiaBase -= 1;
+    if (spellingHint) ortografiaBase -= 1;
   const ortografia = Math.max(2, Math.min(5, ortografiaBase));
 
   const razones: string[] = [];
@@ -177,7 +180,8 @@ function rateCv(cv: CvHeuristicInput): { formato: number; claridad: number; cohe
   if (weaknesses.length > 0) razones.push(`Áreas de mejora detectadas (${weaknesses.length}).`);
   if (doubleSpaces) razones.push('Se detectaron dobles espacios.');
   if (longAllCaps) razones.push('Uso excesivo de mayúsculas en palabras largas.');
-  if (punctuationIssues) razones.push('Espacios antes de signos de puntuación.');
+    if (punctuationIssues) razones.push('Espacios antes de signos de puntuación.');
+    if (spellingHint) razones.push('Se detectaron posibles faltas de ortografía.');
 
   return {
     formato: Math.max(1, Math.min(5, formato)),
