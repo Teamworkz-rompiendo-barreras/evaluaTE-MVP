@@ -587,41 +587,79 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             temp_file.write(content)
             temp_file_path = temp_file.name
         
-        # 0) Intentar análisis mejorado del módulo document_intelligence (si está disponible)
+        # Ejecutar TODAS las rutas disponibles y fusionar resultados para máxima cobertura
+        texts: List[str] = []
+        merged: Dict[str, Any] = {}
+
+        # A) Módulo mejorado de Document Intelligence
         try:
-            try:
-                from document_intelligence import analyze_cv_with_improved_intelligence  # type: ignore
-                di_res = analyze_cv_with_improved_intelligence(content)
-            except Exception:
-                di_res = None
-            if di_res and isinstance(di_res, dict):
-                raw_text = di_res.get("raw_text") or ""
-                basic = _extract_basic_cv_info_from_text(raw_text) if raw_text else None
-                ai_analysis = await analyze_cv_content_with_ai(raw_text or "", file.filename, basic)
-                merged0: Dict[str, Any] = {**ai_analysis}
-                # Unir información de contacto/experiencia/educación detectada por el módulo mejorado
+            from document_intelligence import analyze_cv_with_improved_intelligence  # type: ignore
+            di_res = analyze_cv_with_improved_intelligence(content)
+            if isinstance(di_res, dict):
+                if di_res.get("raw_text"):
+                    texts.append(str(di_res.get("raw_text")))
                 cv_info = di_res.get("cv_info") or {}
                 if isinstance(cv_info, dict):
-                    merged0.update({k: v for k, v in cv_info.items() if v})
-                return merged0
+                    # Preferimos estos datos iniciales
+                    for k, v in cv_info.items():
+                        if v and k not in merged:
+                            merged[k] = v
         except Exception as e:
             logger.warning(f"Módulo document_intelligence no disponible o falló: {e}")
 
+        # B) Azure Document Intelligence
         try:
-            # 1) Analizar con Azure Document Intelligence si está configurado
-            analysis = await analyze_cv_with_azure(temp_file_path, file.filename)
+            az_res = await analyze_cv_with_azure(temp_file_path, file.filename)
+            if isinstance(az_res, dict):
+                if az_res.get('raw_text'):
+                    texts.append(str(az_res.get('raw_text')))
+                for k, v in az_res.items():
+                    if k != 'raw_text' and v:
+                        # Unir sin machacar valores ya presentes
+                        if k not in merged:
+                            merged[k] = v
         except Exception as e:
-            logger.warning(f"Azure Document Intelligence no disponible, intentando OCR: {e}")
-            # 2) Intentar OCR con Azure Computer Vision
-            try:
-                analysis = await analyze_cv_with_ocr(temp_file_path, file.filename)
-            except Exception as e2:
-                logger.warning(f"OCR no disponible, usando PyMuPDF: {e2}")
-                # 3) Fallback: análisis básico con PyMuPDF
-                analysis = await analyze_cv_with_pymupdf(temp_file_path, file.filename)
-        
-        # analysis ya es un dict enriquecido con contactos/fechas si fue posible
-        return analysis
+            logger.warning(f"Azure Document Intelligence falló: {e}")
+
+        # C) OCR
+        try:
+            ocr_res = await analyze_cv_with_ocr(temp_file_path, file.filename)
+            if isinstance(ocr_res, dict):
+                if ocr_res.get('raw_text'):
+                    texts.append(str(ocr_res.get('raw_text')))
+                for k, v in ocr_res.items():
+                    if k not in merged and v and k != 'raw_text':
+                        merged[k] = v
+        except Exception as e:
+            logger.warning(f"OCR no disponible/falló: {e}")
+
+        # D) PyMuPDF
+        try:
+            pm_res = await analyze_cv_with_pymupdf(temp_file_path, file.filename)
+            if isinstance(pm_res, dict):
+                if pm_res.get('raw_text'):
+                    texts.append(str(pm_res.get('raw_text')))
+                for k, v in pm_res.items():
+                    if k not in merged and v and k != 'raw_text':
+                        merged[k] = v
+        except Exception as e:
+            logger.warning(f"PyMuPDF falló: {e}")
+
+        # Texto combinado
+        combined_text = "\n".join([t for t in texts if t])
+        basic = _extract_basic_cv_info_from_text(combined_text) if combined_text else None
+        ai_res = await analyze_cv_content_with_ai(combined_text, file.filename, basic)
+        final: Dict[str, Any] = {**ai_res}
+        # Mezclar también los básicos y lo ya fusionado
+        if basic:
+            for k, v in basic.items():
+                if v and k not in final:
+                    final[k] = v
+        for k, v in merged.items():
+            if v and k not in final:
+                final[k] = v
+
+        return final
         
     except Exception as e:
         logger.error(f"Error analizando CV: {str(e)}")
@@ -882,6 +920,8 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
             basic_hint = ""
 
         prompt = f"""
+        Eres un orientador laboral experto, con experiencia en neurodivergencias y discapacidad intelectual.
+        Debes generar información precisa, útil y de lectura fácil (frases cortas, listas, términos claros).
         Analiza el siguiente CV y proporciona un análisis detallado en formato JSON:
         
         CV: {content[:4000]}
@@ -900,9 +940,12 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
             "alerts": ["alerta1", "alerta2"],
             "cv_analysis_structured": {{
                 "candidate": "Nombre completo si aparece",
-                "contact": {{"emails": ["..."], "phones": ["..."], "location": "..."}},
+                "contact": {{"emails": ["..."], "phones": ["..."], "location": "...", "linkedin": "..."}},
                 "periods": ["ene 2020 - dic 2022", "2023 - actualidad"],
-                "highlights": ["...", "..."]
+                "languages": ["Español (nativo)", "Inglés (intermedio)"],
+                "highlights": ["...", "..."],
+                "volunteering": ["Entidad y rol si aparece"],
+                "education_synonyms": ["estudios", "formación", "educación", "cursos"]
             }}
         }}
         """
