@@ -621,17 +621,18 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
         except Exception as e:
             logger.warning(f"Azure Document Intelligence falló: {e}")
 
-        # C) OCR
-        try:
-            ocr_res = await analyze_cv_with_ocr(temp_file_path, file.filename)
-            if isinstance(ocr_res, dict):
-                if ocr_res.get('raw_text'):
-                    texts.append(str(ocr_res.get('raw_text')))
-                for k, v in ocr_res.items():
-                    if k not in merged and v and k != 'raw_text':
-                        merged[k] = v
-        except Exception as e:
-            logger.warning(f"OCR no disponible/falló: {e}")
+        # C) OCR (solo si hay credenciales configuradas)
+        if os.getenv("AZURE_COMPUTERVISION_ENDPOINT") and os.getenv("AZURE_COMPUTERVISION_KEY"):
+            try:
+                ocr_res = await analyze_cv_with_ocr(temp_file_path, file.filename)
+                if isinstance(ocr_res, dict):
+                    if ocr_res.get('raw_text'):
+                        texts.append(str(ocr_res.get('raw_text')))
+                    for k, v in ocr_res.items():
+                        if k not in merged and v and k != 'raw_text':
+                            merged[k] = v
+            except Exception as e:
+                logger.warning(f"OCR no disponible/falló: {e}")
 
         # D) PyMuPDF
         try:
