@@ -130,7 +130,15 @@ function renderStars(score: number): string {
 }
 
 // Heurísticas simples para evaluar un CV sin IA (formato, claridad, coherencia, información clave, ortografía)
-function rateCv(cv: any): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
+type CvHeuristicInput = Partial<{
+  strengths: string[];
+  weaknesses: string[];
+  skills: string[];
+  education: string[];
+  feedback: string;
+}> | null;
+
+function rateCv(cv: CvHeuristicInput): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
   if (!cv || typeof cv !== 'object') {
     return { formato: 3, claridad: 3, coherencia: 3, infoClave: 3, ortografia: 3, razones: ['No se encontraron datos del CV.'] };
   }
