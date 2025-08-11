@@ -111,7 +111,7 @@ function formatListsForAccessibility(text: string): string {
   if (!text || typeof text !== 'string') return '';
   let s = text.trim();
   // Reemplazar patrones tipo "1) ", "2. " por "- " con salto de línea, manteniendo separadores previos
-  s = s.replace(/(^|[\s;(])\d+[\)\.]\s+/g, '$1\n- ');
+  s = s.replace(/(^|[\s;(])\d+[).]\s+/g, '$1\n- ');
   // Quitar ";" antes de saltos de línea de lista
   s = s.replace(/;\s*\n- /g, '\n- ');
   // Dejar un salto adicional tras ":" para separar párrafos y lista
