@@ -233,7 +233,10 @@ export const personalSlice = createSlice({
       const validSkills = filterValidSoftSkills(state.softSkills);
       
       if (validSkills.length === 0) {
-        console.warn('generateFinalReport: No hay softSkills válidos para generar el informe');
+        if (process.env.NODE_ENV !== 'production') {
+          // eslint-disable-next-line no-console
+          console.warn('generateFinalReport: No hay softSkills válidos para generar el informe');
+        }
         return;
       }
 
@@ -331,7 +334,10 @@ function getRecommendationsFromProfile(params: {
   const validSkills = filterValidSoftSkills(params.softSkills);
   
   if (validSkills.length === 0) {
-    console.warn('getRecommendationsFromProfile: No hay softSkills válidos');
+    if (process.env.NODE_ENV !== 'production') {
+      // eslint-disable-next-line no-console
+      console.warn('getRecommendationsFromProfile: No hay softSkills válidos');
+    }
     return {
       roles: [],
       resources: [],
