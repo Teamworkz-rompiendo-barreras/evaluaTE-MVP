@@ -6,7 +6,7 @@ from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
 import uvicorn
-from typing import List, Optional, Dict, Any
+from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
 import io
 import json
@@ -594,7 +594,8 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             # Fallback: análisis básico con PyMuPDF
             analysis = await analyze_cv_with_pymupdf(temp_file_path, file.filename)
         
-        return analysis.dict()
+        # analysis ya es un dict enriquecido con contactos/fechas si fue posible
+        return analysis
         
     except Exception as e:
         logger.error(f"Error analizando CV: {str(e)}")
@@ -656,7 +657,54 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
         logger.error(f"Error generando PDF: {e}")
         raise HTTPException(status_code=500, detail="No se pudo generar el PDF")
 
-async def analyze_cv_with_azure(file_path: str, filename: str) -> CvAnalysis:
+def _extract_basic_cv_info_from_text(text_content: str) -> Dict[str, Any]:
+    """Extrae heurísticamente nombre del candidato, contactos y periodos laborales/educativos."""
+    try:
+        lines = [ln.strip() for ln in text_content.splitlines() if ln.strip()]
+        # Email y teléfono
+        import re
+        email_re = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+        phone_re = re.compile(r"(?:\+34\s*)?(?:\(?\d{2,3}\)?[\s.-]?){3,5}\d{2,4}")
+        emails = []
+        phones = []
+        for ln in lines[:100]:
+            emails += email_re.findall(ln)
+            phones += phone_re.findall(ln)
+        emails = list(dict.fromkeys(emails))[:3]
+        phones = list(dict.fromkeys(phones))[:3]
+
+        # Nombre probable: primeras 5-8 líneas con 2+ palabras capitalizadas y sin @
+        candidate = None
+        name_re = re.compile(r"^(?:[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+\s+){1,3}[A-ZÁÉÍÓÚÜÑ][a-záéíóúüñ]+$")
+        for ln in lines[:12]:
+            if '@' in ln or len(ln) > 60:
+                continue
+            if name_re.match(ln):
+                candidate = ln
+                break
+        # Ubicación: línea con ciudad/provincia típica si aparece tras contacto
+        location = None
+        loc_candidates = [ln for ln in lines[:30] if any(t in ln.lower() for t in ["madrid", "barcelona", "valencia", "sevilla", "bilbao", "coruña", "león", "zaragoza", "malaga", "granada", "vigo", "palma", "alicante"]) and '@' not in ln]
+        if loc_candidates:
+            location = loc_candidates[0]
+
+        # Fechas/periodos: detectar rangos tipo "junio 2023 - actualidad" o "2018–2020"
+        months = "enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|ene\.|feb\.|mar\.|abr\.|may\.|jun\.|jul\.|ago\.|sep\.|oct\.|nov\.|dic\."
+        period_re = re.compile(rf"((?:{months})?\s*\d{{4}})\s*[-–a]\s*((?:{months})?\s*(?:\d{{4}}|actualidad|presente))", re.IGNORECASE)
+        periods: List[str] = []
+        for ln in lines:
+            for m in period_re.finditer(ln):
+                periods.append(f"{m.group(1)} - {m.group(2)}")
+        periods = list(dict.fromkeys(periods))[:20]
+
+        contact = {"emails": emails, "phones": phones, "location": location}
+        basic = {"candidate": candidate, "contact": contact, "periods": periods}
+        return basic
+    except Exception:
+        return {"candidate": None, "contact": {}, "periods": []}
+
+
+async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]:
     """Analiza CV usando Azure Document Intelligence"""
     try:
         from azure.ai.formrecognizer import DocumentAnalysisClient
@@ -683,17 +731,22 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> CvAnalysis:
         for page in result.pages:
             for line in page.lines:
                 text_content += line.content + "\n"
-        
+        # Información básica extraída por regex (nombre/contacto/periodos)
+        basic = _extract_basic_cv_info_from_text(text_content)
         logger.info(f"Texto extraído: {len(text_content)} caracteres")
         
-        # Analizar contenido con IA
-        return await analyze_cv_content_with_ai(text_content, filename)
+        # Analizar contenido con IA (pasando hints básicos)
+        analysis = await analyze_cv_content_with_ai(text_content, filename, basic)
+        # Unir análisis con básicos
+        merged: Dict[str, Any] = {**analysis}
+        merged.update({k: v for k, v in basic.items() if v})
+        return merged
         
     except Exception as e:
         logger.error(f"Error con Azure Document Intelligence: {e}")
         raise
 
-async def analyze_cv_with_pymupdf(file_path: str, filename: str) -> CvAnalysis:
+async def analyze_cv_with_pymupdf(file_path: str, filename: str) -> Dict[str, Any]:
     """Analiza CV usando PyMuPDF como fallback"""
     try:
         import fitz  # PyMuPDF
@@ -705,15 +758,19 @@ async def analyze_cv_with_pymupdf(file_path: str, filename: str) -> CvAnalysis:
             text_content += page.get_text()
         
         doc.close()
-        
+        # Información básica
+        basic = _extract_basic_cv_info_from_text(text_content)
         # Analizar contenido con IA
-        return await analyze_cv_content_with_ai(text_content, filename)
+        analysis = await analyze_cv_content_with_ai(text_content, filename, basic)
+        merged: Dict[str, Any] = {**analysis}
+        merged.update({k: v for k, v in basic.items() if v})
+        return merged
         
     except Exception as e:
         logger.error(f"Error con PyMuPDF: {e}")
         raise
 
-async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
+async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Analiza el contenido del CV usando IA"""
     try:
         # Chequeo de ortografía simple con fallback silencioso
@@ -735,7 +792,7 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
 
         if not client:
             # Fallback sin IA
-            return CvAnalysis(
+            base = CvAnalysis(
                 strengths=["Contenido detectado en CV"],
                 weaknesses=["Análisis limitado sin IA"],
                 feedback="CV analizado básicamente",
@@ -746,12 +803,29 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
                 education=["Formación detectada"],
                 alerts=( ["Análisis sin IA disponible"] + ([f"Faltas de ortografía potenciales: {', '.join(spelling_issues[:10])}"] if spelling_issues else []) )
             )
+            result: Dict[str, Any] = base.dict()
+            if basic:
+                result.update({k: v for k, v in basic.items() if v})
+            return result
         
         # Prompt para análisis de CV
+        basic_hint = ""
+        try:
+            if basic:
+                basic_hint = f"""
+                HINTS EXTRAIDOS AUTOMÁTICAMENTE DEL CV:
+                - CANDIDATO: {basic.get('candidate') or ''}
+                - CONTACTO: emails={basic.get('contact', {}).get('emails', [])}, phones={basic.get('contact', {}).get('phones', [])}, location={basic.get('contact', {}).get('location')}
+                - PERIODOS DETECTADOS: {basic.get('periods', [])}
+                """
+        except Exception:
+            basic_hint = ""
+
         prompt = f"""
         Analiza el siguiente CV y proporciona un análisis detallado en formato JSON:
         
-        CV: {content[:4000]}  # Limitar contenido para el prompt
+        CV: {content[:4000]}
+        {basic_hint}
         
         Responde en este formato JSON exacto:
         {{
@@ -763,7 +837,13 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
             "experience": "alta/regular/baja",
             "skills": ["skill1", "skill2"],
             "education": ["educación1", "educación2"],
-            "alerts": ["alerta1", "alerta2"]
+            "alerts": ["alerta1", "alerta2"],
+            "cv_analysis_structured": {{
+                "candidate": "Nombre completo si aparece",
+                "contact": {{"emails": ["..."], "phones": ["..."], "location": "..."}},
+                "periods": ["ene 2020 - dic 2022", "2023 - actualidad"],
+                "highlights": ["...", "..."]
+            }}
         }}
         """
         
@@ -813,7 +893,16 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
                     analysis_data['alerts'] = [f"Faltas de ortografía potenciales: {', '.join(spelling_issues[:10])}"]
                 elif spelling_issues and isinstance(analysis_data.get('alerts'), list):
                     analysis_data['alerts'] = analysis_data['alerts'] + [f"Faltas de ortografía potenciales: {', '.join(spelling_issues[:10])}"]
-            return CvAnalysis(**analysis_data)
+            # Devolver dict plano del análisis más estructura; si falla validación, caeremos al except
+            base = CvAnalysis(**analysis_data)
+            result: Dict[str, Any] = base.dict()
+            # Anexar estructura si existe
+            if isinstance(analysis_data, dict) and isinstance(analysis_data.get('cv_analysis_structured'), dict):
+                result.update(analysis_data['cv_analysis_structured'])
+            # Mezclar hints básicos
+            if basic:
+                result.update({k: v for k, v in (basic or {}).items() if v})
+            return result
         except json.JSONDecodeError as je:
             logger.error(f"Error parseando JSON en análisis CV: {je}")
             logger.error(f"Contenido que causó el error: {repr(content_to_parse[:1000])}")
@@ -822,7 +911,7 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
     except Exception as e:
         logger.error(f"Error en análisis con IA: {e}")
         # Devolver análisis básico
-        return CvAnalysis(
+        base = CvAnalysis(
             strengths=["Contenido detectado"],
             weaknesses=["Error en análisis IA"],
             feedback="CV analizado con limitaciones",
@@ -833,6 +922,10 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
             education=["Formación detectada"],
             alerts=["Error en análisis automático"]
         )
+        result: Dict[str, Any] = base.dict()
+        if basic:
+            result.update({k: v for k, v in basic.items() if v})
+        return result
 
 @app.post("/api/upload-cv")
 async def upload_cv(file: UploadFile = File(...)):
