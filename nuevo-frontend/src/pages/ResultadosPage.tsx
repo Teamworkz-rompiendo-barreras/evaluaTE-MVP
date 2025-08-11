@@ -123,6 +123,64 @@ function formatListsForAccessibility(text: string): string {
   return s;
 }
 
+// Genera estrellas de 1-5 para lectura fácil
+function renderStars(score: number): string {
+  const n = Math.max(0, Math.min(5, Math.round(score)));
+  return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
+// Heurísticas simples para evaluar un CV sin IA (formato, claridad, coherencia, información clave, ortografía)
+function rateCv(cv: any): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
+  if (!cv || typeof cv !== 'object') {
+    return { formato: 3, claridad: 3, coherencia: 3, infoClave: 3, ortografia: 3, razones: ['No se encontraron datos del CV.'] };
+  }
+  const strengths = Array.isArray(cv.strengths) ? cv.strengths : [];
+  const weaknesses = Array.isArray(cv.weaknesses) ? cv.weaknesses : [];
+  const skills = Array.isArray(cv.skills) ? cv.skills : [];
+  const education = Array.isArray(cv.education) ? cv.education : [];
+  const feedback = typeof cv.feedback === 'string' ? cv.feedback : '';
+
+  // Formato: presencia de secciones y longitud moderada del feedback
+  const formato = (education.length > 0 && skills.length > 3 ? 4 : 3) + (feedback.length > 120 ? 1 : 0);
+
+  // Claridad: cantidad de fortalezas y que el feedback exista
+  const claridad = (strengths.length >= 3 ? 4 : 3) + (feedback.length > 80 ? 1 : 0);
+
+  // Coherencia: si aparecen puntos de mejora y fortalezas equilibrados
+  const coherencia = (weaknesses.length > 0 && strengths.length > 0) ? 4 : 3;
+
+  // Información clave: número de skills y educación
+  const infoClave = (skills.length >= 5 ? 4 : 3) + (education.length >= 1 ? 1 : 0);
+
+  // Ortografía: heurística básica (dobles espacios, signos mal cerrados, exceso de mayúsculas)
+  const doubleSpaces = /\s{2,}/.test(feedback);
+  const longAllCaps = /\b[A-ZÁÉÍÓÚÜÑ]{6,}\b/.test(feedback);
+  const punctuationIssues = /\s[,;:.]/.test(feedback);
+  let ortografiaBase = 4;
+  if (doubleSpaces) ortografiaBase -= 1;
+  if (longAllCaps) ortografiaBase -= 1;
+  if (punctuationIssues) ortografiaBase -= 1;
+  const ortografia = Math.max(2, Math.min(5, ortografiaBase));
+
+  const razones: string[] = [];
+  if (skills.length > 0) razones.push(`Incluye ${skills.length} habilidades identificadas.`);
+  if (education.length > 0) razones.push(`Formación registrada (${education.length} entradas).`);
+  if (strengths.length > 0) razones.push(`Fortalezas destacadas (${strengths.length}).`);
+  if (weaknesses.length > 0) razones.push(`Áreas de mejora detectadas (${weaknesses.length}).`);
+  if (doubleSpaces) razones.push('Se detectaron dobles espacios.');
+  if (longAllCaps) razones.push('Uso excesivo de mayúsculas en palabras largas.');
+  if (punctuationIssues) razones.push('Espacios antes de signos de puntuación.');
+
+  return {
+    formato: Math.max(1, Math.min(5, formato)),
+    claridad: Math.max(1, Math.min(5, claridad)),
+    coherencia: Math.max(1, Math.min(5, coherencia)),
+    infoClave: Math.max(1, Math.min(5, infoClave)),
+    ortografia,
+    razones,
+  };
+}
+
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
@@ -260,23 +318,21 @@ ${formatListsForAccessibility(data.recommendations?.improvement_areas || 'Áreas
 
 ### Análisis del CV
 ${(() => {
-  // Construir un bloque con estrellas y explicación clara y breve
-  const ratingLines = [
-    'Formato',
-    'Claridad',
-    'Coherencia',
-    'Información clave',
-    'Ortografía'
-  ].map((k) => `**${k}:** ★★★☆☆ (Regular)`);
-  const explained = `
-${ratingLines.join('\n')}
-
+  const cv = data?.report?.cvAnalysis || cvAnalysis || null;
+  const r = rateCv(cv);
+  const lines = [
+    `**Formato:** ${renderStars(r.formato)}`,
+    `**Claridad:** ${renderStars(r.claridad)}`,
+    `**Coherencia:** ${renderStars(r.coherencia)}`,
+    `**Información clave:** ${renderStars(r.infoClave)}`,
+    `**Ortografía:** ${renderStars(r.ortografia)}`,
+  ];
+  const consejo = `
 ${formatListsForAccessibility(
-  (data.recommendations?.cv_analysis as string) ||
-  'Se detectan oportunidades de mejora específicas. Prioriza estructura clara, mensajes directos y ejemplos cuantificables.'
+  (data.recommendations?.cv_analysis as string) || r.razones.join('; ')
 )}
   `.trim();
-  return explained;
+  return `${lines.join('\n')}\n\n${consejo}`;
 })()}
 
 ## Sugerencias Laborales
@@ -535,7 +591,7 @@ ${res.description || 'Descripción no disponible'}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
             !iaReport
               ? 'bg-gray-300 text-gray-500 cursor-not-allowed'
-              : 'bg-green-600 text-white hover:bg-green-700'
+              : 'bg-[#374ba6] text-white hover:bg-[#2d3f96]'
           }`}
         >
           <span className="flex items-center gap-2">
