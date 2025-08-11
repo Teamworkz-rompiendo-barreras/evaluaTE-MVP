@@ -8,6 +8,7 @@ from pydantic import BaseModel, Field
 import uvicorn
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
+import time
 import io
 import json
 import os
@@ -586,13 +587,38 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             temp_file.write(content)
             temp_file_path = temp_file.name
         
+        # 0) Intentar análisis mejorado del módulo document_intelligence (si está disponible)
         try:
-            # Analizar con Azure Document Intelligence si está configurado
+            try:
+                from document_intelligence import analyze_cv_with_improved_intelligence  # type: ignore
+                di_res = analyze_cv_with_improved_intelligence(content)
+            except Exception:
+                di_res = None
+            if di_res and isinstance(di_res, dict):
+                raw_text = di_res.get("raw_text") or ""
+                basic = _extract_basic_cv_info_from_text(raw_text) if raw_text else None
+                ai_analysis = await analyze_cv_content_with_ai(raw_text or "", file.filename, basic)
+                merged0: Dict[str, Any] = {**ai_analysis}
+                # Unir información de contacto/experiencia/educación detectada por el módulo mejorado
+                cv_info = di_res.get("cv_info") or {}
+                if isinstance(cv_info, dict):
+                    merged0.update({k: v for k, v in cv_info.items() if v})
+                return merged0
+        except Exception as e:
+            logger.warning(f"Módulo document_intelligence no disponible o falló: {e}")
+
+        try:
+            # 1) Analizar con Azure Document Intelligence si está configurado
             analysis = await analyze_cv_with_azure(temp_file_path, file.filename)
         except Exception as e:
-            logger.warning(f"Azure Document Intelligence no disponible, usando fallback: {e}")
-            # Fallback: análisis básico con PyMuPDF
-            analysis = await analyze_cv_with_pymupdf(temp_file_path, file.filename)
+            logger.warning(f"Azure Document Intelligence no disponible, intentando OCR: {e}")
+            # 2) Intentar OCR con Azure Computer Vision
+            try:
+                analysis = await analyze_cv_with_ocr(temp_file_path, file.filename)
+            except Exception as e2:
+                logger.warning(f"OCR no disponible, usando PyMuPDF: {e2}")
+                # 3) Fallback: análisis básico con PyMuPDF
+                analysis = await analyze_cv_with_pymupdf(temp_file_path, file.filename)
         
         # analysis ya es un dict enriquecido con contactos/fechas si fue posible
         return analysis
@@ -664,7 +690,7 @@ def _extract_basic_cv_info_from_text(text_content: str) -> Dict[str, Any]:
         # Email y teléfono
         import re
         email_re = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
-        phone_re = re.compile(r"(?:\+34\s*)?(?:\(?\d{2,3}\)?[\s.-]?){3,5}\d{2,4}")
+        phone_re = re.compile(r"(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{2,3}\)?[\s.-]?){2,4}\d{2,4}")
         emails = []
         phones = []
         for ln in lines[:100]:
@@ -769,6 +795,40 @@ async def analyze_cv_with_pymupdf(file_path: str, filename: str) -> Dict[str, An
     except Exception as e:
         logger.error(f"Error con PyMuPDF: {e}")
         raise
+
+async def analyze_cv_with_ocr(file_path: str, filename: str) -> Dict[str, Any]:
+    """Analiza CV usando OCR (Azure Computer Vision) como alternativa"""
+    try:
+        from azure.cognitiveservices.vision.computervision import ComputerVisionClient
+        from msrest.authentication import CognitiveServicesCredentials
+    except Exception as e:
+        raise Exception(f"Dependencias de OCR no disponibles: {e}")
+
+    endpoint = os.getenv("AZURE_COMPUTERVISION_ENDPOINT")
+    key = os.getenv("AZURE_COMPUTERVISION_KEY")
+    if not endpoint or not key:
+        raise Exception("OCR no configurado")
+
+    client = ComputerVisionClient(endpoint, CognitiveServicesCredentials(key))
+    with open(file_path, 'rb') as f:
+        ocr_result = client.recognize_printed_text_in_stream(image=f, language='es')  # type: ignore[attr-defined]
+
+    # Construir texto concatenado
+    lines: List[str] = []
+    try:
+        for region in ocr_result.regions:  # type: ignore[attr-defined]
+            for line in region.lines:
+                words = [w.text for w in line.words]
+                lines.append(' '.join(words))
+    except Exception:
+        pass
+    text_content = "\n".join(lines)
+    basic = _extract_basic_cv_info_from_text(text_content)
+    analysis = await analyze_cv_content_with_ai(text_content, filename, basic)
+    merged: Dict[str, Any] = {**analysis}
+    merged.update({k: v for k, v in basic.items() if v})
+    merged['ocr_used'] = True
+    return merged
 
 async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Analiza el contenido del CV usando IA"""
