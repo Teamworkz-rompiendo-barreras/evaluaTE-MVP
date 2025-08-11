@@ -12,6 +12,7 @@ import io
 import json
 import os
 import logging
+import sys
 import tempfile
 
 # Cargar variables de entorno desde .env
@@ -43,8 +44,26 @@ if 'ALL_PROXY' in os.environ:
 
 print("✅ Variables de proxy del sistema limpiadas")
 
-# Configurar logging
-logging.basicConfig(level=logging.INFO)
+# Forzar UTF-8 para stdout/stderr y logging (evita mojibake en Azure/AppService)
+os.environ.setdefault("PYTHONIOENCODING", "utf-8")
+os.environ.setdefault("LC_ALL", "C.UTF-8")
+os.environ.setdefault("LANG", "C.UTF-8")
+try:
+    if hasattr(sys.stdout, "reconfigure"):
+        sys.stdout.reconfigure(encoding="utf-8")
+    if hasattr(sys.stderr, "reconfigure"):
+        sys.stderr.reconfigure(encoding="utf-8")
+except Exception:
+    # Si el entorno no soporta reconfigure, continuamos sin interrumpir el arranque
+    pass
+
+# Configurar logging con formato explícito y forzando la configuración actual
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(asctime)s - %(levelname)s - %(name)s: %(message)s",
+    handlers=[logging.StreamHandler(stream=sys.stdout)],
+    force=True,
+)
 logger = logging.getLogger(__name__)
 
 # Variables de entorno para Azure OpenAI (opcionales)
@@ -53,8 +72,19 @@ ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
 DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
 API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
 
-# Debug: Mostrar valores cargados
-print(f"🔍 DEBUG - API_KEY: {API_KEY}")
+# Debug: Mostrar valores cargados (enmascarando secretos)
+def _mask(value: Optional[str], visible: int = 4) -> str:  # type: ignore[name-defined]
+    try:
+        if not value:
+            return ""
+        value_str = str(value)
+        if len(value_str) <= visible:
+            return "*" * len(value_str)
+        return ("*" * (len(value_str) - visible)) + value_str[-visible:]
+    except Exception:
+        return "***"
+
+print(f"🔍 DEBUG - API_KEY: {_mask(API_KEY)}")
 print(f"🔍 DEBUG - ENDPOINT: {ENDPOINT}")
 print(f"🔍 DEBUG - DEPLOYMENT: {DEPLOYMENT}")
 print(f"🔍 DEBUG - API_VERSION: {API_VERSION}")
@@ -581,7 +611,12 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
     """
     try:
         # Importar on-demand para evitar fallos en arranque si faltan dependencias
-        from pdf_service import create_employability_pdf
+        try:
+            # Cuando se ejecuta como paquete (uvicorn backend.main:app)
+            from .pdf_service import create_employability_pdf  # type: ignore[relative-beyond-top-level]
+        except Exception:
+            # Fallback cuando se ejecuta el archivo directamente
+            from pdf_service import create_employability_pdf
 
         # Generar PDF
         pdf_bytes = create_employability_pdf(payload)
@@ -702,7 +737,8 @@ async def analyze_cv_content_with_ai(content: str, filename: str) -> CvAnalysis:
             messages=[{"role": "user", "content": prompt}],
             temperature=0.3,
             max_tokens=1000,
-            timeout=60  # Timeout de 60 segundos para Azure OpenAI
+            timeout=60,  # Timeout de 60 segundos para Azure OpenAI
+            response_format={"type": "json_object"}  # Forzar respuesta JSON válida
         )
         
         # Obtener y loggear la respuesta cruda
@@ -759,10 +795,15 @@ async def upload_cv(file: UploadFile = File(...)):
     """Sube un CV para análisis"""
     try:
         logger.info(f"CV subido: {file.filename}")
+        # Calcular tamaño de forma segura (UploadFile no expone 'size')
+        content = await file.read()
+        size_bytes = len(content)
+        # Opcional: resetear el puntero si se necesitara leer después
+        # await file.seek(0)
         return {
             "message": "CV subido correctamente",
             "filename": file.filename,
-            "size": file.size
+            "size": size_bytes
         }
     except Exception as e:
         logger.error(f"Error subiendo CV: {str(e)}")

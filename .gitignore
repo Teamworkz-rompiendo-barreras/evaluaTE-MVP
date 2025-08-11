@@ -24,3 +24,24 @@ node_modules/
 # Ignorar compilaciones / caches front-end
 *.cache
 dist/
+# Local venv
+.venv/
+venv/
+
+# Python cache
+__pycache__/
+*.pyc
+
+# Build artifacts
+backend-appservice-*.zip
+backend-fixed-*.zip
+nuevo-frontend/frontend-*.zip
+*.log
+
+# Node
+node_modules/
+dist/
+
+# Env files
+*.env
+*.env.*
