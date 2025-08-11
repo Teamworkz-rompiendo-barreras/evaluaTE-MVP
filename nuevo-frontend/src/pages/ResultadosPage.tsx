@@ -106,6 +106,23 @@ function removeLeadingName(summary: string, candidate: string): string {
   return summary.replace(pattern, '').trimStart();
 }
 
+// Convierte enumeraciones en línea ("1) ...; 2) ...") en listas Markdown accesibles
+function formatListsForAccessibility(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+  let s = text.trim();
+  // Reemplazar patrones tipo "1) ", "2. " por "- " con salto de línea, manteniendo separadores previos
+  s = s.replace(/(^|[\s;(])\d+[\)\.]\s+/g, '$1\n- ');
+  // Quitar ";" antes de saltos de línea de lista
+  s = s.replace(/;\s*\n- /g, '\n- ');
+  // Dejar un salto adicional tras ":" para separar párrafos y lista
+  s = s.replace(/:\s*\n- /g, ':\n\n- ');
+  // Eliminar puntuación terminal sobrante de cada item
+  s = s.replace(/(- [^\n]+)[;.,]\s*$/gm, '$1');
+  // Compactar saltos múltiples
+  s = s.replace(/\n{3,}/g, '\n\n');
+  return s;
+}
+
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
@@ -221,7 +238,9 @@ const ResultadosPage: React.FC = () => {
           // Generar informe profesional con el nuevo formato
           try {
             const candidateName = String(data?.report?.fullName || userFullName);
-            const cleanedSummary = removeLeadingName(String(data.summary || ''), candidateName);
+            const cleanedSummary = formatListsForAccessibility(
+              removeLeadingName(String(data.summary || ''), candidateName)
+            );
             const informe = `# Informe Profesional de Empleabilidad
 
 ## Resumen del Perfil
@@ -234,16 +253,16 @@ ${cleanedSummary}
 ${data.recommendations?.profile_analysis || 'Análisis del perfil basado en la evaluación completa.'}
 
 ### Análisis de Fortalezas
-${data.recommendations?.strengths_analysis || 'Fortalezas identificadas en la evaluación.'}
+${formatListsForAccessibility(data.recommendations?.strengths_analysis || 'Fortalezas identificadas en la evaluación.')}
 
 ### Áreas de Mejora
-${data.recommendations?.improvement_areas || 'Áreas de mejora detectadas con recomendaciones.'}
+${formatListsForAccessibility(data.recommendations?.improvement_areas || 'Áreas de mejora detectadas con recomendaciones.')}
 
 ### Análisis del CV
-${data.recommendations?.cv_analysis || 'Análisis del CV realizado con herramientas especializadas.'}
+${formatListsForAccessibility(data.recommendations?.cv_analysis || 'Análisis del CV realizado con herramientas especializadas.')}
 
 ## Sugerencias Laborales
-${data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en preferencias y habilidades.'}
+${formatListsForAccessibility(data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en preferencias y habilidades.')}
 
 ## Próximos Pasos
 
