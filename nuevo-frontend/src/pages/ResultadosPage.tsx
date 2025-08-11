@@ -228,9 +228,6 @@ const ResultadosPage: React.FC = () => {
 **Candidato:** ${candidateName}
 ${cleanedSummary}
 
-## Nivel de Empleabilidad
-**${data.level}** (Puntaje: ${data.employabilityScore}/100)
-
 ## Análisis Detallado
 
 ### Análisis del Perfil
