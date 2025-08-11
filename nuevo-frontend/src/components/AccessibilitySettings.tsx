@@ -42,7 +42,7 @@ export const AccessibilitySettings: FC = () => {
           className="w-full p-2 border-2 border-gray-300 rounded-lg focus:border-primary focus:outline-none"
           aria-label="Seleccionar tipografía accesible"
         >
-          <option value="sans">📖 Estándar (Atkinson Hyperlegible)</option>
+          <option value="sans">📖 Estándar (Alta legibilidad)</option>
           <option value="dyslexic">🎯 Dislexia (OpenDyslexic)</option>
           <option value="readable">👁️ Alta legibilidad</option>
         </select>

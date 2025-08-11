@@ -10,7 +10,7 @@
 
 /* Estilos específicos para el renderizado profesional con accesibilidad cognitiva */
 .professional-report {
-  font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', 'Verdana', 'Arial', sans-serif;
+  font-family: 'OpenDyslexic', 'Verdana', 'Arial', 'Helvetica', system-ui, sans-serif;
   line-height: 1.8; /* Espaciado de línea más amplio para mejor legibilidad */
   color: #374151;
   overflow-wrap: break-word;
@@ -251,7 +251,7 @@
 
 /* Estilos para el contenido del markdown con accesibilidad cognitiva */
 .report-content {
-  font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', 'Verdana', 'Arial', sans-serif;
+  font-family: 'OpenDyslexic', 'Verdana', 'Arial', 'Helvetica', system-ui, sans-serif;
   line-height: 1.8; /* Espaciado de línea más amplio */
   color: #374151;
   overflow-wrap: break-word;

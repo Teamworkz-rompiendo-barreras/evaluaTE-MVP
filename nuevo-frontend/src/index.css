@@ -172,7 +172,7 @@ textarea {
 
 /* Estilos específicos para accesibilidad cognitiva */
 .text-accessible {
-  font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', 'Verdana', 'Arial', sans-serif;
+  font-family: 'OpenDyslexic', 'Verdana', 'Arial', 'Helvetica', system-ui, sans-serif;
   font-size: 1.125rem; /* Tamaño ligeramente mayor */
   line-height: 1.8; /* Espaciado de línea más amplio */
   letter-spacing: 0.02em; /* Espaciado de letras aumentado */

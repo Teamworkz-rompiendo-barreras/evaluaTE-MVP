@@ -25,18 +25,19 @@ export default {
         // Fuentes principales - ordenadas por accesibilidad cognitiva
         sans: [
           'OpenDyslexic',           // Fuente específica para dislexia
-          'Atkinson Hyperlegible',  // Fuente de alta legibilidad
-          'Comic Sans MS',          // Fuente amigable para dislexia
           'Verdana',                // Fuente clara y espaciada
           'Arial',                  // Fallback universal
+          'Helvetica',
+          'system-ui',
           'sans-serif'
         ],
         // Fuentes para encabezados - más legibles
         heading: [
           'OpenDyslexic',
-          'Atkinson Hyperlegible',
           'Verdana',
           'Arial',
+          'Helvetica',
+          'system-ui',
           'sans-serif'
         ],
         // Fuente específica para dislexia
@@ -49,10 +50,11 @@ export default {
         ],
         // Fuente de alta legibilidad
         readable: [
-          'Atkinson Hyperlegible',
           'OpenDyslexic',
           'Verdana',
           'Arial',
+          'Helvetica',
+          'system-ui',
           'sans-serif'
         ],
         // Fuente para código - mantener monospace
