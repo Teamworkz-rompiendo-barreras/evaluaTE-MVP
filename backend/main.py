@@ -299,11 +299,18 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             "createdAt": datetime.now().isoformat()
         }
 
+        # Recalcular puntaje global como media de todas las soft skills actuales si hay datos válidos
+        try:
+            scores = [int(s.get("score", 0)) for s in report["softSkills"] if isinstance(s, dict)]
+            avg_score = (sum(scores) // len(scores)) if scores else employability_score
+        except Exception:
+            avg_score = employability_score
+
         response_data = ReportResponse(
             report=report,
             recommendations=professional_report["recommendations"],
-            employabilityScore=employability_score,
-            level=level,
+            employabilityScore=avg_score,
+            level=("alto" if avg_score >= 80 else ("medio" if avg_score >= 50 else "bajo")),
             summary=professional_report["summary"],
             createdAt=datetime.now().isoformat()
         )

@@ -610,6 +610,11 @@ ${(() => {
   };
 
   const mergedSoftSkills = useMemo(() => filterValidSoftSkills(personal.softSkills || []), [personal.softSkills]);
+  const globalScore = useMemo(() => {
+    if (!mergedSoftSkills || mergedSoftSkills.length === 0) return undefined;
+    const sum = mergedSoftSkills.reduce((acc, s) => acc + (Number(s.score) || 0), 0);
+    return Math.round(sum / mergedSoftSkills.length);
+  }, [mergedSoftSkills]);
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
     : processRadarData(mergedSoftSkills);
@@ -660,7 +665,7 @@ ${(() => {
             })()}
           </ul>
           <p className="font-semibold mt-2">
-            Puntaje global de empleabilidad: {report?.employabilityScore ?? '-'}
+            Puntaje global de empleabilidad: {globalScore ?? report?.employabilityScore ?? '-'}
           </p>
         </div>
       </div>
