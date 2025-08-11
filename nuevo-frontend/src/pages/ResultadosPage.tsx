@@ -85,6 +85,17 @@ function safeGetRecommendations(data: unknown, path: string): unknown[] {
   }
 }
 
+// Utilidades para limpiar duplicaciones de nombre en el resumen
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
+
+function removeLeadingName(summary: string, candidate: string): string {
+  if (!summary || !candidate) return summary;
+  const pattern = new RegExp(`^${escapeRegExp(candidate)}[\s,.:;-]*`, 'i');
+  return summary.replace(pattern, '').trimStart();
+}
+
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
@@ -189,11 +200,13 @@ const ResultadosPage: React.FC = () => {
         if (res.ok && data && data.summary) {
           // Generar informe profesional con el nuevo formato
           try {
+            const candidateName = String(data?.report?.fullName || userFullName);
+            const cleanedSummary = removeLeadingName(String(data.summary || ''), candidateName);
             const informe = `# Informe Profesional de Empleabilidad
 
 ## Resumen del Perfil
-**Candidato:** ${data?.report?.fullName || userFullName}
-${data.summary}
+**Candidato:** ${candidateName}
+${cleanedSummary}
 
 ## Nivel de Empleabilidad
 **${data.level}** (Puntaje: ${data.employabilityScore}/100)
