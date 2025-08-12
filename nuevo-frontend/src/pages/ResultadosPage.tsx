@@ -398,7 +398,7 @@ ${(() => {
           const res = resource as { name?: string; description?: string; url?: string };
           return `### ${res.name || 'Recurso'}
 ${res.description || 'Descripción no disponible'}
-[Acceder a ${res.name || 'Recurso'}](${res.url || '#'})`;
+[${res.name || 'Recurso'}](${res.url || '#'})`;
         }).join('\n\n')
       : '### Recursos Generales\n- [LinkedIn](https://www.linkedin.com/learning/)\n- [InfoJobs](https://www.infojobs.net/)\n- [Platzi](https://platzi.com/)';
   } catch (e) {
