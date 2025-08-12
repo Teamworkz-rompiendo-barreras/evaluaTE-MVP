@@ -84,6 +84,7 @@ class ImprovedDocumentIntelligenceService:
     def __init__(self):
         self.endpoint = os.getenv('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT')
         self.key = os.getenv('AZURE_DOCUMENT_INTELLIGENCE_KEY')
+        self.model_id = os.getenv('AZURE_DOCINTEL_MODEL_ID')  # opcional: modelo custom
         self.storage_connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
         self.container_name = os.getenv('AZURE_STORAGE_CONTAINER', 'cv-uploads')
         
@@ -157,11 +158,20 @@ class ImprovedDocumentIntelligenceService:
             try:
                 # Analizar documento
                 with open(temp_file_path, "rb") as document:
-                    logger.info("📄 Iniciando análisis con Azure AI Document Intelligence...")
-                    poller = self.client.begin_analyze_document(
-                        "prebuilt-layout", document
-                    )
-                    result = poller.result()
+                    # Elegir modelo: custom si está definido, sino prebuilt-layout
+                    model_to_use = (self.model_id or "prebuilt-layout").strip()
+                    logger.info(f"📄 Iniciando análisis con Azure AI Document Intelligence (modelo='{model_to_use}')...")
+                    try:
+                        poller = self.client.begin_analyze_document(model_to_use, document)
+                        result = poller.result()
+                    except Exception as e:
+                        if model_to_use != "prebuilt-layout":
+                            logger.warning(f"⚠️ Falló el modelo custom '{model_to_use}', reintentando con 'prebuilt-layout': {e}")
+                            document.seek(0)
+                            poller = self.client.begin_analyze_document("prebuilt-layout", document)
+                            result = poller.result()
+                        else:
+                            raise
                     logger.info("✅ Análisis de Document Intelligence completado")
                 
                 # Validar la respuesta de Document Intelligence
