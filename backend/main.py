@@ -1413,12 +1413,48 @@ async def upload_cv(file: UploadFile = File(...)):
         # Calcular tamaño de forma segura (UploadFile no expone 'size')
         content = await file.read()
         size_bytes = len(content)
-        # Opcional: resetear el puntero si se necesitara leer después
-        # await file.seek(0)
+        # Validaciones básicas
+        if not file.filename.lower().endswith((".pdf",)):
+            raise HTTPException(status_code=400, detail="Formato no soportado. Sube un PDF")
+        if size_bytes <= 0:
+            raise HTTPException(status_code=400, detail="Archivo vacío")
+        if size_bytes > 15 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Archivo demasiado grande (>15MB)")
+
+        # Subir al contenedor de Azure Blob para curación/entrenamiento posterior
+        storage_conn = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+        container_name = os.getenv("AZURE_STORAGE_CONTAINER_CV", "cv-incoming")
+        blob_name = None
+        uploaded = False
+        if storage_conn:
+            try:
+                from azure.storage.blob import BlobServiceClient  # type: ignore
+                blob_service = BlobServiceClient.from_connection_string(storage_conn)
+                container = blob_service.get_container_client(container_name)
+                try:
+                    if not container.exists():
+                        container.create_container()
+                except Exception:
+                    pass
+                # Nombre único
+                safe_name = (file.filename or "cv.pdf").replace(" ", "_")
+                from datetime import datetime as _dt
+                blob_name = f"{_dt.now().strftime('%Y%m%d-%H%M%S')}_{safe_name}"
+                blob = container.get_blob_client(blob_name)
+                blob.upload_blob(content, overwrite=True, content_type="application/pdf", metadata={"source": "mvp-upload"})
+                uploaded = True
+            except Exception as e:
+                logger.warning(f"No se pudo subir a Blob Storage: {e}")
+
         return {
             "message": "CV subido correctamente",
             "filename": file.filename,
-            "size": size_bytes
+            "size": size_bytes,
+            "storage": {
+                "uploaded": uploaded,
+                "container": container_name if uploaded else None,
+                "blob_name": blob_name,
+            },
         }
     except Exception as e:
         logger.error(f"Error subiendo CV: {str(e)}")
