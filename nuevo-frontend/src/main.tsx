@@ -66,6 +66,7 @@ root.render(
       <PersistGate loading={null} persistor={persistor}>
         {/* <AccessibilitySettings /> */}
         <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
+          <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors">
           <Routes>
             {/* 1) Inicio → registro: datos personales */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
@@ -129,6 +130,7 @@ root.render(
           <CookieConsent />
           {/* Controles de accesibilidad (modo oscuro + zoom) */}
           <DarkZoomWidget />
+          </div>
         </BrowserRouter>
       </PersistGate>
     </Provider>
