@@ -59,70 +59,72 @@ export default function App() {
   return (
     <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
       <Routes>
-        {/* Ruta raíz → redirige al registro */}
-        <Route path="/" element={<Navigate to="/register/contact" replace />} />
+        {/* Layout global con accesibilidad (dark/zoom) */}
+        <Route path="/" element={<AppLayout />}>
+          {/* Ruta índice → redirige al registro */}
+          <Route index element={<Navigate to="/register/contact" replace />} />
 
-        {/* Registro inicial */}
-        <Route path="/register" element={<AppLayout />}>
-          <Route path="contact" element={<DatosPersonalesPage />} />
-          <Route path="preferences" element={<PreferencesStep />} />
+          {/* Registro inicial */}
+          <Route path="register">
+            <Route path="contact" element={<DatosPersonalesPage />} />
+            <Route path="preferences" element={<PreferencesStep />} />
+          </Route>
+
+          {/* Pantalla de bienvenida a los minijuegos */}
+          <Route path="welcome" element={<WelcomePage />} />
+
+          {/* Dashboard de minijuegos */}
+          <Route
+            path="games"
+            element={
+              <ProtectedRoute step="games">
+                <GameDashboardPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Escena de minijuego específico */}
+          <Route
+            path="game/:id"
+            element={
+              <ProtectedRoute step="games">
+                <GameScenePage />
+              </ProtectedRoute>
+            }
+          />
+          {/* Ruta alternativa para compatibilidad */}
+          <Route
+            path="games/:id"
+            element={
+              <ProtectedRoute step="games">
+                <GameScenePage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Subida de CV */}
+          <Route
+            path="upload-cv"
+            element={
+              <ProtectedRoute step="uploadCV">
+                <UploadCVPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Resultados e informe final */}
+          <Route
+            path="resultados"
+            element={
+              <ProtectedRoute step="resultados">
+                <ResultadosPage />
+              </ProtectedRoute>
+            }
+          />
+
+          {/* Ruta no encontrada */}
+          <Route path="*" element={<Navigate to="/register/contact" replace />} />
         </Route>
-
-        {/* Pantalla de bienvenida a los minijuegos */}
-        <Route path="/welcome" element={<WelcomePage />} />
-
-        {/* Dashboard de minijuegos */}
-        <Route
-          path="/games"
-          element={
-            <ProtectedRoute step="games">
-              <GameDashboardPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Escena de minijuego específico */}
-        <Route
-          path="/game/:id"
-          element={
-            <ProtectedRoute step="games">
-              <GameScenePage />
-            </ProtectedRoute>
-          }
-        />
-        
-        {/* Ruta alternativa para compatibilidad */}
-        <Route
-          path="/games/:id"
-          element={
-            <ProtectedRoute step="games">
-              <GameScenePage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Subida de CV */}
-        <Route
-          path="/upload-cv"
-          element={
-            <ProtectedRoute step="uploadCV">
-              <UploadCVPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Resultados e informe final */}
-        <Route
-          path="/resultados"
-          element={
-            <ProtectedRoute step="resultados">
-              <ResultadosPage />
-            </ProtectedRoute>
-          }
-        />
-
-        {/* Ruta no encontrada */}
-        <Route path="*" element={<Navigate to="/register/contact" replace />} />
       </Routes>
     </BrowserRouter>
   );
