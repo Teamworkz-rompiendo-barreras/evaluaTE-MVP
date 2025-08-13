@@ -398,7 +398,7 @@ ${(() => {
           const res = resource as { name?: string; description?: string; url?: string };
           return `### ${res.name || 'Recurso'}
 ${res.description || 'Descripción no disponible'}
-[Acceder a ${res.name || 'Recurso'}](${res.url || '#'})`;
+[${res.name || 'Recurso'}](${res.url || '#'})`;
         }).join('\n\n')
       : '### Recursos Generales\n- [LinkedIn](https://www.linkedin.com/learning/)\n- [InfoJobs](https://www.infojobs.net/)\n- [Platzi](https://platzi.com/)';
   } catch (e) {
@@ -589,11 +589,11 @@ ${res.description || 'Descripción no disponible'}
 
   // 1. Portada
   const portada = (
-    <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
       <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4" />
       <h1 className="text-4xl font-bold mb-2">Informe de Empleabilidad</h1>
       <h2 className="text-2xl font-semibold mb-1">{report?.firstName} {report?.lastName}</h2>
-      <p className="text-gray-600">{fecha}</p>
+      <p className="text-gray-600 dark:text-gray-300">{fecha}</p>
       
       {/* Botones de acción */}
       <div className="flex gap-4 mt-6 print-hidden">
@@ -655,9 +655,13 @@ ${res.description || 'Descripción no disponible'}
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
     : processRadarData(mergedSoftSkills);
+  // Color de etiquetas del radar según modo (claro/oscuro)
+  // Unificar color de etiquetas del radar: mismo tono que modo claro (fondo blanco en ambos)
+  const radarLabelColor = '#0B1220';
+
   const radar = (
-    <div className="bg-white rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid">
-      <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
+          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-1/2 h-96">
           {radarData.length > 0 ? (
@@ -666,13 +670,23 @@ ${res.description || 'Descripción no disponible'}
               keys={["score"]}
               indexBy="softskill"
               margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
-              borderColor={{ from: 'color' }}
+              theme={{
+                text: { fill: radarLabelColor, fontSize: 12 },
+                grid: { line: { stroke: '#6B7280', strokeWidth: 1 } },
+                axis: {
+                  ticks: { text: { fill: radarLabelColor } },
+                  domain: { line: { stroke: '#9CA3AF' } },
+                  legend: { text: { fill: radarLabelColor } },
+                },
+                crosshair: { line: { stroke: '#F3F4F6' } },
+              }}
+              borderColor={{ from: 'color', modifiers: [['brighter', 1]] }}
               gridLabelOffset={20}
               dotSize={12}
               dotColor={{ theme: 'background' }}
               dotBorderWidth={2}
-              dotBorderColor={{ from: 'color' }}
-              colors={{ scheme: 'nivo' }}
+              dotBorderColor={{ from: 'color', modifiers: [['brighter', 1]] }}
+              colors={{ scheme: 'set1' }}
               fillOpacity={0.25}
               blendMode="multiply"
               animate={true}
@@ -718,17 +732,17 @@ ${res.description || 'Descripción no disponible'}
 
       {/* Mensaje de carga */}
       {loadingIa && (
-        <div className="bg-blue-100 rounded-lg shadow-md p-6 mb-8 text-center">
-          <p className="text-lg font-semibold mb-4">Generando tu informe personalizado</p>
+        <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg shadow-md p-6 mb-8 text-center">
+          <p className="text-lg font-semibold mb-4 dark:text-blue-100">Generando tu informe personalizado</p>
           <div className="w-full flex justify-center">
-            <div className="w-2/3 bg-blue-200 rounded-full h-3 overflow-hidden">
+            <div className="w-2/3 bg-blue-200 dark:bg-blue-800 rounded-full h-3 overflow-hidden">
               <div
-                className="bg-blue-500 h-3 transition-all duration-300"
+                className="bg-blue-500 dark:bg-blue-300 h-3 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
           </div>
-          <p className="mt-4 text-xs text-gray-500">Esto puede tardar unos segundos. Por favor, ten paciencia.</p>
+          <p className="mt-4 text-xs text-gray-500 dark:text-gray-300">Esto puede tardar unos segundos. Por favor, ten paciencia.</p>
         </div>
       )}
 
@@ -749,11 +763,11 @@ ${res.description || 'Descripción no disponible'}
       
       {/* SOLUCIÓN: Mostrar informe básico si no hay iaReport después de cargar */}
       {!loadingIa && !iaReport && !errorIa && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
+        <div className="bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-700 text-yellow-700 dark:text-yellow-200 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
           <strong className="font-bold">Informe básico disponible.</strong>
           <span className="block sm:inline"> Tu informe está siendo procesado. Mientras tanto, aquí tienes un resumen de tus resultados.</span>
           
-          <div className="mt-4 bg-white rounded-lg p-4">
+          <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg p-4 transition-colors">
             <h3 className="text-lg font-semibold mb-2">Resumen de Evaluación</h3>
             <p><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
             <p><strong>Puntaje de empleabilidad:</strong> {report?.employabilityScore ?? 'Calculando...'}</p>
@@ -775,7 +789,7 @@ ${res.description || 'Descripción no disponible'}
                 components={{
                   // Configuración mejorada para renderizado profesional
                   h1: ({ children, ...props }) => (
-                    <h1 {...props} className="text-3xl font-bold text-gray-900 mb-6 mt-8 pb-2 border-b-2 border-gray-200">
+                    <h1 {...props} className="text-3xl font-bold text-gray-900 mb-6 mt-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">
                       {children}
                     </h1>
                   ),
@@ -821,34 +835,34 @@ ${res.description || 'Descripción no disponible'}
                     </em>
                   ),
                   blockquote: ({ children, ...props }) => (
-                    <blockquote {...props} className="border-l-4 border-blue-500 pl-4 italic text-gray-600 bg-blue-50 py-2 rounded-r">
+                    <blockquote {...props} className="border-l-4 border-blue-500 pl-4 italic text-gray-600 bg-blue-50 dark:bg-blue-900/30 py-2 rounded-r">
                       {children}
                     </blockquote>
                   ),
                   code: ({ children, ...props }) => (
-                    <code {...props} className="bg-gray-100 px-2 py-1 rounded text-sm font-mono text-gray-800">
+                      <code {...props} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-gray-800">
                       {children}
                     </code>
                   ),
                   pre: ({ children, ...props }) => (
-                    <pre {...props} className="bg-gray-100 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-800 border">
+                    <pre {...props} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-800 border border-gray-200 dark:border-gray-600">
                       {children}
                     </pre>
                   ),
                   table: ({ children, ...props }) => (
                     <div className="overflow-x-auto mb-4">
-                      <table {...props} className="min-w-full border-collapse border border-gray-300">
+                      <table {...props} className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
                         {children}
                       </table>
                     </div>
                   ),
                   th: ({ children, ...props }) => (
-                    <th {...props} className="border border-gray-300 px-4 py-2 bg-gray-50 font-semibold text-gray-900 text-left">
+                    <th {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-gray-800 font-semibold text-gray-900 text-left">
                       {children}
                     </th>
                   ),
                   td: ({ children, ...props }) => (
-                    <td {...props} className="border border-gray-300 px-4 py-2 text-gray-700">
+                    <td {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-gray-700">
                       {children}
                     </td>
                   ),

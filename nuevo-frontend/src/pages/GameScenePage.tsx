@@ -117,17 +117,17 @@ const GameScenePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 transition-colors">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header del juego */}
         <div className="mb-8 text-center">
           <div className="flex items-center justify-center mb-4">
             <span className="text-4xl mr-4">{currentGame.icon}</span>
             <div>
-              <h1 className="text-3xl font-bold" style={{ color: currentGame.color }}>
+              <h1 className="text-3xl font-bold dark:text-gray-100" style={{ color: currentGame.color }}>
                 {currentGame.title}
               </h1>
-              <p className="text-lg text-gray-600">{currentGame.subtitle}</p>
+              <p className="text-lg text-gray-600 dark:text-gray-300">{currentGame.subtitle}</p>
             </div>
           </div>
           
@@ -142,17 +142,17 @@ const GameScenePage: React.FC = () => {
           
           {/* Información general solo en la PRIMERA escena */}
           {isFirstScene && (
-            <div className="bg-white rounded-lg p-4 shadow-sm">
-              <p className="text-sm text-gray-600 mb-2">
+            <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">
+              <p className="text-sm text-gray-600 dark:text-gray-300 mb-2">
                 <strong>Día:</strong> {currentGame.day} | <strong>Escenario:</strong> {currentGame.scenario}
               </p>
-              <p className="text-gray-700">{currentGame.description}</p>
+              <p className="text-gray-700 dark:text-gray-200">{currentGame.description}</p>
             </div>
           )}
         </div>
 
         {/* Escena actual */}
-        <div className="bg-white rounded-lg shadow-lg overflow-hidden">
+        <div className="bg-white dark:bg-slate-800 rounded-lg shadow-lg overflow-hidden transition-colors">
           <GameScene
             scene={currentScene}
             onSceneComplete={handleSceneComplete}
@@ -171,7 +171,7 @@ const GameScenePage: React.FC = () => {
         <div className="mt-8 flex justify-between">
           <button
             onClick={() => navigate('/games')}
-            className="px-4 py-2 text-gray-600 hover:text-gray-800"
+            className="px-4 py-2 text-gray-600 hover:text-gray-800 dark:text-gray-300 dark:hover:text-gray-100"
           >
             ← Volver al menú
           </button>

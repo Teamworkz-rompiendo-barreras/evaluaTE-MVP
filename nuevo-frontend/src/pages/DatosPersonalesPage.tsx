@@ -48,8 +48,8 @@ const DatosPersonalesPage: React.FC = () => {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
-      <form onSubmit={handleSubmit(onSubmit)} className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 space-y-6 relative z-10">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4 transition-colors">
+      <form onSubmit={handleSubmit(onSubmit)} className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6 relative z-10 transition-colors">
         {/* Logo en la parte superior */}
         <div className="flex justify-center">
           <img src={logo} alt="Teamworkz" className="h-16" />
@@ -58,7 +58,7 @@ const DatosPersonalesPage: React.FC = () => {
         {/* Barra de progreso */}
         <ProgressBar current={1} total={2} />
 
-        <h1 className="text-2xl font-bold text-center">
+        <h1 className="text-2xl font-bold text-center dark:text-gray-100">
           Paso 1 de 2 – Datos de contacto
         </h1>
 

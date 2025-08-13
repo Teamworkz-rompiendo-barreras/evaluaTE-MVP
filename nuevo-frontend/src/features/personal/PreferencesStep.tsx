@@ -83,10 +83,10 @@ export default function PreferencesStep() {
   // Eliminamos el useEffect problemático que causaba redirecciones automáticas
 
   return (
-    <div className="min-h-screen bg-gray-50 flex items-center justify-center p-4">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 flex items-center justify-center p-4 transition-colors">
       <form
         onSubmit={handleSubmit(onSubmit)}
-        className="max-w-md w-full bg-white rounded-lg shadow-lg p-8 space-y-6 relative z-10"
+        className="max-w-md w-full bg-white dark:bg-gray-800 rounded-lg shadow-lg p-8 space-y-6 relative z-10 transition-colors"
       >
         {/* Barra de progreso */}
         <div className="text-center">

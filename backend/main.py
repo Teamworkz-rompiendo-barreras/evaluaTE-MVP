@@ -15,6 +15,7 @@ import os
 import logging
 import sys
 import tempfile
+import re
 
 # Cargar variables de entorno desde .env
 try:
@@ -233,6 +234,265 @@ app.add_middleware(
     allow_headers=["*"],
 )
 
+# ===== Normalizadores y utilidades de extracción estructurada =====
+try:
+    import dateparser  # type: ignore
+except Exception:
+    dateparser = None  # type: ignore
+
+try:
+    import phonenumbers  # type: ignore
+except Exception:
+    phonenumbers = None  # type: ignore
+
+try:
+    import language_tool_python  # type: ignore
+except Exception:
+    language_tool_python = None  # type: ignore
+
+
+def norm_phone(raw: str, region: str = "ES") -> Optional[str]:
+    if not raw or not phonenumbers:
+        return None
+    try:
+        num = phonenumbers.parse(raw, region)
+        if phonenumbers.is_valid_number(num):
+            return phonenumbers.format_number(num, phonenumbers.PhoneNumberFormat.E164)
+    except Exception:
+        return None
+    return None
+
+
+def _date_to_iso_ym(d) -> Optional[str]:
+    try:
+        if not d:
+            return None
+        return f"{d.year:04d}-{d.month:02d}"
+    except Exception:
+        return None
+
+
+def parse_range(txt: str, ref_locale: str = "es") -> Tuple[Optional[str], Optional[str], bool]:
+    """Normaliza rangos de fecha en una línea cualquiera.
+    Devuelve (start_yyyy_mm, end_yyyy_mm_or_None, current_flag).
+    """
+    if not txt:
+        return None, None, False
+    t = txt.strip()
+    # Marcadores de presente
+    present_tokens = [
+        "actualidad", "presente", "ahora", "now", "current", "present"
+    ]
+    # Rápido: si aparece presente en el texto, marcaremos current=True sobre el segundo término
+    has_present = any(tok in t.lower() for tok in present_tokens)
+    if not dateparser:
+        # Fallback si no está dateparser
+        return None, None, has_present
+    # Intentar detectar dos fechas en la línea
+    parts = re.split(r"[-–—toa]\s+|\s+al\s+|\s+to\s+|\s+hasta\s+|\s+a\s+", t, maxsplit=1)
+    start_dt = None
+    end_dt = None
+    start_iso = None
+    end_iso = None
+    try:
+        settings = {"PREFER_DAY_OF_MONTH": "first", "REQUIRE_PARTS": ["year"], "RELATIVE_BASE": datetime.now()}
+        if len(parts) == 2:
+            start_dt = dateparser.parse(parts[0], languages=[ref_locale], settings=settings)
+            # Solo parsear end si no es presente
+            if not has_present:
+                end_dt = dateparser.parse(parts[1], languages=[ref_locale], settings=settings)
+        else:
+            # Buscar patrón habitual y parsear ambos grupos
+            m = re.search(r"([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,9}\.?(?:\s+\d{4})?|\d{1,2}/\d{4}|\d{4})\s*[-–—]\s*([A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,9}\.?(?:\s+\d{4})?|\d{1,2}/\d{4}|\d{4}|actualidad|presente)", t, re.IGNORECASE)
+            if m:
+                start_dt = dateparser.parse(m.group(1), languages=[ref_locale], settings=settings)
+                if not any(tok in m.group(2).lower() for tok in present_tokens):
+                    end_dt = dateparser.parse(m.group(2), languages=[ref_locale], settings=settings)
+    except Exception:
+        pass
+    start_iso = _date_to_iso_ym(start_dt)
+    end_iso = _date_to_iso_ym(end_dt) if end_dt else None
+    current = has_present or (end_dt is None and any(tok in t.lower() for tok in present_tokens))
+    return start_iso, (None if current else end_iso), current
+
+
+def normalize_languages(langs: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    level_map = {
+        "nativo": "nativo",
+        "bilingüe": "bilingue",
+        "bilingue": "bilingue",
+        "c2": "bilingue",
+        "avanzado": "avanzado",
+        "alto": "avanzado",
+        "c1": "avanzado",
+        "intermedio": "intermedio",
+        "b2": "intermedio",
+        "b1": "intermedio",
+        "básico": "basico",
+        "basico": "basico",
+        "a2": "basico",
+        "a1": "basico",
+    }
+    out: List[Dict[str, Any]] = []
+    for it in langs or []:
+        name = (it.get("name") or it.get("idioma") or "").strip()
+        level = (it.get("level") or it.get("nivel") or "").lower().strip()
+        out.append({"name": name, "level": level_map.get(level, level or "")})
+    return out
+
+
+def grammar_issues_es(text: str) -> List[str]:
+    if not text or not language_tool_python:
+        return []
+    try:
+        tool = language_tool_python.LanguageTool("es")
+        matches = tool.check(text[:20000])
+        issues: List[str] = []
+        for m in matches[:50]:
+            sug = ", ".join(m.replacements[:3]) if getattr(m, "replacements", None) else ""
+            issues.append(f"{m.message} (regla: {m.ruleId}; sugerencia: {sug})")
+        return issues
+    except Exception:
+        return []
+
+
+def build_cv_json_schema() -> Dict[str, Any]:
+    return {
+        "name": "CVSchema",
+        "schema": {
+            "type": "object",
+            "properties": {
+                "candidate": {
+                    "type": "object",
+                    "properties": {
+                        "full_name": {"type": "string"},
+                        "location": {"type": "string"},
+                        "emails": {"type": "array", "items": {"type": "string", "format": "email"}},
+                        "phones": {"type": "array", "items": {"type": "string"}},
+                        "links": {
+                            "type": "object",
+                            "properties": {"linkedin": {"type": "string"}, "portfolio": {"type": "string"}},
+                        },
+                    },
+                    "required": ["emails"],
+                },
+                "summary": {"type": "string"},
+                "experience": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "position": {"type": "string"},
+                            "company": {"type": "string"},
+                            "location": {"type": "string"},
+                            "start_date": {"type": "string", "pattern": "^\\\d{4}(-\\\d{2})?$"},
+                            "end_date": {"type": ["string", "null"], "pattern": "^\\\d{4}(-\\\d{2})?$"},
+                            "current": {"type": "boolean"},
+                            "description": {"type": "string"},
+                            "bullets": {"type": "array", "items": {"type": "string"}},
+                        },
+                        "required": ["position", "company"],
+                    },
+                },
+                "education": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "degree": {"type": "string"},
+                            "institution": {"type": "string"},
+                            "location": {"type": "string"},
+                            "start_date": {"type": "string", "pattern": "^\\\d{4}(-\\\d{2})?$"},
+                            "end_date": {"type": "string", "pattern": "^\\\d{4}(-\\\d{2})?$"},
+                            "notes": {"type": "string"},
+                        },
+                    },
+                },
+                "languages": {
+                    "type": "array",
+                    "items": {"type": "object", "properties": {"name": {"type": "string"}, "level": {"type": "string"}}},
+                },
+                "skills": {
+                    "type": "object",
+                    "properties": {
+                        "hard": {"type": "array", "items": {"type": "string"}},
+                        "soft": {"type": "array", "items": {"type": "string"}},
+                    },
+                },
+                "certifications": {
+                    "type": "array",
+                    "items": {"type": "object", "properties": {"name": {"type": "string"}, "date": {"type": "string", "pattern": "^\\\d{4}(-\\\d{2})?$"}}},
+                },
+                "projects": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {"name": {"type": "string"}, "tech": {"type": "array", "items": {"type": "string"}}, "description": {"type": "string"}},
+                    },
+                },
+            },
+            "required": ["candidate"],
+        },
+        "strict": True,
+    }
+
+
+def _sections_from_layout_result(result: Any) -> Dict[str, Any]:
+    """Extrae secciones por headings y tablas del Layout v4."""
+    sections: Dict[str, Dict[str, Any]] = {}
+    try:
+        paragraphs = getattr(result, "paragraphs", None)
+        if paragraphs:
+            current_key = "header"
+            buffer: List[str] = []
+            for p in paragraphs:
+                role = getattr(p, "role", None)
+                text = getattr(p, "content", "")
+                if role in ("title", "heading") and text and len(text) < 80:
+                    if buffer:
+                        sections.setdefault(current_key, {"text": ""})
+                        sections[current_key]["text"] = (sections[current_key].get("text", "") + "\n" + "\n".join(buffer)).strip()
+                        buffer = []
+                    current_key = re.sub(r"\s+", " ", text).strip().lower()
+                else:
+                    if text:
+                        buffer.append(text)
+            if buffer:
+                sections.setdefault(current_key, {"text": ""})
+                sections[current_key]["text"] = (sections[current_key].get("text", "") + "\n" + "\n".join(buffer)).strip()
+        # Tablas
+        tables = getattr(result, "tables", None)
+        if tables:
+            tables_text = []
+            for tb in tables[:20]:
+                try:
+                    rows = []
+                    for cell in tb.cells:
+                        rows.append((cell.row_index, cell.column_index, cell.content))
+                    grid: Dict[int, Dict[int, str]] = {}
+                    for r, c, v in rows:
+                        grid.setdefault(r, {})[c] = v
+                    for r in sorted(grid.keys()):
+                        cols = [grid[r].get(c, "") for c in sorted(grid[r].keys())]
+                        tables_text.append(" | ".join(cols))
+                except Exception:
+                    continue
+            if tables_text:
+                sections.setdefault("tables", {})["text"] = "\n".join(tables_text)
+    except Exception:
+        pass
+    if not sections:
+        try:
+            collected = []
+            for page in getattr(result, "pages", []) or []:
+                for line in getattr(page, "lines", []) or []:
+                    collected.append(getattr(line, "content", ""))
+            if collected:
+                sections["document"] = {"text": "\n".join(collected)}
+        except Exception:
+            pass
+    return sections
+
 @app.post("/api/logs/scene", response_model=Dict[str, Any])
 async def log_scene_decision(data: Dict[str, Any]):
     """Registra una decisión de escena"""
@@ -432,14 +692,48 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         # Limpiar el nombre del deployment para evitar problemas con espacios
         deployment_name = DEPLOYMENT.strip()
         
+        # Structured Outputs para el informe
+        report_schema = {
+            "name": "EmployabilityReportSchema",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "summary": {"type": "string"},
+                    "recommendations": {
+                        "type": "object",
+                        "properties": {
+                            "profile_analysis": {"type": "string"},
+                            "strengths_analysis": {"type": "string"},
+                            "improvement_areas": {"type": "string"},
+                            "cv_analysis": {"type": "string"},
+                            "job_suggestions": {"type": "string"},
+                            "next_steps": {
+                                "type": "object",
+                                "properties": {
+                                    "short_term": {"type": "array", "items": {"type": "string"}},
+                                    "medium_term": {"type": "array", "items": {"type": "string"}},
+                                    "long_term": {"type": "array", "items": {"type": "string"}},
+                                },
+                            },
+                            "resources": {
+                                "type": "array",
+                                "items": {"type": "object", "properties": {"name": {"type": "string"}, "url": {"type": "string"}, "description": {"type": "string"}}},
+                            },
+                            "cv_analysis_structured": build_cv_json_schema()["schema"],
+                        },
+                    },
+                },
+            },
+            "strict": False,
+        }
+
         response = client.chat.completions.create(
-            model=deployment_name,  # En Azure OpenAI, model es el nombre del deployment
+            model=deployment_name,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.7,
+            temperature=0.3,
             max_tokens=2000,
-            timeout=60,  # Timeout de 60 segundos para Azure OpenAI
-            # Forzar que el modelo devuelva un objeto JSON válido
-            response_format={"type": "json_object"}
+            timeout=60,
+            response_format={"type": "json_schema", "json_schema": report_schema},
         )
         
         # Obtener y loggear la respuesta cruda
@@ -613,9 +907,10 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             if isinstance(az_res, dict):
                 if az_res.get('raw_text'):
                     texts.append(str(az_res.get('raw_text')))
+                # Guardar secciones layout para Structured Outputs
+                layout_sections = az_res.get('layout_sections') or {}
                 for k, v in az_res.items():
-                    if k != 'raw_text' and v:
-                        # Unir sin machacar valores ya presentes
+                    if k not in ('raw_text', 'layout_sections') and v:
                         if k not in merged:
                             merged[k] = v
         except Exception as e:
@@ -649,6 +944,16 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
         # Texto combinado
         combined_text = "\n".join([t for t in texts if t])
         basic = _extract_basic_cv_info_from_text(combined_text) if combined_text else None
+
+        # 1) Structured Outputs sobre secciones Layout si disponibles
+        structured: Dict[str, Any] = {}
+        try:
+            if locals().get('layout_sections'):
+                structured = _structured_extract_with_ai(layout_sections, file.filename)
+        except Exception:
+            structured = {}
+
+        # 2) LLM clásico como respaldo
         ai_res = await analyze_cv_content_with_ai(combined_text, file.filename, basic)
         final: Dict[str, Any] = {**ai_res}
         # Mezclar también los básicos y lo ya fusionado
@@ -656,6 +961,49 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             for k, v in basic.items():
                 if v and k not in final:
                     final[k] = v
+        # Fusión con provenance simple
+        provenance: Dict[str, Any] = {}
+        def set_field(path: str, value: Any, source: str, confidence: float):
+            if value in (None, "", [], {}):
+                return
+            provenance.setdefault(path, [])
+            provenance[path].append({"value": value, "source": source, "confidence": confidence})
+
+        if structured:
+            set_field("cv_structured", structured, "layout+structured", 0.85)
+        if ai_res:
+            set_field("ai_analysis", ai_res, "llm_freeform", 0.60)
+        if basic:
+            set_field("basic_hints", basic, "regex_basic", 0.40)
+
+        # Normalización post-proceso sobre structured
+        standardized = structured or {}
+        try:
+            # normalizar teléfonos
+            phones = []
+            cand = (standardized.get("candidate") or {})
+            for ph in (cand.get("phones") or [])[:5]:
+                norm = norm_phone(ph, region="ES")
+                if norm and norm not in phones:
+                    phones.append(norm)
+            if phones:
+                standardized.setdefault("candidate", {})["phones"] = phones
+            # normalizar idiomas
+            standardized["languages"] = normalize_languages(standardized.get("languages") or [])
+            # normalizar fechas experiencia
+            exp_norm: List[Dict[str, Any]] = []
+            for e in standardized.get("experience") or []:
+                s, en, cur = parse_range(" ".join([str(e.get("start_date") or ""), "-", str(e.get("end_date") or "")]).strip())
+                exp_norm.append({**e, "start_date": s or e.get("start_date"), "end_date": en if not cur else None, "current": bool(e.get("current")) or cur})
+            if exp_norm:
+                standardized["experience"] = exp_norm
+        except Exception:
+            pass
+
+        if standardized:
+            final["cv_structured"] = standardized
+            final["provenance"] = provenance
+
         for k, v in merged.items():
             if v and k not in final:
                 final[k] = v
@@ -787,24 +1135,41 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
         client = DocumentAnalysisClient(endpoint=endpoint, credential=AzureKeyCredential(key))
         
         with open(file_path, "rb") as document:
-            logger.info("Iniciando análisis de documento...")
-            poller = client.begin_analyze_document("prebuilt-layout", document)
-            result = poller.result()
-        
-        # Extraer texto del documento
+            model_id = (os.getenv("AZURE_DOCINTEL_MODEL_ID") or "prebuilt-layout").strip()
+            try:
+                logger.info(f"Iniciando análisis de documento con modelo '{model_id}'...")
+                poller = client.begin_analyze_document(model_id, document)
+                result = poller.result()
+            except Exception as e:
+                if model_id != "prebuilt-layout":
+                    logger.warning(f"Fallo con modelo custom '{model_id}', reintentando con 'prebuilt-layout': {e}")
+                    document.seek(0)
+                    poller = client.begin_analyze_document("prebuilt-layout", document)
+                    result = poller.result()
+                else:
+                    raise
+
+        # Extraer texto y secciones aware de layout
         text_content = ""
-        for page in result.pages:
-            for line in page.lines:
-                text_content += line.content + "\n"
+        try:
+            for page in getattr(result, 'pages', []) or []:
+                for line in getattr(page, 'lines', []) or []:
+                    text_content += getattr(line, 'content', '') + "\n"
+        except Exception:
+            text_content = getattr(result, 'content', '') or ''
+        layout_sections = _sections_from_layout_result(result)
         # Información básica extraída por regex (nombre/contacto/periodos)
         basic = _extract_basic_cv_info_from_text(text_content)
         logger.info(f"Texto extraído: {len(text_content)} caracteres")
+        if len(text_content) < 20:
+            logger.warning("Texto extraído muy corto; el PDF podría estar escaneado/protegido. Activando fallback PyMuPDF y OCR si disponibles.")
         
         # Analizar contenido con IA (pasando hints básicos)
         analysis = await analyze_cv_content_with_ai(text_content, filename, basic)
         # Unir análisis con básicos
         merged: Dict[str, Any] = {**analysis}
         merged.update({k: v for k, v in basic.items() if v})
+        merged.update({"raw_text": text_content, "layout_sections": layout_sections})
         return merged
         
     except Exception as e:
@@ -953,14 +1318,35 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
         
         # Limpiar el nombre del deployment para evitar problemas con espacios
         deployment_name = DEPLOYMENT.strip()
-        
+
+        # Structured Outputs con esquema laxo para el análisis + esquema fuerte para cv_analysis_structured
+        analysis_schema = {
+            "name": "CVFreeformAnalysis",
+            "schema": {
+                "type": "object",
+                "properties": {
+                    "strengths": {"type": "array", "items": {"type": "string"}},
+                    "weaknesses": {"type": "array", "items": {"type": "string"}},
+                    "feedback": {"type": "string"},
+                    "structure": {"type": "string"},
+                    "coherence": {"type": "string"},
+                    "experience": {"type": "string"},
+                    "skills": {"type": "array", "items": {"type": "string"}},
+                    "education": {"type": "array", "items": {"type": "string"}},
+                    "alerts": {"type": "array", "items": {"type": "string"}},
+                    "cv_analysis_structured": build_cv_json_schema()["schema"],
+                },
+            },
+            "strict": False,
+        }
+
         response = client.chat.completions.create(
-            model=deployment_name,  # En Azure OpenAI, model es el nombre del deployment
+            model=deployment_name,
             messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=1000,
-            timeout=60,  # Timeout de 60 segundos para Azure OpenAI
-            response_format={"type": "json_object"}  # Forzar respuesta JSON válida
+            temperature=0.2,
+            max_tokens=1500,
+            timeout=60,
+            response_format={"type": "json_schema", "json_schema": analysis_schema},
         )
         
         # Obtener y loggear la respuesta cruda
@@ -1039,12 +1425,48 @@ async def upload_cv(file: UploadFile = File(...)):
         # Calcular tamaño de forma segura (UploadFile no expone 'size')
         content = await file.read()
         size_bytes = len(content)
-        # Opcional: resetear el puntero si se necesitara leer después
-        # await file.seek(0)
+        # Validaciones básicas
+        if not file.filename.lower().endswith((".pdf",)):
+            raise HTTPException(status_code=400, detail="Formato no soportado. Sube un PDF")
+        if size_bytes <= 0:
+            raise HTTPException(status_code=400, detail="Archivo vacío")
+        if size_bytes > 15 * 1024 * 1024:
+            raise HTTPException(status_code=400, detail="Archivo demasiado grande (>15MB)")
+
+        # Subir al contenedor de Azure Blob para curación/entrenamiento posterior
+        storage_conn = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+        container_name = os.getenv("AZURE_STORAGE_CONTAINER_CV", "cv-incoming")
+        blob_name = None
+        uploaded = False
+        if storage_conn:
+            try:
+                from azure.storage.blob import BlobServiceClient  # type: ignore
+                blob_service = BlobServiceClient.from_connection_string(storage_conn)
+                container = blob_service.get_container_client(container_name)
+                try:
+                    if not container.exists():
+                        container.create_container()
+                except Exception:
+                    pass
+                # Nombre único
+                safe_name = (file.filename or "cv.pdf").replace(" ", "_")
+                from datetime import datetime as _dt
+                blob_name = f"{_dt.now().strftime('%Y%m%d-%H%M%S')}_{safe_name}"
+                blob = container.get_blob_client(blob_name)
+                blob.upload_blob(content, overwrite=True, content_type="application/pdf", metadata={"source": "mvp-upload"})
+                uploaded = True
+            except Exception as e:
+                logger.warning(f"No se pudo subir a Blob Storage: {e}")
+
         return {
             "message": "CV subido correctamente",
             "filename": file.filename,
-            "size": size_bytes
+            "size": size_bytes,
+            "storage": {
+                "uploaded": uploaded,
+                "container": container_name if uploaded else None,
+                "blob_name": blob_name,
+            },
         }
     except Exception as e:
         logger.error(f"Error subiendo CV: {str(e)}")

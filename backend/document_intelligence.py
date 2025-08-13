@@ -12,6 +12,8 @@ import json
 import logging
 import re
 from typing import Dict, List, Any, Optional
+from dataclasses import dataclass
+from typing import Tuple
 from datetime import datetime
 import tempfile
 from dotenv import load_dotenv
@@ -32,6 +34,48 @@ except ImportError:
     DOCUMENT_INTELLIGENCE_AVAILABLE = False
     logger.warning("Azure AI Document Intelligence no disponible")
 
+# Dependencias opcionales para normalización robusta
+try:  # type: ignore
+    import dateparser  # type: ignore
+except Exception:  # pragma: no cover
+    dateparser = None  # type: ignore
+
+try:  # type: ignore
+    import phonenumbers  # type: ignore
+except Exception:  # pragma: no cover
+    phonenumbers = None  # type: ignore
+
+# Catálogo simple de títulos de sección y meses para heurísticas
+SECTION_TITLES = {
+    "experiencia": ["experiencia", "laboral", "work experience", "employment", "trayectoria", "historial"],
+    "educacion": ["educación", "formación", "estudios", "education", "academic"],
+    "idiomas": ["idiomas", "languages", "lenguas"],
+    "habilidades": ["habilidades", "skills", "competencias", "tecnologías", "tools", "technologies"],
+    "proyectos": ["proyectos", "projects", "portfolio"],
+    "resumen": ["perfil", "resumen", "summary", "sobre mí", "about me", "objetivo", "objetivos"],
+}
+
+MONTHS_RE = (
+    r"(ene|feb|mar|abr|may|jun|jul|ago|sep|oct|nov|dic|"
+    r"enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|"
+    r"jan|feb|mar|apr|may|jun|jul|aug|sep|oct|nov|dec)"
+)
+
+DATE_RANGE_RE = re.compile(
+    rf"(?P<start>(?:{MONTHS_RE}\.?(?:\s+\d{{4}})?)|\d{{1,2}}[/-]\d{{1,2}}[/-]\d{{2,4}}|\d{{4}})\s*[-–—a]\s*"
+    rf"(?P<end>(?:{MONTHS_RE}\.?(?:\s+\d{{4}})?)|\d{{1,2}}[/-]\d{{1,2}}[/-]\d{{2,4}}|actualidad|presente|now|current)",
+    re.IGNORECASE,
+)
+
+@dataclass
+class Block:
+    text: str
+    page: int
+    bbox: Tuple[float, float, float, float]  # xmin, ymin, xmax, ymax
+    col: int = 0
+    is_heading: bool = False
+    heading_key: Optional[str] = None
+
 class ImprovedDocumentIntelligenceService:
     """
     Servicio mejorado para análisis de documentos con parsing robusto
@@ -40,6 +84,7 @@ class ImprovedDocumentIntelligenceService:
     def __init__(self):
         self.endpoint = os.getenv('AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT')
         self.key = os.getenv('AZURE_DOCUMENT_INTELLIGENCE_KEY')
+        self.model_id = os.getenv('AZURE_DOCINTEL_MODEL_ID')  # opcional: modelo custom
         self.storage_connection_string = os.getenv('AZURE_STORAGE_CONNECTION_STRING')
         self.container_name = os.getenv('AZURE_STORAGE_CONTAINER', 'cv-uploads')
         
@@ -113,11 +158,20 @@ class ImprovedDocumentIntelligenceService:
             try:
                 # Analizar documento
                 with open(temp_file_path, "rb") as document:
-                    logger.info("📄 Iniciando análisis con Azure AI Document Intelligence...")
-                    poller = self.client.begin_analyze_document(
-                        "prebuilt-layout", document
-                    )
-                    result = poller.result()
+                    # Elegir modelo: custom si está definido, sino prebuilt-layout
+                    model_to_use = (self.model_id or "prebuilt-layout").strip()
+                    logger.info(f"📄 Iniciando análisis con Azure AI Document Intelligence (modelo='{model_to_use}')...")
+                    try:
+                        poller = self.client.begin_analyze_document(model_to_use, document)
+                        result = poller.result()
+                    except Exception as e:
+                        if model_to_use != "prebuilt-layout":
+                            logger.warning(f"⚠️ Falló el modelo custom '{model_to_use}', reintentando con 'prebuilt-layout': {e}")
+                            document.seek(0)
+                            poller = self.client.begin_analyze_document("prebuilt-layout", document)
+                            result = poller.result()
+                        else:
+                            raise
                     logger.info("✅ Análisis de Document Intelligence completado")
                 
                 # Validar la respuesta de Document Intelligence
@@ -153,75 +207,39 @@ class ImprovedDocumentIntelligenceService:
             }
     
     def _extract_improved_structured_data(self, result) -> Dict[str, Any]:
-        """Extrae datos estructurados con parsing mejorado"""
-        content = result.content
-        
+        """Extrae datos estructurados con parsing mejorado y layout-aware"""
+        content = getattr(result, "content", "") or ""
+
+        # 1) Bloques y secciones basadas en layout (columnas + headings)
+        blocks = self._extract_layout_blocks(result)
+        sections = self._segment_sections_by_headings(blocks)
+        tables = self._extract_tables(result)
+
         return {
-            "contacto": self._extract_improved_contact_info(result),
-            "experiencia": self._extract_improved_experience(result),
-            "educacion": self._extract_improved_education(result),
+            "contacto": self._extract_contact_from_layout(blocks, tables),
+            "experiencia": self._extract_experience_from_sections(sections),
+            "educacion": self._extract_education_from_sections(sections),
             "habilidades_tecnicas": self._extract_improved_skills(result),
-            "idiomas": self._extract_improved_languages(result),
+            "idiomas": self._extract_languages_from_sections(sections),
             "proyectos": self._extract_improved_projects(result),
-            "resumen_profesional": self._extract_improved_profile(result),
-            "raw_content": content
+            "resumen_profesional": " ".join(sections.get("resumen", [])).strip() or self._extract_improved_profile(result),
+            "raw_content": content,
         }
     
     def _extract_improved_contact_info(self, result) -> Dict[str, str]:
-        """Extrae información de contacto con patrones mejorados"""
+        """Conservado como fallback; la vía principal ahora es _extract_contact_from_layout."""
+        # Mantener compatibilidad si en algún flujo falta layout
         contact = {}
-        content = result.content
-        
-        # Patrones mejorados para email
-        email_patterns = [
-            r'\b[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}\b',
-            r'[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Z|a-z]{2,}'
-        ]
-        
-        for pattern in email_patterns:
-            emails = re.findall(pattern, content)
-            if emails:
-                contact['email'] = emails[0]
-                break
-        
-        # Patrones mejorados para teléfono
-        phone_patterns = [
-            r'\+34\s*\d{1,3}\s*\d{1,3}\s*\d{1,3}\s*\d{1,3}',  # +34 612 345 678
-            r'\+34\s*\d{9}',  # +34 612345678
-            r'\d{3}\s*\d{3}\s*\d{3}',  # 612 345 678
-            r'\d{9}',  # 612345678
-            r'\(\+34\)\s*\d{1,3}\s*\d{1,3}\s*\d{1,3}'  # (+34) 612 345 678
-        ]
-        
-        for pattern in phone_patterns:
-            phones = re.findall(pattern, content)
-            if phones:
-                contact['phone'] = phones[0]
-                break
-        
-        # Buscar nombre (primeras líneas que parezcan nombre)
-        lines = content.split('\n')
-        for line in lines[:10]:  # Buscar en las primeras 10 líneas
-            line = line.strip()
-            if line and len(line) > 2 and len(line) < 50:
-                # Patrón de nombre: palabras separadas por espacios, sin números
-                if re.match(r'^[A-ZÁÉÍÓÚÑ][a-záéíóúñ]+\s+[A-ZÁÉÍÓÚÑ][a-záéíóúñ\s]+$', line):
-                    contact['nombre'] = line
-                    break
-        
-        # Buscar LinkedIn
-        linkedin_patterns = [
-            r'linkedin\.com/in/[A-Za-z0-9\-_]+',
-            r'linkedin\.com/[A-Za-z0-9\-_]+',
-            r'@[A-Za-z0-9\-_]+',  # Twitter/Instagram
-        ]
-        
-        for pattern in linkedin_patterns:
-            social = re.findall(pattern, content)
-            if social:
-                contact['linkedin'] = social[0]
-                break
-        
+        content = getattr(result, "content", "") or ""
+        email_match = re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", content)
+        if email_match:
+            contact["email"] = email_match[0]
+        phone_match = re.findall(r"(?:\+?\d{1,3}[\s.-]?)?(?:\(?\d{2,3}\)?[\s.-]?){2,4}\d{2,4}", content)
+        if phone_match:
+            contact["phone"] = phone_match[0]
+        linkedin_match = re.findall(r"linkedin\.com/\S+", content, re.IGNORECASE)
+        if linkedin_match:
+            contact["linkedin"] = linkedin_match[0]
         return contact
     
     def _extract_improved_experience(self, result) -> List[Dict[str, str]]:
@@ -260,6 +278,139 @@ class ImprovedDocumentIntelligenceService:
                     experience.append(exp_data)
         
         return experience
+
+    # ===== NUEVO: utilidades layout-aware =====
+    def _get_bbox_from_polygon(self, polygon) -> Tuple[float, float, float, float]:
+        xs = [p.x for p in polygon]
+        ys = [p.y for p in polygon]
+        return (min(xs), min(ys), max(xs), max(ys))
+
+    def _is_probable_heading(self, txt: str) -> bool:
+        t = (txt or "").strip()
+        if not t or len(t) > 80:
+            return False
+        if t.endswith(":"):
+            return True
+        if t.isupper() and not any(ch.isdigit() for ch in t):
+            return True
+        low = t.lower().strip(":")
+        return any(any(k in low for k in keys) for keys in SECTION_TITLES.values())
+
+    def _heading_key(self, txt: str) -> Optional[str]:
+        low = (txt or "").lower().strip(":")
+        for key, keys in SECTION_TITLES.items():
+            if any(k in low for k in keys):
+                return key
+        return None
+
+    def _extract_layout_blocks(self, result) -> List[Block]:
+        blocks: List[Block] = []
+        for p, page in enumerate(getattr(result, "pages", []) or []):
+            page_blocks: List[Block] = []
+            x_mids: List[float] = []
+            for line in getattr(page, "lines", []) or []:
+                if not getattr(line, "content", None) or not getattr(line, "polygon", None):
+                    continue
+                xmin, ymin, xmax, ymax = self._get_bbox_from_polygon(line.polygon)
+                xmid = (xmin + xmax) / 2.0
+                x_mids.append(xmid)
+                page_blocks.append(Block(text=line.content.strip(), page=p + 1, bbox=(xmin, ymin, xmax, ymax)))
+            col_threshold = None
+            if len(x_mids) >= 10:
+                xs = sorted(x_mids)
+                gaps = [(xs[i + 1] - xs[i], i) for i in range(len(xs) - 1)]
+                if gaps:
+                    max_gap, idx = max(gaps, key=lambda g: g[0])
+                    if max_gap > 40:
+                        col_threshold = (xs[idx] + xs[idx + 1]) / 2.0
+            for b in page_blocks:
+                xmin, ymin, xmax, ymax = b.bbox
+                xmid = (xmin + xmax) / 2.0
+                b.col = 0 if (col_threshold is None or xmid <= col_threshold) else 1
+                b.is_heading = self._is_probable_heading(b.text)
+                b.heading_key = self._heading_key(b.text) if b.is_heading else None
+                blocks.append(b)
+        blocks.sort(key=lambda b: (b.page, b.col, b.bbox[1], b.bbox[0]))
+        return blocks
+
+    def _segment_sections_by_headings(self, blocks: List[Block]) -> Dict[str, List[str]]:
+        sections: Dict[str, List[str]] = {k: [] for k in SECTION_TITLES.keys()}
+        current_key: Optional[str] = None
+        for b in blocks:
+            if b.is_heading and b.heading_key:
+                current_key = b.heading_key
+                continue
+            if current_key:
+                if b.is_heading and b.heading_key:
+                    current_key = b.heading_key
+                    continue
+                t = b.text.strip("•·-— ").replace("  ", " ")
+                if t:
+                    sections[current_key].append(t)
+        return sections
+
+    def _extract_tables(self, result) -> List[Dict[str, Any]]:
+        out: List[Dict[str, Any]] = []
+        for tb in getattr(result, "tables", []) or []:
+            rows: Dict[int, Dict[int, str]] = {}
+            for cell in tb.cells:
+                rows.setdefault(cell.row_index, {})[cell.column_index] = (cell.content or "").strip()
+            ordered: List[List[str]] = []
+            for r_idx in sorted(rows.keys()):
+                row = rows[r_idx]
+                max_c = max(row.keys()) if row else -1
+                ordered.append([row.get(c, "") for c in range(max_c + 1)])
+            out.append({"rows": ordered})
+        return out
+
+    def _table_kv_pairs(self, tables: List[Dict[str, Any]]) -> Dict[str, str]:
+        kv: Dict[str, str] = {}
+        for t in tables:
+            for row in t.get("rows", []):
+                if len(row) == 2:
+                    k = row[0].strip().lower().strip(":")
+                    v = row[1].strip()
+                    if k and v and len(k) <= 40:
+                        kv[k] = v
+        return kv
+
+    # Normalizadores
+    def _norm_date(self, txt: str) -> Optional[str]:
+        if not dateparser:
+            return None
+        try:
+            d = dateparser.parse(txt, languages=["es", "en"], settings={"PREFER_DAY_OF_MONTH": "first"})
+            return d.strftime("%Y-%m") if d else None
+        except Exception:
+            return None
+
+    def _parse_date_range(self, line: str) -> Tuple[Optional[str], Optional[str], bool]:
+        m = DATE_RANGE_RE.search(line or "")
+        if not m:
+            return (None, None, False)
+        start_raw = m.group("start")
+        end_raw = m.group("end")
+        start = self._norm_date(start_raw) or (re.findall(r"\d{4}", start_raw)[0] if re.findall(r"\d{4}", start_raw) else None)
+        current = False
+        if re.search(r"(actualidad|presente|now|current)", end_raw, re.IGNORECASE):
+            end = None
+            current = True
+        else:
+            end = self._norm_date(end_raw) or (re.findall(r"\d{4}", end_raw)[0] if re.findall(r"\d{4}", end_raw) else None)
+        return (start, end, current)
+
+    def _norm_phones(self, texts: List[str], region: str = "ES") -> List[str]:
+        found: set[str] = set()
+        for t in texts or []:
+            for m in re.findall(r"(?:\+?\d[\d\s().-]{6,})", t):
+                try:
+                    if phonenumbers:
+                        num = phonenumbers.parse(m, region)
+                        if phonenumbers.is_valid_number(num):
+                            found.add(phonenumbers.format_number(num, phonenumbers.PhoneNumberFormat.E164))
+                except Exception:
+                    continue
+        return sorted(found)
     
     def _find_scattered_experiences(self, content: str) -> str:
         """Busca experiencias laborales dispersas en el contenido del CV"""
@@ -631,6 +782,109 @@ class ImprovedDocumentIntelligenceService:
                         break
         
         return languages
+
+    # ===== NUEVO: extractores basados en secciones =====
+    def _extract_contact_from_layout(self, blocks: List[Block], tables: List[Dict[str, Any]]) -> Dict[str, Any]:
+        kv = self._table_kv_pairs(tables)
+        candidates: List[str] = []
+        if kv:
+            candidates.extend(list(kv.values())[:20])
+        left_lines = [b.text for b in blocks if b.col == 0][:30]
+        candidates.extend(left_lines)
+        # emails
+        emails = []
+        try:
+            emails = sorted(set(re.findall(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}", "\n".join(candidates))))
+        except Exception:
+            emails = []
+        # phones
+        phones = self._norm_phones(candidates, region="ES")
+        # linkedin
+        linkedin = None
+        for t in candidates:
+            if "linkedin." in t.lower():
+                u = t.strip()
+                if not u.startswith("http"):
+                    u = "https://" + u.lstrip("/")
+                linkedin = u
+                break
+        # ubicación simple (heurística España)
+        location = None
+        for t in candidates:
+            if re.search(r"madrid|barcelona|valencia|sevilla|bilbao|coruñ|león|zaragoza|vigo|alicante|granada|málaga|ourense|ponferrada", t, re.IGNORECASE):
+                location = t.strip()
+                break
+        return {"email": emails[0] if emails else "", "emails": emails, "phones": phones, "linkedin": linkedin or "", "location": location or ""}
+
+    def _extract_experience_from_sections(self, sections: Dict[str, List[str]]) -> List[Dict[str, Any]]:
+        out: List[Dict[str, Any]] = []
+        lines = sections.get("experiencia", [])
+        buff: List[str] = []
+
+        def flush():
+            if not buff:
+                return
+            chunk = " ".join(buff)
+            start, end, current = self._parse_date_range(chunk)
+            company, position = None, None
+            if buff:
+                head = buff[0]
+                if re.search(r"\s[-–]\s", head):
+                    parts = re.split(r"\s[-–]\s", head, maxsplit=1)
+                    if len(parts) == 2:
+                        company, position = parts[0].strip(), parts[1].strip()
+                if not company and head.upper() == head and not re.search(r"\d", head):
+                    company = head.title()
+                if not position and len(buff) > 1:
+                    position = buff[1].strip()
+            desc = [ln for ln in buff[1:] if ln]
+            out.append({
+                "company": company or "",
+                "position": position or "",
+                "start_date": start,
+                "end_date": end,
+                "current": current,
+                "description": " ".join(desc).strip(),
+            })
+            buff.clear()
+
+        for ln in lines:
+            if not ln:
+                continue
+            if DATE_RANGE_RE.search(ln) and buff:
+                flush()
+            buff.append(ln)
+            if len(buff) > 12:
+                flush()
+        flush()
+        return [e for e in out if e.get("company") or e.get("position") or e.get("start_date")]
+
+    def _extract_education_from_sections(self, sections: Dict[str, List[str]]) -> List[Dict[str, Any]]:
+        out: List[Dict[str, Any]] = []
+        for ln in sections.get("educacion", []):
+            degree = None
+            institution = None
+            start, end, _ = self._parse_date_range(ln)
+            if re.search(r"grado|licenciatura|máster|master|doctorado|phd|ingenier", ln, re.IGNORECASE):
+                degree = ln
+            if re.search(r"universidad|university|escuela|instituto|facultad|eae|esade|uned|uam|upm|upv|uv|uca|uma", ln, re.IGNORECASE):
+                institution = ln
+            if degree or institution or start or end:
+                out.append({
+                    "degree": degree or "",
+                    "institution": institution or "",
+                    "start_date": start,
+                    "end_date": end,
+                })
+        merged: List[Dict[str, Any]] = []
+        for e in out:
+            if merged and not e["degree"] and merged[-1]["degree"] and not merged[-1].get("institution") and e.get("institution"):
+                merged[-1]["institution"] = e["institution"]
+                merged[-1]["start_date"] = merged[-1].get("start_date") or e.get("start_date")
+                merged[-1]["end_date"] = merged[-1].get("end_date") or e.get("end_date")
+            else:
+                merged.append(e)
+        return merged
     
     def _extract_improved_projects(self, result) -> List[Dict[str, str]]:
         """Extrae proyectos con patrones mejorados"""

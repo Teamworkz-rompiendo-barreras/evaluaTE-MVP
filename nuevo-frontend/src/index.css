@@ -9,7 +9,7 @@
 
 html,
 body {
-  @apply font-sans text-neutral-dark bg-neutral-light antialiased;
+  @apply font-sans text-neutral-dark bg-neutral-light antialiased dark:bg-gray-900 dark:text-gray-100;
   /* Mejoras para accesibilidad cognitiva */
   font-size: 16px; /* Tamaño base accesible */
   line-height: 1.6; /* Espaciado de línea cómodo */
@@ -91,7 +91,7 @@ button:hover {
 input,
 select,
 textarea {
-  @apply border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary;
+  @apply border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100;
   /* Mejoras para accesibilidad cognitiva */
   font-size: 1rem; /* Tamaño de fuente accesible */
   line-height: 1.5; /* Espaciado de línea cómodo */
@@ -107,7 +107,7 @@ textarea {
 }
 
 .card {
-  @apply bg-white p-6 rounded-lg shadow-md;
+  @apply bg-white p-6 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-600;
   /* Mejoras para accesibilidad cognitiva */
   border: 2px solid transparent; /* Borde para mejor definición */
   transition: border-color 0.2s ease; /* Transición suave */
@@ -237,6 +237,14 @@ textarea {
     transition-duration: 0.01ms !important;
   }
 }
+
+/* Reglas globales para modo oscuro forzado sobre utilidades comunes */
+.dark .bg-white { background-color: #1f2937 !important; } /* gray-800 */
+.dark .bg-gray-50 { background-color: #0f172a !important; } /* slate-900 aprox */
+.dark .text-gray-800 { color: #e5e7eb !important; } /* gray-200 */
+.dark .text-gray-700 { color: #d1d5db !important; } /* gray-300 */
+.dark .border-gray-300 { border-color: #4b5563 !important; } /* gray-600 */
+.dark .hover\:bg-gray-50:hover { background-color: #374151 !important; } /* gray-700 */
 
 /* Estilos para modo oscuro con accesibilidad */
 @media (prefers-color-scheme: dark) {

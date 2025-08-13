@@ -67,7 +67,7 @@ const FeedbackDashboard: React.FC = () => {
 
   if (loading) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8 transition-colors">
         <div className="max-w-7xl mx-auto">
           <div className="animate-pulse">
             <div className="h-8 bg-gray-300 rounded w-1/4 mb-8"></div>
@@ -84,7 +84,7 @@ const FeedbackDashboard: React.FC = () => {
 
   if (error) {
     return (
-      <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8 transition-colors">
         <div className="max-w-7xl mx-auto">
           <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded">
             {error}
@@ -95,7 +95,7 @@ const FeedbackDashboard: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 p-8">
+  <div className="min-h-screen bg-gray-50 dark:bg-gray-900 p-8 transition-colors">
       <div className="max-w-7xl mx-auto">
         {/* Header */}
         <div className="mb-8">
