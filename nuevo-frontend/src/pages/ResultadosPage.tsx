@@ -667,8 +667,7 @@ ${res.description || 'Descripción no disponible'}
               indexBy="softskill"
               margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
               theme={{
-                textColor: '#E5E7EB',
-                fontSize: 12,
+                text: { fill: '#E5E7EB', fontSize: 12 },
                 grid: { line: { stroke: '#6B7280', strokeWidth: 1 } },
                 axis: {
                   ticks: { text: { fill: '#E5E7EB' } },

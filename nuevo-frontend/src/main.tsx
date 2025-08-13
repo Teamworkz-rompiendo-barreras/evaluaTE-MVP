@@ -32,12 +32,12 @@ function DarkZoomWidget() {
     try { return Number(localStorage.getItem('ui-zoom') || 100); } catch { return 100 }
   });
   React.useEffect(() => {
-    try { localStorage.setItem('prefers-dark', dark ? '1' : '0'); } catch {}
+    try { localStorage.setItem('prefers-dark', dark ? '1' : '0'); } catch { /* ignore storage */ }
     const html = document.documentElement;
     if (dark) html.classList.add('dark'); else html.classList.remove('dark');
   }, [dark]);
   React.useEffect(() => {
-    try { localStorage.setItem('ui-zoom', String(zoom)); } catch {}
+    try { localStorage.setItem('ui-zoom', String(zoom)); } catch { /* ignore storage */ }
     document.documentElement.style.fontSize = `${Math.max(80, Math.min(160, zoom))}%`;
   }, [zoom]);
   return (

@@ -24,8 +24,8 @@ function AppLayout() {
   const [zoom, setZoom] = React.useState<number>(() => {
     try { return Number(localStorage.getItem('ui-zoom') || 100) } catch { return 100 }
   })
-  React.useEffect(() => { try { localStorage.setItem('prefers-dark', dark ? '1' : '0') } catch {} }, [dark])
-  React.useEffect(() => { try { localStorage.setItem('ui-zoom', String(zoom)) } catch {} }, [zoom])
+  React.useEffect(() => { try { localStorage.setItem('prefers-dark', dark ? '1' : '0') } catch { /* ignore unavailable storage */ } }, [dark])
+  React.useEffect(() => { try { localStorage.setItem('ui-zoom', String(zoom)) } catch { /* ignore unavailable storage */ } }, [zoom])
 
   return (
     <div className={`${dark ? 'dark' : ''}`}>
