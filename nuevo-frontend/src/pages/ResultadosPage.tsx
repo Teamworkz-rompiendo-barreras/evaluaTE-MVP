@@ -589,7 +589,7 @@ ${res.description || 'Descripción no disponible'}
 
   // 1. Portada
   const portada = (
-    <div className="bg-white rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
       <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4" />
       <h1 className="text-4xl font-bold mb-2">Informe de Empleabilidad</h1>
       <h2 className="text-2xl font-semibold mb-1">{report?.firstName} {report?.lastName}</h2>
@@ -656,7 +656,7 @@ ${res.description || 'Descripción no disponible'}
     ? processRadarData(radarDataFromIa)
     : processRadarData(mergedSoftSkills);
   const radar = (
-    <div className="bg-white rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid">
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
       <h2 className="text-2xl font-bold mb-4">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-1/2 h-96">
@@ -749,7 +749,7 @@ ${res.description || 'Descripción no disponible'}
       
       {/* SOLUCIÓN: Mostrar informe básico si no hay iaReport después de cargar */}
       {!loadingIa && !iaReport && !errorIa && (
-        <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
+        <div className="bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-700 text-yellow-700 dark:text-yellow-200 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
           <strong className="font-bold">Informe básico disponible.</strong>
           <span className="block sm:inline"> Tu informe está siendo procesado. Mientras tanto, aquí tienes un resumen de tus resultados.</span>
           

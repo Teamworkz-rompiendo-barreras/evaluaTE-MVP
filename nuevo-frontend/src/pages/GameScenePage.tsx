@@ -117,7 +117,7 @@ const GameScenePage: React.FC = () => {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50 py-8">
+    <div className="min-h-screen bg-gray-50 dark:bg-gray-900 py-8 transition-colors">
       <div className="container mx-auto px-4 max-w-4xl">
         {/* Header del juego */}
         <div className="mb-8 text-center">

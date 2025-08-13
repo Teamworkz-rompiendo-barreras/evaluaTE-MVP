@@ -238,6 +238,14 @@ textarea {
   }
 }
 
+/* Reglas globales para modo oscuro forzado sobre utilidades comunes */
+.dark .bg-white { background-color: #1f2937 !important; } /* gray-800 */
+.dark .bg-gray-50 { background-color: #0f172a !important; } /* slate-900 aprox */
+.dark .text-gray-800 { color: #e5e7eb !important; } /* gray-200 */
+.dark .text-gray-700 { color: #d1d5db !important; } /* gray-300 */
+.dark .border-gray-300 { border-color: #4b5563 !important; } /* gray-600 */
+.dark .hover\:bg-gray-50:hover { background-color: #374151 !important; } /* gray-700 */
+
 /* Estilos para modo oscuro con accesibilidad */
 @media (prefers-color-scheme: dark) {
   html,
