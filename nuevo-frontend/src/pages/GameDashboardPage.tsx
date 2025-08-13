@@ -47,18 +47,18 @@ const GameDashboardPage: React.FC = () => {
       <div className="container mx-auto px-4 max-w-6xl">
         {/* Header */}
         <div className="text-center mb-8">
-          <h1 className="text-4xl font-bold text-gray-800 mb-4">
+          <h1 className="text-4xl font-bold text-gray-800 dark:text-gray-100 mb-4">
             🎮 EvalúaTE - Minijuegos
           </h1>
-          <p className="text-lg text-gray-600 mb-6">
+          <p className="text-lg text-gray-600 dark:text-gray-300 mb-6">
             Evalúa tus 10 habilidades blandas clave a través de minijuegos interactivos
           </p>
         </div>
 
         {/* Contexto general de los minijuegos */}
-        <div className="bg-blue-50 p-4 rounded-lg mb-8 no-max-width">
-          <h2 className="font-bold text-xl mb-2">¡Bienvenido/a al reto de habilidades blandas!</h2>
-          <p className="text-gray-700">
+        <div className="bg-blue-50 dark:bg-blue-900/30 p-4 rounded-lg mb-8 no-max-width">
+          <h2 className="font-bold text-xl mb-2 dark:text-gray-100">¡Bienvenido/a al reto de habilidades blandas!</h2>
+          <p className="text-gray-700 dark:text-gray-200">
             Aquí podrás poner a prueba y desarrollar tus habilidades clave para el mundo laboral a través de 10 minijuegos interactivos. Cada día te enfrentarás a una situación diferente, donde no hay respuestas incorrectas: solo formas distintas de afrontar los retos del trabajo. ¡Juega, aprende y descubre tu potencial!
           </p>
         </div>

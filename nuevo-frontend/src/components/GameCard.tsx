@@ -25,20 +25,20 @@ const GameCard: React.FC<GameCardProps> = ({
   accessibility
 }) => {
   const getCardClasses = () => {
-    let baseClasses = 'relative p-4 rounded-lg border-2 transition-all duration-300 cursor-pointer';
-    
+    let baseClasses = 'relative p-4 rounded-lg border-2 transition-all duration-300 cursor-pointer transition-colors';
+
     if (isCompleted) {
-      baseClasses += ' bg-green-50 border-green-300 opacity-80';
+      baseClasses += ' bg-green-50 border-green-300 dark:bg-emerald-900/20 dark:border-emerald-600';
     } else if (isUnlocked) {
-      baseClasses += ' bg-white border-gray-300 hover:border-blue-400 hover:shadow-lg';
+      baseClasses += ' bg-white border-gray-300 hover:border-blue-400 hover:shadow-lg dark:bg-slate-800 dark:border-slate-600';
     } else if (isCurrent) {
-      baseClasses += ' bg-white border-gray-300 hover:border-blue-400 hover:shadow-lg';
+      baseClasses += ' bg-white border-gray-300 hover:border-blue-400 hover:shadow-lg dark:bg-slate-800 dark:border-slate-600';
     } else {
-      baseClasses += ' bg-gray-100 border-gray-200 opacity-50 cursor-not-allowed';
+      baseClasses += ' bg-gray-100 border-gray-200 opacity-70 cursor-not-allowed dark:bg-slate-800/60 dark:border-slate-700';
     }
 
     if (accessibility.contrastLevel === 'high') {
-      baseClasses += ' border-black bg-white';
+      baseClasses += ' border-black bg-white dark:bg-black dark:border-white';
     }
 
     return baseClasses;
@@ -93,16 +93,16 @@ const GameCard: React.FC<GameCardProps> = ({
 
       {/* Información del juego */}
       <div className="text-center">
-        <h3 className="font-semibold text-sm mb-1 line-clamp-2">
+        <h3 className="font-semibold text-sm mb-1 line-clamp-2 text-gray-900 dark:text-gray-100">
           {game.title}
         </h3>
-        <p className="text-xs text-gray-600 mb-2">
+        <p className="text-xs text-gray-600 dark:text-gray-300 mb-2">
           {game.subtitle}
         </p>
-        <p className="text-xs text-gray-500 mb-2">
+        <p className="text-xs text-gray-500 dark:text-gray-400 mb-2">
           {game.day}
         </p>
-        <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700">
+        <span className="text-xs px-2 py-1 rounded-full bg-gray-200 text-gray-700 dark:bg-gray-700 dark:text-gray-100">
           {getStatusText()}
         </span>
       </div>
@@ -110,8 +110,8 @@ const GameCard: React.FC<GameCardProps> = ({
       {/* Indicador de progreso si está completado */}
       {isCompleted && (
         <div className="mt-3">
-          <div className="w-full bg-gray-200 rounded-full h-1">
-            <div className="bg-green-500 h-1 rounded-full" style={{ width: '100%' }} />
+          <div className="w-full bg-gray-200 dark:bg-gray-700 rounded-full h-1 transition-colors">
+            <div className="bg-green-500 dark:bg-green-400 h-1 rounded-full" style={{ width: '100%' }} />
           </div>
         </div>
       )}
