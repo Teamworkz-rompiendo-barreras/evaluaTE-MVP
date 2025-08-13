@@ -593,7 +593,7 @@ ${res.description || 'Descripción no disponible'}
       <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4" />
       <h1 className="text-4xl font-bold mb-2">Informe de Empleabilidad</h1>
       <h2 className="text-2xl font-semibold mb-1">{report?.firstName} {report?.lastName}</h2>
-      <p className="text-gray-600">{fecha}</p>
+      <p className="text-gray-600 dark:text-gray-300">{fecha}</p>
       
       {/* Botones de acción */}
       <div className="flex gap-4 mt-6 print-hidden">
@@ -655,6 +655,17 @@ ${res.description || 'Descripción no disponible'}
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
     : processRadarData(mergedSoftSkills);
+  // Color de etiquetas del radar según modo (claro/oscuro)
+  const isDarkMode = (
+    typeof document !== 'undefined' && (
+      document.documentElement.classList.contains('dark') ||
+      document.body?.classList.contains('dark') ||
+      !!document.querySelector('.dark')
+    )
+  );
+  // Unificar color de etiquetas del radar: mismo tono que modo claro (fondo blanco en ambos)
+  const radarLabelColor = '#0B1220';
+
   const radar = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
@@ -667,12 +678,12 @@ ${res.description || 'Descripción no disponible'}
               indexBy="softskill"
               margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
               theme={{
-                text: { fill: '#E5E7EB', fontSize: 12 },
+                text: { fill: radarLabelColor, fontSize: 12 },
                 grid: { line: { stroke: '#6B7280', strokeWidth: 1 } },
                 axis: {
-                  ticks: { text: { fill: '#E5E7EB' } },
+                  ticks: { text: { fill: radarLabelColor } },
                   domain: { line: { stroke: '#9CA3AF' } },
-                  legend: { text: { fill: '#E5E7EB' } },
+                  legend: { text: { fill: radarLabelColor } },
                 },
                 crosshair: { line: { stroke: '#F3F4F6' } },
               }}
@@ -728,17 +739,17 @@ ${res.description || 'Descripción no disponible'}
 
       {/* Mensaje de carga */}
       {loadingIa && (
-        <div className="bg-blue-100 rounded-lg shadow-md p-6 mb-8 text-center">
-          <p className="text-lg font-semibold mb-4">Generando tu informe personalizado</p>
+        <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg shadow-md p-6 mb-8 text-center">
+          <p className="text-lg font-semibold mb-4 dark:text-blue-100">Generando tu informe personalizado</p>
           <div className="w-full flex justify-center">
-            <div className="w-2/3 bg-blue-200 rounded-full h-3 overflow-hidden">
+            <div className="w-2/3 bg-blue-200 dark:bg-blue-800 rounded-full h-3 overflow-hidden">
               <div
-                className="bg-blue-500 h-3 transition-all duration-300"
+                className="bg-blue-500 dark:bg-blue-300 h-3 transition-all duration-300"
                 style={{ width: `${progress}%` }}
               ></div>
             </div>
           </div>
-          <p className="mt-4 text-xs text-gray-500">Esto puede tardar unos segundos. Por favor, ten paciencia.</p>
+          <p className="mt-4 text-xs text-gray-500 dark:text-gray-300">Esto puede tardar unos segundos. Por favor, ten paciencia.</p>
         </div>
       )}
 
@@ -785,33 +796,33 @@ ${res.description || 'Descripción no disponible'}
                 components={{
                   // Configuración mejorada para renderizado profesional
                   h1: ({ children, ...props }) => (
-                    <h1 {...props} className="text-3xl font-bold text-gray-900 dark:text-gray-100 mb-6 mt-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">
+                    <h1 {...props} className="text-3xl font-bold text-gray-900 mb-6 mt-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700">
                       {children}
                     </h1>
                   ),
                   h2: ({ children, ...props }) => (
-                    <h2 {...props} className="text-2xl font-semibold text-gray-800 dark:text-gray-100 mb-4 mt-6">
+                    <h2 {...props} className="text-2xl font-semibold text-gray-800 mb-4 mt-6">
                       {children}
                     </h2>
                   ),
                   h3: ({ children, ...props }) => (
-                    <h3 {...props} className="text-xl font-semibold text-gray-700 dark:text-gray-200 mb-3 mt-5">
+                    <h3 {...props} className="text-xl font-semibold text-gray-700 mb-3 mt-5">
                       {children}
                     </h3>
                   ),
                   h4: ({ children, ...props }) => (
-                    <h4 {...props} className="text-lg font-semibold text-gray-600 dark:text-gray-300 mb-2 mt-4">
+                    <h4 {...props} className="text-lg font-semibold text-gray-600 mb-2 mt-4">
                       {children}
                     </h4>
                   ),
 
                   ul: ({ children, ...props }) => (
-                    <ul {...props} className="list-disc list-inside space-y-2 mb-4 text-gray-700 dark:text-gray-200">
+                    <ul {...props} className="list-disc list-inside space-y-2 mb-4 text-gray-700">
                       {children}
                     </ul>
                   ),
                   ol: ({ children, ...props }) => (
-                    <ol {...props} className="list-decimal list-inside space-y-2 mb-4 text-gray-700 dark:text-gray-200">
+                    <ol {...props} className="list-decimal list-inside space-y-2 mb-4 text-gray-700">
                       {children}
                     </ol>
                   ),
@@ -821,27 +832,27 @@ ${res.description || 'Descripción no disponible'}
                     </li>
                   ),
                   strong: ({ children, ...props }) => (
-                    <strong {...props} className="font-semibold text-gray-900 dark:text-gray-100">
+                    <strong {...props} className="font-semibold text-gray-900">
                       {children}
                     </strong>
                   ),
                   em: ({ children, ...props }) => (
-                    <em {...props} className="italic text-gray-600 dark:text-gray-300">
+                    <em {...props} className="italic text-gray-600">
                       {children}
                     </em>
                   ),
                   blockquote: ({ children, ...props }) => (
-                    <blockquote {...props} className="border-l-4 border-blue-500 pl-4 italic text-gray-600 dark:text-gray-300 bg-blue-50 dark:bg-blue-900/30 py-2 rounded-r">
+                    <blockquote {...props} className="border-l-4 border-blue-500 pl-4 italic text-gray-600 bg-blue-50 dark:bg-blue-900/30 py-2 rounded-r">
                       {children}
                     </blockquote>
                   ),
                   code: ({ children, ...props }) => (
-                    <code {...props} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-gray-800 dark:text-gray-100">
+                      <code {...props} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-gray-800">
                       {children}
                     </code>
                   ),
                   pre: ({ children, ...props }) => (
-                    <pre {...props} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-100 border border-gray-200 dark:border-gray-600">
+                    <pre {...props} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-800 border border-gray-200 dark:border-gray-600">
                       {children}
                     </pre>
                   ),
@@ -853,12 +864,12 @@ ${res.description || 'Descripción no disponible'}
                     </div>
                   ),
                   th: ({ children, ...props }) => (
-                    <th {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100 text-left">
+                    <th {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-gray-800 font-semibold text-gray-900 text-left">
                       {children}
                     </th>
                   ),
                   td: ({ children, ...props }) => (
-                    <td {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-gray-700 dark:text-gray-200">
+                    <td {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-gray-700">
                       {children}
                     </td>
                   ),

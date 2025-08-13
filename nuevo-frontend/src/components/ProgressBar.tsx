@@ -18,7 +18,8 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
   color = 'blue'
 }) => {
   const percent = Math.min(100, Math.round((current / total) * 100))
-  const completedText = `${current} de ${total} ${label}${total > 1 ? 's' : ''} completados`
+  const noun = (label && label.trim()) ? label.trim() : 'paso'
+  const completedText = `${current} de ${total} ${noun}${total > 1 && !noun.endsWith('s') ? 's' : ''} completados`
 
   return (
     <div className="w-full mb-4">

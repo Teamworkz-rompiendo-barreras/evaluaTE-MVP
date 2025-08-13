@@ -80,7 +80,7 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
                   <span className="text-2xl">{option.icon}</span>
                 )}
                 <span 
-                  className="text-lg font-medium"
+                  className={`text-lg font-medium ${_selectedOption === option.id ? 'dark:text-gray-900' : ''}`}
                   style={{ fontSize: `${accessibility.fontScale}%` }}
                 >
                   {option.text}

@@ -95,7 +95,11 @@ const GameDashboardPage: React.FC = () => {
           </button>
           <button
             onClick={() => allCompleted && navigate('/resultados')}
-            className={`px-6 py-3 rounded-lg transition-colors text-white ${allCompleted ? 'bg-blue-600 hover:bg-blue-700' : 'bg-gray-300 cursor-not-allowed'}`}
+            className={`px-6 py-3 rounded-lg transition-colors font-semibold ${
+              allCompleted
+                ? 'bg-[#374ba6] text-white shadow-md hover:bg-[#2d3f96] hover:shadow-lg'
+                : 'bg-gray-300 text-gray-600 cursor-not-allowed'
+            }`}
             disabled={!allCompleted}
           >
             Ir a adjuntar currículum →
