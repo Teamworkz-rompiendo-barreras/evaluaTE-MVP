@@ -1135,9 +1135,19 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
         client = DocumentAnalysisClient(endpoint=endpoint, credential=AzureKeyCredential(key))
         
         with open(file_path, "rb") as document:
-            logger.info("Iniciando análisis de documento (prebuilt-layout v4)...")
-            poller = client.begin_analyze_document("prebuilt-layout", document)
-            result = poller.result()
+            model_id = (os.getenv("AZURE_DOCINTEL_MODEL_ID") or "prebuilt-layout").strip()
+            try:
+                logger.info(f"Iniciando análisis de documento con modelo '{model_id}'...")
+                poller = client.begin_analyze_document(model_id, document)
+                result = poller.result()
+            except Exception as e:
+                if model_id != "prebuilt-layout":
+                    logger.warning(f"Fallo con modelo custom '{model_id}', reintentando con 'prebuilt-layout': {e}")
+                    document.seek(0)
+                    poller = client.begin_analyze_document("prebuilt-layout", document)
+                    result = poller.result()
+                else:
+                    raise
 
         # Extraer texto y secciones aware de layout
         text_content = ""
@@ -1151,6 +1161,8 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
         # Información básica extraída por regex (nombre/contacto/periodos)
         basic = _extract_basic_cv_info_from_text(text_content)
         logger.info(f"Texto extraído: {len(text_content)} caracteres")
+        if len(text_content) < 20:
+            logger.warning("Texto extraído muy corto; el PDF podría estar escaneado/protegido. Activando fallback PyMuPDF y OCR si disponibles.")
         
         # Analizar contenido con IA (pasando hints básicos)
         analysis = await analyze_cv_content_with_ai(text_content, filename, basic)
