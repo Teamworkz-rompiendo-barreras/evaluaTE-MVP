@@ -90,21 +90,21 @@ const GameScene: React.FC<GameSceneProps> = ({
 
   return (
     <div 
-      className={`game-scene p-6 rounded-lg shadow-lg ${
+      className={`game-scene p-6 rounded-lg shadow-lg transition-colors ${
         accessibility.contrastLevel === 'high' 
-          ? 'bg-white text-black border-2 border-black' 
-          : 'bg-gray-50 text-gray-800'
+          ? 'bg-white text-black border-2 border-black dark:bg-black dark:text-white' 
+          : 'bg-gray-50 text-gray-800 dark:bg-slate-800 dark:text-gray-100'
       }`}
       style={{ fontSize: `${accessibility.fontScale}%` }}
     >
       {/* Título de la escena */}
-      <h2 className="text-2xl font-bold mb-4 text-center">
+      <h2 className="text-2xl font-bold mb-4 text-center text-gray-900 dark:text-gray-100">
         {scene.title}
       </h2>
 
       {/* Descripción */}
       <div className="mb-6 text-center">
-        <p className="text-lg leading-relaxed">
+        <p className="text-lg leading-relaxed text-gray-700 dark:text-gray-200">
           {scene.description}
         </p>
       </div>
@@ -129,7 +129,7 @@ const GameScene: React.FC<GameSceneProps> = ({
 
       {/* Indicador de tiempo (si hay límite) */}
       {scene.timeLimit && (
-        <div className="mt-4 text-center text-sm text-gray-600">
+        <div className="mt-4 text-center text-sm text-gray-600 dark:text-gray-300">
           Tiempo restante: {scene.timeLimit}s
         </div>
       )}
