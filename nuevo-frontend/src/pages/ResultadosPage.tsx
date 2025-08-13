@@ -656,13 +656,6 @@ ${res.description || 'Descripción no disponible'}
     ? processRadarData(radarDataFromIa)
     : processRadarData(mergedSoftSkills);
   // Color de etiquetas del radar según modo (claro/oscuro)
-  const isDarkMode = (
-    typeof document !== 'undefined' && (
-      document.documentElement.classList.contains('dark') ||
-      document.body?.classList.contains('dark') ||
-      !!document.querySelector('.dark')
-    )
-  );
   // Unificar color de etiquetas del radar: mismo tono que modo claro (fondo blanco en ambos)
   const radarLabelColor = '#0B1220';
 
