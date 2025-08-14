@@ -681,14 +681,14 @@ ${res.description || 'Descripción no disponible'}
                 },
                 crosshair: { line: { stroke: '#F3F4F6' } },
               }}
-              borderColor={{ from: 'color', modifiers: [['brighter', 1]] }}
+              borderColor="#3B82F6"
               gridLabelOffset={20}
               dotSize={12}
-              dotColor={{ theme: 'background' }}
+              dotColor="#3B82F6"
               dotBorderWidth={2}
-              dotBorderColor={{ from: 'color', modifiers: [['brighter', 1]] }}
-              colors={{ scheme: 'set1' }}
-              fillOpacity={0.25}
+              dotBorderColor={{ theme: 'background' }}
+              colors={['#3B82F6']}
+              fillOpacity={0.35}
               blendMode="multiply"
               animate={true}
               isInteractive={false}
