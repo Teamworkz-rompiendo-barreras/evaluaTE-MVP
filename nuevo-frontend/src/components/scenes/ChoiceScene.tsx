@@ -60,7 +60,7 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
             key={option.id}
             className={`option-card p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
               _selectedOption === option.id
-                ? 'border-blue-500 bg-blue-50'
+                ? 'border-blue-500 bg-blue-50 dark:bg-gray-100'
                 : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'
             } ${
               accessibility.contrastLevel === 'high'
@@ -80,7 +80,7 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
                   <span className="text-2xl">{option.icon}</span>
                 )}
                 <span 
-                  className={`text-lg font-medium text-black ${_selectedOption === option.id ? 'dark:text-gray-900' : ''}`}
+                  className={`text-lg font-medium text-black dark:text-gray-100 ${_selectedOption === option.id ? 'dark:text-gray-900' : ''}`}
                   style={{ fontSize: `${accessibility.fontScale}%` }}
                 >
                   {option.text}
