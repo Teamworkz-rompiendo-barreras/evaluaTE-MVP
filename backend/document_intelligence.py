@@ -215,12 +215,17 @@ class ImprovedDocumentIntelligenceService:
         sections = self._segment_sections_by_headings(blocks)
         tables = self._extract_tables(result)
 
+        # Idiomas: intentar por secciones; si no hay, usar fallback por contenido completo
+        langs = self._extract_languages_from_sections(sections)
+        if not langs:
+            langs = self._extract_improved_languages(result)
+
         return {
             "contacto": self._extract_contact_from_layout(blocks, tables),
             "experiencia": self._extract_experience_from_sections(sections),
             "educacion": self._extract_education_from_sections(sections),
             "habilidades_tecnicas": self._extract_improved_skills(result),
-            "idiomas": self._extract_languages_from_sections(sections),
+            "idiomas": langs,
             "proyectos": self._extract_improved_projects(result),
             "resumen_profesional": " ".join(sections.get("resumen", [])).strip() or self._extract_improved_profile(result),
             "raw_content": content,
@@ -782,6 +787,84 @@ class ImprovedDocumentIntelligenceService:
                         break
         
         return languages
+
+    def _extract_languages_from_sections(self, sections: Dict[str, List[str]]) -> List[Dict[str, str]]:
+        """Extrae idiomas a partir de las secciones segmentadas por headings.
+
+        Esta función corrige el fallo reportado cuando se invoca
+        `_extract_languages_from_sections` inexistente. Implementa un parser
+        sencillo y robusto sobre las líneas de la sección `idiomas`.
+        """
+        try:
+            lines = sections.get("idiomas", []) or []
+            if not lines:
+                return []
+
+            # Listados básicos de idiomas y niveles
+            language_names = [
+                "español", "castellano", "inglés", "francés", "alemán", "italiano",
+                "portugués", "catalán", "euskera", "gallego", "chino", "japonés",
+                "coreano", "ruso", "árabe"
+            ]
+            # Aceptar abreviaturas tipo B2/C1/C2
+            level_aliases = {
+                "nativo": "nativo",
+                "bilingüe": "bilingüe",
+                "bilingue": "bilingüe",
+                "c2": "bilingüe",
+                "c1": "avanzado",
+                "b2": "intermedio",
+                "b1": "intermedio",
+                "a2": "básico",
+                "a1": "básico",
+                "avanzado": "avanzado",
+                "intermedio": "intermedio",
+                "medio": "intermedio",
+                "básico": "básico",
+                "basico": "básico",
+            }
+
+            found: List[Dict[str, str]] = []
+            for raw in lines:
+                t = (raw or "").strip().lower()
+                if not t:
+                    continue
+                # Buscar nombre de idioma
+                idioma: Optional[str] = None
+                for lang in language_names:
+                    if lang in t:
+                        idioma = lang.title()
+                        break
+                if not idioma:
+                    # Patrones genéricos con dos puntos p.ej. "Inglés: B2"
+                    m = re.search(r"^([a-záéíóúñ]+)\s*[:|-]", t)
+                    if m:
+                        idioma = m.group(1).title()
+                if not idioma:
+                    continue
+
+                # Buscar nivel
+                nivel = "intermedio"
+                for key, norm in level_aliases.items():
+                    if re.search(rf"\b{re.escape(key)}\b", t):
+                        nivel = norm
+                        break
+
+                found.append({"idioma": idioma, "nivel": nivel})
+
+            # Evitar duplicados conservando el primero
+            unique: List[Dict[str, str]] = []
+            seen = set()
+            for item in found:
+                k = (item.get("idioma", ""), item.get("nivel", ""))
+                if k in seen:
+                    continue
+                seen.add(k)
+                unique.append(item)
+
+            return unique
+        except Exception:
+            return []
 
     # ===== NUEVO: extractores basados en secciones =====
     def _extract_contact_from_layout(self, blocks: List[Block], tables: List[Dict[str, Any]]) -> Dict[str, Any]:
