@@ -12,6 +12,7 @@ import GameDashboardPage from './pages/GameDashboardPage';
 import GameScenePage from './pages/GameScenePage';
 import UploadCVPage from './pages/UploadCVPage';
 import ResultadosPage from './pages/ResultadosPage';
+import PrivacidadPage from './pages/PrivacidadPage';
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
@@ -71,6 +72,9 @@ root.render(
             {/* 1) Inicio → registro: datos personales */}
             <Route path="/" element={<Navigate to="/register/contact" replace />} />
             <Route path="/register/contact" element={<DatosPersonalesPage />} />
+            
+            {/* Política de privacidad */}
+            <Route path="/privacidad" element={<PrivacidadPage />} />
 
             {/* 2) Registro: preferencias */}
             <Route
