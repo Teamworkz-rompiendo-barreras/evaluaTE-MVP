@@ -982,13 +982,13 @@ ${res.description || 'Descripción no disponible'}
               <form onSubmit={handleFeedbackSubmit}>
                 <label className="block mb-2 font-semibold">¿Te resultó útil este informe?</label>
                 <div className="flex gap-4 mb-4">
-                  <label className="flex items-center gap-1">
-                    <input type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
-                    Útil
+                  <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600">
+                    <input className="w-5 h-5" type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                    <span className="min-w-[3.5rem] text-center">Útil</span>
                   </label>
-                  <label className="flex items-center gap-1">
-                    <input type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
-                    No útil
+                  <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600">
+                    <input className="w-5 h-5" type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                    <span className="min-w-[5rem] text-center">No útil</span>
                   </label>
                 </div>
                 <label className="block mb-1">¿Algún comentario o sugerencia?</label>
