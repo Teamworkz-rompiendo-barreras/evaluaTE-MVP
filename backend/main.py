@@ -91,6 +91,20 @@ print(f"🔍 DEBUG - ENDPOINT: {ENDPOINT}")
 print(f"🔍 DEBUG - DEPLOYMENT: {DEPLOYMENT}")
 print(f"🔍 DEBUG - API_VERSION: {API_VERSION}")
 
+# Utilidad: comprobar si la versión de API soporta response_format json_schema (>= 2024-08-01-preview)
+def _supports_json_schema_response_format(version_str: Optional[str]) -> bool:
+    try:
+        if not version_str:
+            return False
+        import re as _re
+        m = _re.search(r"(\d{4})-(\d{2})-(\d{2})", version_str)
+        if not m:
+            return False
+        y, mo, d = int(m.group(1)), int(m.group(2)), int(m.group(3))
+        return (y, mo, d) >= (2024, 8, 1)
+    except Exception:
+        return False
+
 # Configurar NO_PROXY específicamente para el endpoint de Azure OpenAI
 if ENDPOINT:
     # Extraer el dominio del endpoint (ej: teamworkzevaluate-openai.openai.azure.com)
@@ -727,14 +741,16 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             "strict": False,
         }
 
-        response = client.chat.completions.create(
-            model=deployment_name,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.3,
-            max_tokens=2000,
-            timeout=60,
-            response_format={"type": "json_schema", "json_schema": report_schema},
-        )
+        chat_kwargs = {
+            "model": deployment_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.3,
+            "max_tokens": 2000,
+            "timeout": 60,
+        }
+        if _supports_json_schema_response_format(API_VERSION):
+            chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": report_schema}
+        response = client.chat.completions.create(**chat_kwargs)
         
         # Obtener y loggear la respuesta cruda
         raw_content = response.choices[0].message.content
@@ -1340,14 +1356,16 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
             "strict": False,
         }
 
-        response = client.chat.completions.create(
-            model=deployment_name,
-            messages=[{"role": "user", "content": prompt}],
-            temperature=0.2,
-            max_tokens=1500,
-            timeout=60,
-            response_format={"type": "json_schema", "json_schema": analysis_schema},
-        )
+        chat_kwargs = {
+            "model": deployment_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.2,
+            "max_tokens": 1500,
+            "timeout": 60,
+        }
+        if _supports_json_schema_response_format(API_VERSION):
+            chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": analysis_schema}
+        response = client.chat.completions.create(**chat_kwargs)
         
         # Obtener y loggear la respuesta cruda
         raw_content = response.choices[0].message.content
