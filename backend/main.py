@@ -683,7 +683,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             "skill": skill.skill,
             "score": level_score,
             "level": skill.level,
-            "evidence": skill.feedback or "Evaluado mediante juego interactivo"
+            "evidence": getattr(skill, 'feedback', None) or "Evaluado mediante juego interactivo"
         })
     
     # Preparar análisis del CV
