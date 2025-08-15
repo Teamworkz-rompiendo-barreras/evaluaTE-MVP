@@ -1654,36 +1654,8 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
         except Exception:
             basic_hint = ""
 
-        prompt = f"""
-        Eres un orientador laboral experto, con experiencia en neurodivergencias y discapacidad intelectual.
-        Debes generar información precisa, útil y de lectura fácil (frases cortas, listas, términos claros).
-        Analiza el siguiente CV y proporciona un análisis detallado en formato JSON:
-        
-        CV: {content[:4000]}
-        {basic_hint}
-        
-        Responde en este formato JSON exacto:
-        {{
-            "strengths": ["fortaleza1", "fortaleza2"],
-            "weaknesses": ["debilidad1", "debilidad2"],
-            "feedback": "feedback general",
-            "structure": "buena/regular/mala",
-            "coherence": "buena/regular/mala",
-            "experience": "alta/regular/baja",
-            "skills": ["skill1", "skill2"],
-            "education": ["educación1", "educación2"],
-            "alerts": ["alerta1", "alerta2"],
-            "cv_analysis_structured": {{
-                "candidate": "Nombre completo si aparece",
-                "contact": {{"emails": ["..."], "phones": ["..."], "location": "...", "linkedin": "..."}},
-                "periods": ["ene 2020 - dic 2022", "2023 - actualidad"],
-                "languages": ["Español (nativo)", "Inglés (intermedio)"],
-                "highlights": ["...", "..."],
-                "volunteering": ["Entidad y rol si aparece"],
-                "education_synonyms": ["estudios", "formación", "educación", "cursos"]
-            }}
-        }}
-        """
+        # Usar prompt centralizado para análisis de CV
+        prompt = PromptConfig.get_cv_analysis_prompt(content, basic)
         
         # Limpiar el nombre del deployment para evitar problemas con espacios
         deployment_name = DEPLOYMENT.strip()

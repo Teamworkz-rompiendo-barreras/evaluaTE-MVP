@@ -284,6 +284,54 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
         return prompt
     
     @staticmethod
+    def get_cv_analysis_prompt(content: str, basic: dict = None) -> str:
+        """
+        Genera el prompt para análisis técnico de CV en formato JSON
+        IMPORTANTE: El CV es obligatorio para todos los candidatos
+        """
+        
+        basic_hint = ""
+        if basic:
+            basic_hint = f"""
+            HINTS EXTRAIDOS AUTOMÁTICAMENTE DEL CV:
+            - CANDIDATO: {basic.get('candidate') or ''}
+            - CONTACTO: emails={basic.get('contact', {}).get('emails', [])}, phones={basic.get('contact', {}).get('phones', [])}, location={basic.get('contact', {}).get('location')}
+            - PERIODOS DETECTADOS: {basic.get('periods', [])}
+            """
+
+        return f"""
+        Eres un orientador laboral experto, con experiencia en neurodivergencias y discapacidad intelectual.
+        Debes generar información precisa, útil y de lectura fácil (frases cortas, listas, términos claros).
+        
+        IMPORTANTE: El CV es OBLIGATORIO para todos los candidatos. Analiza el siguiente CV y proporciona un análisis detallado en formato JSON:
+        
+        CV: {content[:4000]}
+        {basic_hint}
+        
+        Responde en este formato JSON exacto:
+        {{
+            "strengths": ["fortaleza1", "fortaleza2"],
+            "weaknesses": ["debilidad1", "debilidad2"],
+            "feedback": "feedback general",
+            "structure": "buena/regular/mala",
+            "coherence": "buena/regular/mala",
+            "experience": "alta/regular/baja",
+            "skills": ["skill1", "skill2"],
+            "education": ["educación1", "educación2"],
+            "alerts": ["alerta1", "alerta2"],
+            "cv_analysis_structured": {{
+                "candidate": "Nombre completo si aparece",
+                "contact": {{"emails": ["..."], "phones": ["..."], "location": "...", "linkedin": "..."}},
+                "periods": ["ene 2020 - dic 2022", "2023 - actualidad"],
+                "languages": ["Español (nativo)", "Inglés (intermedio)"],
+                "highlights": ["...", "..."],
+                "volunteering": ["Entidad y rol si aparece"],
+                "education_synonyms": ["estudios", "formación", "educación", "cursos"]
+            }}
+        }}
+        """
+    
+    @staticmethod
     def get_report_schema() -> dict:
         """
         Esquema JSON para la respuesta estructurada del informe
