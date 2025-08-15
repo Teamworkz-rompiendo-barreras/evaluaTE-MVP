@@ -146,11 +146,11 @@ Incluye una **tabla** con las puntuaciones del CV (1–5) + evidencia + correcci
 
 ## 2) Resumen del perfil
 
-[2–4 frases. Perfil profesional y propuesta de valor, basado en soft_skills + CV + preferencias.]
+[2–4 frases. Perfil profesional y propuesta de valor, basado en soft_skills + CV + preferencias. Si hay información del CV, úsala específicamente. Si no hay CV, basa el resumen en soft_skills y preferencias laborales.]
 
 ## 3) Resumen del CV
 
-[Panorama de experiencia, sectores, tecnologías/herramientas clave, formación relevante.]
+[Panorama de experiencia, sectores, tecnologías/herramientas clave, formación relevante. Si hay información del CV, proporciona un resumen detallado. Si no hay CV, indica claramente "No se ha proporcionado CV para análisis".]
 
 ## 4) Fortalezas
 

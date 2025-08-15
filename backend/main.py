@@ -692,6 +692,16 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         "sections": {}
     }
     
+    # Logging para debug
+    logger.info(f"🔍 Preparando datos del CV para el prompt")
+    logger.info(f"  - cvAnalysis presente: {'✅' if request.cvAnalysis else '❌'}")
+    if request.cvAnalysis:
+        logger.info(f"  - cv_structured: {'✅' if hasattr(request.cvAnalysis, 'cv_structured') and request.cvAnalysis.cv_structured else '❌'}")
+        logger.info(f"  - candidate: {'✅' if hasattr(request.cvAnalysis, 'candidate') and request.cvAnalysis.candidate else '❌'}")
+        logger.info(f"  - contact: {'✅' if hasattr(request.cvAnalysis, 'contact') and request.cvAnalysis.contact else '❌'}")
+        logger.info(f"  - experience: {'✅' if hasattr(request.cvAnalysis, 'experience_detailed') and request.cvAnalysis.experience_detailed else '❌'}")
+        logger.info(f"  - education: {'✅' if hasattr(request.cvAnalysis, 'education_detailed') and request.cvAnalysis.education_detailed else '❌'}")
+    
     if request.cvAnalysis:
         # Extraer información estructurada del CV
         cv_structured = getattr(request.cvAnalysis, 'cv_structured', {})
@@ -928,6 +938,7 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
         # Ejecutar TODAS las rutas disponibles y fusionar resultados para máxima cobertura
         texts: List[str] = []
         merged: Dict[str, Any] = {}
+        logger.info(f"🔍 Iniciando análisis completo del CV: {file.filename}")
 
         # A) Módulo mejorado de Document Intelligence
         try:
@@ -987,14 +998,21 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
 
         # Texto combinado
         combined_text = "\n".join([t for t in texts if t])
+        logger.info(f"📝 Texto combinado extraído: {len(combined_text)} caracteres")
         basic = _extract_basic_cv_info_from_text(combined_text) if combined_text else None
+        if basic:
+            logger.info(f"✅ Información básica extraída: {list(basic.keys())}")
+        else:
+            logger.warning("⚠️ No se pudo extraer información básica del CV")
 
         # 1) Structured Outputs sobre secciones Layout si disponibles
         structured: Dict[str, Any] = {}
         try:
-            if locals().get('layout_sections'):
-                structured = _structured_extract_with_ai(layout_sections, file.filename)
-        except Exception:
+            if locals().get('layout_sections') and layout_sections:
+                structured = await _structured_extract_with_ai(layout_sections, file.filename)
+                logger.info(f"✅ Extracción estructurada completada: {len(structured)} campos")
+        except Exception as e:
+            logger.warning(f"⚠️ Error en extracción estructurada: {e}")
             structured = {}
 
         # 2) LLM clásico como respaldo
@@ -1113,6 +1131,131 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
     except Exception as e:
         logger.error(f"Error generando PDF: {e}")
         raise HTTPException(status_code=500, detail="No se pudo generar el PDF")
+
+async def _structured_extract_with_ai(layout_sections: Dict[str, Any], filename: str) -> Dict[str, Any]:
+    """Extrae información estructurada del CV usando IA sobre las secciones de layout"""
+    try:
+        if not client:
+            logger.warning("Azure OpenAI no disponible para extracción estructurada")
+            return {}
+        
+        # Preparar contexto de las secciones
+        sections_text = ""
+        for section_name, section_data in layout_sections.items():
+            if isinstance(section_data, dict) and section_data.get('text'):
+                sections_text += f"\n## {section_name.upper()}\n{section_data['text']}\n"
+        
+        if not sections_text.strip():
+            logger.warning("No hay texto en las secciones de layout para extraer")
+            return {}
+        
+        # Prompt para extracción estructurada
+        prompt = f"""
+        Eres un experto en análisis de CVs. Analiza las siguientes secciones extraídas de un CV y proporciona información estructurada en formato JSON.
+        
+        CV: {sections_text[:3000]}
+        
+        Extrae y estructura la siguiente información:
+        - candidate: nombre completo del candidato
+        - contact: emails, teléfonos, ubicación, LinkedIn si aparece
+        - experience: experiencia laboral con empresa, cargo, fechas, descripción
+        - education: formación académica con institución, título, fechas
+        - languages: idiomas con niveles
+        - skills: habilidades técnicas y herramientas
+        - summary: resumen profesional del candidato
+        
+        Responde SOLO en formato JSON válido, sin texto adicional.
+        """
+        
+        # Configurar parámetros de Azure OpenAI
+        deployment_name = DEPLOYMENT.strip()
+        chat_kwargs = {
+            "model": deployment_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.1,  # Baja temperatura para extracción precisa
+            "max_tokens": 2000,
+            "timeout": 60,
+        }
+        
+        # Usar JSON Schema si está disponible
+        if _supports_json_schema_response_format(API_VERSION):
+            schema = {
+                "type": "object",
+                "properties": {
+                    "candidate": {"type": "string"},
+                    "contact": {
+                        "type": "object",
+                        "properties": {
+                            "emails": {"type": "array", "items": {"type": "string"}},
+                            "phones": {"type": "array", "items": {"type": "string"}},
+                            "location": {"type": "string"},
+                            "linkedin": {"type": "string"}
+                        }
+                    },
+                    "experience": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "position": {"type": "string"},
+                                "company": {"type": "string"},
+                                "start_date": {"type": "string"},
+                                "end_date": {"type": "string"},
+                                "current": {"type": "boolean"},
+                                "description": {"type": "string"}
+                            }
+                        }
+                    },
+                    "education": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "degree": {"type": "string"},
+                                "institution": {"type": "string"},
+                                "start_date": {"type": "string"},
+                                "end_date": {"type": "string"}
+                            }
+                        }
+                    },
+                    "languages": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "language": {"type": "string"},
+                                "level": {"type": "string"}
+                            }
+                        }
+                    },
+                    "skills": {"type": "array", "items": {"type": "string"}},
+                    "summary": {"type": "string"}
+                }
+            }
+            chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": schema}
+        
+        # Llamar a Azure OpenAI
+        response = client.chat.completions.create(**chat_kwargs)
+        raw_content = response.choices[0].message.content
+        
+        if not raw_content or not raw_content.strip():
+            logger.warning("Respuesta vacía de Azure OpenAI para extracción estructurada")
+            return {}
+        
+        # Parsear JSON
+        import json
+        try:
+            structured_data = json.loads(raw_content.strip())
+            logger.info(f"✅ Datos estructurados extraídos: {list(structured_data.keys())}")
+            return structured_data
+        except json.JSONDecodeError as je:
+            logger.error(f"Error parseando JSON de extracción estructurada: {je}")
+            logger.error(f"Contenido: {repr(raw_content[:500])}")
+            return {}
+            
+    except Exception as e:
+        logger.error(f"Error en extracción estructurada: {e}")
+        return {}
 
 def _extract_basic_cv_info_from_text(text_content: str) -> Dict[str, Any]:
     """Extrae heurísticamente nombre del candidato, contactos y periodos laborales/educativos."""
