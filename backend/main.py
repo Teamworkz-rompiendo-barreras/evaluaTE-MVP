@@ -704,46 +704,58 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         logger.info(f"  - education: {'✅' if hasattr(request.cvAnalysis, 'education_detailed') and request.cvAnalysis.education_detailed else '❌'}")
     
     if request.cvAnalysis:
-        # Extraer información estructurada del CV
-        # Primero buscar en cv_analysis_structured (campo generado por IA)
-        cv_structured = getattr(request.cvAnalysis, 'cv_analysis_structured', {})
-        if not cv_structured:
-            # Fallback a cv_structured (campo alternativo)
-            cv_structured = getattr(request.cvAnalysis, 'cv_structured', {})
+        # Extraer información del CV directamente de los campos del objeto
+        # La información real está en los campos directos, no en los estructurados
+        cv_data["sections"] = {
+            "profile": getattr(request.cvAnalysis, 'candidate', 'No especificado'),
+            "experience": getattr(request.cvAnalysis, 'experience_detailed', []),
+            "education": getattr(request.cvAnalysis, 'education_detailed', []),
+            "courses": "No especificado",  # Campo que no tienes
+            "languages": getattr(request.cvAnalysis, 'languages', []),
+            "software": getattr(request.cvAnalysis, 'skills', []),
+            "contact": getattr(request.cvAnalysis, 'contact', {})
+        }
         
-        if cv_structured:
-            cv_data["sections"] = {
-                "profile": cv_structured.get('candidate', 'No especificado'),
-                "experience": cv_structured.get('experience', []),
-                "education": cv_structured.get('education', []),
-                "courses": "No especificado",  # Campo que no tienes
-                "languages": cv_structured.get('languages', []),
-                "software": cv_structured.get('skills', []),
-                "contact": cv_structured.get('contact', {})
-            }
-            logger.info(f"✅ Información estructurada del CV extraída: {list(cv_data['sections'].keys())}")
-            logger.info(f"  - Profile: {cv_data['sections']['profile']}")
-            logger.info(f"  - Experience: {len(cv_data['sections']['experience'])} elementos")
-            logger.info(f"  - Education: {len(cv_data['sections']['education'])} elementos")
-            logger.info(f"  - Languages: {len(cv_data['sections']['languages'])} elementos")
-            logger.info(f"  - Software: {len(cv_data['sections']['software'])} elementos")
-        else:
-            # Fallback a información básica
-            cv_data["sections"] = {
-                "profile": getattr(request.cvAnalysis, 'candidate', 'No especificado'),
-                "experience": getattr(request.cvAnalysis, 'experience_detailed', []),
-                "education": getattr(request.cvAnalysis, 'education_detailed', []),
-                "courses": "No especificado",
-                "languages": getattr(request.cvAnalysis, 'languages', []),
-                "software": getattr(request.cvAnalysis, 'skills', []),
-                "contact": getattr(request.cvAnalysis, 'contact', {})
-            }
-            logger.info(f"⚠️ Usando información básica del CV como fallback")
-            logger.info(f"  - Profile: {cv_data['sections']['profile']}")
-            logger.info(f"  - Experience: {len(cv_data['sections']['experience'])} elementos")
-            logger.info(f"  - Education: {len(cv_data['sections']['education'])} elementos")
-            logger.info(f"  - Languages: {len(cv_data['sections']['languages'])} elementos")
-            logger.info(f"  - Software: {len(cv_data['sections']['software'])} elementos")
+        # También intentar extraer información de campos estructurados si están disponibles
+        cv_structured = getattr(request.cvAnalysis, 'cv_analysis_structured', {})
+        if cv_structured and isinstance(cv_structured, dict):
+            # Mezclar información estructurada con la básica
+            if cv_structured.get('candidate') and cv_structured.get('candidate') != 'No especificado':
+                cv_data["sections"]["profile"] = cv_structured['candidate']
+            if cv_structured.get('experience'):
+                cv_data["sections"]["experience"] = cv_structured['experience']
+            if cv_structured.get('education'):
+                cv_data["sections"]["education"] = cv_structured['education']
+            if cv_structured.get('languages'):
+                cv_data["sections"]["languages"] = cv_structured['languages']
+            if cv_structured.get('skills'):
+                cv_data["sections"]["software"] = cv_structured['skills']
+            if cv_structured.get('contact'):
+                cv_data["sections"]["contact"] = cv_structured['contact']
+        
+        # Fallback adicional a cv_structured si cv_analysis_structured no tiene datos
+        if not any(cv_data["sections"].values()) or all(v == 'No especificado' or v == [] or v == {} for v in cv_data["sections"].values()):
+            cv_structured_fallback = getattr(request.cvAnalysis, 'cv_structured', {})
+            if cv_structured_fallback and isinstance(cv_structured_fallback, dict):
+                if cv_structured_fallback.get('candidate'):
+                    cv_data["sections"]["profile"] = cv_structured_fallback['candidate']
+                if cv_structured_fallback.get('experience'):
+                    cv_data["sections"]["experience"] = cv_structured_fallback['experience']
+                if cv_structured_fallback.get('education'):
+                    cv_data["sections"]["education"] = cv_structured_fallback['education']
+                if cv_structured_fallback.get('languages'):
+                    cv_data["sections"]["languages"] = cv_structured_fallback['languages']
+                if cv_structured_fallback.get('skills'):
+                    cv_data["sections"]["software"] = cv_structured_fallback['skills']
+                if cv_structured_fallback.get('contact'):
+                    cv_data["sections"]["contact"] = cv_structured_fallback['contact']
+        
+        logger.info(f"✅ Información del CV extraída: {list(cv_data['sections'].keys())}")
+        logger.info(f"  - Profile: {cv_data['sections']['profile']}")
+        logger.info(f"  - Experience: {len(cv_data['sections']['experience']) if isinstance(cv_data['sections']['experience'], list) else 'No es lista'} elementos")
+        logger.info(f"  - Education: {len(cv_data['sections']['education']) if isinstance(cv_data['sections']['education'], list) else 'No es lista'} elementos")
+        logger.info(f"  - Languages: {len(cv_data['sections']['languages']) if isinstance(cv_data['sections']['languages'], list) else 'No es lista'} elementos")
+        logger.info(f"  - Software: {len(cv_data['sections']['software']) if isinstance(cv_data['sections']['software'], list) else 'No es lista'} elementos")
     
     # Preparar preferencias laborales
     job_preferences_data = {
@@ -794,8 +806,40 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     logger.info(f"  - rawText: {cv_data['rawText']}")
     logger.info(f"  - sections: {list(cv_data['sections'].keys())}")
     logger.info(f"  - profile: {cv_data['sections'].get('profile', 'No disponible')}")
-    logger.info(f"  - experience: {len(cv_data['sections'].get('experience', []))} elementos")
-    logger.info(f"  - education: {len(cv_data['sections'].get('education', []))} elementos")
+    logger.info(f"  - experience: {len(cv_data['sections'].get('experience', [])) if isinstance(cv_data['sections'].get('experience'), list) else 'No es lista'} elementos")
+    logger.info(f"  - education: {len(cv_data['sections'].get('education', [])) if isinstance(cv_data['sections'].get('education'), list) else 'No es lista'} elementos")
+    
+    # Logging detallado de cada sección para debug
+    for section_name, section_data in cv_data['sections'].items():
+        if isinstance(section_data, list):
+            logger.info(f"  - {section_name}: {len(section_data)} elementos - {section_data[:3] if section_data else 'Lista vacía'}")
+        elif isinstance(section_data, dict):
+            logger.info(f"  - {section_name}: {list(section_data.keys()) if section_data else 'Diccionario vacío'}")
+        else:
+            logger.info(f"  - {section_name}: {section_data}")
+    
+    # Verificar si hay datos reales o solo valores por defecto
+    has_real_data = False
+    for section_name, section_data in cv_data['sections'].items():
+        if section_data and section_data != 'No especificado' and section_data != [] and section_data != {}:
+            has_real_data = True
+            break
+    
+    logger.info(f"🔍 ¿Hay datos reales del CV?: {'✅ SÍ' if has_real_data else '❌ NO'}")
+    if not has_real_data:
+        logger.warning("⚠️ CRÍTICO: No hay datos reales del CV para enviar al prompt")
+        logger.warning("⚠️ Esto causará que la IA genere 'CV no disponible'")
+        # Logging adicional para debug
+        logger.info(f"🔍 Campos del request.cvAnalysis disponibles:")
+        if request.cvAnalysis:
+            for attr_name in dir(request.cvAnalysis):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(request.cvAnalysis, attr_name)
+                        if attr_value and attr_value != 'No especificado' and attr_value != [] and attr_value != {}:
+                            logger.info(f"  - {attr_name}: {attr_value}")
+                    except Exception:
+                        pass
 
     
     try:
