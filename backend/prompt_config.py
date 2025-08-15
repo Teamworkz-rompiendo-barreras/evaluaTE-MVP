@@ -1,359 +1,349 @@
 # backend/prompt_config.py
-# Configuración centralizada de prompts para mejorar la calidad de los informes
-
-from typing import Dict, Any, List
+# Configuración centralizada de prompts para EvaluaTE
 
 class PromptConfig:
-    """Configuración centralizada de prompts para la aplicación"""
+    """Configuración centralizada de prompts para el sistema EvaluaTE"""
     
     @staticmethod
-    def get_employability_report_prompt(candidate_data: Dict[str, Any], 
-                                      soft_skills_data: List[Dict[str, Any]], 
-                                      cv_data: Dict[str, Any], 
-                                      job_preferences_data: Dict[str, Any], 
-                                      employability_score: int, 
-                                      level: str, 
-                                      completed_games: List[str],
-                                      languages_data: List[Dict[str, Any]]) -> str:
+    def get_employability_report_prompt(
+        candidate_data: dict,
+        soft_skills_data: list,
+        cv_data: dict,
+        job_preferences_data: dict,
+        employability_score: int,
+        level: str,
+        completed_games: list,
+        languages_data: list
+    ) -> str:
         """
-        Genera el prompt maestro para informes de empleabilidad
+        Genera el prompt maestro para el informe de empleabilidad completo
+        """
         
-        Args:
-            candidate_data: Datos del candidato
-            soft_skills_data: Habilidades soft evaluadas
-            cv_data: Análisis del CV
-            job_preferences_data: Preferencias laborales
-            employability_score: Puntuación de empleabilidad
-            level: Nivel de empleabilidad
-            completed_games: Juegos completados
-            languages_data: Idiomas del candidato
+        # Convertir level a lenguaje más motivador
+        level_motivational = {
+            "alto": "con un perfil sólido y destacado",
+            "medio": "con un perfil equilibrado y potencial de desarrollo",
+            "bajo": "con oportunidades de crecimiento y desarrollo profesional"
+        }.get(level, "con potencial de desarrollo profesional")
+        
+        # Preparar datos del CV para el prompt
+        cv_sections = cv_data.get("sections", {})
+        cv_profile = cv_sections.get("profile", "No consta")
+        cv_experience = cv_sections.get("experience", [])
+        cv_education = cv_sections.get("education", [])
+        cv_languages = cv_sections.get("languages", [])
+        cv_software = cv_sections.get("software", [])
+        cv_contact = cv_sections.get("contact", {})
+        
+        # Preparar soft skills con lenguaje motivador
+        soft_skills_text = ""
+        for skill in soft_skills_data:
+            skill_name = skill.get("skill", "")
+            skill_score = skill.get("score", 0)
+            skill_level = skill.get("level", "")
             
-        Returns:
-            Prompt completo para el informe
-        """
+            # Convertir level a lenguaje motivador
+            level_text = {
+                "Bajo": f"con puntuación {skill_score}/100 y oportunidades de mejora",
+                "Medio": f"con puntuación {skill_score}/100 y buen desarrollo",
+                "Alto": f"con puntuación {skill_score}/100 y destacado rendimiento"
+            }.get(skill_level, f"con puntuación {skill_score}/100")
+            
+            soft_skills_text += f"- {skill_name}: {level_text}\n"
         
-        return f"""
-# Prompt maestro: Informe de Empleabilidad + Análisis de CV (neuroinclusivo, es-ES)
+        # Preparar idiomas
+        languages_text = ""
+        for lang in languages_data:
+            language = lang.get("language", "")
+            level = lang.get("level", "")
+            if language and level:
+                languages_text += f"- {language}: {level}\n"
+        
+        # Preparar juegos completados
+        games_text = ", ".join(completed_games) if completed_games else "No consta"
+        
+        prompt = f"""
+# PROMPT MAESTRO: INFORME DE EMPLEABILIDAD + ANÁLISIS DE CV (NEUROINCLUSIVO, ES-ES)
 
-**Rol del asistente**
-Eres un/a **orientador/a laboral senior** con formación en psicología, psicología del trabajo y neurodivergencias. Redactas informes profesionales, claros y accionables en **español de España**, con lenguaje **neutro**, tono **respetuoso y directo**, y enfoque **neuroinclusivo** (nunca patologizante). Evita muletillas y relleno.
+## ROL DEL ASISTENTE
+Eres un/a orientador/a laboral senior con formación en psicología, psicología del trabajo y neurodivergencias. Redactas informes profesionales, claros y accionables en español de España, con lenguaje neutro, tono respetuoso y directo, y enfoque neuroinclusivo (nunca patologizante). Evita muletillas y relleno.
 
----
-
-## Entradas (estructura de datos)
+## ENTRADAS (ESTRUCTURA DE DATOS)
 
 Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No consta" sin inventar):
 
-```
-candidate = {{
-  "fullName": "{candidate_data['fullName']}",
-  "location": "{candidate_data['location']}",
-  "email": "{candidate_data['email']}",
-  "phone": "{candidate_data['phone']}",
-  "hasDisabilityCertificate": {candidate_data['hasDisabilityCertificate']},
-  "disabilityType": "{candidate_data['disabilityType']}"
-}}
+### CANDIDATO
+- Nombre: {candidate_data.get('fullName', 'No consta')}
+- Ubicación: {candidate_data.get('location', 'No consta')}
+- Email: {candidate_data.get('email', 'No consta')}
+- Teléfono: {candidate_data.get('phone', 'No consta')}
+- Certificado de discapacidad: {'Sí' if candidate_data.get('hasDisabilityCertificate') else 'No' if candidate_data.get('hasDisabilityCertificate') is False else 'No consta'}
 
-employability = {{
-  "score": {employability_score},
-  "level": "{level}"
-}}
+### EMPLEABILIDAD
+- Puntuación: {employability_score}/100
+- Perfil: {level_motivational}
 
-soft_skills = {soft_skills_data}
+### SOFT SKILLS EVALUADAS
+{soft_skills_text}
 
-cv = {{
-  "rawText": "{cv_data['rawText']}",
-  "sections": {cv_data['sections']}
-}}
+### CV ANALIZADO
+- Perfil: {cv_profile}
+- Experiencia: {len(cv_experience) if isinstance(cv_experience, list) else 'No consta'} posiciones
+- Educación: {len(cv_education) if isinstance(cv_education, list) else 'No consta'} elementos
+- Idiomas: {len(cv_languages) if isinstance(cv_languages, list) else 'No consta'} detectados
+- Software/Herramientas: {len(cv_software) if isinstance(cv_software, list) else 'No consta'} herramientas
+- Contacto: {cv_contact if cv_contact else 'No consta'}
 
-job_preferences = {job_preferences_data}
+### PREFERENCIAS LABORALES
+- Roles deseados: {', '.join(job_preferences_data.get('desired_roles', [])) if job_preferences_data.get('desired_roles') else 'No consta'}
+- Sectores: {', '.join(job_preferences_data.get('desired_sectors', [])) if job_preferences_data.get('desired_sectors') else 'No consta'}
+- Modalidad de trabajo: {', '.join(job_preferences_data.get('work_modes', [])) if job_preferences_data.get('work_modes') else 'No consta'}
+- Disponibilidad: {job_preferences_data.get('availability', 'No consta')}
+- Relocalización: {'Sí' if job_preferences_data.get('relocation') else 'No' if job_preferences_data.get('relocation') is False else 'No consta'}
 
-completed_games = {completed_games}
-languages = {languages_data}
-```
+### JUEGOS COMPLETADOS
+{games_text}
 
----
+### IDIOMAS
+{languages_text}
 
-## Reglas de análisis (pasos obligatorios)
+## REGLAS DE ANÁLISIS (PASOS OBLIGATORIOS)
 
-1. **Parseo del CV**
-   * Identifica secciones reales: Perfil/Resumen, Experiencia, Educación reglada, Formación complementaria, Idiomas, Herramientas/Software, Proyectos, Contacto.
-   * Detecta **inconsistencias** (nombres de empresa, fechas, mayúsculas/minúsculas, acentos, ubicaciones, teletrabajo vs. ciudad).
-   * Localiza **erratas comunes** en software/herramientas y propuestas de corrección.
-   * Señala **ausencias críticas**: logros cuantificables (KPI), enlaces (LinkedIn/web), detalle de programas académicos, formato homogéneo de fechas y lugares.
+### 1. PARSEO DEL CV
+Identifica secciones reales: Perfil/Resumen, Experiencia, Educación reglada, Formación complementaria, Idiomas, Herramientas/Software, Proyectos, Contacto.
 
-2. **Diagnóstico del CV con puntuación 1–5**
-   Califica y justifica **cada** apartado con evidencia del CV y **correcciones accionables**:
-   * **Estructura (1–5):** orden lógico, secciones y jerarquía.
-   * **Coherencia (1–5):** consistencia de nombres, fechas, ubicaciones, términos.
-   * **Información clave (1–5):** logros medibles, KPIs, métricas, enlaces de contacto.
-   * **Claridad (1–5):** calidad de bullets y verbos de acción.
-   * **Ortografía y estilo (1–5):** tildes, nombres propios, marcas registradas, mayúsculas.
+Detecta inconsistencias (nombres de empresa, fechas, mayúsculas/minúsculas, acentos, ubicaciones, teletrabajo vs. ciudad).
 
-3. **Fortalezas y áreas de mejora**
-   * Cruza **soft_skills** + **trayectoria del CV** para extraer **fortalezas** (con evidencias).
-   * Define **áreas de mejora** priorizadas y **consejos específicos**.
+Localiza erratas comunes en software/herramientas y propuestas de corrección.
 
-4. **Entornos de trabajo ideales**
-   * Propón condiciones laborales que optimicen el rendimiento del candidato.
+Señala ausencias críticas: logros cuantificables (KPI), enlaces (LinkedIn/web), detalle de programas académicos, formato homogéneo de fechas y lugares.
 
-5. **Sugerencias de roles y sectores**
-   * Lista **roles concretos** alineados con experiencia real, formación y preferencias.
+### 2. DIAGNÓSTICO DEL CV CON PUNTUACIÓN 1–5
+Califica y justifica cada apartado con evidencia del CV y correcciones accionables:
 
-6. **Plan de acción (corto/medio/largo plazo)**
-   * Acciones *SMART* (específicas, medibles, con horizonte temporal).
+- **Estructura (1–5)**: orden lógico, secciones y jerarquía
+- **Coherencia (1–5)**: consistencia de nombres, fechas, ubicaciones, términos
+- **Información clave (1–5)**: logros medibles, KPIs, métricas, enlaces de contacto
+- **Claridad (1–5)**: calidad de bullets y verbos de acción
+- **Ortografía y estilo (1–5)**: tildes, nombres propios, marcas registradas, mayúsculas
 
-7. **Recursos y apoyo (con enlaces)**
-   * Si **NO** tiene certificado de discapacidad → **no** recomiendes recursos específicos de discapacidad.
-   * Si **SÍ** tiene certificado → añade recursos **específicos**.
-   * Ofrece **plataformas de empleo**, **cursos** y **herramientas** relevantes.
+### 3. FORTALEZAS Y ÁREAS DE MEJORA
+Cruza soft_skills + trayectoria del CV para extraer fortalezas (con evidencias).
 
-8. **Calidad y ética**
-   * **No inventes** datos. Si algo falta, escribe "No consta".
-   * Personaliza al máximo con lo disponible.
-   * Lenguaje claro, párrafos breves y bullets cuando ayuden.
+Define áreas de mejora priorizadas y consejos específicos (micro-acciones y recursos concretos).
 
----
+### 4. ENTORNOS DE TRABAJO IDEALES
+Propón condiciones laborales que optimicen el rendimiento del candidato, justificando con datos (soft skills + experiencia + preferencias).
 
-## Rubricas y plantillas útiles
+### 5. SUGERENCIAS DE ROLES Y SECTORES
+Lista roles concretos alineados con experiencia real, formación y preferencias (incluye seniority aproximado).
 
-**Escala 1–5 (interpretación rápida):**
-1 = Deficiente, 2 = Mejorable, 3 = Aceptable, 4 = Sólido, 5 = Excelente.
+### 6. PLAN DE ACCIÓN (CORTO/MEDIO/LARGO PLAZO)
+Acciones SMART (específicas, medibles, con horizonte temporal).
 
-**Plantilla de bullet de logro:**
-**[Verbo fuerte] + [qué] + [cómo] + [para qué] + [resultado medible]**
-Ej.: "**Implementé** un programa de sensibilización en 6 empresas **mediante** microlearning y sesiones en vivo **para** aumentar adopción; **+35%** satisfacción y **+3** contrataciones inclusivas en 3 meses."
+### 7. RECURSOS Y APOYO
+Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
-**Reordenación recomendada del CV (si aplica):**
-1. Nombre + cargo objetivo · 2) Perfil · 3) Experiencia (logros) · 4) Educación · 5) Formación complementaria · 6) Idiomas · 7) Herramientas/Software · 8) Contacto (email, móvil, LinkedIn/web).
+## FORMATO DE SALIDA (EN MARKDOWN + ENLACES HTML)
 
----
+### PLANTILLA EXACTA DE SALIDA
 
-## Formato de salida (en Markdown + enlaces HTML)
+## 1) DATOS PERSONALES BÁSICOS
 
-Usa **H2** para secciones principales y **H3** para subsecciones.
-Mínimo relleno; prioriza listas y tablas.
-Incluye una **tabla** con las puntuaciones del CV (1–5) + evidencia + corrección.
+**Nombre:** {candidate_data.get('fullName', 'No consta')}
 
-### Plantilla exacta de salida
+**Ubicación:** {candidate_data.get('location', 'No consta')}
 
-## 1) Datos personales básicos
+**Email:** {candidate_data.get('email', 'No consta')} | **Teléfono:** {candidate_data.get('phone', 'No consta')}
 
-* **Nombre:** {candidate_data['fullName']}
-* **Ubicación:** {candidate_data['location']}
-* **Email:** {candidate_data['email']} | **Tel.:** {candidate_data['phone']}
-* **Certificado de discapacidad:** {'Sí' if candidate_data['hasDisabilityCertificate'] else 'No' if candidate_data['hasDisabilityCertificate'] is False else 'No consta'}
+**Certificado de discapacidad:** {'Sí' if candidate_data.get('hasDisabilityCertificate') else 'No' if candidate_data.get('hasDisabilityCertificate') is False else 'No consta'}
 
-## 2) Resumen del perfil
+## 2) RESUMEN DEL PERFIL
 
-[2–4 frases. Perfil profesional y propuesta de valor, basado en soft_skills + CV + preferencias. El CV siempre está disponible ya que es obligatorio para este informe.]
+[2–4 frases. Perfil profesional y propuesta de valor, basado en soft_skills + CV + preferencias. Usa lenguaje motivador y enfocado en el potencial.]
 
-## 3) Resumen del CV
+## 3) RESUMEN DEL CV
 
-[Analiza los datos del CV proporcionados en la sección "cv" del prompt y proporciona un resumen detallado basado en esa información. El CV siempre está disponible ya que es obligatorio para generar este informe.]
+[Panorama de experiencia, sectores, tecnologías/herramientas clave, formación relevante. Incluye toda la información extraída por las herramientas de IA.]
 
-## 4) Fortalezas
+## 4) FORTALEZAS
 
-* [Fortaleza 1: evidencia concreta de soft_skills/CV]
-* [Fortaleza 2: …]
-* [Fortaleza 3: …]
+[Fortaleza 1: evidencia concreta de soft_skills/CV]
 
-## 5) Áreas de mejora y consejos
+[Fortaleza 2: evidencia concreta de soft_skills/CV]
 
-* **Área 1** — [Motivo] → **Acción sugerida:** [acción concreta + recurso si procede]
-* **Área 2** — …
-  *(Prioriza 3–5 con impacto alto.)*
+[Fortaleza 3: evidencia concreta de soft_skills/CV]
 
-## 6) Análisis del CV (con puntuación 1–5 por apartado)
+## 5) ÁREAS DE MEJORA Y CONSEJOS
 
-**Tabla de diagnóstico**
+**Área 1** — [Motivo] → **Acción sugerida:** [acción concreta + recurso si procede]
 
-| Apartado            | Nota (1–5) | Evidencia del CV | Correcciones/Acciones concretas                               |
-| ------------------- | ---------: | ---------------- | ------------------------------------------------------------- |
-| Estructura          |        x/5 | [ejemplo breve] | [cambio específico]                                          |
-| Coherencia          |        x/5 | [ejemplo breve] | [cambio específico]                                          |
-| Información clave   |        x/5 | [ejemplo breve] | [logros/KPIs que faltan]                                     |
-| Claridad            |        x/5 | [ejemplo breve] | [reescritura tipo "Acción–Cómo–Para qué–Resultado"]          |
-| Ortografía y estilo |        x/5 | [ejemplo breve] | [corrección exacta si aplica]                                |
+**Área 2** — [Motivo] → **Acción sugerida:** [acción concreta + recurso si procede]
 
-**Correcciones concretas (solo si aplican):**
+**Área 3** — [Motivo] → **Acción sugerida:** [acción concreta + recurso si procede]
 
-* [Antes] → [Después]
-* [Antes] → [Después]
+(Prioriza 3–5 con impacto alto.)
 
-**Reordenación sugerida (solo si aporta valor):**
+## 6) ANÁLISIS DEL CV (CON PUNTUACIÓN 1–5 POR APARTADO)
+
+### Tabla de diagnóstico
+
+| Apartado | Nota (1–5) | Evidencia del CV | Correcciones/Acciones concretas |
+|-----------|-------------|------------------|----------------------------------|
+| Estructura | X/5 | [ejemplo breve] | [cambio específico] |
+| Coherencia | X/5 | [ejemplo breve] | [cambio específico] |
+| Información clave | X/5 | [ejemplo breve] | [logros/KPIs que faltan] |
+| Claridad | X/5 | [ejemplo breve] | [reescritura tipo "Acción–Cómo–Para qué–Resultado"] |
+| Ortografía y estilo | X/5 | [ejemplo breve] | [corrección exacta si aplica] |
+
+### Correcciones concretas (solo si aplican):
+
+**[Antes]** → **[Después]**
+
+**[Antes]** → **[Después]**
+
+### Reordenación sugerida (solo si aporta valor):
 [Breve lista reordenada de secciones.]
 
-## 7) Entornos de trabajo ideales
+## 7) ENTORNOS DE TRABAJO IDEALES
 
-[Condiciones ambientales y operativas (remoto/híbrido/presencial, foco sensorial, comunicación, ritmos, herramientas) con justificación.]
+[Condiciones ambientales y operativas (remoto/híbrido/presencial, foco sensorial, comunicación, ritmos, herramientas) con justificación basada en soft skills y preferencias.]
 
-## 8) Roles profesionales sugeridos
+## 8) ROLES PROFESIONALES SUGERIDOS
 
-* **Rol 1** — [motivo y encaje con experiencia/soft skills/preferencias]
-* **Rol 2** — …
-* **Adyacentes:** [si procede]
-  *(Indica seniority aproximado y si es viable en remoto/local.)*
+**Rol 1** — [motivo y encaje con experiencia/soft skills/preferencias]
 
-## 9) Plan de acción
+**Rol 2** — [motivo y encaje con experiencia/soft skills/preferencias]
 
-**Corto plazo (0–30 días):** [acciones SMART]
-**Medio plazo (1–3 meses):** [acciones SMART]
-**Largo plazo (3–6+ meses):** [acciones SMART]
+**Adyacentes:** [si procede]
 
-## 10) Consejos de búsqueda de empleo
+(Indica seniority aproximado y si es viable en remoto/local.)
 
-* **Optimización del CV:** [2–3 acciones concretas]
-* **Cartas y portfolio/casos:** [si aplica]
-* **Plataformas:**
+## 9) PLAN DE ACCIÓN
 
-  * <a href="https://www.linkedin.com" target="_blank" rel="noopener">LinkedIn</a>, <a href="https://www.infojobs.net" target="_blank" rel="noopener">InfoJobs</a>, <a href="https://empleate.gob.es" target="_blank" rel="noopener">Empléate</a>
-  * {'Si **certificado de discapacidad = Sí**: añadir <a href="https://www.insertaempleo.es" target="_blank" rel="noopener">Inserta Empleo–Fundación ONCE</a>, <a href="https://www.plenainclusion.org" target="_blank" rel="noopener">Plena Inclusión</a>, u otras entidades afines.' if candidate_data['hasDisabilityCertificate'] else ''}
-* **Networking dirigido:** [comunidades/foros/eventos concretos según sector y ubicación]
-* **Entrevistas:** [entrenamiento con ejemplos de preguntas y STAR]
+**Corto plazo (0–30 días):** [acciones SMART específicas]
 
-## 11) Herramientas útiles y tecnología
+**Medio plazo (1–3 meses):** [acciones SMART específicas]
 
-* **Productividad/organización:** [Notion/Trello/Google Calendar, según perfil]
-* **Búsqueda y alertas:** [Google Alerts, LinkedIn Jobs]
-* **Aprendizaje/certificación (si aplica al perfil):**
+**Largo plazo (3–6+ meses):** [acciones SMART específicas]
 
-  * <a href="https://www.coursera.org" target="_blank" rel="noopener">Coursera</a>, <a href="https://www.edx.org" target="_blank" rel="noopener">edX</a>, <a href="https://grow.google/intl/es" target="_blank" rel="noopener">Google Digital</a>
-* **Accesibilidad/neuroinclusión (si procede):** herramientas de gestión de foco, lectores, extensiones de reducción de distracción.
+## 10) CONSEJOS DE BÚSQUEDA DE EMPLEO
 
-## 12) Juegos completados
+### Optimización del CV:
+[2–3 acciones concretas basadas en el análisis anterior]
 
-{', '.join(completed_games)} — [breve lectura de qué evidencian y cómo se conectan con roles/acciones]
+### Cartas y portfolio/casos:
+[si aplica al perfil]
 
-## 13) Frase final
+### Plataformas recomendadas:
 
-**Este informe se ha realizado teniendo en cuenta toda la información que nos has proporcionado y tus preferencias laborales. Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!**
+<a href="https://www.linkedin.com" target="_blank" rel="noopener">LinkedIn</a>, <a href="https://www.infojobs.net" target="_blank" rel="noopener">InfoJobs</a>, <a href="https://empleate.gob.es" target="_blank" rel="noopener">Empléate</a>
+
+{'<a href="https://www.insertaempleo.es" target="_blank" rel="noopener">Inserta Empleo–Fundación ONCE</a>, <a href="https://www.plenainclusion.org" target="_blank" rel="noopener">Plena Inclusión</a>' if candidate_data.get('hasDisabilityCertificate') else ''}
+
+### Networking dirigido:
+[comunidades/foros/eventos concretos según sector y ubicación]
+
+### Entrevistas:
+[entrenamiento con ejemplos de preguntas y método STAR]
+
+## 11) HERRAMIENTAS ÚTILES Y TECNOLOGÍA
+
+### Productividad/organización:
+[Notion/Trello/Google Calendar, según perfil]
+
+### Búsqueda y alertas:
+[Google Alerts, LinkedIn Jobs]
+
+### Aprendizaje/certificación (si aplica al perfil):
+
+<a href="https://www.coursera.org" target="_blank" rel="noopener">Coursera</a>, <a href="https://www.edx.org" target="_blank" rel="noopener">edX</a>, <a href="https://grow.google/intl/es" target="_blank" rel="noopener">Google Digital</a>
+
+### Accesibilidad/neuroinclusión (si procede):
+herramientas de gestión de foco, lectores, extensiones de reducción de distracción.
+
+## 12) JUEGOS COMPLETADOS
+
+{games_text} — [breve lectura de qué evidencian y cómo se conectan con roles/acciones]
+
+## 13) FRASE FINAL
+
+Este informe se ha realizado teniendo en cuenta toda la información que nos has proporcionado y tus preferencias laborales. Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!
 
 ---
 
-## Reglas de estilo y validación final
-
-* **Personaliza siempre**: utiliza ejemplos y frases **extraídas** del CV cuando justifiques (entrecomilla si copias literalmente).
-* **No repitas** la misma sugerencia en varias secciones. Prioriza impacto.
-* **No generes** recursos de discapacidad si `hasDisabilityCertificate = false` o `No consta`.
-* **Enlaces** siempre con `<a ... target="_blank" rel="noopener">`.
-* Si un término parece erróneo (p. ej., "B2I"), **propón** la alternativa probable (B2B/B2C/B2G) **solo si hay indicios** en el CV; de lo contrario, marca como "Aclarar con la persona candidata".
-* Mantén los nombres propios y marcas con su **ortografía oficial** (Illustrator, InDesign, PowerPoint, etc.).
-* Usa listas cortas (máx. 5 ítems por bloque) y métricas cuando existan (%, nº, €).
-* Longitud orientativa del informe: **1.000–1.600 palabras**, centrado en utilidad práctica.
-
----
-
-### Bonus (opcional para tu app)
-
-Además del informe en Markdown, puedes pedir al modelo un **bloque JSON** final con campos clave (notas 1–5, roles recomendados, acciones SMART), para guardarlo en tu base de datos o generar gráficos.
+**IMPORTANTE:** 
+- Usa lenguaje motivador y enfocado en el potencial
+- Evita términos como "alto", "medio", "bajo" - usa puntuaciones numéricas
+- Personaliza al máximo con la información disponible del CV
+- No inventes datos - si algo falta, escribe "No consta"
+- Genera un informe completo, coherente y profesional
+- Incluye toda la información del CV extraída por las herramientas de IA
 """
-
+        
+        return prompt
+    
     @staticmethod
-    def get_cv_analysis_prompt(content: str, filename: str, basic: Dict[str, Any] = None) -> str:
+    def get_report_schema() -> dict:
         """
-        Genera el prompt para análisis de CV
-        
-        Args:
-            content: Contenido del CV
-            filename: Nombre del archivo
-            basic: Información básica extraída
-            
-        Returns:
-            Prompt para análisis de CV
+        Esquema JSON para la respuesta estructurada del informe
         """
-        
-        basic_hint = ""
-        if basic:
-            basic_hint = f"""
-            HINTS EXTRAIDOS AUTOMÁTICAMENTE DEL CV:
-            - CANDIDATO: {basic.get('candidate') or ''}
-            - CONTACTO: emails={basic.get('contact', {}).get('emails', [])}, phones={basic.get('contact', {}).get('phones', [])}, location={basic.get('contact', {}).get('location')}
-            - PERIODOS DETECTADOS: {basic.get('periods', [])}
-            """
-
-        return f"""
-        Eres un orientador laboral experto, con experiencia en neurodivergencias y discapacidad intelectual.
-        Debes generar información precisa, útil y de lectura fácil (frases cortas, listas, términos claros).
-        Analiza el siguiente CV y proporciona un análisis detallado en formato JSON:
-        
-        CV: {content[:4000]}
-        {basic_hint}
-        
-        Responde en este formato JSON exacto:
-        {{
-            "strengths": ["fortaleza1", "fortaleza2"],
-            "weaknesses": ["debilidad1", "debilidad2"],
-            "feedback": "feedback general",
-            "structure": "buena/regular/mala",
-            "coherence": "buena/regular/mala",
-            "experience": "alta/regular/baja",
-            "skills": ["skill1", "skill2"],
-            "education": ["educación1", "educación2"],
-            "alerts": ["alerta1", "alerta2"],
-            "cv_analysis_structured": {{
-                "candidate": "Nombre completo si aparece",
-                "contact": {{"emails": ["..."], "phones": ["..."], "location": "...", "linkedin": "..."}},
-                "periods": ["ene 2020 - dic 2022", "2023 - actualidad"],
-                "languages": ["Español (nativo)", "Inglés (intermedio)"],
-                "highlights": ["...", "..."],
-                "volunteering": ["Entidad y rol si aparece"],
-                "education_synonyms": ["estudios", "formación", "educación", "cursos"]
-            }}
-        }}
-        """
-
-    @staticmethod
-    def get_report_schema() -> Dict[str, Any]:
-        """
-        Retorna el esquema JSON para el informe de empleabilidad
-        
-        Returns:
-            Esquema JSON estructurado
-        """
-        
         return {
-            "name": "ProfessionalEmployabilityReportSchema",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "summary": {"type": "string"},
-                    "recommendations": {
-                        "type": "object",
-                        "properties": {
-                            "profile_analysis": {"type": "string"},
-                            "strengths_analysis": {"type": "string"},
-                            "improvement_areas": {"type": "string"},
-                            "cv_analysis": {"type": "string"},
-                            "cv_scores": {
-                                "type": "object",
-                                "properties": {
-                                    "estructura": {"type": "integer", "minimum": 1, "maximum": 5},
-                                    "coherencia": {"type": "integer", "minimum": 1, "maximum": 5},
-                                    "informacion_clave": {"type": "integer", "minimum": 1, "maximum": 5},
-                                    "claridad": {"type": "integer", "minimum": 1, "maximum": 5},
-                                    "ortografia_estilo": {"type": "integer", "minimum": 1, "maximum": 5}
-                                }
-                            },
-                            "cv_evidence": {"type": "string"},
-                            "cv_corrections": {"type": "string"},
-                            "job_suggestions": {"type": "string"},
-                            "work_environment": {"type": "string"},
-                            "next_steps": {
-                                "type": "object",
-                                "properties": {
-                                    "short_term": {"type": "array", "items": {"type": "string"}},
-                                    "medium_term": {"type": "array", "items": {"type": "string"}},
-                                    "long_term": {"type": "array", "items": {"type": "string"}},
-                                },
-                            },
-                            "resources": {
-                                "type": "array",
-                                "items": {"type": "object", "properties": {"name": {"type": "string"}, "url": {"type": "string"}, "description": {"type": "string"}}},
-                            },
-                        },
-                    },
+            "type": "object",
+            "properties": {
+                "summary": {
+                    "type": "string",
+                    "description": "Resumen ejecutivo del informe de empleabilidad"
                 },
+                "recommendations": {
+                    "type": "object",
+                    "properties": {
+                        "cv_analysis": {
+                            "type": "object",
+                            "properties": {
+                                "structure_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                                "coherence_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                                "content_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                                "clarity_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                                "style_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                                "corrections": {"type": "array", "items": {"type": "string"}},
+                                "reordering_suggestions": {"type": "array", "items": {"type": "string"}}
+                            }
+                        },
+                        "strengths": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Lista de fortalezas identificadas"
+                        },
+                        "improvement_areas": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Áreas de mejora con acciones específicas"
+                        },
+                        "ideal_work_environment": {
+                            "type": "string",
+                            "description": "Descripción del entorno de trabajo ideal"
+                        },
+                        "suggested_roles": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Roles profesionales sugeridos"
+                        },
+                        "action_plan": {
+                            "type": "object",
+                            "properties": {
+                                "short_term": {"type": "array", "items": {"type": "string"}},
+                                "medium_term": {"type": "array", "items": {"type": "string"}},
+                                "long_term": {"type": "array", "items": {"type": "string"}}
+                            }
+                        },
+                        "resources": {
+                            "type": "array",
+                            "items": {"type": "string"},
+                            "description": "Recursos y herramientas recomendadas"
+                        }
+                    }
+                }
             },
-            "strict": False,
+            "required": ["summary", "recommendations"]
         }
