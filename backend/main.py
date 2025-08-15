@@ -702,6 +702,17 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         logger.info(f"  - contact: {'✅' if hasattr(request.cvAnalysis, 'contact') and request.cvAnalysis.contact else '❌'}")
         logger.info(f"  - experience: {'✅' if hasattr(request.cvAnalysis, 'experience_detailed') and request.cvAnalysis.experience_detailed else '❌'}")
         logger.info(f"  - education: {'✅' if hasattr(request.cvAnalysis, 'education_detailed') and request.cvAnalysis.education_detailed else '❌'}")
+        
+        # Logging detallado de todos los campos disponibles en cvAnalysis
+        logger.info(f"🔍 Campos disponibles en cvAnalysis:")
+        for attr_name in dir(request.cvAnalysis):
+            if not attr_name.startswith('_'):
+                try:
+                    attr_value = getattr(request.cvAnalysis, attr_name)
+                    if attr_value and attr_value != 'No especificado' and attr_value != [] and attr_value != {}:
+                        logger.info(f"  - {attr_name}: {attr_value}")
+                except Exception:
+                    pass
     
     if request.cvAnalysis:
         # Extraer información del CV directamente de los campos del objeto
@@ -715,6 +726,37 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             "software": getattr(request.cvAnalysis, 'skills', []),
             "contact": getattr(request.cvAnalysis, 'contact', {})
         }
+        
+        # CRÍTICO: Si los campos directos están vacíos, buscar en cv_structured (donde CV-Extractor guarda los datos)
+        if not any(cv_data["sections"].values()) or all(v == 'No especificado' or v == [] or v == {} for v in cv_data["sections"].values()):
+            logger.info("🔍 Campos directos vacíos, buscando en cv_structured (CV-Extractor)")
+            cv_structured = getattr(request.cvAnalysis, 'cv_structured', {})
+            if cv_structured and isinstance(cv_structured, dict):
+                logger.info(f"✅ CV estructurado encontrado con campos: {list(cv_structured.keys())}")
+                # Mapear campos de CV-Extractor a la estructura del prompt
+                if cv_structured.get('candidate'):
+                    cv_data["sections"]["profile"] = cv_structured['candidate']
+                if cv_structured.get('experience'):
+                    cv_data["sections"]["experience"] = cv_structured['experience']
+                if cv_structured.get('education'):
+                    cv_data["sections"]["education"] = cv_structured['education']
+                if cv_structured.get('languages'):
+                    cv_data["sections"]["languages"] = cv_structured['languages']
+                if cv_structured.get('skills'):
+                    cv_data["sections"]["software"] = cv_structured['skills']
+                if cv_structured.get('contact'):
+                    cv_data["sections"]["contact"] = cv_structured['contact']
+                
+                # Logging detallado de lo que se extrajo
+                logger.info(f"📊 Datos extraídos de CV-Extractor:")
+                logger.info(f"  - Profile: {cv_data['sections']['profile']}")
+                logger.info(f"  - Experience: {len(cv_data['sections']['experience']) if isinstance(cv_data['sections']['experience'], list) else 'No es lista'}")
+                logger.info(f"  - Education: {len(cv_data['sections']['education']) if isinstance(cv_data['sections']['education'], list) else 'No es lista'}")
+                logger.info(f"  - Languages: {len(cv_data['sections']['languages']) if isinstance(cv_data['sections']['languages'], list) else 'No es lista'}")
+                logger.info(f"  - Skills: {len(cv_data['sections']['software']) if isinstance(cv_data['sections']['software'], list) else 'No es lista'}")
+                logger.info(f"  - Contact: {cv_data['sections']['contact']}")
+            else:
+                logger.warning("⚠️ No se encontró cv_structured en el análisis del CV")
         
         # También intentar extraer información de campos estructurados si están disponibles
         cv_structured = getattr(request.cvAnalysis, 'cv_analysis_structured', {})
