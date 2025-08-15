@@ -696,6 +696,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     logger.info(f"🔍 Preparando datos del CV para el prompt")
     logger.info(f"  - cvAnalysis presente: {'✅' if request.cvAnalysis else '❌'}")
     if request.cvAnalysis:
+        logger.info(f"  - cv_analysis_structured: {'✅' if hasattr(request.cvAnalysis, 'cv_analysis_structured') and request.cvAnalysis.cv_analysis_structured else '❌'}")
         logger.info(f"  - cv_structured: {'✅' if hasattr(request.cvAnalysis, 'cv_structured') and request.cvAnalysis.cv_structured else '❌'}")
         logger.info(f"  - candidate: {'✅' if hasattr(request.cvAnalysis, 'candidate') and request.cvAnalysis.candidate else '❌'}")
         logger.info(f"  - contact: {'✅' if hasattr(request.cvAnalysis, 'contact') and request.cvAnalysis.contact else '❌'}")
@@ -704,7 +705,12 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     
     if request.cvAnalysis:
         # Extraer información estructurada del CV
-        cv_structured = getattr(request.cvAnalysis, 'cv_structured', {})
+        # Primero buscar en cv_analysis_structured (campo generado por IA)
+        cv_structured = getattr(request.cvAnalysis, 'cv_analysis_structured', {})
+        if not cv_structured:
+            # Fallback a cv_structured (campo alternativo)
+            cv_structured = getattr(request.cvAnalysis, 'cv_structured', {})
+        
         if cv_structured:
             cv_data["sections"] = {
                 "profile": cv_structured.get('candidate', 'No especificado'),
@@ -715,6 +721,12 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
                 "software": cv_structured.get('skills', []),
                 "contact": cv_structured.get('contact', {})
             }
+            logger.info(f"✅ Información estructurada del CV extraída: {list(cv_data['sections'].keys())}")
+            logger.info(f"  - Profile: {cv_data['sections']['profile']}")
+            logger.info(f"  - Experience: {len(cv_data['sections']['experience'])} elementos")
+            logger.info(f"  - Education: {len(cv_data['sections']['education'])} elementos")
+            logger.info(f"  - Languages: {len(cv_data['sections']['languages'])} elementos")
+            logger.info(f"  - Software: {len(cv_data['sections']['software'])} elementos")
         else:
             # Fallback a información básica
             cv_data["sections"] = {
@@ -726,6 +738,12 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
                 "software": getattr(request.cvAnalysis, 'skills', []),
                 "contact": getattr(request.cvAnalysis, 'contact', {})
             }
+            logger.info(f"⚠️ Usando información básica del CV como fallback")
+            logger.info(f"  - Profile: {cv_data['sections']['profile']}")
+            logger.info(f"  - Experience: {len(cv_data['sections']['experience'])} elementos")
+            logger.info(f"  - Education: {len(cv_data['sections']['education'])} elementos")
+            logger.info(f"  - Languages: {len(cv_data['sections']['languages'])} elementos")
+            logger.info(f"  - Software: {len(cv_data['sections']['software'])} elementos")
     
     # Preparar preferencias laborales
     job_preferences_data = {
@@ -770,6 +788,14 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         completed_games=request.completedGames,
         languages_data=languages_data
     )
+    
+    # Logging del prompt generado para debug
+    logger.info(f"📝 Prompt generado con información del CV:")
+    logger.info(f"  - rawText: {cv_data['rawText']}")
+    logger.info(f"  - sections: {list(cv_data['sections'].keys())}")
+    logger.info(f"  - profile: {cv_data['sections'].get('profile', 'No disponible')}")
+    logger.info(f"  - experience: {len(cv_data['sections'].get('experience', []))} elementos")
+    logger.info(f"  - education: {len(cv_data['sections'].get('education', []))} elementos")
 
     
     try:
