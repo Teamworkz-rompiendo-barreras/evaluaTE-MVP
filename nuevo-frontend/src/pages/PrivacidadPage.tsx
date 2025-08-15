@@ -8,7 +8,7 @@ const PrivacidadPage: React.FC = () => {
         {/* Header */}
         <div className="mb-8">
           <Link 
-            to="/datos-personales" 
+            to="/register/contact" 
             className="inline-flex items-center text-blue-600 hover:text-blue-800 dark:text-blue-400 dark:hover:text-blue-300 mb-4"
           >
             ← Volver a Datos Personales

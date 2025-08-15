@@ -66,12 +66,10 @@ export default function App() {
           <Route index element={<Navigate to="/register/contact" replace />} />
 
           {/* Registro inicial */}
-                  <Route path="register">
-          <Route path="contact" element={<DatosPersonalesPage />} />
-          <Route path="preferences" element={<PreferencesStep />} />
-        </Route>
-        
-        <Route path="privacidad" element={<PrivacidadPage />} />
+          <Route path="register">
+            <Route path="contact" element={<DatosPersonalesPage />} />
+            <Route path="preferences" element={<PreferencesStep />} />
+          </Route>
 
           {/* Pantalla de bienvenida a los minijuegos */}
           <Route path="welcome" element={<WelcomePage />} />
@@ -125,10 +123,13 @@ export default function App() {
             }
           />
 
-          {/* Ruta no encontrada */}
-          <Route path="*" element={<Navigate to="/register/contact" replace />} />
-        </Route>
-      </Routes>
+                  {/* Ruta no encontrada */}
+        <Route path="*" element={<Navigate to="/register/contact" replace />} />
+      </Route>
+
+      {/* Rutas independientes (fuera del layout principal) */}
+      <Route path="/privacidad" element={<PrivacidadPage />} />
+    </Routes>
     </BrowserRouter>
   );
 }
