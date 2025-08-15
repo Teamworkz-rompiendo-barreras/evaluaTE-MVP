@@ -725,7 +725,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         "availability": request.jobPreferences.availability if request.jobPreferences else "No especificado",
         "salary_range": "No especificado",  # Campo que no tienes
         "relocation": request.jobPreferences.willingToRelocate if request.jobPreferences else None,
-        "notes": f"Necesidades: {', '.join(request.jobPreferences.needs)}" if request.jobPreferences else "No especificado"
+        "notes": f"Necesidades: {', '.join(request.jobPreferences.needs) if request.jobPreferences and hasattr(request.jobPreferences, 'needs') and request.jobPreferences.needs else 'No especificadas'}" if request.jobPreferences else "No especificado"
     }
     
     # Preparar idiomas
