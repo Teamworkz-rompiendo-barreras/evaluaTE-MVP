@@ -662,187 +662,119 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_professional_report_with_ai(request: EmployabilityReportRequest, employability_score: int, level: str) -> dict:
-    """Genera un informe profesional usando IA"""
+    """Genera un informe profesional usando IA con el prompt maestro mejorado"""
     
-    # Preparar datos para el prompt
-    soft_skills_text = "\n".join([f"- {skill.skill}: {skill.score}% ({skill.level})" for skill in request.softSkills])
+    # Preparar datos estructurados para el prompt
+    candidate_data = {
+        "fullName": request.fullName,
+        "location": getattr(request.cvAnalysis, 'contact', {}).get('location', 'No consta') if request.cvAnalysis else 'No consta',
+        "email": getattr(request.cvAnalysis, 'contact', {}).get('emails', ['No consta'])[0] if request.cvAnalysis and getattr(request.cvAnalysis, 'contact', {}) else 'No consta',
+        "phone": getattr(request.cvAnalysis, 'contact', {}).get('phones', ['No consta'])[0] if request.cvAnalysis and getattr(request.cvAnalysis, 'contact', {}) else 'No consta',
+        "hasDisabilityCertificate": request.jobPreferences.hasDisabilityCert if request.jobPreferences else None,
+        "disabilityType": "No especificado"  # Campo opcional que no tienes implementado
+    }
     
-    cv_analysis_text = ""
+    # Preparar soft skills con puntuaciones
+    soft_skills_data = []
+    for skill in request.softSkills:
+        # Convertir level a puntuación numérica para el análisis
+        level_score = {"Bajo": 30, "Medio": 60, "Alto": 90}.get(skill.level, 50)
+        soft_skills_data.append({
+            "skill": skill.skill,
+            "score": level_score,
+            "level": skill.level,
+            "evidence": skill.feedback or "Evaluado mediante juego interactivo"
+        })
+    
+    # Preparar análisis del CV
+    cv_data = {
+        "rawText": "No disponible",  # No tienes el texto raw del CV
+        "sections": {}
+    }
+    
     if request.cvAnalysis:
-        # Información básica del CV
-        basic_cv_info = f"""
-        Análisis del CV:
-        - Fortalezas: {', '.join(request.cvAnalysis.strengths)}
-        - Debilidades: {', '.join(request.cvAnalysis.weaknesses)}
-        - Estructura: {request.cvAnalysis.structure}
-        - Coherencia: {request.cvAnalysis.coherence}
-        - Experiencia: {request.cvAnalysis.experience}
-        - Habilidades técnicas: {', '.join(request.cvAnalysis.skills)}
-        - Formación: {', '.join(request.cvAnalysis.education)}
-        """
-        
-        # Información detallada extraída por Document Intelligence
-        detailed_cv_info = ""
-        if hasattr(request.cvAnalysis, 'cv_structured') and request.cvAnalysis.cv_structured:
-            cv_structured = request.cvAnalysis.cv_structured
-            detailed_cv_info = f"""
-        INFORMACIÓN DETALLADA DEL CV (Document Intelligence):
-        - Candidato: {cv_structured.get('candidate', 'No especificado')}
-        - Contacto: {cv_structured.get('contact', {})}
-        - Experiencia laboral: {cv_structured.get('experience', [])}
-        - Formación: {cv_structured.get('education', [])}
-        - Idiomas: {cv_structured.get('languages', [])}
-        - Períodos laborales: {cv_structured.get('periods', [])}
-        - Destacados: {cv_structured.get('highlights', [])}
-        """
-        elif hasattr(request.cvAnalysis, 'candidate') and request.cvAnalysis.candidate:
-            # Fallback para información directa en el objeto
-            detailed_cv_info = f"""
-        INFORMACIÓN DETALLADA DEL CV:
-        - Candidato: {getattr(request.cvAnalysis, 'candidate', 'No especificado')}
-        - Contacto: {getattr(request.cvAnalysis, 'contact', {})}
-        - Experiencia: {getattr(request.cvAnalysis, 'experience', [])}
-        - Formación: {getattr(request.cvAnalysis, 'education', [])}
-        - Idiomas: {getattr(request.cvAnalysis, 'languages', [])}
-        - Períodos: {getattr(request.cvAnalysis, 'periods', [])}
-        """
-        
-        cv_analysis_text = basic_cv_info + detailed_cv_info
+        # Extraer información estructurada del CV
+        cv_structured = getattr(request.cvAnalysis, 'cv_structured', {})
+        if cv_structured:
+            cv_data["sections"] = {
+                "profile": cv_structured.get('candidate', 'No especificado'),
+                "experience": cv_structured.get('experience', []),
+                "education": cv_structured.get('education', []),
+                "courses": "No especificado",  # Campo que no tienes
+                "languages": cv_structured.get('languages', []),
+                "software": cv_structured.get('skills', []),
+                "contact": cv_structured.get('contact', {})
+            }
+        else:
+            # Fallback a información básica
+            cv_data["sections"] = {
+                "profile": getattr(request.cvAnalysis, 'candidate', 'No especificado'),
+                "experience": getattr(request.cvAnalysis, 'experience_detailed', []),
+                "education": getattr(request.cvAnalysis, 'education_detailed', []),
+                "courses": "No especificado",
+                "languages": getattr(request.cvAnalysis, 'languages', []),
+                "software": getattr(request.cvAnalysis, 'skills', []),
+                "contact": getattr(request.cvAnalysis, 'contact', {})
+            }
     
-    job_preferences_text = ""
-    if request.jobPreferences:
-        job_preferences_text = f"""
-        Preferencias laborales:
-        - Áreas de interés: {', '.join(request.jobPreferences.areas)}
-        - Necesidades: {', '.join(request.jobPreferences.needs)}
-        - Modalidad: {request.jobPreferences.workMode}
-        - Disponibilidad: {request.jobPreferences.availability}
-        - Dispuesto a mudarse: {'Sí' if request.jobPreferences.willingToRelocate else 'No'}
-        - Certificado de discapacidad: {'Sí' if request.jobPreferences.hasDisabilityCert else 'No'}
-        """
+    # Preparar preferencias laborales
+    job_preferences_data = {
+        "desired_roles": request.jobPreferences.areas if request.jobPreferences else [],
+        "desired_sectors": request.jobPreferences.areas if request.jobPreferences else [],
+        "work_modes": [request.jobPreferences.workMode] if request.jobPreferences else ["No especificado"],
+        "availability": request.jobPreferences.availability if request.jobPreferences else "No especificado",
+        "salary_range": "No especificado",  # Campo que no tienes
+        "relocation": request.jobPreferences.willingToRelocate if request.jobPreferences else None,
+        "notes": f"Necesidades: {', '.join(request.jobPreferences.needs)}" if request.jobPreferences else "No especificado"
+    }
     
-    # Prompt para generar informe profesional
-    prompt = f"""
-    Eres un orientador laboral experto. Genera un informe profesional de empleabilidad basado en los siguientes datos:
+    # Preparar idiomas
+    languages_data = []
+    if request.cvAnalysis and hasattr(request.cvAnalysis, 'languages'):
+        for lang in request.cvAnalysis.languages:
+            if isinstance(lang, dict):
+                languages_data.append({
+                    "language": lang.get('language', 'No especificado'),
+                    "level": lang.get('level', 'No especificado')
+                })
+            else:
+                languages_data.append({
+                    "language": str(lang),
+                    "level": "No especificado"
+                })
+    
+    # Importar configuración de prompts
+    try:
+        from .prompt_config import PromptConfig
+    except ImportError:
+        from prompt_config import PromptConfig
+    
+    # Prompt maestro mejorado usando configuración centralizada
+    prompt = PromptConfig.get_employability_report_prompt(
+        candidate_data=candidate_data,
+        soft_skills_data=soft_skills_data,
+        cv_data=cv_data,
+        job_preferences_data=job_preferences_data,
+        employability_score=employability_score,
+        level=level,
+        completed_games=request.completedGames,
+        languages_data=languages_data
+    )
 
-    CANDIDATO: {request.fullName}
-    PUNTAJE DE EMPLEABILIDAD: {employability_score}/100 (Nivel: {level})
-
-    HABILIDADES SOFT EVALUADAS:
-    {soft_skills_text}
-
-    {cv_analysis_text}
-
-    {job_preferences_text}
-
-    JUEGOS COMPLETADOS: {', '.join(request.completedGames)}
-
-    Genera un informe profesional que incluya:
-
-    1. RESUMEN DEL PERFIL: Análisis general del candidato basado en habilidades soft, CV y preferencias
-    2. ANÁLISIS DE FORTALEZAS: Basado en habilidades soft y experiencia real del CV
-    3. ÁREAS DE MEJORA: Con recomendaciones específicas basadas en el CV analizado y en las habilidades soft con menor puntaje
-    4. ANÁLISIS DEL CV: Estructura, coherencia, claridad, formación, ortografía y contenido
-    5. SUGERENCIAS LABORALES: Roles específicos según experiencia real del CV, preferencias y habilidades
-    6. PRÓXIMOS PASOS: A corto, medio y largo plazo, considerando la experiencia del CV
-    7. RECURSOS Y APOYO: Enlaces a plataformas, cursos, herramientas relevantes para el perfil
-
-    IMPORTANTE: 
-    - Si NO tiene certificado de discapacidad, NO recomiendes plataformas específicas para personas con discapacidad
-    - Si SÍ tiene certificado, incluye recursos específicos para personas con discapacidad
-    - Todos los enlaces deben abrirse en nueva ventana
-    - Sé específico y personalizado
-    - UTILIZA TODA LA INFORMACIÓN DETALLADA DEL CV para hacer recomendaciones personalizadas
-    - Basa tus sugerencias laborales en la experiencia real y formación del candidato
-    - Considera los idiomas, ubicación y períodos laborales para recomendaciones específicas
-    - Si el CV muestra experiencia en un sector específico, sugiere roles relacionados
-    - Si hay formación en áreas técnicas, incluye recursos de actualización en esas tecnologías
-    - Considera la ubicación del candidato para sugerir empresas locales o remoto según preferencias
-
-    EJEMPLO DE USO DE INFORMACIÓN DEL CV:
-    - Si el CV muestra experiencia en "gestión de equipos de ventas", sugiere roles de "Team Leader de Ventas" o "Supervisor Comercial"
-    - Si hay formación en "Ingeniería Informática", incluye recursos de "cursos de programación actualizados" o "certificaciones en tecnologías emergentes"
-    - Si el candidato está en "Madrid" y prefiere "presencial", sugiere empresas con oficinas en Madrid
-
-    Responde en formato JSON:
-    {{
-        "summary": "resumen del perfil",
-        "recommendations": {{
-            "profile_analysis": "análisis detallado del perfil",
-            "strengths_analysis": "análisis de fortalezas",
-            "improvement_areas": "áreas de mejora con recomendaciones",
-            "cv_analysis": "análisis detallado del CV",
-            "job_suggestions": "sugerencias laborales específicas",
-            "next_steps": {{
-                "short_term": ["paso1", "paso2"],
-                "medium_term": ["paso1", "paso2"],
-                "long_term": ["paso1", "paso2"]
-            }},
-            "resources": [
-                {{
-                    "name": "nombre del recurso",
-                    "url": "https://ejemplo.com",
-                    "description": "descripción del recurso"
-                }}
-            ],
-            "cv_analysis_structured": {{
-                "candidate": "información del candidato extraída del CV",
-                "contact": "información de contacto",
-                "experience": "experiencia laboral detallada",
-                "education": "formación educativa",
-                "languages": "idiomas y niveles",
-                "skills": "habilidades técnicas y blandas",
-                "periods": "períodos laborales identificados"
-            }}
-        }}
-    }}
-    """
     
     try:
         # Limpiar el nombre del deployment para evitar problemas con espacios
         deployment_name = DEPLOYMENT.strip()
         
-        # Structured Outputs para el informe
-        report_schema = {
-            "name": "EmployabilityReportSchema",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "summary": {"type": "string"},
-                    "recommendations": {
-                        "type": "object",
-                        "properties": {
-                            "profile_analysis": {"type": "string"},
-                            "strengths_analysis": {"type": "string"},
-                            "improvement_areas": {"type": "string"},
-                            "cv_analysis": {"type": "string"},
-                            "job_suggestions": {"type": "string"},
-                            "next_steps": {
-                                "type": "object",
-                                "properties": {
-                                    "short_term": {"type": "array", "items": {"type": "string"}},
-                                    "medium_term": {"type": "array", "items": {"type": "string"}},
-                                    "long_term": {"type": "array", "items": {"type": "string"}},
-                                },
-                            },
-                            "resources": {
-                                "type": "array",
-                                "items": {"type": "object", "properties": {"name": {"type": "string"}, "url": {"type": "string"}, "description": {"type": "string"}}},
-                            },
-                            "cv_analysis_structured": build_cv_json_schema()["schema"],
-                        },
-                    },
-                },
-            },
-            "strict": False,
-        }
+        # Structured Outputs para el informe mejorado usando configuración centralizada
+        report_schema = PromptConfig.get_report_schema()
 
         chat_kwargs = {
             "model": deployment_name,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.3,
-            "max_tokens": 2000,
-            "timeout": 60,
+            "max_tokens": 3000,  # Aumentado para el informe más detallado
+            "timeout": 90,  # Aumentado para el análisis más complejo
         }
         if _supports_json_schema_response_format(API_VERSION):
             chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": report_schema}
@@ -850,45 +782,45 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         
         # Obtener y loggear la respuesta cruda
         raw_content = response.choices[0].message.content
-        logger.info(f"Respuesta cruda de Azure OpenAI: {repr(raw_content[:500])}...")
+        logger.info(f"Respuesta cruda de Azure OpenAI (informe mejorado): {repr(raw_content[:500])}...")
         
         if not raw_content or not raw_content.strip():
-            logger.error("Azure OpenAI devolvió respuesta vacía")
+            logger.error("Azure OpenAI devolvió respuesta vacía para informe mejorado")
             raise Exception("Respuesta vacía de Azure OpenAI")
         
         # Limpiar la respuesta antes de parsear
         content_to_parse = raw_content.strip()
         
-        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto o markdown)
+        # Buscar el JSON dentro de la respuesta
         import re
         
         # Primero, intentar extraer contenido entre ```json y ```
         json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
         if json_code_block_match:
             content_to_parse = json_code_block_match.group(1).strip()
-            logger.info(f"JSON extraído de bloque de código para informe: {repr(content_to_parse[:200])}...")
+            logger.info(f"JSON extraído de bloque de código para informe mejorado: {repr(content_to_parse[:200])}...")
         else:
             # Si no hay bloque de código, buscar el JSON directamente
             json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
             if json_match:
                 content_to_parse = json_match.group(0)
-                logger.info(f"JSON extraído directamente para informe: {repr(content_to_parse[:200])}...")
+                logger.info(f"JSON extraído directamente para informe mejorado: {repr(content_to_parse[:200])}...")
             else:
-                logger.error(f"No se pudo extraer JSON de la respuesta de informe: {repr(content_to_parse[:500])}")
+                logger.error(f"No se pudo extraer JSON de la respuesta de informe mejorado: {repr(content_to_parse[:500])}")
                 raise Exception("No se encontró JSON válido en la respuesta")
         
         import json
         try:
             report_data = json.loads(content_to_parse)
-            logger.info(f"JSON parseado exitosamente para informe. Claves: {list(report_data.keys()) if isinstance(report_data, dict) else 'No es dict'}")
+            logger.info(f"JSON parseado exitosamente para informe mejorado. Claves: {list(report_data.keys()) if isinstance(report_data, dict) else 'No es dict'}")
             return report_data
         except json.JSONDecodeError as je:
-            logger.error(f"Error parseando JSON: {je}")
+            logger.error(f"Error parseando JSON del informe mejorado: {je}")
             logger.error(f"Contenido que causó el error: {repr(content_to_parse[:1000])}")
-            raise Exception(f"Error parseando respuesta JSON: {je}")
+            raise Exception(f"Error parseando respuesta JSON del informe mejorado: {je}")
         
     except Exception as e:
-        logger.error(f"Error generando informe con IA: {e}")
+        logger.error(f"Error generando informe mejorado con IA: {e}")
         return generate_basic_report(request, employability_score, level)
 
 def generate_basic_report(request: EmployabilityReportRequest, employability_score: int, level: str) -> dict:
