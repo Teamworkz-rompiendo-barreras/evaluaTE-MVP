@@ -4,7 +4,7 @@ import logo from "../assets/Logo_teamworkz.png";
 import { useForm, SubmitHandler } from 'react-hook-form';
 import { useAppDispatch, useAppSelector } from '../app/hooks';
 import { saveContact } from '../features/personal/personalSlice';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, Link } from 'react-router-dom';
 import ProgressBar from '../components/ProgressBar';
 
 // Agregar campo para el consentimiento
@@ -134,12 +134,12 @@ const DatosPersonalesPage: React.FC = () => {
           />
           <label htmlFor="dataConsent" className="text-sm select-none">
             He leído y acepto la{' '}
-            <a
-              href="/privacidad"
+            <Link
+              to="/privacidad"
               className="text-blue-600 underline hover:text-blue-800"
             >
               política de privacidad y el uso de mis datos personales
-            </a>.
+            </Link>.
           </label>
         </div>
         {errors.dataConsent && (
