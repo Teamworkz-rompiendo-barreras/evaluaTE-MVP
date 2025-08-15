@@ -13,6 +13,21 @@ class CvAnalysis(BaseModel):
     strengths: List[str]
     weaknesses: List[str]
     feedback: Optional[str] = None
+    structure: Optional[str] = None
+    coherence: Optional[str] = None
+    experience: Optional[str] = None
+    skills: Optional[List[str]] = None
+    education: Optional[List[str]] = None
+    alerts: Optional[List[str]] = None
+    # Campos adicionales para información detallada del CV
+    cv_structured: Optional[Dict] = None
+    candidate: Optional[Dict] = None
+    contact: Optional[Dict] = None
+    experience_detailed: Optional[List[Dict]] = None
+    education_detailed: Optional[List[Dict]] = None
+    languages: Optional[List[Dict]] = None
+    periods: Optional[List[str]] = None
+    highlights: Optional[List[str]] = None
 
 class JobPreference(BaseModel):
     areas: List[str]
