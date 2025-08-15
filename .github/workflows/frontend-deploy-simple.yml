@@ -1,17 +1,41 @@
-name: Frontend Build and Deploy (Simple) - DISABLED
+name: Frontend Deploy Simple
 
-# DESHABILITADO - Usar frontend-deploy-optimized.yml en su lugar
 on:
-  workflow_dispatch:  # Solo permite ejecución manual, deshabilitando automático
+  push:
+    branches:
+      - fix/contrast-improvement
+  workflow_dispatch:
 
-# Este workflow está deshabilitado para evitar conflictos
-# Usar frontend-deploy-optimized.yml en su lugar
 jobs:
-  disabled:
+  build_and_deploy:
     runs-on: ubuntu-latest
+    name: Build and Deploy
+    
     steps:
-      - name: Workflow Deshabilitado
-        run: |
-          echo "❌ Este workflow está deshabilitado"
-          echo "✅ Usar frontend-deploy-optimized.yml en su lugar"
-          exit 1 
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        working-directory: ./nuevo-frontend
+        run: npm install
+
+      - name: Build project
+        working-directory: ./nuevo-frontend
+        run: npm run build
+
+      - name: Deploy to Azure Static Web Apps
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_YELLOW_MUD_0B6281C1E }}
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "nuevo-frontend"
+          api_location: ""
+          output_location: "dist"
+          skip_app_build: false
+          skip_api_build: true 
