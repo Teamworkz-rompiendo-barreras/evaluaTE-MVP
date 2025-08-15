@@ -1,0 +1,97 @@
+name: Frontend Deploy Test
+
+on:
+  workflow_dispatch:
+    inputs:
+      test_config:
+        description: 'Configuración a probar'
+        required: true
+        default: 'basic'
+        type: choice
+        options:
+        - basic
+        - with_build
+        - with_routes
+        - minimal
+
+jobs:
+  test_deploy:
+    runs-on: ubuntu-latest
+    name: Test Deploy Configuration
+    
+    steps:
+      - name: Checkout code
+        uses: actions/checkout@v4
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: '20.x'
+
+      - name: Install dependencies
+        working-directory: ./nuevo-frontend
+        run: npm install
+
+      - name: Build project
+        working-directory: ./nuevo-frontend
+        run: npm run build
+
+      - name: Copy config files
+        run: |
+          echo "Copiando archivos de configuración..."
+          cp nuevo-frontend/staticwebapp.config.json nuevo-frontend/dist/
+          echo "✅ Configuración copiada"
+
+      - name: Test Basic Configuration
+        if: inputs.test_config == 'basic'
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ad5f34aebb8b854d7a97186453bc71a4a574acda6c1174870276da3619bd312706-131fe071-1100-48e3-9692-cb4df94c795f01e13320b6281c1e
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "nuevo-frontend"
+          api_location: ""
+          output_location: "dist"
+          skip_app_build: false
+          skip_api_build: true
+
+      - name: Test With Build Configuration
+        if: inputs.test_config == 'with_build'
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ad5f34aebb8b854d7a97186453bc71a4a574acda6c1174870276da3619bd312706-131fe071-1100-48e3-9692-cb4df94c795f01e13320b6281c1e
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "nuevo-frontend"
+          api_location: ""
+          output_location: "dist"
+          skip_app_build: false
+          skip_api_build: true
+          app_build_command: "npm run build"
+
+      - name: Test With Routes Configuration
+        if: inputs.test_config == 'with_routes'
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ad5f34aebb8b854d7a97186453bc71a4a574acda6c1174870276da3619bd312706-131fe071-1100-48e3-9692-cb4df94c795f01e13320b6281c1e
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "nuevo-frontend"
+          api_location: ""
+          output_location: "dist"
+          routes_location: "nuevo-frontend/staticwebapp.config.json"
+          skip_app_build: false
+          skip_api_build: true
+
+      - name: Test Minimal Configuration
+        if: inputs.test_config == 'minimal'
+        uses: Azure/static-web-apps-deploy@v1
+        with:
+          azure_static_web_apps_api_token: ad5f34aebb8b854d7a97186453bc71a4a574acda6c1174870276da3619bd312706-131fe071-1100-48e3-9692-cb4df94c795f01e13320b6281c1e
+          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          action: upload
+          app_location: "nuevo-frontend/dist"
+          api_location: ""
+          output_location: ""
+          skip_app_build: true
+          skip_api_build: true
