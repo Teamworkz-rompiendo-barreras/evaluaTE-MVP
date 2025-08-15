@@ -135,9 +135,7 @@ const DatosPersonalesPage: React.FC = () => {
           <label htmlFor="dataConsent" className="text-sm select-none">
             He leído y acepto la{' '}
             <a
-              href="/privacidad.pdf"
-              target="_blank"
-              rel="noopener noreferrer"
+              href="/privacidad"
               className="text-blue-600 underline hover:text-blue-800"
             >
               política de privacidad y el uso de mis datos personales

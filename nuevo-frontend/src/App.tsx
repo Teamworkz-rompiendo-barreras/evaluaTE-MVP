@@ -9,6 +9,7 @@ import GameScenePage from './pages/GameScenePage'
 import UploadCVPage from './pages/UploadCVPage'
 import ResultadosPage from './pages/ResultadosPage'
 import WelcomePage from './pages/WelcomePage';
+import PrivacidadPage from './pages/PrivacidadPage';
 
 // Componentes visuales
 import ProtectedRoute from './components/ProtectedRoute'
@@ -65,10 +66,12 @@ export default function App() {
           <Route index element={<Navigate to="/register/contact" replace />} />
 
           {/* Registro inicial */}
-          <Route path="register">
-            <Route path="contact" element={<DatosPersonalesPage />} />
-            <Route path="preferences" element={<PreferencesStep />} />
-          </Route>
+                  <Route path="register">
+          <Route path="contact" element={<DatosPersonalesPage />} />
+          <Route path="preferences" element={<PreferencesStep />} />
+        </Route>
+        
+        <Route path="privacidad" element={<PrivacidadPage />} />
 
           {/* Pantalla de bienvenida a los minijuegos */}
           <Route path="welcome" element={<WelcomePage />} />
