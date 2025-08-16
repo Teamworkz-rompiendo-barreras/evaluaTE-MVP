@@ -94,6 +94,8 @@ Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No 
 - Software/Herramientas: {len(cv_software) if isinstance(cv_software, list) else 'No consta'} herramientas
 - Contacto: {cv_contact if cv_contact else 'No consta'}
 
+**IMPORTANTE:** Si alguno de estos campos muestra "No consta" o está vacío, significa que la información del CV no se pudo extraer correctamente. En ese caso, indica claramente en el informe que "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".
+
 ### PREFERENCIAS LABORALES
 - Roles deseados: {', '.join(job_preferences_data.get('desired_roles', [])) if job_preferences_data.get('desired_roles') else 'No consta'}
 - Sectores: {', '.join(job_preferences_data.get('desired_sectors', [])) if job_preferences_data.get('desired_sectors') else 'No consta'}
@@ -164,7 +166,7 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 ## 3) RESUMEN DEL CV
 
-[Panorama de experiencia, sectores, tecnologías/herramientas clave, formación relevante. Incluye toda la información extraída por las herramientas de IA.]
+[Panorama de experiencia, sectores, tecnologías/herramientas clave, formación relevante. **CRÍTICO:** Incluye TODA la información extraída por las herramientas de IA. Si hay datos del CV disponibles, úsalos. Si no hay datos, escribe claramente "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".]
 
 ## 4) FORTALEZAS
 
@@ -275,10 +277,12 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
 **IMPORTANTE:** 
 - Usa lenguaje motivador y enfocado en el potencial
 - Evita términos como "alto", "medio", "bajo" - usa puntuaciones numéricas
-- Personaliza al máximo con la información disponible del CV
+- **CRÍTICO:** Personaliza al máximo con la información disponible del CV
+- **CRÍTICO:** Si hay datos del CV disponibles, úsalos TODOS en el informe
+- **CRÍTICO:** Si no hay datos del CV, escribe claramente "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos"
 - No inventes datos - si algo falta, escribe "No consta"
 - Genera un informe completo, coherente y profesional
-- Incluye toda la información del CV extraída por las herramientas de IA
+- **OBLIGATORIO:** Incluye toda la información del CV extraída por las herramientas de IA en las secciones correspondientes
 """
         
         return prompt

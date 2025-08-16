@@ -5,6 +5,7 @@
  * Análisis del CV cargado
  */
 export interface CvAnalysis {
+  // Campos básicos del análisis
   strengths: string[];
   weaknesses: string[];
   feedback?: string;
@@ -14,6 +15,40 @@ export interface CvAnalysis {
   skills?: string[];
   education?: string[];
   alerts?: string[];
+  
+  // Campos estructurados del CV extraídos por IA
+  cv_structured?: {
+    candidate?: any;
+    contact?: any;
+    experience?: any[];
+    education?: any[];
+    languages?: any[];
+    skills?: any[];
+    summary?: string;
+  };
+  
+  // Campos directos del CV
+  candidate?: any;
+  contact?: {
+    emails?: string[];
+    phones?: string[];
+    location?: string;
+    linkedin?: string;
+  };
+  experience_detailed?: any[];
+  education_detailed?: any[];
+  languages?: any[];
+  periods?: string[];
+  highlights?: string[];
+  volunteering?: any[];
+  
+  // Campos de análisis estructurado
+  cv_analysis_structured?: any;
+  raw_text?: string;
+  layout_sections?: any;
+  ai_analysis?: any;
+  basic_hints?: any;
+  provenance?: any;
 }
 
 /**

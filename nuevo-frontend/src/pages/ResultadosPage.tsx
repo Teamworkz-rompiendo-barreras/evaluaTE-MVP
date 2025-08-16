@@ -263,6 +263,7 @@ const ResultadosPage: React.FC = () => {
           fullName: userFullName,
           softSkills: softSkillsToSend,
           cvAnalysis: cvAnalysis ? {
+            // Campos básicos del análisis
             strengths: cvAnalysis.strengths ?? [],
             weaknesses: cvAnalysis.weaknesses ?? [],
             feedback: cvAnalysis.feedback ?? '',
@@ -272,6 +273,25 @@ const ResultadosPage: React.FC = () => {
             skills: cvAnalysis.skills ?? [],
             education: cvAnalysis.education ?? [],
             alerts: cvAnalysis.alerts ?? [],
+            
+            // CRÍTICO: Incluir TODOS los datos estructurados del CV extraídos por IA
+            cv_structured: cvAnalysis.cv_structured ?? null,
+            candidate: cvAnalysis.candidate ?? null,
+            contact: cvAnalysis.contact ?? null,
+            experience_detailed: cvAnalysis.experience_detailed ?? null,
+            education_detailed: cvAnalysis.education_detailed ?? null,
+            languages: cvAnalysis.languages ?? null,
+            periods: cvAnalysis.periods ?? null,
+            highlights: cvAnalysis.highlights ?? null,
+            volunteering: cvAnalysis.volunteering ?? null,
+            cv_analysis_structured: cvAnalysis.cv_analysis_structured ?? null,
+            
+            // Campos adicionales que pueden estar disponibles
+            raw_text: cvAnalysis.raw_text ?? null,
+            layout_sections: cvAnalysis.layout_sections ?? null,
+            ai_analysis: cvAnalysis.ai_analysis ?? null,
+            basic_hints: cvAnalysis.basic_hints ?? null,
+            provenance: cvAnalysis.provenance ?? null,
           } : null,
           jobPreferences: personal.jobPreferences || report?.jobPreferences || null,
           completedGames: game?.completedGames || [],
