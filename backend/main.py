@@ -688,7 +688,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     
     # Preparar análisis del CV
     cv_data = {
-        "rawText": "No disponible",  # No tienes el texto raw del CV
+        "rawText": "No disponible",
         "sections": {}
     }
     
@@ -707,11 +707,25 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
                 "profile": cv_structured.get('candidate', 'No especificado'),
                 "experience": cv_structured.get('experience', []),
                 "education": cv_structured.get('education', []),
-                "courses": "No especificado",  # Campo que no tienes
+                "courses": "No especificado",
                 "languages": cv_structured.get('languages', []),
                 "software": cv_structured.get('skills', []),
                 "contact": cv_structured.get('contact', {})
             }
+            
+            # CRÍTICO: Extraer texto raw del CV si está disponible
+            if hasattr(request.cvAnalysis, 'raw_text') and request.cvAnalysis.raw_text:
+                cv_data["rawText"] = request.cvAnalysis.raw_text[:3000]  # Limitar a 3000 caracteres
+                logger.info(f"✅ Texto raw del CV extraído: {len(request.cvAnalysis.raw_text)} caracteres")
+            elif hasattr(request.cvAnalysis, 'layout_sections') and request.cvAnalysis.layout_sections:
+                # Extraer texto de las secciones de layout
+                layout_text = ""
+                for section_name, section_data in request.cvAnalysis.layout_sections.items():
+                    if isinstance(section_data, dict) and section_data.get('text'):
+                        layout_text += f"\n{section_name}: {section_data['text']}"
+                if layout_text:
+                    cv_data["rawText"] = layout_text[:3000]
+                    logger.info(f"✅ Texto de layout extraído: {len(layout_text)} caracteres")
             
             # Logging detallado de lo que se extrajo
             logger.info(f"📊 Datos extraídos de CV-Extractor:")
@@ -806,10 +820,19 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         "desired_sectors": request.jobPreferences.areas if request.jobPreferences else [],
         "work_modes": [request.jobPreferences.workMode] if request.jobPreferences else ["No especificado"],
         "availability": request.jobPreferences.availability if request.jobPreferences else "No especificado",
-        "salary_range": "No especificado",  # Campo que no tienes
+        "salary_range": "No especificado",
         "relocation": request.jobPreferences.willingToRelocate if request.jobPreferences else None,
         "notes": f"Necesidades: {', '.join(request.jobPreferences.needs) if request.jobPreferences and hasattr(request.jobPreferences, 'needs') and request.jobPreferences.needs else 'No especificadas'}" if request.jobPreferences else "No especificado"
     }
+    
+    # CRÍTICO: Logging detallado de preferencias laborales
+    logger.info(f"🔍 Preferencias laborales procesadas:")
+    logger.info(f"  - Roles deseados: {job_preferences_data['desired_roles']}")
+    logger.info(f"  - Sectores: {job_preferences_data['desired_sectors']}")
+    logger.info(f"  - Modalidad: {job_preferences_data['work_modes']}")
+    logger.info(f"  - Disponibilidad: {job_preferences_data['availability']}")
+    logger.info(f"  - Relocalización: {job_preferences_data['relocation']}")
+    logger.info(f"  - Notas: {job_preferences_data['notes']}")
     
     # Preparar idiomas
     languages_data = []
@@ -825,6 +848,17 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
                     "language": str(lang),
                     "level": "No especificado"
                 })
+    
+    # CRÍTICO: Logging detallado de minijuegos completados
+    logger.info(f"🔍 Minijuegos completados:")
+    logger.info(f"  - Lista: {request.completedGames}")
+    logger.info(f"  - Cantidad: {len(request.completedGames)}")
+    logger.info(f"  - Detalles: {request.completedGames[:5] if request.completedGames else 'Ninguno'}")
+    
+    # CRÍTICO: Logging detallado de soft skills evaluadas
+    logger.info(f"🔍 Soft skills evaluadas:")
+    for i, skill in enumerate(soft_skills_data):
+        logger.info(f"  - {i+1}. {skill.get('skill', 'N/A')}: {skill.get('level', 'N/A')} ({skill.get('score', 'N/A')}/100)")
     
     # Importar configuración de prompts
     try:
@@ -843,6 +877,14 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         completed_games=request.completedGames,
         languages_data=languages_data
     )
+    
+    # CRÍTICO: Verificar que el prompt se generó correctamente
+    logger.info(f"🔍 Prompt generado exitosamente:")
+    logger.info(f"  - Longitud: {len(prompt)} caracteres")
+    logger.info(f"  - Contiene '13) FRASE FINAL': {'✅' if '13) FRASE FINAL' in prompt else '❌'}")
+    logger.info(f"  - Contiene 'CV ANALIZADO': {'✅' if 'CV ANALIZADO' in prompt else '❌'}")
+    logger.info(f"  - Contiene 'JUEGOS COMPLETADOS': {'✅' if 'JUEGOS COMPLETADOS' in prompt else '❌'}")
+    logger.info(f"  - Contiene 'PREFERENCIAS LABORALES': {'✅' if 'PREFERENCIAS LABORALES' in prompt else '❌'}")
     
     # Logging del prompt generado para debug
     logger.info(f"📝 Prompt generado con información del CV:")
@@ -892,16 +934,25 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         
         # Structured Outputs para el informe mejorado usando configuración centralizada
         report_schema = PromptConfig.get_report_schema()
+        
+        # CRÍTICO: Verificar que el esquema JSON se cargó correctamente
+        logger.info(f"🔍 Esquema JSON del informe:")
+        logger.info(f"  - Esquema cargado: {'✅' if report_schema else '❌'}")
+        logger.info(f"  - Propiedades requeridas: {report_schema.get('required', []) if report_schema else 'N/A'}")
+        logger.info(f"  - Cantidad de propiedades: {len(report_schema.get('properties', {})) if report_schema else 0}")
 
         chat_kwargs = {
             "model": deployment_name,
             "messages": [{"role": "user", "content": prompt}],
             "temperature": 0.3,
-            "max_tokens": 3000,  # Aumentado para el informe más detallado
-            "timeout": 90,  # Aumentado para el análisis más complejo
+            "max_tokens": 4000,  # Aumentado para el informe más detallado
+            "timeout": 120,  # Aumentado para el análisis más complejo
         }
         if _supports_json_schema_response_format(API_VERSION):
             chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": report_schema}
+            logger.info(f"✅ JSON Schema aplicado para respuesta estructurada")
+        else:
+            logger.warning(f"⚠️ JSON Schema no disponible en API version {API_VERSION}")
         response = client.chat.completions.create(**chat_kwargs)
         
         # Obtener y loggear la respuesta cruda
