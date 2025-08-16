@@ -96,6 +96,16 @@ Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No 
 
 **IMPORTANTE:** Si alguno de estos campos muestra "No consta" o está vacío, significa que la información del CV no se pudo extraer correctamente. En ese caso, indica claramente en el informe que "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".
 
+### TEXTO RAW DEL CV (SI ESTÁ DISPONIBLE)
+{cv_data.get('rawText', 'No disponible')}
+
+**CRÍTICO:** Si hay texto raw del CV disponible, úsalo para:
+- Extraer información adicional que no esté en las secciones estructuradas
+- Identificar detalles específicos del candidato
+- Analizar el estilo y formato del CV
+- Detectar inconsistencias o errores
+- Completar información faltante en las secciones estructuradas
+
 ### PREFERENCIAS LABORALES
 - Roles deseados: {', '.join(job_preferences_data.get('desired_roles', [])) if job_preferences_data.get('desired_roles') else 'No consta'}
 - Sectores: {', '.join(job_preferences_data.get('desired_sectors', [])) if job_preferences_data.get('desired_sectors') else 'No consta'}
@@ -114,11 +124,15 @@ Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No 
 ### 1. PARSEO DEL CV
 Identifica secciones reales: Perfil/Resumen, Experiencia, Educación reglada, Formación complementaria, Idiomas, Herramientas/Software, Proyectos, Contacto.
 
+**CRÍTICO:** Usa SOLO la información disponible del CV. Si hay texto raw, analízalo línea por línea para identificar secciones.
+
 Detecta inconsistencias (nombres de empresa, fechas, mayúsculas/minúsculas, acentos, ubicaciones, teletrabajo vs. ciudad).
 
 Localiza erratas comunes en software/herramientas y propuestas de corrección.
 
 Señala ausencias críticas: logros cuantificables (KPI), enlaces (LinkedIn/web), detalle de programas académicos, formato homogéneo de fechas y lugares.
+
+**OBLIGATORIO:** Si no hay información del CV, escribe "No hay información del CV disponible para analizar" en esta sección.
 
 ### 2. DIAGNÓSTICO DEL CV CON PUNTUACIÓN 1–5
 Califica y justifica cada apartado con evidencia del CV y correcciones accionables:
@@ -129,22 +143,68 @@ Califica y justifica cada apartado con evidencia del CV y correcciones accionabl
 - **Claridad (1–5)**: calidad de bullets y verbos de acción
 - **Ortografía y estilo (1–5)**: tildes, nombres propios, marcas registradas, mayúsculas
 
+**CRÍTICO:** Cada puntuación debe estar respaldada por evidencia específica del CV. Si no hay información del CV:
+- Estructura: 1/5 - "No hay información del CV para evaluar la estructura"
+- Coherencia: 1/5 - "No hay información del CV para evaluar la coherencia"
+- Información clave: 1/5 - "No hay información del CV para evaluar la información clave"
+- Claridad: 1/5 - "No hay información del CV para evaluar la claridad"
+- Ortografía y estilo: 1/5 - "No hay información del CV para evaluar la ortografía y estilo"
+
 ### 3. FORTALEZAS Y ÁREAS DE MEJORA
 Cruza soft_skills + trayectoria del CV para extraer fortalezas (con evidencias).
 
 Define áreas de mejora priorizadas y consejos específicos (micro-acciones y recursos concretos).
 
+**CRÍTICO:** 
+- **Fortalezas:** Si hay datos del CV, identifica fortalezas basadas en experiencia, formación y logros específicos. Si no hay CV, enfócate en las soft skills evaluadas.
+- **Áreas de mejora:** Si hay CV, identifica áreas específicas de mejora basadas en el análisis del CV. Si no hay CV, sugiere desarrollo general de soft skills.
+
+**OBLIGATORIO:** Cada fortaleza y área de mejora debe estar respaldada por evidencia concreta.
+
 ### 4. ENTORNOS DE TRABAJO IDEALES
 Propón condiciones laborales que optimicen el rendimiento del candidato, justificando con datos (soft skills + experiencia + preferencias).
+
+**CRÍTICO:** 
+- Si hay datos del CV, incluye preferencias basadas en experiencia previa (remoto, presencial, híbrido)
+- Si no hay CV, enfócate en las soft skills evaluadas y preferencias laborales
+- Justifica cada recomendación con evidencia específica
+
+**OBLIGATORIO:** Las recomendaciones deben ser específicas y accionables, no genéricas.
 
 ### 5. SUGERENCIAS DE ROLES Y SECTORES
 Lista roles concretos alineados con experiencia real, formación y preferencias (incluye seniority aproximado).
 
+**CRÍTICO:** 
+- Si hay datos del CV, sugiere roles basados en experiencia previa, formación académica y habilidades técnicas identificadas
+- Si no hay CV, sugiere roles basados en soft skills evaluadas y preferencias laborales
+- Incluye seniority aproximado (junior, mid-level, senior) basado en la información disponible
+- Justifica cada sugerencia con evidencia específica
+
+**OBLIGATORIO:** Los roles sugeridos deben ser realistas y alcanzables, no aspiracionales sin fundamento.
+
 ### 6. PLAN DE ACCIÓN (CORTO/MEDIO/LARGO PLAZO)
 Acciones SMART (específicas, medibles, con horizonte temporal).
 
+**CRÍTICO:** 
+- Si hay datos del CV, incluye acciones específicas para mejorar el CV basadas en el análisis anterior
+- Si no hay CV, enfócate en desarrollo de soft skills y preparación general
+- Cada acción debe ser SMART (Específica, Medible, Alcanzable, Relevante, Temporal)
+
+**OBLIGATORIO:** 
+- **Corto plazo (0-30 días):** Acciones inmediatas y de bajo esfuerzo
+- **Medio plazo (1-3 meses):** Acciones que requieren planificación y recursos
+- **Largo plazo (3-6+ meses):** Objetivos estratégicos y desarrollo profesional
+
 ### 7. RECURSOS Y APOYO
 Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
+
+**CRÍTICO:** 
+- Si hay datos del CV, sugiere recursos específicos para su sector, experiencia y formación
+- Si no hay CV, sugiere recursos generales de desarrollo profesional
+- Incluye recursos específicos para discapacidad si aplica
+- Cada recurso debe tener un propósito claro y estar justificado
+
+**OBLIGATORIO:** Los recursos deben ser accesibles, relevantes y de calidad contrastada.
 
 ## FORMATO DE SALIDA (EN MARKDOWN + ENLACES HTML)
 
@@ -166,7 +226,15 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 ## 3) RESUMEN DEL CV
 
-[Panorama de experiencia, sectores, tecnologías/herramientas clave, formación relevante. **CRÍTICO:** Incluye TODA la información extraída por las herramientas de IA. Si hay datos del CV disponibles, úsalos. Si no hay datos, escribe claramente "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".]
+[Panorama de experiencia, sectores, tecnologías/herramientas clave, formación relevante. **CRÍTICO:** Incluye TODA la información extraída por las herramientas de IA. Si hay datos del CV disponibles, úsalos TODOS en esta sección. Si no hay datos, escribe claramente "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".]
+
+**OBLIGATORIO:** Si hay información del CV disponible, incluye:
+- Experiencia laboral específica (empresas, cargos, fechas)
+- Formación académica detallada (títulos, instituciones, años)
+- Habilidades técnicas y herramientas identificadas
+- Idiomas con niveles
+- Proyectos destacados
+- Logros cuantificables si están disponibles
 
 ## 4) FORTALEZAS
 
@@ -176,15 +244,17 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 [Fortaleza 3: evidencia concreta de soft_skills/CV]
 
+**CRÍTICO:** Cada fortaleza debe estar respaldada por evidencia específica del CV o de las soft skills evaluadas. Si no hay datos del CV, enfócate en las soft skills evaluadas.
+
 ## 5) ÁREAS DE MEJORA Y CONSEJOS
 
-**Área 1** — [Motivo] → **Acción sugerida:** [acción concreta + recurso si procede]
+**Área 1** — [Motivo basado en CV/soft_skills] → **Acción sugerida:** [acción concreta + recurso si procede]
 
-**Área 2** — [Motivo] → **Acción sugerida:** [acción concreta + recurso si procede]
+**Área 2** — [Motivo basado en CV/soft_skills] → **Acción sugerida:** [acción concreta + recurso si procede]
 
-**Área 3** — [Motivo] → **Acción sugerida:** [acción concreta + recurso si procede]
+**Área 3** — [Motivo basado en CV/soft_skills] → **Acción sugerida:** [acción concreta + recurso si procede]
 
-(Prioriza 3–5 con impacto alto.)
+(Prioriza 3–5 con impacto alto. **OBLIGATORIO:** Si no hay datos del CV, enfócate en las soft skills evaluadas y áreas de desarrollo general.)
 
 ## 6) ANÁLISIS DEL CV (CON PUNTUACIÓN 1–5 POR APARTADO)
 
@@ -192,11 +262,13 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 | Apartado | Nota (1–5) | Evidencia del CV | Correcciones/Acciones concretas |
 |-----------|-------------|------------------|----------------------------------|
-| Estructura | X/5 | [ejemplo breve] | [cambio específico] |
-| Coherencia | X/5 | [ejemplo breve] | [cambio específico] |
-| Información clave | X/5 | [ejemplo breve] | [logros/KPIs que faltan] |
-| Claridad | X/5 | [ejemplo breve] | [reescritura tipo "Acción–Cómo–Para qué–Resultado"] |
-| Ortografía y estilo | X/5 | [ejemplo breve] | [corrección exacta si aplica] |
+| Estructura | X/5 | [ejemplo breve del CV] | [cambio específico] |
+| Coherencia | X/5 | [ejemplo breve del CV] | [cambio específico] |
+| Información clave | X/5 | [ejemplo breve del CV] | [logros/KPIs que faltan] |
+| Claridad | X/5 | [ejemplo breve del CV] | [reescritura tipo "Acción–Cómo–Para qué–Resultado"] |
+| Ortografía y estilo | X/5 | [ejemplo breve del CV] | [corrección exacta si aplica] |
+
+**CRÍTICO:** Usa SOLO información real extraída del CV. Si no hay datos del CV, escribe "No hay información del CV disponible para analizar" en la columna de evidencia.
 
 ### Correcciones concretas (solo si aplican):
 
@@ -221,6 +293,14 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 (Indica seniority aproximado y si es viable en remoto/local.)
 
+**CRÍTICO:** Los roles sugeridos deben estar basados en:
+- Experiencia real del CV (si está disponible)
+- Soft skills evaluadas
+- Preferencias laborales del candidato
+- Formación académica identificada
+
+Si no hay datos del CV, sugiere roles basados en soft skills y preferencias laborales.
+
 ## 9) PLAN DE ACCIÓN
 
 **Corto plazo (0–30 días):** [acciones SMART específicas]
@@ -229,10 +309,25 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 **Largo plazo (3–6+ meses):** [acciones SMART específicas]
 
+**CRÍTICO:** Cada acción debe ser:
+- **S**pecífica (qué hacer exactamente)
+- **M**edible (cómo saber si se logró)
+- **A**lcanzable (realista con recursos disponibles)
+- **R**elevante (conectada con objetivos profesionales)
+- **T**emporal (con fecha límite)
+
+**OBLIGATORIO:** Si hay datos del CV, incluye acciones específicas para mejorar el CV basadas en el análisis anterior.
+
 ## 10) CONSEJOS DE BÚSQUEDA DE EMPLEO
 
 ### Optimización del CV:
 [2–3 acciones concretas basadas en el análisis anterior]
+
+**CRÍTICO:** Si hay datos del CV, incluye acciones específicas como:
+- Reestructurar secciones según el análisis de estructura
+- Corregir inconsistencias identificadas
+- Agregar logros cuantificables donde falten
+- Mejorar verbos de acción en descripciones
 
 ### Cartas y portfolio/casos:
 [si aplica al perfil]
@@ -268,6 +363,14 @@ herramientas de gestión de foco, lectores, extensiones de reducción de distrac
 
 {games_text} — [breve lectura de qué evidencian y cómo se conectan con roles/acciones]
 
+**CRÍTICO:** Analiza cada juego completado y explica:
+- Qué habilidades específicas evalúa
+- Cómo se relaciona con el perfil profesional
+- Qué roles o sectores se benefician de esas habilidades
+- Cómo se puede desarrollar o aplicar en el entorno laboral
+
+Si no hay juegos completados, escribe "No se han completado evaluaciones de habilidades soft en esta sesión."
+
 ## 13) FRASE FINAL
 
 Este informe se ha realizado teniendo en cuenta toda la información que nos has proporcionado y tus preferencias laborales. Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!
@@ -283,6 +386,13 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
 - No inventes datos - si algo falta, escribe "No consta"
 - Genera un informe completo, coherente y profesional
 - **OBLIGATORIO:** Incluye toda la información del CV extraída por las herramientas de IA en las secciones correspondientes
+
+**REGLAS CRÍTICAS PARA EL CV:**
+1. **NUNCA inventes información del CV** - solo usa lo que esté disponible
+2. **SI hay datos del CV:** úsalos en TODAS las secciones relevantes
+3. **SI NO hay datos del CV:** escribe claramente "No hay información del CV disponible"
+4. **Prioriza la información real del CV** sobre sugerencias genéricas
+5. **Conecta cada recomendación** con datos específicos del CV o soft skills
 """
         
         return prompt
@@ -338,7 +448,8 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
     @staticmethod
     def get_report_schema() -> dict:
         """
-        Esquema JSON para la respuesta estructurada del informe
+        Esquema JSON completo para la respuesta estructurada del informe
+        que coincide exactamente con los 13 puntos del prompt detallado
         """
         return {
             "type": "object",
@@ -347,55 +458,110 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                     "type": "string",
                     "description": "Resumen ejecutivo del informe de empleabilidad"
                 },
-                "recommendations": {
+                "personal_data": {
                     "type": "object",
                     "properties": {
-                        "cv_analysis": {
-                            "type": "object",
-                            "properties": {
-                                "structure_score": {"type": "integer", "minimum": 1, "maximum": 5},
-                                "coherence_score": {"type": "integer", "minimum": 1, "maximum": 5},
-                                "content_score": {"type": "integer", "minimum": 1, "maximum": 5},
-                                "clarity_score": {"type": "integer", "minimum": 1, "maximum": 5},
-                                "style_score": {"type": "integer", "minimum": 1, "maximum": 5},
-                                "corrections": {"type": "array", "items": {"type": "string"}},
-                                "reordering_suggestions": {"type": "array", "items": {"type": "string"}}
-                            }
-                        },
-                        "strengths": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Lista de fortalezas identificadas"
-                        },
-                        "improvement_areas": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Áreas de mejora con acciones específicas"
-                        },
-                        "ideal_work_environment": {
-                            "type": "string",
-                            "description": "Descripción del entorno de trabajo ideal"
-                        },
-                        "suggested_roles": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Roles profesionales sugeridos"
-                        },
-                        "action_plan": {
-                            "type": "object",
-                            "properties": {
-                                "short_term": {"type": "array", "items": {"type": "string"}},
-                                "medium_term": {"type": "array", "items": {"type": "string"}},
-                                "long_term": {"type": "array", "items": {"type": "string"}}
-                            }
-                        },
-                        "resources": {
-                            "type": "array",
-                            "items": {"type": "string"},
-                            "description": "Recursos y herramientas recomendadas"
+                        "name": {"type": "string"},
+                        "location": {"type": "string"},
+                        "email": {"type": "string"},
+                        "phone": {"type": "string"},
+                        "disability_certificate": {"type": "string"}
+                    }
+                },
+                "profile_summary": {
+                    "type": "string",
+                    "description": "Resumen del perfil profesional y propuesta de valor"
+                },
+                "cv_summary": {
+                    "type": "string",
+                    "description": "Panorama de experiencia, sectores, tecnologías y formación del CV"
+                },
+                "strengths": {
+                    "type": "array",
+                    "items": {"type": "string"},
+                    "description": "Lista de fortalezas con evidencia concreta"
+                },
+                "improvement_areas": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "area": {"type": "string"},
+                            "reason": {"type": "string"},
+                            "suggested_action": {"type": "string"}
+                        }
+                    },
+                    "description": "Áreas de mejora con acciones específicas"
+                },
+                "cv_analysis": {
+                    "type": "object",
+                    "properties": {
+                        "structure_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                        "coherence_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                        "key_info_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                        "clarity_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                        "style_score": {"type": "integer", "minimum": 1, "maximum": 5},
+                        "evidence": {"type": "object"},
+                        "corrections": {"type": "array", "items": {"type": "string"}},
+                        "reordering_suggestions": {"type": "array", "items": {"type": "string"}}
+                    }
+                },
+                "ideal_work_environment": {
+                    "type": "string",
+                    "description": "Condiciones ambientales y operativas ideales"
+                },
+                "suggested_roles": {
+                    "type": "array",
+                    "items": {
+                        "type": "object",
+                        "properties": {
+                            "role": {"type": "string"},
+                            "reason": {"type": "string"},
+                            "seniority": {"type": "string"},
+                            "remote_viable": {"type": "boolean"}
                         }
                     }
+                },
+                "action_plan": {
+                    "type": "object",
+                    "properties": {
+                        "short_term": {"type": "array", "items": {"type": "string"}},
+                        "medium_term": {"type": "array", "items": {"type": "string"}},
+                        "long_term": {"type": "array", "items": {"type": "string"}}
+                    }
+                },
+                "job_search_advice": {
+                    "type": "object",
+                    "properties": {
+                        "cv_optimization": {"type": "array", "items": {"type": "string"}},
+                        "cover_letters": {"type": "string"},
+                        "recommended_platforms": {"type": "array", "items": {"type": "string"}},
+                        "networking": {"type": "string"},
+                        "interview_tips": {"type": "string"}
+                    }
+                },
+                "useful_tools": {
+                    "type": "object",
+                    "properties": {
+                        "productivity": {"type": "array", "items": {"type": "string"}},
+                        "search_alerts": {"type": "array", "items": {"type": "string"}},
+                        "learning_certification": {"type": "array", "items": {"type": "string"}},
+                        "accessibility": {"type": "array", "items": {"type": "string"}}
+                    }
+                },
+                "completed_games": {
+                    "type": "string",
+                    "description": "Análisis de los juegos completados y su conexión con roles/acciones"
+                },
+                "final_message": {
+                    "type": "string",
+                    "description": "Mensaje final motivador"
                 }
             },
-            "required": ["summary", "recommendations"]
+            "required": [
+                "summary", "personal_data", "profile_summary", "cv_summary", 
+                "strengths", "improvement_areas", "cv_analysis", "ideal_work_environment",
+                "suggested_roles", "action_plan", "job_search_advice", "useful_tools",
+                "completed_games", "final_message"
+            ]
         }

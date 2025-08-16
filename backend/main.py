@@ -770,6 +770,28 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         if not has_real_data:
             logger.warning("⚠️ CRÍTICO: No hay datos reales del CV para enviar al prompt")
             logger.warning("⚠️ Esto causará que la IA genere 'CV no disponible'")
+            
+            # Intentar extraer información adicional de otros campos del CV
+            logger.info("🔍 Intentando extraer información adicional de otros campos...")
+            
+            # Buscar información en campos adicionales
+            additional_fields = ['raw_text', 'layout_sections', 'ai_analysis', 'basic_hints']
+            for field in additional_fields:
+                field_value = getattr(request.cvAnalysis, field, None)
+                if field_value:
+                    logger.info(f"  - {field}: {type(field_value)} - {str(field_value)[:100]}...")
+                    if field == 'raw_text' and isinstance(field_value, str) and len(field_value) > 50:
+                        cv_data["rawText"] = field_value[:2000]  # Limitar a 2000 caracteres
+                        logger.info(f"✅ Texto raw del CV extraído: {len(field_value)} caracteres")
+                    elif field == 'layout_sections' and isinstance(field_value, dict):
+                        # Extraer texto de las secciones de layout
+                        layout_text = ""
+                        for section_name, section_data in field_value.items():
+                            if isinstance(section_data, dict) and section_data.get('text'):
+                                layout_text += f"\n{section_name}: {section_data['text']}"
+                        if layout_text:
+                            cv_data["rawText"] = layout_text[:2000]
+                            logger.info(f"✅ Texto de layout extraído: {len(layout_text)} caracteres")
 
         logger.info(f"✅ Información del CV extraída: {list(cv_data['sections'].keys())}")
         logger.info(f"  - Profile: {cv_data['sections']['profile']}")
