@@ -486,6 +486,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
         que coincide exactamente con los 12 puntos del prompt detallado
         """
         return {
+            "name": "employability_report",
             "type": "object",
             "properties": {
                 "summary": {
@@ -617,6 +618,9 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
             
             # Construir el informe en markdown
             report = f"""# 📋 Informe de Empleabilidad Profesional
+
+## RESUMEN EJECUTIVO
+{json_data.get('summary', 'No disponible')}
 
 ## 1. DATOS PERSONALES BÁSICOS
 - **Nombre**: {personal_data.get('name', 'No consta')}
