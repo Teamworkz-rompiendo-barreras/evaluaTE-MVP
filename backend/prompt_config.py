@@ -557,7 +557,7 @@ REGLAS:
                 report += (games if isinstance(games, str) else "No disponible") + "\n"
 
             report += f"""
-## 13. FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA
+## 13) FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA
 {json_data.get('final_message', 'No disponible')}
 
 ---
