@@ -251,12 +251,12 @@ def generar_informe(
                 return [t, "null"]
             return t
 
-        def harden_schema(node: dict) -> dict:
+        def harden_schema(node: dict, _depth: int = 0) -> dict:
             """
             Sanitiza un JSON Schema para Azure OpenAI strict mode:
             1. Cierra todos los objetos con additionalProperties: false
             2. Hace required = todas las propiedades (evita "Missing 'name'/'emails'/...")
-            3. Permite null en tipos para campos opcionales
+            3. Permite null en tipos para campos opcionales (pero NO en la raíz)
             """
             if not isinstance(node, dict):
                 return node
@@ -265,24 +265,27 @@ def generar_informe(
 
             # Objetos: cerrar y forzar required = todas las props
             if t == "object":
-                props = node.get("properties", {})
+                props = node.get("properties", {}) or {}
                 node.setdefault("additionalProperties", False)
                 node["required"] = list(props.keys())  # <= evita "Missing 'name'/'emails'/...
+                # Recorremos propiedades incrementando profundidad
                 for k, v in list(props.items()):
-                    props[k] = harden_schema(v)
+                    node["properties"][k] = harden_schema(v, _depth + 1)
+                # 👇 En la raíz mantenemos "object" a pelo; en niveles internos permitimos null
+                node["type"] = "object" if _depth == 0 else _allow_null("object")
 
-            # Arrays: bajar a items
-            if t == "array" and "items" in node:
-                node["items"] = harden_schema(node["items"])
+            elif t == "array":
+                if "items" in node:
+                    node["items"] = harden_schema(node["items"], _depth + 1)
+                node["type"] = "array" if _depth == 0 else _allow_null("array")
 
-            # Hacer opcionales permitiendo null (si quieres que no fallen al faltar datos)
-            if t in ("string", "number", "integer", "boolean", "object", "array"):
-                node["type"] = _allow_null(t)
+            elif t in ("string", "number", "integer", "boolean"):
+                node["type"] = t if _depth == 0 else _allow_null(t)
 
-            # Combinadores
+            # Combinadores, si los hubiera
             for key in ("oneOf", "anyOf", "allOf"):
                 if key in node and isinstance(node[key], list):
-                    node[key] = [harden_schema(x) if isinstance(x, dict) else x for x in node[key]]
+                    node[key] = [harden_schema(x, _depth + 1) if isinstance(x, dict) else x for x in node[key]]
 
             return node
         
