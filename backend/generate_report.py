@@ -243,46 +243,50 @@ def generar_informe(
         # Sanitizar el esquema antes de enviarlo
         report_schema = PromptConfig.get_report_schema()
         
-        def _close_schema(obj: dict) -> dict:
-            """
-            Recorre recursivamente un JSON Schema y añade `"additionalProperties": false`
-            a todos los nodos con type:"object" donde no esté definido.
-            """
-            if not isinstance(obj, dict):
-                return obj
+        def _allow_null(t):
+            """Permite null en tipos para hacer campos opcionales"""
+            if isinstance(t, list):
+                return t if "null" in t else t + ["null"]
+            if isinstance(t, str):
+                return [t, "null"]
+            return t
 
-            t = obj.get("type")
+        def harden_schema(node: dict) -> dict:
+            """
+            Sanitiza un JSON Schema para Azure OpenAI strict mode:
+            1. Cierra todos los objetos con additionalProperties: false
+            2. Hace required = todas las propiedades (evita "Missing 'name'/'emails'/...")
+            3. Permite null en tipos para campos opcionales
+            """
+            if not isinstance(node, dict):
+                return node
 
-            # Si es objeto, ciérralo
+            t = node.get("type")
+
+            # Objetos: cerrar y forzar required = todas las props
             if t == "object":
-                obj.setdefault("additionalProperties", False)
-                props = obj.get("properties")
-                if isinstance(props, dict):
-                    for _, sub in props.items():
-                        _close_schema(sub)
+                props = node.get("properties", {})
+                node.setdefault("additionalProperties", False)
+                node["required"] = list(props.keys())  # <= evita "Missing 'name'/'emails'/...
+                for k, v in list(props.items()):
+                    props[k] = harden_schema(v)
 
-            # Si es array, baja a items
-            if t == "array" and "items" in obj:
-                _close_schema(obj["items"])
+            # Arrays: bajar a items
+            if t == "array" and "items" in node:
+                node["items"] = harden_schema(node["items"])
+
+            # Hacer opcionales permitiendo null (si quieres que no fallen al faltar datos)
+            if t in ("string", "number", "integer", "boolean", "object", "array"):
+                node["type"] = _allow_null(t)
 
             # Combinadores
-            for k in ("oneOf", "anyOf", "allOf"):
-                if k in obj and isinstance(obj[k], list):
-                    for sub in obj[k]:
-                        _close_schema(sub)
+            for key in ("oneOf", "anyOf", "allOf"):
+                if key in node and isinstance(node[key], list):
+                    node[key] = [harden_schema(x) if isinstance(x, dict) else x for x in node[key]]
 
-            # También recorre cualquier sub-dict residual por seguridad
-            for k, v in list(obj.items()):
-                if isinstance(v, dict) and k not in ("properties", "items"):
-                    _close_schema(v)
-                elif isinstance(v, list) and k not in ("oneOf", "anyOf", "allOf"):
-                    for it in v:
-                        if isinstance(it, dict):
-                            _close_schema(it)
-
-            return obj
+            return node
         
-        report_schema = _close_schema(report_schema)
+        report_schema = harden_schema(report_schema)
         
         response = client.chat.completions.create(
             model=DEPLOYMENT,
