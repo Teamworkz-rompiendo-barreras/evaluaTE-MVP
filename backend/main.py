@@ -1619,6 +1619,12 @@ async def analyze_cv_with_ocr(file_path: str, filename: str) -> Dict[str, Any]:
 async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Analiza el contenido del CV usando IA"""
     try:
+        # Importar PromptConfig para usar el prompt centralizado
+        try:
+            from .prompt_config import PromptConfig
+        except ImportError:
+            from prompt_config import PromptConfig
+        
         # Chequeo de ortografía simple con fallback silencioso
         spelling_issues: list[str] = []
         try:
@@ -1675,23 +1681,19 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
 
         # Structured Outputs con esquema laxo para el análisis + esquema fuerte para cv_analysis_structured
         analysis_schema = {
-            "name": "CVFreeformAnalysis",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "strengths": {"type": "array", "items": {"type": "string"}},
-                    "weaknesses": {"type": "array", "items": {"type": "string"}},
-                    "feedback": {"type": "string"},
-                    "structure": {"type": "string"},
-                    "coherence": {"type": "string"},
-                    "experience": {"type": "string"},
-                    "skills": {"type": "array", "items": {"type": "string"}},
-                    "education": {"type": "array", "items": {"type": "string"}},
-                    "alerts": {"type": "array", "items": {"type": "string"}},
-                    "cv_analysis_structured": build_cv_json_schema()["schema"],
-                },
+            "type": "object",
+            "properties": {
+                "strengths": {"type": "array", "items": {"type": "string"}},
+                "weaknesses": {"type": "array", "items": {"type": "string"}},
+                "feedback": {"type": "string"},
+                "structure": {"type": "string"},
+                "coherence": {"type": "string"},
+                "experience": {"type": "string"},
+                "skills": {"type": "array", "items": {"type": "string"}},
+                "education": {"type": "array", "items": {"type": "string"}},
+                "alerts": {"type": "array", "items": {"type": "string"}},
+                "cv_analysis_structured": build_cv_json_schema()["schema"],
             },
-            "strict": False,
         }
 
         chat_kwargs = {
