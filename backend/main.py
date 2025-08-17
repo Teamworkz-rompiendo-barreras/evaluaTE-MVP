@@ -105,6 +105,16 @@ def _supports_json_schema_response_format(version_str: Optional[str]) -> bool:
     except Exception:
         return False
 
+def _as_json_schema_payload(schema_obj: dict, name: str = "EmployabilityReport") -> dict:
+    """
+    Asegura el formato requerido por Azure para response_format.json_schema:
+    - Si ya viene envuelto con 'schema', lo devuelve tal cual.
+    - Si es el esquema "puro", lo envuelve con {name, schema, strict}.
+    """
+    if isinstance(schema_obj, dict) and "schema" in schema_obj:
+        return schema_obj
+    return {"name": name, "schema": schema_obj, "strict": True}
+
 # Configurar NO_PROXY específicamente para el endpoint de Azure OpenAI
 if ENDPOINT:
     # Extraer el dominio del endpoint (ej: teamworkzevaluate-openai.openai.azure.com)
@@ -979,9 +989,16 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             "timeout": 120,  # Aumentado para el análisis más complejo
         }
         if _supports_json_schema_response_format(API_VERSION):
-            chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": report_schema}
+            chat_kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": _as_json_schema_payload(report_schema, name="EmployabilityReport")
+            }
+            # (Opcional) sanity log:
+            js = chat_kwargs["response_format"]["json_schema"]
+            logger.info(f"Wrapper JSON schema keys: {list(js.keys())}")  # debe incluir 'schema' y 'name'
             logger.info(f"✅ JSON Schema aplicado para respuesta estructurada")
         else:
+            chat_kwargs["response_format"] = {"type": "json_object"}
             logger.warning(f"⚠️ JSON Schema no disponible en API version {API_VERSION}")
         response = client.chat.completions.create(**chat_kwargs)
         
@@ -1427,7 +1444,10 @@ async def _structured_extract_with_ai(layout_sections: Dict[str, Any], filename:
                     "summary": {"type": "string"}
                 }
             }
-            chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": schema}
+            chat_kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": _as_json_schema_payload(schema, name="CVLayoutExtraction")
+            }
         
         # Llamar a Azure OpenAI
         response = client.chat.completions.create(**chat_kwargs)
@@ -1704,7 +1724,12 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
             "timeout": 60,
         }
         if _supports_json_schema_response_format(API_VERSION):
-            chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": analysis_schema}
+            chat_kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": _as_json_schema_payload(analysis_schema, name="CVAnalysis")
+            }
+        else:
+            chat_kwargs["response_format"] = {"type": "json_object"}
         response = client.chat.completions.create(**chat_kwargs)
         
         # Obtener y loggear la respuesta cruda

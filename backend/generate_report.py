@@ -250,7 +250,11 @@ def generar_informe(
             max_tokens=3000,
             response_format={
                 "type": "json_schema",
-                "schema": PromptConfig.get_report_schema()
+                "json_schema": {
+                    "name": "EmployabilityReport",
+                    "schema": PromptConfig.get_report_schema(),
+                    "strict": True
+                }
             }
         )
         
