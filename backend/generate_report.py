@@ -249,7 +249,7 @@ def generar_informe(
             temperature=0.3,
             max_tokens=3000,
             response_format={
-                "type": "json_object",
+                "type": "json_schema",
                 "schema": PromptConfig.get_report_schema()
             }
         )
