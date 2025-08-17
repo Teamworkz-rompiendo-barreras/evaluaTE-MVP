@@ -583,6 +583,151 @@ async def log_game_complete(data: Dict[str, Any]):
         logger.error(f"Error registrando juego completado: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+def shape_report_for_ui(r: dict) -> dict:
+    """
+    Adaptador que convierte la salida del modelo AI a las 13 secciones estándar en español
+    para la UI, con valores por defecto para campos faltantes.
+    """
+    # Estructura estándar de 13 secciones en español
+    shaped = {
+        "resumen_ejecutivo": "",
+        "analisis_perfil": "",
+        "evaluacion_cv": "",
+        "fortalezas_clave": [],
+        "areas_mejora": [],
+        "diagnostico_cv": {
+            "structure_score": 3,
+            "evidence": "Análisis estándar",
+            "fix": "Revisar estructura general",
+            "coherence_score": 3,
+            "coherence_evidence": "Coherencia básica",
+            "coherence_fix": "Mejorar coherencia",
+            "key_info_score": 3,
+            "key_info_evidence": "Información clave presente",
+            "key_info_fix": "Destacar información clave",
+            "clarity_score": 3,
+            "clarity_evidence": "Claridad aceptable",
+            "clarity_fix": "Mejorar claridad",
+            "spelling_style_score": 3,
+            "spelling_style_evidence": "Estilo y ortografía correctos",
+            "spelling_style_fix": "Refinar estilo",
+            "concrete_corrections": [],
+            "reorder_suggestion": ""
+        },
+        "roles_sugeridos": [],
+        "plan_accion": [],
+        "herramientas_utiles": [],
+        "recursos_adicionales": [],
+        "proximos_pasos": []
+    }
+    
+    # Mapear campos del modelo a la estructura estándar
+    if isinstance(r, dict):
+        # Resumen ejecutivo
+        shaped["resumen_ejecutivo"] = (
+            r.get("summary") or 
+            r.get("executive_summary") or 
+            r.get("resumen") or 
+            "Resumen del perfil profesional generado por IA"
+        )
+        
+        # Análisis de perfil
+        shaped["analisis_perfil"] = (
+            r.get("profile_analysis") or 
+            r.get("profile_summary") or 
+            r.get("perfil_analisis") or 
+            "Análisis del perfil profesional"
+        )
+        
+        # Evaluación del CV
+        shaped["evaluacion_cv"] = (
+            r.get("cv_analysis") or 
+            r.get("cv_evaluation") or 
+            r.get("evaluacion_cv") or 
+            "Evaluación del currículum vitae"
+        )
+        
+        # Fortalezas clave
+        strengths = r.get("strengths") or r.get("fortalezas") or r.get("key_strengths") or []
+        if isinstance(strengths, list):
+            shaped["fortalezas_clave"] = strengths
+        elif isinstance(strengths, str):
+            shaped["fortalezas_clave"] = [strengths]
+        
+        # Áreas de mejora
+        improvements = r.get("improvement_areas") or r.get("areas_mejora") or r.get("weaknesses") or []
+        if isinstance(improvements, list):
+            shaped["areas_mejora"] = improvements
+        elif isinstance(improvements, str):
+            shaped["areas_mejora"] = [improvements]
+        
+        # Diagnóstico del CV (sección 6 - tabla 1-5)
+        cv_diagnostic = r.get("cv_diagnostic") or r.get("diagnostico_cv") or {}
+        if isinstance(cv_diagnostic, dict):
+            # Mapear campos del diagnóstico
+            for field in ["structure_score", "coherence_score", "key_info_score", "clarity_score", "spelling_style_score"]:
+                if field in cv_diagnostic and isinstance(cv_diagnostic[field], (int, float)):
+                    shaped["diagnostico_cv"][field] = max(1, min(5, int(cv_diagnostic[field])))
+            
+            # Mapear campos de evidencia y correcciones
+            evidence_fields = ["evidence", "coherence_evidence", "key_info_evidence", "clarity_evidence", "spelling_style_evidence"]
+            fix_fields = ["fix", "coherence_fix", "key_info_fix", "clarity_fix", "spelling_style_fix"]
+            
+            for i, (ev_field, fix_field) in enumerate(zip(evidence_fields, fix_fields)):
+                if ev_field in cv_diagnostic:
+                    shaped["diagnostico_cv"][ev_field] = str(cv_diagnostic[ev_field])
+                if fix_field in cv_diagnostic:
+                    shaped["diagnostico_cv"][fix_field] = str(cv_diagnostic[fix_field])
+            
+            # Correcciones concretas y sugerencias de reordenamiento
+            if "concrete_corrections" in cv_diagnostic:
+                corrections = cv_diagnostic["concrete_corrections"]
+                if isinstance(corrections, list):
+                    shaped["diagnostico_cv"]["concrete_corrections"] = corrections
+                elif isinstance(corrections, str):
+                    shaped["diagnostico_cv"]["concrete_corrections"] = [corrections]
+            
+            if "reorder_suggestion" in cv_diagnostic:
+                shaped["diagnostico_cv"]["reorder_suggestion"] = str(cv_diagnostic["reorder_suggestion"])
+        
+        # Roles sugeridos
+        roles = r.get("suggested_roles") or r.get("roles_sugeridos") or r.get("job_suggestions") or []
+        if isinstance(roles, list):
+            shaped["roles_sugeridos"] = roles
+        elif isinstance(roles, str):
+            shaped["roles_sugeridos"] = [roles]
+        
+        # Plan de acción
+        action_plan = r.get("action_plan") or r.get("plan_accion") or r.get("next_steps") or []
+        if isinstance(action_plan, list):
+            shaped["plan_accion"] = action_plan
+        elif isinstance(action_plan, str):
+            shaped["plan_accion"] = [action_plan]
+        
+        # Herramientas útiles
+        tools = r.get("useful_tools") or r.get("herramientas_utiles") or r.get("tools") or []
+        if isinstance(tools, list):
+            shaped["herramientas_utiles"] = tools
+        elif isinstance(tools, str):
+            shaped["herramientas_utiles"] = [tools]
+        
+        # Recursos adicionales
+        resources = r.get("additional_resources") or r.get("recursos_adicionales") or r.get("resources") or []
+        if isinstance(resources, list):
+            shaped["recursos_adicionales"] = resources
+        elif isinstance(resources, str):
+            shaped["recursos_adicionales"] = [resources]
+        
+        # Próximos pasos
+        next_steps = r.get("next_steps") or r.get("proximos_pasos") or r.get("action_items") or []
+        if isinstance(next_steps, list):
+            shaped["proximos_pasos"] = next_steps
+        elif isinstance(next_steps, str):
+            shaped["proximos_pasos"] = [next_steps]
+    
+    return shaped
+
+
 @app.post("/api/informe-ia", response_model=ReportResponse)
 async def generate_ia_report(request: EmployabilityReportRequest):
     """Genera un informe profesional de empleabilidad con IA"""
@@ -640,7 +785,14 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             avg_score = employability_score
 
         # Adjuntar análisis de CV si se subió durante el flujo (/api/pdf/analyze-cv)
-        final_recommendations = professional_report.get("recommendations", {}) if isinstance(professional_report, dict) else {}
+        # Usar el adaptador para convertir la salida del modelo a las 13 secciones estándar
+        if isinstance(professional_report, dict):
+            shaped = shape_report_for_ui(professional_report)
+        else:
+            shaped = shape_report_for_ui({})
+        
+        # Mantener compatibilidad con el frontend actual usando final_recommendations
+        final_recommendations = shaped
         try:
             # Si existe un campo cvAnalysis enriquecido en el informe devuelto por IA, úsalo; si no, conservar el del request
             enriched_cv = None
@@ -1738,6 +1890,14 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
                 logger.info(f"Iniciando análisis de documento con modelo '{model_id}'...")
                 poller = client.begin_analyze_document(model_id, document)
                 result = poller.result()
+                
+                # (Opcional para depurar): loguea los campos que te devuelve el modelo
+                try:
+                    if getattr(result, "documents", None):
+                        for k, v in result.documents[0].fields.items():
+                            logger.info(f"[cv-extractor] {k} = {_field_value(v)} (conf={getattr(v,'confidence',None)})")
+                except Exception:
+                    pass
                 
                 # --- NUEVO: si es tu modelo custom, mapeamos sus campos ---
                 try:
