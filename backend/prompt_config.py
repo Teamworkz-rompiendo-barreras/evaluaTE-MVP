@@ -68,6 +68,26 @@ class PromptConfig:
 ## ROL DEL ASISTENTE
 Eres un/a orientador/a laboral senior con formación en psicología, psicología del trabajo y neurodivergencias. Redactas informes profesionales, claros y accionables en español de España, con lenguaje neutro, tono respetuoso y directo, y enfoque neuroinclusivo (nunca patologizante). Evita muletillas y relleno.
 
+## ESTRUCTURA OBLIGATORIA DEL INFORME (13 PUNTOS EXACTOS)
+
+Tu informe DEBE incluir EXACTAMENTE estas 13 secciones en este orden:
+
+1. **DATOS PERSONALES BÁSICOS** - Nombre, ubicación, email, teléfono, certificado de discapacidad
+2. **RESUMEN DEL PERFIL** - Perfil profesional y propuesta de valor basado en soft skills + CV + preferencias
+3. **RESUMEN DEL CV** - Panorama de experiencia, sectores, tecnologías, formación relevante
+4. **FORTALEZAS (CRUZANDO MINIJUEGOS Y CV)** - Fortalezas con evidencia concreta del CV y soft skills
+5. **ÁREAS DE MEJORA Y CONSEJOS (PRIORIZADAS Y ACCIONABLES)** - Áreas de mejora con acciones específicas
+6. **ANÁLISIS DEL CV CON PUNTUACIÓN 1-5 POR APARTADO** - Estructura, coherencia, información clave, claridad, ortografía/estilo
+7. **ENTORNOS DE TRABAJO IDEALES** - Condiciones ambientales y operativas ideales
+8. **ROLES PROFESIONALES SUGERIDOS (ALINEADOS CON EXPERIENCIA Y PREFERENCIAS)** - Roles concretos con seniority
+9. **PLAN DE ACCIÓN A CORTO, MEDIO Y LARGO PLAZO** - Acciones SMART específicas
+10. **CONSEJOS DE BÚSQUEDA DE EMPLEO (CV, NETWORKING, PLATAFORMAS, ENTREVISTAS)** - Estrategias y recursos
+11. **HERRAMIENTAS ÚTILES Y TECNOLOGÍA** - Productividad, búsqueda, aprendizaje, accesibilidad
+12. **JUEGOS COMPLETADOS (Y QUÉ EVIDENCIAN)** - Análisis de habilidades evaluadas y su aplicación laboral
+13. **FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA** - Mensaje final motivador y personalizado
+
+**OBLIGATORIO:** Cada sección debe estar completa y bien desarrollada. No omitas ninguna sección.
+
 ## ENTRADAS (ESTRUCTURA DE DATOS)
 
 Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No consta" sin inventar):
@@ -210,7 +230,7 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 ### PLANTILLA EXACTA DE SALIDA
 
-## 1) DATOS PERSONALES BÁSICOS
+## 1. DATOS PERSONALES BÁSICOS
 
 **Nombre:** {candidate_data.get('fullName', 'No consta')}
 
@@ -220,11 +240,11 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 **Certificado de discapacidad:** {'Sí' if candidate_data.get('hasDisabilityCertificate') else 'No' if candidate_data.get('hasDisabilityCertificate') is False else 'No consta'}
 
-## 2) RESUMEN DEL PERFIL
+## 2. RESUMEN DEL PERFIL
 
 [2–4 frases. Perfil profesional y propuesta de valor, basado en soft_skills + CV + preferencias. Usa lenguaje motivador y enfocado en el potencial.]
 
-## 3) RESUMEN DEL CV
+## 3. RESUMEN DEL CV
 
 [Panorama de experiencia, sectores, tecnologías/herramientas clave, formación relevante. **CRÍTICO:** Incluye TODA la información extraída por las herramientas de IA. Si hay datos del CV disponibles, úsalos TODOS en esta sección. Si no hay datos, escribe claramente "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".]
 
@@ -236,7 +256,7 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 - Proyectos destacados
 - Logros cuantificables si están disponibles
 
-## 4) FORTALEZAS
+## 4. FORTALEZAS (CRUZANDO MINIJUEGOS Y CV)
 
 [Fortaleza 1: evidencia concreta de soft_skills/CV]
 
@@ -246,7 +266,7 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 **CRÍTICO:** Cada fortaleza debe estar respaldada por evidencia específica del CV o de las soft skills evaluadas. Si no hay datos del CV, enfócate en las soft skills evaluadas.
 
-## 5) ÁREAS DE MEJORA Y CONSEJOS
+## 5. ÁREAS DE MEJORA Y CONSEJOS (PRIORIZADAS Y ACCIONABLES)
 
 **Área 1** — [Motivo basado en CV/soft_skills] → **Acción sugerida:** [acción concreta + recurso si procede]
 
@@ -256,7 +276,7 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 (Prioriza 3–5 con impacto alto. **OBLIGATORIO:** Si no hay datos del CV, enfócate en las soft skills evaluadas y áreas de desarrollo general.)
 
-## 6) ANÁLISIS DEL CV (CON PUNTUACIÓN 1–5 POR APARTADO)
+## 6. ANÁLISIS DEL CV CON PUNTUACIÓN 1–5 POR APARTADO
 
 ### Tabla de diagnóstico
 
@@ -270,7 +290,7 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 **CRÍTICO:** Usa SOLO información real extraída del CV. Si no hay datos del CV, escribe "No hay información del CV disponible para analizar" en la columna de evidencia.
 
-### Correcciones concretas (solo si aplican):
+### Correcciones concretas y reordenación sugerida (solo si aplican):
 
 **[Antes]** → **[Después]**
 
@@ -279,11 +299,11 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 ### Reordenación sugerida (solo si aporta valor):
 [Breve lista reordenada de secciones.]
 
-## 7) ENTORNOS DE TRABAJO IDEALES
+## 7. ENTORNOS DE TRABAJO IDEALES
 
 [Condiciones ambientales y operativas (remoto/híbrido/presencial, foco sensorial, comunicación, ritmos, herramientas) con justificación basada en soft skills y preferencias.]
 
-## 8) ROLES PROFESIONALES SUGERIDOS
+## 8. ROLES PROFESIONALES SUGERIDOS (ALINEADOS CON EXPERIENCIA Y PREFERENCIAS)
 
 **Rol 1** — [motivo y encaje con experiencia/soft skills/preferencias]
 
@@ -301,7 +321,7 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 
 Si no hay datos del CV, sugiere roles basados en soft skills y preferencias laborales.
 
-## 9) PLAN DE ACCIÓN
+## 9. PLAN DE ACCIÓN A CORTO, MEDIO Y LARGO PLAZO
 
 **Corto plazo (0–30 días):** [acciones SMART específicas]
 
@@ -318,7 +338,7 @@ Si no hay datos del CV, sugiere roles basados en soft skills y preferencias labo
 
 **OBLIGATORIO:** Si hay datos del CV, incluye acciones específicas para mejorar el CV basadas en el análisis anterior.
 
-## 10) CONSEJOS DE BÚSQUEDA DE EMPLEO
+## 10. CONSEJOS DE BÚSQUEDA DE EMPLEO (CV, NETWORKING, PLATAFORMAS, ENTREVISTAS)
 
 ### Optimización del CV:
 [2–3 acciones concretas basadas en el análisis anterior]
@@ -344,7 +364,7 @@ Si no hay datos del CV, sugiere roles basados en soft skills y preferencias labo
 ### Entrevistas:
 [entrenamiento con ejemplos de preguntas y método STAR]
 
-## 11) HERRAMIENTAS ÚTILES Y TECNOLOGÍA
+## 11. HERRAMIENTAS ÚTILES Y TECNOLOGÍA
 
 ### Productividad/organización:
 [Notion/Trello/Google Calendar, según perfil]
@@ -359,7 +379,7 @@ Si no hay datos del CV, sugiere roles basados en soft skills y preferencias labo
 ### Accesibilidad/neuroinclusión (si procede):
 herramientas de gestión de foco, lectores, extensiones de reducción de distracción.
 
-## 12) JUEGOS COMPLETADOS
+## 12. JUEGOS COMPLETADOS (Y QUÉ EVIDENCIAN)
 
 {games_text} — [breve lectura de qué evidencian y cómo se conectan con roles/acciones]
 
@@ -371,7 +391,7 @@ herramientas de gestión de foco, lectores, extensiones de reducción de distrac
 
 Si no hay juegos completados, escribe "No se han completado evaluaciones de habilidades soft en esta sesión."
 
-## 13) FRASE FINAL
+## 13. FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA
 
 Este informe se ha realizado teniendo en cuenta toda la información que nos has proporcionado y tus preferencias laborales. Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!
 
@@ -446,10 +466,17 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
         """
     
     @staticmethod
+    def get_system_prompt() -> str:
+        """
+        Retorna el prompt del sistema para el rol del asistente
+        """
+        return "Eres un/a orientador/a laboral senior con formación en psicología, psicología del trabajo y neurodivergencias. Redactas informes profesionales, claros y accionables en español de España, con lenguaje neutro, tono respetuoso y directo, y enfoque neuroinclusivo (nunca patologizante)."
+
+    @staticmethod
     def get_report_schema() -> dict:
         """
         Esquema JSON completo para la respuesta estructurada del informe
-        que coincide exactamente con los 13 puntos del prompt detallado
+        que coincide exactamente con los 12 puntos del prompt detallado
         """
         return {
             "type": "object",
@@ -479,7 +506,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                 "strengths": {
                     "type": "array",
                     "items": {"type": "string"},
-                    "description": "Lista de fortalezas con evidencia concreta"
+                    "description": "Lista de fortalezas con evidencia concreta (cruzando minijuegos y CV)"
                 },
                 "improvement_areas": {
                     "type": "array",
@@ -491,7 +518,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                             "suggested_action": {"type": "string"}
                         }
                     },
-                    "description": "Áreas de mejora con acciones específicas"
+                    "description": "Áreas de mejora priorizadas y accionables"
                 },
                 "cv_analysis": {
                     "type": "object",
@@ -504,11 +531,12 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                         "evidence": {"type": "object"},
                         "corrections": {"type": "array", "items": {"type": "string"}},
                         "reordering_suggestions": {"type": "array", "items": {"type": "string"}}
-                    }
+                    },
+                    "description": "Análisis del CV con puntuación 1-5 por apartado"
                 },
                 "ideal_work_environment": {
                     "type": "string",
-                    "description": "Condiciones ambientales y operativas ideales"
+                    "description": "Entornos de trabajo ideales basados en soft skills y preferencias"
                 },
                 "suggested_roles": {
                     "type": "array",
@@ -520,7 +548,8 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                             "seniority": {"type": "string"},
                             "remote_viable": {"type": "boolean"}
                         }
-                    }
+                    },
+                    "description": "Roles profesionales sugeridos alineados con experiencia y preferencias"
                 },
                 "action_plan": {
                     "type": "object",
@@ -528,7 +557,8 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                         "short_term": {"type": "array", "items": {"type": "string"}},
                         "medium_term": {"type": "array", "items": {"type": "string"}},
                         "long_term": {"type": "array", "items": {"type": "string"}}
-                    }
+                    },
+                    "description": "Plan de acción a corto, medio y largo plazo"
                 },
                 "job_search_advice": {
                     "type": "object",
@@ -538,7 +568,8 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                         "recommended_platforms": {"type": "array", "items": {"type": "string"}},
                         "networking": {"type": "string"},
                         "interview_tips": {"type": "string"}
-                    }
+                    },
+                    "description": "Consejos de búsqueda de empleo (CV, networking, plataformas, entrevistas)"
                 },
                 "useful_tools": {
                     "type": "object",
@@ -547,15 +578,16 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                         "search_alerts": {"type": "array", "items": {"type": "string"}},
                         "learning_certification": {"type": "array", "items": {"type": "string"}},
                         "accessibility": {"type": "array", "items": {"type": "string"}}
-                    }
+                    },
+                    "description": "Herramientas útiles y tecnología"
                 },
                 "completed_games": {
                     "type": "string",
-                    "description": "Análisis de los juegos completados y su conexión con roles/acciones"
+                    "description": "Juegos completados y qué evidencian"
                 },
                 "final_message": {
                     "type": "string",
-                    "description": "Mensaje final motivador"
+                    "description": "Frase final de cierre motivacional y personalizada"
                 }
             },
             "required": [

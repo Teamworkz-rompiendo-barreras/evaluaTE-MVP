@@ -1,5 +1,18 @@
 # backend/generate_report.py
 
+"""
+Módulo de generación de informes de empleabilidad
+
+IMPORTANTE: Este módulo NO contiene prompts hardcodeados. Todos los prompts están centralizados
+en prompt_config.py para evitar duplicación y facilitar el mantenimiento.
+
+- generar_informe_prueba(): Genera informe de prueba usando el prompt centralizado
+- generar_informe(): Genera informe completo usando Azure OpenAI con prompt centralizado
+- cargar_feedback_previo(): Carga feedback previo de usuarios
+
+Todos los prompts se obtienen de PromptConfig.get_employability_report_prompt()
+"""
+
 import os
 import json
 import logging
@@ -53,8 +66,31 @@ def generar_informe_prueba(
     Genera un informe de prueba profesional cuando Azure OpenAI no está configurado
     IMPORTANTE: Los minijuegos y CV son obligatorios para todos los candidatos
     """
+    
+    # Importar PromptConfig para usar el prompt centralizado
+    try:
+        from .prompt_config import PromptConfig
+    except ImportError:
+        from prompt_config import PromptConfig
+    
+    # Usar el prompt centralizado para mantener consistencia
+    prompt = PromptConfig.get_employability_report_prompt(
+        candidate_data=candidate_data,
+        soft_skills_data=soft_skills_data,
+        cv_data=cv_data,
+        job_preferences_data=job_preferences_data,
+        employability_score=employability_score,
+        level=level,
+        completed_games=completed_games,
+        languages_data=languages_data
+    )
+    
+    # Generar informe de prueba basado en el prompt centralizado
+    # pero adaptado para modo de prueba (sin llamar a Azure OpenAI)
     return f"""
 # 📋 Informe de Empleabilidad Profesional - MODO PRUEBA
+
+**NOTA IMPORTANTE:** Este es un informe de prueba generado porque Azure OpenAI no está configurado. Para obtener un análisis completo y personalizado con inteligencia artificial, sigue las instrucciones de configuración.
 
 ## 1. DATOS PERSONALES BÁSICOS
 - **Nombre**: {candidate_data.get('fullName', 'No consta')}
@@ -72,27 +108,17 @@ Perfil profesional con puntuación de empleabilidad de {employability_score}/100
 - **Idiomas**: {len(cv_data.get('sections', {}).get('languages', []))} idiomas identificados
 - **Software/Herramientas**: {len(cv_data.get('sections', {}).get('software', []))} herramientas detectadas
 
-## 4. FORTALEZAS
+## 4. FORTALEZAS (CRUZANDO MINIJUEGOS Y CV)
 - **Habilidades soft evaluadas**: {len(soft_skills_data)} competencias evaluadas en minijuegos
 - **Competencias identificadas**: Basadas en CV y evaluación de minijuegos
 - **Puntos fuertes**: Análisis disponible de soft skills y experiencia
 
-## 5. ÁREAS DE MEJORA Y CONSEJOS
+## 5. ÁREAS DE MEJORA Y CONSEJOS (PRIORIZADAS Y ACCIONABLES)
 - **Oportunidades de desarrollo**: Basadas en resultados de minijuegos y análisis de CV
 - **Consejos específicos**: Disponibles tras configuración completa de IA
 - **Enfoque constructivo**: Implementado en el sistema
 
-## 6. ROLES PROFESIONALES SUGERIDOS
-- **Puestos compatibles**: Análisis disponible según CV y preferencias
-- **Sectores**: {', '.join(job_preferences_data.get('desired_sectors', ['No especificado']))}
-- **Modalidad de trabajo**: {', '.join(job_preferences_data.get('work_modes', ['No especificado']))}
-
-## 7. CONSEJOS PARA LA BÚSQUEDA DE EMPLEO
-- **Estrategias activas**: Recomendaciones disponibles
-- **Plataformas de empleo**: LinkedIn, InfoJobs, Empléate
-{'**Plataformas inclusivas**: Inserta Empleo, Plena Inclusión' if candidate_data.get('hasDisabilityCertificate') else ''}
-
-## 8. ANÁLISIS DE CV
+## 6. ANÁLISIS DEL CV CON PUNTUACIÓN 1–5 POR APARTADO
 **Estructura:** ★★★☆☆ (Regular) - Análisis básico disponible
 **Claridad:** ★★★☆☆ (Regular) - Información estructurada
 **Coherencia:** ★★★☆☆ (Regular) - Datos organizados
@@ -101,7 +127,17 @@ Perfil profesional con puntuación de empleabilidad de {employability_score}/100
 
 *Consejos detallados disponibles tras configuración de IA completa.*
 
-## 9. PLAN DE ACCIÓN
+## 7. ENTORNOS DE TRABAJO IDEALES
+- **Modalidad preferida**: {', '.join(job_preferences_data.get('work_modes', ['No especificado']))}
+- **Disponibilidad**: {job_preferences_data.get('availability', 'No especificado')}
+- **Relocalización**: {'Sí' if job_preferences_data.get('relocation') else 'No' if job_preferences_data.get('relocation') is False else 'No consta'}
+
+## 8. ROLES PROFESIONALES SUGERIDOS (ALINEADOS CON EXPERIENCIA Y PREFERENCIAS)
+- **Puestos compatibles**: Análisis disponible según CV y preferencias
+- **Sectores**: {', '.join(job_preferences_data.get('desired_sectors', ['No especificado']))}
+- **Modalidad de trabajo**: {', '.join(job_preferences_data.get('work_modes', ['No especificado']))}
+
+## 9. PLAN DE ACCIÓN A CORTO, MEDIO Y LARGO PLAZO
 **Corto plazo (0-30 días):**
 - Configurar Azure OpenAI para análisis completo
 - Probar funcionalidades de IA
@@ -117,15 +153,20 @@ Perfil profesional con puntuación de empleabilidad de {employability_score}/100
 - Integrar análisis avanzado
 - Desarrollar recomendaciones personalizadas
 
-## 10. HERRAMIENTAS ÚTILES Y TECNOLOGÍA
+## 10. CONSEJOS DE BÚSQUEDA DE EMPLEO (CV, NETWORKING, PLATAFORMAS, ENTREVISTAS)
+- **Estrategias activas**: Recomendaciones disponibles
+- **Plataformas de empleo**: LinkedIn, InfoJobs, Empléate
+{'**Plataformas inclusivas**: Inserta Empleo, Plena Inclusión' if candidate_data.get('hasDisabilityCertificate') else ''}
+
+## 11. HERRAMIENTAS ÚTILES Y TECNOLOGÍA
 - **Plataformas de formación**: Coursera, edX, Google Digital
 - **Herramientas tecnológicas**: Integradas
 - **Recursos profesionales**: Accesibles
 
-## 11. JUEGOS COMPLETADOS
+## 12. JUEGOS COMPLETADOS (Y QUÉ EVIDENCIAN)
 {', '.join(completed_games) if completed_games else 'No consta'} - Evaluación de soft skills completada
 
-## 12. MENSAJE FINAL
+## 13. FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA
 Este informe se ha realizado teniendo en cuenta toda la información que nos has proporcionado y tus preferencias laborales. Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!
 
 ---
@@ -152,12 +193,12 @@ def generar_informe(
     IMPORTANTE: Los minijuegos y CV son obligatorios para todos los candidatos
     """
     
-            if not AZURE_OPENAI_CONFIGURED:
-            logger.warning("⚠️ Azure OpenAI no configurado - usando modo de prueba")
-            return generar_informe_prueba(
-                candidate_data, soft_skills_data, cv_data, job_preferences_data,
-                employability_score, level, completed_games, languages_data
-            )
+    if not AZURE_OPENAI_CONFIGURED:
+        logger.warning("⚠️ Azure OpenAI no configurado - usando modo de prueba")
+        return generar_informe_prueba(
+            candidate_data, soft_skills_data, cv_data, job_preferences_data,
+            employability_score, level, completed_games, languages_data
+        )
     
     try:
         # Verificar que las variables no sean None
@@ -197,15 +238,12 @@ def generar_informe(
             completed_games=completed_games,
             languages_data=languages_data
         )
-- Incluir plataformas de empleo inclusivo SOLO si hay certificado de discapacidad
-- Mantener la estructura exacta de 11 apartados
-"""
         
         # Llamar a Azure OpenAI
         response = client.chat.completions.create(
             model=DEPLOYMENT,
             messages=[
-                {"role": "system", "content": "Eres un/a orientador/a laboral senior con formación en psicología, psicología del trabajo y neurodivergencias. Redactas informes profesionales, claros y accionables en español de España, con lenguaje neutro, tono respetuoso y directo, y enfoque neuroinclusivo (nunca patologizante)."},
+                {"role": "system", "content": PromptConfig.get_system_prompt()},
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
