@@ -126,35 +126,30 @@ def _allow_null(t):
 def harden_schema(node: dict, _depth: int = 0) -> dict:
     """
     Sanitiza un JSON Schema para Azure OpenAI strict mode:
-    1. Cierra todos los objetos con additionalProperties: false
-    2. Hace required = todas las propiedades (evita "Missing 'name'/'emails'/...")
-    3. Permite null en tipos para campos opcionales (pero NO en la raíz)
+    1) Cierra todos los objetos con additionalProperties: false.
+    2) Si el nodo no define "required", lo pone a todas las props (pero si ya define "required", se respeta).
+    3) NO introduce tipos con 'null' (evitamos que el modelo devuelva null).
     """
     if not isinstance(node, dict):
         return node
 
     t = node.get("type")
 
-    # Objetos: cerrar y forzar required = todas las props
     if t == "object":
         props = node.get("properties", {}) or {}
-        node.setdefault("additionalProperties", False)
-        node["required"] = list(props.keys())  # <= evita "Missing 'name'/'emails'/...
-        # Recorremos propiedades incrementando profundidad
+        node["additionalProperties"] = False
+        # Respetar 'required' existente; si no hay, las hacemos todas requeridas
+        if "required" not in node:
+            node["required"] = list(props.keys())
+        # Recorremos propiedades
         for k, v in list(props.items()):
             node["properties"][k] = harden_schema(v, _depth + 1)
-        # 👇 En la raíz mantenemos "object" a pelo; en niveles internos permitimos null
-        node["type"] = "object" if _depth == 0 else _allow_null("object")
 
     elif t == "array":
-        if "items" in node:
+        if "items" in node and isinstance(node["items"], dict):
             node["items"] = harden_schema(node["items"], _depth + 1)
-        node["type"] = "array" if _depth == 0 else _allow_null("array")
 
-    elif t in ("string", "number", "integer", "boolean"):
-        node["type"] = t if _depth == 0 else _allow_null(t)
-
-    # Combinadores, si los hubiera
+    # Combinadores
     for key in ("oneOf", "anyOf", "allOf"):
         if key in node and isinstance(node[key], list):
             node[key] = [harden_schema(x, _depth + 1) if isinstance(x, dict) else x for x in node[key]]
@@ -1185,7 +1180,10 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
 
         chat_kwargs = {
             "model": deployment_name,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [
+                {"role": "system", "content": PromptConfig.get_system_prompt()},
+                {"role": "user", "content": prompt},
+            ],
             "temperature": 0.3,
             "max_tokens": 4000,  # Aumentado para el informe más detallado
             "timeout": 120,  # Aumentado para el análisis más complejo
@@ -1215,23 +1213,27 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         # Limpiar la respuesta antes de parsear
         content_to_parse = raw_content.strip()
         
-        # Buscar el JSON dentro de la respuesta
-        import re
-        
-        # Primero, intentar extraer contenido entre ```json y ```
-        json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
-        if json_code_block_match:
-            content_to_parse = json_code_block_match.group(1).strip()
-            logger.info(f"JSON extraído de bloque de código para informe mejorado: {repr(content_to_parse[:200])}...")
+        # Si ya parece JSON puro, úsalo tal cual
+        if content_to_parse.strip().startswith("{") and content_to_parse.strip().endswith("}"):
+            pass  # ya está OK
         else:
-            # Si no hay bloque de código, buscar el JSON directamente
-            json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
-            if json_match:
-                content_to_parse = json_match.group(0)
-                logger.info(f"JSON extraído directamente para informe mejorado: {repr(content_to_parse[:200])}...")
+            # Buscar el JSON dentro de la respuesta
+            import re
+            
+            # Primero, intentar extraer contenido entre ```json y ```
+            json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
+            if json_code_block_match:
+                content_to_parse = json_code_block_match.group(1).strip()
+                logger.info(f"JSON extraído de bloque de código para informe mejorado: {repr(content_to_parse[:200])}...")
             else:
-                logger.error(f"No se pudo extraer JSON de la respuesta de informe mejorado: {repr(content_to_parse[:500])}")
-                raise Exception("No se encontró JSON válido en la respuesta")
+                # Si no hay bloque de código, buscar el JSON directamente
+                json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
+                if json_match:
+                    content_to_parse = json_match.group(0)
+                    logger.info(f"JSON extraído directamente para informe mejorado: {repr(content_to_parse[:200])}...")
+                else:
+                    logger.error(f"No se pudo extraer JSON de la respuesta de informe mejorado: {repr(content_to_parse[:500])}")
+                    raise Exception("No se encontró JSON válido en la respuesta")
         
         import json
         try:
@@ -2098,7 +2100,10 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
 
         chat_kwargs = {
             "model": deployment_name,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [
+                {"role": "system", "content": PromptConfig.get_system_prompt()},
+                {"role": "user", "content": prompt},
+            ],
             "temperature": 0.2,
             "max_tokens": 1500,
             "timeout": 60,
@@ -2123,18 +2128,22 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
         # Limpiar la respuesta antes de parsear
         content_to_parse = raw_content.strip()
         
-        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto o markdown)
-        import re
-        
-        # Primero, intentar extraer contenido entre ```json y ```
-        json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
-        if json_code_block_match:
-            content_to_parse = json_code_block_match.group(1).strip()
+        # Si ya parece JSON puro, úsalo tal cual
+        if content_to_parse.strip().startswith("{") and content_to_parse.strip().endswith("}"):
+            pass  # ya está OK
         else:
-            # Si no hay bloque de código, buscar el JSON directamente
-            json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
-            if json_match:
-                content_to_parse = json_match.group(0)
+            # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto o markdown)
+            import re
+            
+            # Primero, intentar extraer contenido entre ```json y ```
+            json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
+            if json_code_block_match:
+                content_to_parse = json_code_block_match.group(1).strip()
+            else:
+                # Si no hay bloque de código, buscar el JSON directamente
+                json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
+                if json_match:
+                    content_to_parse = json_match.group(0)
         
         # Parsear respuesta JSON
         import json
