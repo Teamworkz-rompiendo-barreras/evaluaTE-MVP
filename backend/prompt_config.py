@@ -1,6 +1,9 @@
 # backend/prompt_config.py
 # Configuración centralizada de prompts para EvaluaTE
 
+import json
+from datetime import datetime
+
 class PromptConfig:
     """Configuración centralizada de prompts para el sistema EvaluaTE"""
     
@@ -87,6 +90,8 @@ Tu informe DEBE incluir EXACTAMENTE estas 13 secciones en este orden:
 13. **FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA** - Mensaje final motivador y personalizado
 
 **OBLIGATORIO:** Cada sección debe estar completa y bien desarrollada. No omitas ninguna sección.
+
+**FORMATO DE RESPUESTA:** Debes responder EXCLUSIVAMENTE en formato JSON válido que siga exactamente el esquema proporcionado. NO uses markdown ni texto libre.
 
 ## ENTRADAS (ESTRUCTURA DE DATOS)
 
@@ -413,6 +418,8 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
 3. **SI NO hay datos del CV:** escribe claramente "No hay información del CV disponible"
 4. **Prioriza la información real del CV** sobre sugerencias genéricas
 5. **Conecta cada recomendación** con datos específicos del CV o soft skills
+
+**IMPORTANTE:** Responde ÚNICAMENTE en formato JSON válido. NO uses markdown, texto libre ni explicaciones adicionales. El JSON debe seguir exactamente el esquema proporcionado.
 """
         
         return prompt
@@ -597,3 +604,128 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                 "completed_games", "final_message"
             ]
         }
+    
+    @staticmethod
+    def convert_json_to_markdown_report(json_data: dict) -> str:
+        """
+        Convierte la respuesta JSON estructurada de Azure OpenAI a formato markdown legible
+        """
+        try:
+            # Extraer datos del JSON
+            personal_data = json_data.get('personal_data', {})
+            cv_analysis = json_data.get('cv_analysis', {})
+            
+            # Construir el informe en markdown
+            report = f"""# 📋 Informe de Empleabilidad Profesional
+
+## 1. DATOS PERSONALES BÁSICOS
+- **Nombre**: {personal_data.get('name', 'No consta')}
+- **Ubicación**: {personal_data.get('location', 'No consta')}
+- **Email**: {personal_data.get('email', 'No consta')}
+- **Teléfono**: {personal_data.get('phone', 'No consta')}
+- **Certificado de discapacidad**: {personal_data.get('disability_certificate', 'No consta')}
+
+## 2. RESUMEN DEL PERFIL
+{json_data.get('profile_summary', 'No disponible')}
+
+## 3. RESUMEN DEL CV
+{json_data.get('cv_summary', 'No disponible')}
+
+## 4. FORTALEZAS (CRUZANDO MINIJUEGOS Y CV)
+"""
+            
+            # Agregar fortalezas
+            strengths = json_data.get('strengths', [])
+            for strength in strengths:
+                report += f"- {strength}\n"
+            
+            report += "\n## 5. ÁREAS DE MEJORA Y CONSEJOS (PRIORIZADAS Y ACCIONABLES)\n"
+            
+            # Agregar áreas de mejora
+            improvement_areas = json_data.get('improvement_areas', [])
+            for area in improvement_areas:
+                report += f"**{area.get('area', 'Área')}** — {area.get('reason', '')} → **Acción sugerida:** {area.get('suggested_action', '')}\n\n"
+            
+            report += "## 6. ANÁLISIS DEL CV CON PUNTUACIÓN 1–5 POR APARTADO\n"
+            
+            # Agregar análisis del CV
+            if cv_analysis:
+                report += f"""
+**Estructura:** {'★' * cv_analysis.get('structure_score', 0) + '☆' * (5 - cv_analysis.get('structure_score', 0))} ({cv_analysis.get('structure_score', 0)}/5)
+**Coherencia:** {'★' * cv_analysis.get('coherence_score', 0) + '☆' * (5 - cv_analysis.get('coherence_score', 0))} ({cv_analysis.get('coherence_score', 0)}/5)
+**Información clave:** {'★' * cv_analysis.get('key_info_score', 0) + '☆' * (5 - cv_analysis.get('key_info_score', 0))} ({cv_analysis.get('key_info_score', 0)}/5)
+**Claridad:** {'★' * cv_analysis.get('clarity_score', 0) + '☆' * (5 - cv_analysis.get('clarity_score', 0))} ({cv_analysis.get('clarity_score', 0)}/5)
+**Ortografía y estilo:** {'★' * cv_analysis.get('style_score', 0) + '☆' * (5 - cv_analysis.get('style_score', 0))} ({cv_analysis.get('style_score', 0)}/5)
+"""
+            
+            report += f"""
+
+## 7. ENTORNOS DE TRABAJO IDEALES
+{json_data.get('ideal_work_environment', 'No disponible')}
+
+## 8. ROLES PROFESIONALES SUGERIDOS (ALINEADOS CON EXPERIENCIA Y PREFERENCIAS)
+"""
+            
+            # Agregar roles sugeridos
+            suggested_roles = json_data.get('suggested_roles', [])
+            for role in suggested_roles:
+                report += f"**{role.get('role', 'Rol')}** — {role.get('reason', '')} (Seniority: {role.get('seniority', 'No especificado')}, Remoto: {'Sí' if role.get('remote_viable') else 'No'})\n\n"
+            
+            report += "## 9. PLAN DE ACCIÓN A CORTO, MEDIO Y LARGO PLAZO\n"
+            
+            # Agregar plan de acción
+            action_plan = json_data.get('action_plan', {})
+            if action_plan.get('short_term'):
+                report += "**Corto plazo (0-30 días):**\n"
+                for action in action_plan['short_term']:
+                    report += f"- {action}\n"
+                report += "\n"
+            
+            if action_plan.get('medium_term'):
+                report += "**Medio plazo (1-3 meses):**\n"
+                for action in action_plan['medium_term']:
+                    report += f"- {action}\n"
+                report += "\n"
+            
+            if action_plan.get('long_term'):
+                report += "**Largo plazo (3-6+ meses):**\n"
+                for action in action_plan['long_term']:
+                    report += f"- {action}\n"
+                report += "\n"
+            
+            report += "## 10. CONSEJOS DE BÚSQUEDA DE EMPLEO (CV, NETWORKING, PLATAFORMAS, ENTREVISTAS)\n"
+            
+            # Agregar consejos de búsqueda
+            job_search_advice = json_data.get('job_search_advice', {})
+            if job_search_advice.get('cv_optimization'):
+                report += "**Optimización del CV:**\n"
+                for tip in job_search_advice['cv_optimization']:
+                    report += f"- {tip}\n"
+                report += "\n"
+            
+            if job_search_advice.get('recommended_platforms'):
+                report += "**Plataformas recomendadas:**\n"
+                for platform in job_search_advice['recommended_platforms']:
+                    report += f"- {platform}\n"
+                report += "\n"
+            
+            report += f"""
+## 11. HERRAMIENTAS ÚTILES Y TECNOLOGÍA
+{json_data.get('useful_tools', 'No disponible')}
+
+## 12. JUEGOS COMPLETADOS (Y QUÉ EVIDENCIAN)
+{json_data.get('completed_games', 'No disponible')}
+
+## 13. FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA
+{json_data.get('final_message', 'No disponible')}
+
+---
+
+**Fecha de generación:** {datetime.now().strftime('%d/%m/%Y a las %H:%M')}
+"""
+            
+            return report
+            
+        except Exception as e:
+            # Si hay algún error en la conversión, devolver el JSON como string
+            return f"Error convirtiendo respuesta JSON a markdown: {str(e)}\n\nRespuesta original:\n{json.dumps(json_data, indent=2, ensure_ascii=False)}"

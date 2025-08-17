@@ -247,14 +247,37 @@ def generar_informe(
                 {"role": "user", "content": prompt}
             ],
             temperature=0.3,
-            max_tokens=3000
+            max_tokens=3000,
+            response_format={
+                "type": "json_object",
+                "schema": PromptConfig.get_report_schema()
+            }
         )
         
         content = response.choices[0].message.content
-        return content if content else generar_informe_prueba(
-            candidate_data, soft_skills_data, cv_data, job_preferences_data,
-            employability_score, level, completed_games, languages_data
-        )
+        
+        # Si la respuesta es JSON, convertirla a formato de informe legible
+        if content and content.strip().startswith('{'):
+            try:
+                # Parsear la respuesta JSON
+                json_response = json.loads(content)
+                
+                # Convertir el JSON estructurado a formato de informe markdown
+                return PromptConfig.convert_json_to_markdown_report(json_response)
+                
+            except json.JSONDecodeError as e:
+                logger.warning(f"⚠️ Error parseando respuesta JSON: {str(e)}")
+                # Si falla el parsing, usar la respuesta raw
+                return content if content else generar_informe_prueba(
+                    candidate_data, soft_skills_data, cv_data, job_preferences_data,
+                    employability_score, level, completed_games, languages_data
+                )
+        else:
+            # Si no es JSON, usar la respuesta directamente
+            return content if content else generar_informe_prueba(
+                candidate_data, soft_skills_data, cv_data, job_preferences_data,
+                employability_score, level, completed_games, languages_data
+            )
         
     except Exception as e:
         logger.error(f"❌ Error generando informe con Azure OpenAI: {str(e)}")
