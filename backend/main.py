@@ -881,7 +881,8 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     soft_skills_data = []
     for skill in request.softSkills:
         # Convertir level a puntuación numérica para el análisis
-        level_score = {"Bajo": 30, "Medio": 60, "Alto": 90}.get(skill.level, 50)
+        level_norm = (skill.level or "").strip().lower()
+        level_score = {"bajo": 35, "medio": 60, "alto": 85}.get(level_norm, 50)
         soft_skills_data.append({
             "skill": skill.skill,
             "score": level_score,

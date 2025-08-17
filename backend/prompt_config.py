@@ -43,13 +43,13 @@ class PromptConfig:
         for skill in soft_skills_data:
             skill_name = skill.get("skill", "")
             skill_score = skill.get("score", 0)
-            skill_level = skill.get("level", "")
+            skill_level = (skill.get("level", "") or "").lower()
             
             # Convertir level a lenguaje motivador
             level_text = {
-                "Bajo": f"con puntuación {skill_score}/100 y oportunidades de mejora",
-                "Medio": f"con puntuación {skill_score}/100 y buen desarrollo",
-                "Alto": f"con puntuación {skill_score}/100 y destacado rendimiento"
+                "bajo": f"con puntuación {skill_score}/100 y oportunidades de mejora",
+                "medio": f"con puntuación {skill_score}/100 y buen desarrollo",
+                "alto": f"con puntuación {skill_score}/100 y destacado rendimiento"
             }.get(skill_level, f"con puntuación {skill_score}/100")
             
             soft_skills_text += f"- {skill_name}: {level_text}\n"
@@ -58,9 +58,9 @@ class PromptConfig:
         languages_text = ""
         for lang in languages_data:
             language = lang.get("language", "")
-            level = lang.get("level", "")
-            if language and level:
-                languages_text += f"- {language}: {level}\n"
+            lang_level = lang.get("level", "")
+            if language and lang_level:
+                languages_text += f"- {language}: {lang_level}\n"
         
         # Preparar juegos completados
         games_text = ", ".join(completed_games) if completed_games else "No consta"
@@ -235,28 +235,21 @@ Ofrece plataformas de empleo, cursos y herramientas relevantes para su perfil.
 Devuelve ÚNICAMENTE un JSON con estas claves y tipos:
 
 - summary: string
-- personal_data: { name:string, location:string, email:string, phone:string, disability_certificate:string }
+- personal_data: objeto con campos (name:string, location:string, email:string, phone:string, disability_certificate:string)
 - profile_summary: string
 - cv_summary: string
-- strengths: string[]
-- improvement_areas: { area:string, reason:string, suggested_action:string }[]
-- cv_analysis: {
-    structure_score:int(1..5), coherence_score:int(1..5), key_info_score:int(1..5),
-    clarity_score:int(1..5), style_score:int(1..5),
-    evidence: { structure:string, coherence:string, key_info:string, clarity:string, style:string },
-    corrections: string[], reordering_suggestions: string[]
-  }
+- strengths: array[string]
+- improvement_areas: array de objetos (area:string, reason:string, suggested_action:string)
+- cv_analysis: objeto con campos:
+  - structure_score:int(1..5), coherence_score:int(1..5), key_info_score:int(1..5), clarity_score:int(1..5), style_score:int(1..5)
+  - evidence: objeto con (structure:string, coherence:string, key_info:string, clarity:string, style:string)
+  - corrections: array[string], reordering_suggestions: array[string]
 - ideal_work_environment: string
-- suggested_roles: { role:string, reason:string, seniority:string, remote_viable:boolean }[]
-- action_plan: { short_term:string[], medium_term:string[], long_term:string[] }
-- job_search_advice: {
-    cv_optimization:string[], letters_portfolio?:string,
-    recommended_platforms:string[], networking?:string, interview_tips?:string
-  }
-- useful_tools: {
-    productivity:string[], job_search:string[], learning:string[], accessibility:string[]
-  }
-- completed_games: string[]
+- suggested_roles: array de objetos (role:string, reason:string, seniority:string, remote_viable:boolean)
+- action_plan: objeto con (short_term: array[string], medium_term: array[string], long_term: array[string])
+- job_search_advice: objeto con (cv_optimization: array[string], letters_portfolio:string opcional, recommended_platforms: array[string], networking:string opcional, interview_tips:string opcional)
+- useful_tools: objeto con (productivity: array[string], job_search: array[string], learning: array[string], accessibility: array[string])
+- completed_games: array[string]
 - final_message: string
 
 REGLAS:
