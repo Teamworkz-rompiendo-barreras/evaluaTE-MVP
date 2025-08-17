@@ -488,6 +488,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
         return {
             "name": "employability_report",
             "type": "object",
+            "additionalProperties": False,
             "properties": {
                 "summary": {
                     "type": "string",
@@ -495,6 +496,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                 },
                 "personal_data": {
                     "type": "object",
+                    "additionalProperties": False,
                     "properties": {
                         "name": {"type": "string"},
                         "location": {"type": "string"},
@@ -520,6 +522,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                     "type": "array",
                     "items": {
                         "type": "object",
+                        "additionalProperties": False,
                         "properties": {
                             "area": {"type": "string"},
                             "reason": {"type": "string"},
@@ -530,13 +533,14 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                 },
                 "cv_analysis": {
                     "type": "object",
+                    "additionalProperties": False,
                     "properties": {
                         "structure_score": {"type": "integer", "minimum": 1, "maximum": 5},
                         "coherence_score": {"type": "integer", "minimum": 1, "maximum": 5},
                         "key_info_score": {"type": "integer", "minimum": 1, "maximum": 5},
                         "clarity_score": {"type": "integer", "minimum": 1, "maximum": 5},
                         "style_score": {"type": "integer", "minimum": 1, "maximum": 5},
-                        "evidence": {"type": "object"},
+                        "evidence": {"type": "object", "additionalProperties": False},
                         "corrections": {"type": "array", "items": {"type": "string"}},
                         "reordering_suggestions": {"type": "array", "items": {"type": "string"}}
                     },
@@ -550,6 +554,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                     "type": "array",
                     "items": {
                         "type": "object",
+                        "additionalProperties": False,
                         "properties": {
                             "role": {"type": "string"},
                             "reason": {"type": "string"},
@@ -561,6 +566,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                 },
                 "action_plan": {
                     "type": "object",
+                    "additionalProperties": False,
                     "properties": {
                         "short_term": {"type": "array", "items": {"type": "string"}},
                         "medium_term": {"type": "array", "items": {"type": "string"}},
@@ -570,6 +576,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                 },
                 "job_search_advice": {
                     "type": "object",
+                    "additionalProperties": False,
                     "properties": {
                         "cv_optimization": {"type": "array", "items": {"type": "string"}},
                         "cover_letters": {"type": "string"},
@@ -581,6 +588,7 @@ Este informe se ha realizado teniendo en cuenta toda la información que nos has
                 },
                 "useful_tools": {
                     "type": "object",
+                    "additionalProperties": False,
                     "properties": {
                         "productivity": {"type": "array", "items": {"type": "string"}},
                         "search_alerts": {"type": "array", "items": {"type": "string"}},

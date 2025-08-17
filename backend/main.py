@@ -115,6 +115,46 @@ def _as_json_schema_payload(schema_obj: dict, name: str = "EmployabilityReport")
         return schema_obj
     return {"name": name, "schema": schema_obj, "strict": True}
 
+def _close_schema(obj: dict) -> dict:
+    """
+    Recorre recursivamente un JSON Schema y añade `"additionalProperties": false`
+    a todos los nodos con type:"object" donde no esté definido.
+    También baja por `properties`, `items`, y combinadores (oneOf/anyOf/allOf).
+    """
+    if not isinstance(obj, dict):
+        return obj
+
+    t = obj.get("type")
+
+    # Si es objeto, ciérralo
+    if t == "object":
+        obj.setdefault("additionalProperties", False)
+        props = obj.get("properties")
+        if isinstance(props, dict):
+            for _, sub in props.items():
+                _close_schema(sub)
+
+    # Si es array, baja a items
+    if t == "array" and "items" in obj:
+        _close_schema(obj["items"])
+
+    # Combinadores
+    for k in ("oneOf", "anyOf", "allOf"):
+        if k in obj and isinstance(obj[k], list):
+            for sub in obj[k]:
+                _close_schema(sub)
+
+    # También recorre cualquier sub-dict residual por seguridad
+    for k, v in list(obj.items()):
+        if isinstance(v, dict) and k not in ("properties", "items"):
+            _close_schema(v)
+        elif isinstance(v, list) and k not in ("oneOf", "anyOf", "allOf"):
+            for it in v:
+                if isinstance(it, dict):
+                    _close_schema(it)
+
+    return obj
+
 # Configurar NO_PROXY específicamente para el endpoint de Azure OpenAI
 if ENDPOINT:
     # Extraer el dominio del endpoint (ej: teamworkzevaluate-openai.openai.azure.com)
@@ -974,6 +1014,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         
         # Structured Outputs para el informe mejorado usando configuración centralizada
         report_schema = PromptConfig.get_report_schema()
+        report_schema = _close_schema(report_schema)  # <--- cierre aquí
         
         # CRÍTICO: Verificar que el esquema JSON se cargó correctamente
         logger.info(f"🔍 Esquema JSON del informe:")
@@ -1444,6 +1485,7 @@ async def _structured_extract_with_ai(layout_sections: Dict[str, Any], filename:
                     "summary": {"type": "string"}
                 }
             }
+            schema = _close_schema(schema)  # <---
             chat_kwargs["response_format"] = {
                 "type": "json_schema",
                 "json_schema": _as_json_schema_payload(schema, name="CVLayoutExtraction")
@@ -1715,6 +1757,7 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
                 "cv_analysis_structured": build_cv_json_schema()["schema"],
             },
         }
+        analysis_schema = _close_schema(analysis_schema)  # <---
 
         chat_kwargs = {
             "model": deployment_name,
@@ -1895,6 +1938,33 @@ if __name__ == "__main__":
     # Usar variables de entorno para host y puerto, con fallbacks
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8080"))
+    
+    # Test de la función _close_schema
+    def test_close_schema_sets_additional_properties_false():
+        src = {
+            "type": "object",
+            "properties": {
+                "a": {"type": "string"},
+                "b": {
+                    "type": "object",
+                    "properties": {"c": {"type": "number"}}
+                },
+                "d": {
+                    "type": "array",
+                    "items": {"type": "object", "properties": {"e": {"type": "boolean"}}}
+                }
+            }
+        }
+        out = _close_schema(src)
+        assert out["additionalProperties"] is False
+        assert out["properties"]["b"]["additionalProperties"] is False
+        assert out["properties"]["d"]["items"]["additionalProperties"] is False
+        print("✅ Test _close_schema: PASSED")
+    
+    try:
+        test_close_schema_sets_additional_properties_false()
+    except Exception as e:
+        print(f"❌ Test _close_schema: FAILED - {e}")
     
     logger.info(f"🚀 Iniciando servidor en {host}:{port}")
     uvicorn.run(app, host=host, port=port)

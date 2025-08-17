@@ -240,6 +240,50 @@ def generar_informe(
         )
         
         # Llamar a Azure OpenAI
+        # Sanitizar el esquema antes de enviarlo
+        report_schema = PromptConfig.get_report_schema()
+        
+        def _close_schema(obj: dict) -> dict:
+            """
+            Recorre recursivamente un JSON Schema y añade `"additionalProperties": false`
+            a todos los nodos con type:"object" donde no esté definido.
+            """
+            if not isinstance(obj, dict):
+                return obj
+
+            t = obj.get("type")
+
+            # Si es objeto, ciérralo
+            if t == "object":
+                obj.setdefault("additionalProperties", False)
+                props = obj.get("properties")
+                if isinstance(props, dict):
+                    for _, sub in props.items():
+                        _close_schema(sub)
+
+            # Si es array, baja a items
+            if t == "array" and "items" in obj:
+                _close_schema(obj["items"])
+
+            # Combinadores
+            for k in ("oneOf", "anyOf", "allOf"):
+                if k in obj and isinstance(obj[k], list):
+                    for sub in obj[k]:
+                        _close_schema(sub)
+
+            # También recorre cualquier sub-dict residual por seguridad
+            for k, v in list(obj.items()):
+                if isinstance(v, dict) and k not in ("properties", "items"):
+                    _close_schema(v)
+                elif isinstance(v, list) and k not in ("oneOf", "anyOf", "allOf"):
+                    for it in v:
+                        if isinstance(it, dict):
+                            _close_schema(it)
+
+            return obj
+        
+        report_schema = _close_schema(report_schema)
+        
         response = client.chat.completions.create(
             model=DEPLOYMENT,
             messages=[
@@ -252,7 +296,7 @@ def generar_informe(
                 "type": "json_schema",
                 "json_schema": {
                     "name": "EmployabilityReport",
-                    "schema": PromptConfig.get_report_schema(),
+                    "schema": report_schema,
                     "strict": True
                 }
             }
