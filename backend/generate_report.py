@@ -290,6 +290,9 @@ def generar_informe(
             return node
         
         report_schema = harden_schema(report_schema)
+        # 🔧 Azure SO no admite ['object','null'] en la raíz
+        if isinstance(report_schema.get("type"), list):
+            report_schema["type"] = "object"
         
         response = client.chat.completions.create(
             model=DEPLOYMENT,

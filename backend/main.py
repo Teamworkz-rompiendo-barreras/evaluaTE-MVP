@@ -1021,6 +1021,9 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         # Structured Outputs para el informe mejorado usando configuración centralizada
         report_schema = PromptConfig.get_report_schema()
         report_schema = harden_schema(report_schema)  # <--- harden aquí
+        # 🔧 Azure SO no admite ['object','null'] en la raíz
+        if isinstance(report_schema.get("type"), list):
+            report_schema["type"] = "object"
         
         # CRÍTICO: Verificar que el esquema JSON se cargó correctamente
         logger.info(f"🔍 Esquema JSON del informe:")
@@ -1492,6 +1495,9 @@ async def _structured_extract_with_ai(layout_sections: Dict[str, Any], filename:
                 }
             }
             schema = harden_schema(schema)  # <---
+            # 🔧 Azure SO no admite ['object','null'] en la raíz
+            if isinstance(schema.get("type"), list):
+                schema["type"] = "object"
             chat_kwargs["response_format"] = {
                 "type": "json_schema",
                 "json_schema": _as_json_schema_payload(schema, name="CVLayoutExtraction")
@@ -1567,6 +1573,148 @@ def _extract_basic_cv_info_from_text(text_content: str) -> Dict[str, Any]:
         return {"candidate": None, "contact": {}, "periods": []}
 
 
+# --- UTILIDADES PARA MODELO CUSTOM cv-extractor-v1 ---
+def _field_value(f) -> Any:
+    """Extrae el valor de un campo de Document Intelligence de forma robusta"""
+    if f is None:
+        return None
+    # SDK v4 expone content + value_*; intentamos varias
+    for attr in ("value", "value_string", "value_phone_number", "value_email", "value_date", "value_boolean", "content"):
+        if hasattr(f, attr):
+            v = getattr(f, attr)
+            if v not in (None, ""):
+                return v
+    # Arrays / objetos
+    if hasattr(f, "value_array") and f.value_array:
+        return [_field_value(x) for x in f.value_array]
+    if hasattr(f, "value_object") and f.value_object:
+        return {k: _field_value(v) for k, v in f.value_object.items()}
+    try:
+        return str(f)
+    except Exception:
+        return None
+
+_SPLIT_RE = re.compile(r"[,\n;•·|]+")
+def _split_list(txt: Any) -> list[str]:
+    """Divide texto en lista usando separadores comunes"""
+    if not txt:
+        return []
+    return [s.strip(" •-").strip() for s in _SPLIT_RE.split(str(txt)) if s.strip()]
+
+def _truthy(x: Any) -> bool:
+    """Convierte valor a booleano de forma robusta"""
+    return str(x).strip().lower() in {"1", "true", "sí", "si", "yes", "y", "s"}
+
+
+def _map_cv_extractor_fields(doc) -> tuple[dict, dict]:
+    """Mapea campos del modelo custom cv-extractor-v1 a estructuras estándar"""
+    # doc.fields -> dict[str, DocumentField]
+    flds = getattr(doc, "fields", {}) or {}
+    g = lambda k: _field_value(flds.get(k))
+
+    # Candidate + Contacto
+    emails = [g("candidate_email_1"), g("candidate_email_2")]
+    emails = [e for e in emails if e]
+    phones = [g("candidate_phone_1"), g("candidate_phone_2")]
+    phones = [p for p in phones if p]
+
+    candidate = {
+        "full_name": g("candidate_full_name"),
+        "location": g("candidate_location"),
+        "emails": emails,
+        "phones": phones,
+        "links": {"linkedin": g("candidate_linkedin")},
+        "role": g("candidate_rol"),
+        "has_driving_license": _truthy(g("candidate_has_driving_license")),
+    }
+
+    # Idiomas
+    languages = []
+    for i in range(1, 6):
+        name = g(f"lang{i}_name")
+        level = g(f"lang{i}_level")
+        if name or level:
+            languages.append({"name": str(name or ""), "level": str(level or "")})
+
+    # Skills
+    hard = _split_list(g("hard_skills"))
+    soft = _split_list(g("soft_skills"))
+
+    # Certificaciones (2 pares)
+    certs = []
+    n1, y1 = g("candidate_certifications"), g("candidate_certification_years")
+    n2, y2 = g("candidate_certifications_2"), g("candidate_certification_years_2")
+    if n1 or y1: certs.append({"name": str(n1 or ""), "date": str(y1 or "")})
+    if n2 or y2: certs.append({"name": str(n2 or ""), "date": str(y2 or "")})
+
+    # Cursos -> los metemos en education como entries con notas
+    education = []
+    if any([g("course3_provider"), g("course3_date"), g("course3_hours")]):
+        education.append({
+            "degree": str(g("course3_provider") or "Curso"),
+            "institution": str(g("course3_provider") or ""),
+            "start_date": None,
+            "end_date": str(g("course3_date") or ""),
+            "notes": f"Horas: {g('course3_hours') or ''}".strip()
+        })
+    if any([g("course4_name"), g("course4_provider"), g("course4_date"), g("course4_hours")]):
+        education.append({
+            "degree": str(g("course4_name") or "Curso"),
+            "institution": str(g("course4_provider") or ""),
+            "start_date": None,
+            "end_date": str(g("course4_date") or ""),
+            "notes": f"Horas: {g('course4_hours') or ''}".strip()
+        })
+
+    # Voluntariado
+    volunteering = []
+    for i in range(1, 4):
+        if any([g(f"vol{i}_org"), g(f"vol{i}_role"), g(f"vol{i}_start_date"), g(f"vol{i}_end_date"), g(f"vol{i}_description")]):
+            volunteering.append({
+                "organization": g(f"vol{i}_org"),
+                "role": g(f"vol{i}_role"),
+                "location": g(f"vol{i}_location"),
+                "start_date": g(f"vol{i}_start_date"),
+                "end_date": g(f"vol{i}_end_date"),
+                "description": g(f"vol{i}_description"),
+            })
+
+    # cv_info (la forma "ligera" usada por tu prompt)
+    cv_info = {
+        "perfil": candidate["role"] or candidate["full_name"],
+        "contacto": {
+            "emails": candidate["emails"],
+            "phones": candidate["phones"],
+            "location": candidate["location"],
+            "linkedin": candidate["links"]["linkedin"],
+        },
+        "idiomas": languages,
+        "software": hard,          # hard skills
+        "aptitudes": soft,         # soft skills
+        "certificaciones": certs,
+        "voluntariado": volunteering,
+    }
+
+    # cv_structured (encaja con tu JSON Schema usado más adelante)
+    cv_structured = {
+        "candidate": {
+            "full_name": candidate["full_name"],
+            "location": candidate["location"],
+            "emails": candidate["emails"],
+            "phones": candidate["phones"],
+            "links": {"linkedin": candidate["links"]["linkedin"]} if candidate["links"]["linkedin"] else {},
+        },
+        "summary": None,
+        "experience": [],                             # tu modelo aún no etiqueta experiencia
+        "education": education,
+        "languages": [{"name": l["name"], "level": l["level"]} for l in languages],
+        "skills": {"hard": hard, "soft": soft},
+        "certifications": certs,
+        "projects": [],
+    }
+    return cv_info, cv_structured
+
+
 async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]:
     """Analiza CV usando Azure Document Intelligence"""
     try:
@@ -1591,39 +1739,17 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
                 poller = client.begin_analyze_document(model_id, document)
                 result = poller.result()
                 
-                # --- NUEVO: recoger campos del modelo personalizado si existen
-                custom_fields = {}
+                # --- NUEVO: si es tu modelo custom, mapeamos sus campos ---
                 try:
                     if getattr(result, "documents", None):
-                        # Normalmente hay un único "document" con los fields predichos
                         doc0 = result.documents[0]
-                        for name, field in (doc0.fields or {}).items():
-                            # field.value si el SDK lo pobló; si no, usar field.content
-                            val = getattr(field, "value", None)
-                            if val is None:
-                                val = getattr(field, "content", None)
-                            custom_fields[name] = val
-                        logger.info(f"🧩 Campos del modelo '{model_id}': {list(custom_fields.keys())}")
-                except Exception as e:
-                    logger.warning(f"No se pudieron leer campos del modelo custom: {e}")
-
-                # --- NUEVO: normalizar por prefijo a una estructura tipo cv_structured
-                def _take(prefix: str) -> dict:
-                    out = {}
-                    for k, v in list(custom_fields.items()):
-                        if k.startswith(prefix + "_"):
-                            out[k.split(prefix + "_", 1)[1]] = v
-                    return out
-
-                cv_struct_from_custom = {}
-                if custom_fields:
-                    cv_struct_from_custom = {
-                        "candidate": _take("candidate") or None,
-                        "contact": _take("contact") or None,
-                        # si definiste campos planos como company_1, position_1, etc. los dejamos
-                        # también como "flat" para que tu LLM los pueda entender:
-                        "custom_flat": custom_fields  # ← útil para depurar y para el prompt
-                    }
+                        cv_info_map, cv_struct = _map_cv_extractor_fields(doc0)
+                        logger.info(f"🧩 Mapper cv-extractor aplicado: {list(cv_info_map.keys()) if cv_info_map else 'sin datos'}")
+                    else:
+                        cv_info_map, cv_struct = {}, {}
+                except Exception as _e:
+                    logger.warning(f"Mapper cv-extractor falló: {_e}")
+                    cv_info_map, cv_struct = {}, {}
                 
             except Exception as e:
                 if model_id != "prebuilt-layout":
@@ -1656,14 +1782,11 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
         merged.update({k: v for k, v in basic.items() if v})
         merged.update({"raw_text": text_content, "layout_sections": layout_sections})
         
-        # Si el modelo custom devolvió algo, mézclalo en el resultado final
-        if custom_fields:
-            merged.setdefault("cv_info", {}).update(custom_fields)
-            merged.setdefault("cv_structured", {})
-            # No pisar lo que ya venga de otras rutas si existe
-            for k, v in (cv_struct_from_custom or {}).items():
-                if v and not merged["cv_structured"].get(k):
-                    merged["cv_structured"][k] = v
+        # --- NUEVO: incorpora salidas del modelo custom
+        if cv_info_map:
+            merged["cv_info"] = cv_info_map
+        if cv_struct:
+            merged["cv_structured"] = cv_struct
         
         return merged
         
@@ -1809,6 +1932,9 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
             },
         }
         analysis_schema = harden_schema(analysis_schema)  # <---
+        # 🔧 Azure SO no admite ['object','null'] en la raíz
+        if isinstance(analysis_schema.get("type"), list):
+            analysis_schema["type"] = "object"
 
         chat_kwargs = {
             "model": deployment_name,
