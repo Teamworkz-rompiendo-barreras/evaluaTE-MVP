@@ -1587,6 +1587,41 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
                 logger.info(f"Iniciando análisis de documento con modelo '{model_id}'...")
                 poller = client.begin_analyze_document(model_id, document)
                 result = poller.result()
+                
+                # --- NUEVO: recoger campos del modelo personalizado si existen
+                custom_fields = {}
+                try:
+                    if getattr(result, "documents", None):
+                        # Normalmente hay un único "document" con los fields predichos
+                        doc0 = result.documents[0]
+                        for name, field in (doc0.fields or {}).items():
+                            # field.value si el SDK lo pobló; si no, usar field.content
+                            val = getattr(field, "value", None)
+                            if val is None:
+                                val = getattr(field, "content", None)
+                            custom_fields[name] = val
+                        logger.info(f"🧩 Campos del modelo '{model_id}': {list(custom_fields.keys())}")
+                except Exception as e:
+                    logger.warning(f"No se pudieron leer campos del modelo custom: {e}")
+
+                # --- NUEVO: normalizar por prefijo a una estructura tipo cv_structured
+                def _take(prefix: str) -> dict:
+                    out = {}
+                    for k, v in list(custom_fields.items()):
+                        if k.startswith(prefix + "_"):
+                            out[k.split(prefix + "_", 1)[1]] = v
+                    return out
+
+                cv_struct_from_custom = {}
+                if custom_fields:
+                    cv_struct_from_custom = {
+                        "candidate": _take("candidate") or None,
+                        "contact": _take("contact") or None,
+                        # si definiste campos planos como company_1, position_1, etc. los dejamos
+                        # también como "flat" para que tu LLM los pueda entender:
+                        "custom_flat": custom_fields  # ← útil para depurar y para el prompt
+                    }
+                
             except Exception as e:
                 if model_id != "prebuilt-layout":
                     logger.warning(f"Fallo con modelo custom '{model_id}', reintentando con 'prebuilt-layout': {e}")
@@ -1617,6 +1652,16 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
         merged: Dict[str, Any] = {**analysis}
         merged.update({k: v for k, v in basic.items() if v})
         merged.update({"raw_text": text_content, "layout_sections": layout_sections})
+        
+        # Si el modelo custom devolvió algo, mézclalo en el resultado final
+        if custom_fields:
+            merged.setdefault("cv_info", {}).update(custom_fields)
+            merged.setdefault("cv_structured", {})
+            # No pisar lo que ya venga de otras rutas si existe
+            for k, v in (cv_struct_from_custom or {}).items():
+                if v and not merged["cv_structured"].get(k):
+                    merged["cv_structured"][k] = v
+        
         return merged
         
     except Exception as e:
