@@ -832,7 +832,42 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             shaped = shape_report_for_ui({})
         
         # Mantener compatibilidad con el frontend actual usando final_recommendations
-        final_recommendations = shaped
+        final_recommendations = dict(shaped)
+        # Extender con claves legacy que consume el front actual
+        try:
+            # 2) Perfil
+            final_recommendations["profile_analysis"] = shaped.get("resumen_perfil", "")
+            # 4) Fortalezas
+            strengths_list = shaped.get("fortalezas_clave") or []
+            final_recommendations["strengths_analysis"] = \
+                ("\n".join(f"- {s}" for s in strengths_list)) if isinstance(strengths_list, list) else str(strengths_list)
+            # 5) Áreas de mejora
+            areas_list = shaped.get("areas_mejora") or []
+            final_recommendations["improvement_areas"] = \
+                ("\n".join(f"- {x}" for x in areas_list)) if isinstance(areas_list, list) else str(areas_list)
+            # 6) CV (resumen textual)
+            final_recommendations["cv_analysis"] = shaped.get("evaluacion_cv", "")
+            # 8) Sugerencias laborales
+            roles_list = shaped.get("roles_sugeridos") or []
+            final_recommendations["job_suggestions"] = \
+                ("\n".join(f"- {r}" for r in roles_list)) if isinstance(roles_list, list) else str(roles_list)
+            # 9) Próximos pasos
+            plan = shaped.get("plan_accion") or {}
+            final_recommendations["next_steps"] = {
+                "short_term": plan.get("corto_plazo") or [],
+                "medium_term": plan.get("medio_plazo") or [],
+                "long_term": plan.get("largo_plazo") or [],
+            }
+            # 11) Recursos (apoyo)
+            tools = shaped.get("herramientas_utiles") or {}
+            resources_flat = []
+            for cat_key in ("productividad", "busqueda", "aprendizaje", "accesibilidad"):
+                items = tools.get(cat_key) or []
+                if isinstance(items, list):
+                    resources_flat.extend(items)
+            final_recommendations["resources"] = resources_flat
+        except Exception:
+            pass
         try:
             # Si existe un campo cvAnalysis enriquecido en el informe devuelto por IA, úsalo; si no, conservar el del request
             enriched_cv = None
