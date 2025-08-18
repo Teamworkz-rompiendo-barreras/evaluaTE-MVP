@@ -839,6 +839,23 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             logger.warning(f"Error procesando información del CV: {e}")
             pass
 
+        # Enriquecer 'report' con representaciones estándar para el front
+        try:
+            if isinstance(professional_report, dict):
+                # Markdown legible (opcional para front legacy)
+                try:
+                    from .prompt_config import PromptConfig as _PC  # type: ignore
+                    markdown_report = _PC.convert_json_to_markdown_report(professional_report)
+                except Exception:
+                    markdown_report = ""
+                report["json"] = professional_report
+                report["ui"] = shaped
+                report["markdown"] = markdown_report
+            else:
+                report["ui"] = shaped
+        except Exception:
+            report["ui"] = shaped
+
         response_data = ReportResponse(
             report=report,
             recommendations=final_recommendations,
