@@ -1122,14 +1122,20 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             else:
                 # Fallback a campos directos solo si cv_structured y cv_info están vacíos
                 logger.info("⚠️ cv_structured y cv_info vacíos, usando campos directos como fallback")
+                _cand = getattr(request.cvAnalysis, 'candidate', None)
+                _exp = getattr(request.cvAnalysis, 'experience_detailed', [])
+                _edu = getattr(request.cvAnalysis, 'education_detailed', [])
+                _langs = getattr(request.cvAnalysis, 'languages', [])
+                _skills = getattr(request.cvAnalysis, 'skills', [])
+                _contact_fallback = getattr(request.cvAnalysis, 'contact', {})
                 cv_data["sections"] = {
-                    "profile": getattr(request.cvAnalysis, 'candidate', 'No especificado'),
-                    "experience": getattr(request.cvAnalysis, 'experience_detailed', []),
-                    "education": getattr(request.cvAnalysis, 'education_detailed', []),
+                    "profile": _cand if (_cand and _cand != 'No especificado') else 'No especificado',
+                    "experience": _exp if isinstance(_exp, list) else [],
+                    "education": _edu if isinstance(_edu, list) else [],
                     "courses": "No especificado",
-                    "languages": getattr(request.cvAnalysis, 'languages', []),
-                    "software": getattr(request.cvAnalysis, 'skills', []),
-                    "contact": getattr(request.cvAnalysis, 'contact', {})
+                    "languages": _langs if isinstance(_langs, list) else [],
+                    "software": _skills if isinstance(_skills, list) else [],
+                    "contact": _contact_fallback if isinstance(_contact_fallback, dict) else {}
                 }
                 
                 # Logging del fallback
@@ -1217,20 +1223,26 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     logger.info(f"  - Relocalización: {job_preferences_data['relocation']}")
     logger.info(f"  - Notas: {job_preferences_data['notes']}")
     
-    # Preparar idiomas
+    # Preparar idiomas (robusto ante None o tipos inesperados)
     languages_data = []
     if request.cvAnalysis and hasattr(request.cvAnalysis, 'languages'):
-        for lang in request.cvAnalysis.languages:
-            if isinstance(lang, dict):
-                languages_data.append({
-                    "language": lang.get('language', 'No especificado'),
-                    "level": lang.get('level', 'No especificado')
-                })
-            else:
-                languages_data.append({
-                    "language": str(lang),
-                    "level": "No especificado"
-                })
+        try:
+            langs = getattr(request.cvAnalysis, 'languages')
+            if not isinstance(langs, list):
+                langs = []
+            for lang in langs:
+                if isinstance(lang, dict):
+                    languages_data.append({
+                        "language": lang.get('language', 'No especificado'),
+                        "level": lang.get('level', 'No especificado')
+                    })
+                else:
+                    languages_data.append({
+                        "language": str(lang),
+                        "level": "No especificado"
+                    })
+        except Exception:
+            languages_data = []
     
     # CRÍTICO: Logging detallado de minijuegos completados
     logger.info(f"🔍 Minijuegos completados:")
