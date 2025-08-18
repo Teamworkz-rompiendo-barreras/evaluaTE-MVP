@@ -612,146 +612,122 @@ async def log_game_complete(data: Dict[str, Any]):
 
 def shape_report_for_ui(r: dict) -> dict:
     """
-    Adaptador que convierte la salida del modelo AI a las 13 secciones estándar en español
-    para la UI, con valores por defecto para campos faltantes.
+    Adaptador: convierte la salida JSON del modelo al layout de 13 apartados de la UI.
+    Garantiza strings en secciones textuales y sanea None -> "No consta".
     """
-    # Estructura estándar de 13 secciones en español
-    shaped = {
-        "resumen_ejecutivo": "",
-        "analisis_perfil": "",
-        "evaluacion_cv": "",
-        "fortalezas_clave": [],
-        "areas_mejora": [],
-        "diagnostico_cv": {
-            "structure_score": 3,
-            "evidence": "Análisis estándar",
-            "fix": "Revisar estructura general",
-            "coherence_score": 3,
-            "coherence_evidence": "Coherencia básica",
-            "coherence_fix": "Mejorar coherencia",
-            "key_info_score": 3,
-            "key_info_evidence": "Información clave presente",
-            "key_info_fix": "Destacar información clave",
-            "clarity_score": 3,
-            "clarity_evidence": "Claridad aceptable",
-            "clarity_fix": "Mejorar claridad",
-            "spelling_style_score": 3,
-            "spelling_style_evidence": "Estilo y ortografía correctos",
-            "spelling_style_fix": "Refinar estilo",
-            "concrete_corrections": [],
-            "reorder_suggestion": ""
+    def _txt(x, default="No consta"):
+        if x is None:
+            return default
+        if isinstance(x, str) and x.strip() == "":
+            return default
+        return str(x)
+
+    def _list_str(xs):
+        if not isinstance(xs, list) or not xs:
+            return []
+        return [_txt(x) for x in xs]
+
+    shaped: dict = {
+        # 1) Datos personales (objeto)
+        "datos_personales": {
+            "name": _txt((r.get("personal_data") or {}).get("name")),
+            "location": _txt((r.get("personal_data") or {}).get("location")),
+            "email": _txt((r.get("personal_data") or {}).get("email")),
+            "phone": _txt((r.get("personal_data") or {}).get("phone")),
+            "disability_certificate": _txt((r.get("personal_data") or {}).get("disability_certificate")),
         },
-        "roles_sugeridos": [],
-        "plan_accion": [],
-        "herramientas_utiles": [],
-        "recursos_adicionales": [],
-        "proximos_pasos": []
+
+        # 2) Resumen del perfil
+        "resumen_perfil": _txt(r.get("profile_summary") or r.get("profile_analysis") or ""),
+
+        # 3) Resumen del CV
+        "resumen_cv": _txt(r.get("cv_summary") or ""),
+
+        # 4) Fortalezas
+        "fortalezas_clave": _list_str(r.get("strengths") or []),
+
+        # 5) Áreas de mejora
+        "areas_mejora": [
+            _txt(f"{it.get('area','Área')} — {it.get('reason','')} → Acción: {it.get('suggested_action','')}")
+            for it in (r.get("improvement_areas") or [])
+            if isinstance(it, dict)
+        ],
+
+        # 6) Diagnóstico del CV (tabla 1–5 + evidencias/correcciones)
+        "diagnostico_cv": (lambda cv: {
+            "structure_score": int((cv.get("structure_score") or 1) or 1),
+            "coherence_score": int((cv.get("coherence_score") or 1) or 1),
+            "key_info_score": int((cv.get("key_info_score") or 1) or 1),
+            "clarity_score": int((cv.get("clarity_score") or 1) or 1),
+            "spelling_style_score": int((cv.get("style_score") or cv.get("spelling_style_score") or 1) or 1),
+            "evidence": {
+                "structure": _txt((cv.get("evidence") or {}).get("structure", "")),
+                "coherence": _txt((cv.get("evidence") or {}).get("coherence", "")),
+                "key_info": _txt((cv.get("evidence") or {}).get("key_info", "")),
+                "clarity": _txt((cv.get("evidence") or {}).get("clarity", "")),
+                "style": _txt((cv.get("evidence") or {}).get("style", "")),
+            },
+            "corrections": _list_str(cv.get("corrections") or []),
+            "reordering_suggestions": _list_str(cv.get("reordering_suggestions") or []),
+        })(r.get("cv_analysis") or {}),
+
+        # 7) Entornos ideales
+        "entornos_ideales": _txt(r.get("ideal_work_environment") or ""),
+
+        # 8) Roles sugeridos (texto legible)
+        "roles_sugeridos": [
+            _txt(f"{it.get('role','Rol')} — {it.get('reason','')} (Seniority: {it.get('seniority','No especificado')}; Remoto: {'Sí' if it.get('remote_viable') else 'No'})")
+            for it in (r.get("suggested_roles") or [])
+            if isinstance(it, dict)
+        ],
+
+        # 9) Plan de acción
+        "plan_accion": {
+            "corto_plazo": _list_str((r.get("action_plan") or {}).get("short_term") or []),
+            "medio_plazo": _list_str((r.get("action_plan") or {}).get("medium_term") or []),
+            "largo_plazo": _list_str((r.get("action_plan") or {}).get("long_term") or []),
+        },
+
+        # 10) Consejos de búsqueda
+        "consejos_busqueda": {
+            "cv_optimization": _list_str((r.get("job_search_advice") or {}).get("cv_optimization") or []),
+            "letters_portfolio": _txt((r.get("job_search_advice") or {}).get("letters_portfolio") or ""),
+            "recommended_platforms": _list_str((r.get("job_search_advice") or {}).get("recommended_platforms") or []),
+            "networking": _txt((r.get("job_search_advice") or {}).get("networking") or ""),
+            "interview_tips": _txt((r.get("job_search_advice") or {}).get("interview_tips") or ""),
+        },
+
+        # 11) Herramientas útiles
+        "herramientas_utiles": {
+            "productividad": _list_str((r.get("useful_tools") or {}).get("productivity") or []),
+            "busqueda": _list_str((r.get("useful_tools") or {}).get("search_alerts") or (r.get("useful_tools") or {}).get("job_search") or []),
+            "aprendizaje": _list_str((r.get("useful_tools") or {}).get("learning_certification") or (r.get("useful_tools") or {}).get("learning") or []),
+            "accesibilidad": _list_str((r.get("useful_tools") or {}).get("accessibility") or []),
+        },
+
+        # 12) Juegos completados
+        "juegos_completados": _list_str(r.get("completed_games") or []),
+
+        # 13) Frase final
+        "frase_final": _txt(r.get("final_message") or ""),
+
+        # Extra: resumen ejecutivo
+        "resumen_ejecutivo": _txt(r.get("summary") or ""),
     }
-    
-    # Mapear campos del modelo a la estructura estándar
-    if isinstance(r, dict):
-        # Resumen ejecutivo
-        shaped["resumen_ejecutivo"] = (
-            r.get("summary") or 
-            r.get("executive_summary") or 
-            r.get("resumen") or 
-            "Resumen del perfil profesional generado por IA"
-        )
-        
-        # Análisis de perfil
-        shaped["analisis_perfil"] = (
-            r.get("profile_analysis") or 
-            r.get("profile_summary") or 
-            r.get("perfil_analisis") or 
-            "Análisis del perfil profesional"
-        )
-        
-        # Evaluación del CV
-        shaped["evaluacion_cv"] = (
-            r.get("cv_analysis") or 
-            r.get("cv_evaluation") or 
-            r.get("evaluacion_cv") or 
-            "Evaluación del currículum vitae"
-        )
-        
-        # Fortalezas clave
-        strengths = r.get("strengths") or r.get("fortalezas") or r.get("key_strengths") or []
-        if isinstance(strengths, list):
-            shaped["fortalezas_clave"] = strengths
-        elif isinstance(strengths, str):
-            shaped["fortalezas_clave"] = [strengths]
-        
-        # Áreas de mejora
-        improvements = r.get("improvement_areas") or r.get("areas_mejora") or r.get("weaknesses") or []
-        if isinstance(improvements, list):
-            shaped["areas_mejora"] = improvements
-        elif isinstance(improvements, str):
-            shaped["areas_mejora"] = [improvements]
-        
-        # Diagnóstico del CV (sección 6 - tabla 1-5)
-        cv_diagnostic = r.get("cv_diagnostic") or r.get("diagnostico_cv") or {}
-        if isinstance(cv_diagnostic, dict):
-            # Mapear campos del diagnóstico
-            for field in ["structure_score", "coherence_score", "key_info_score", "clarity_score", "spelling_style_score"]:
-                if field in cv_diagnostic and isinstance(cv_diagnostic[field], (int, float)):
-                    shaped["diagnostico_cv"][field] = max(1, min(5, int(cv_diagnostic[field])))
-            
-            # Mapear campos de evidencia y correcciones
-            evidence_fields = ["evidence", "coherence_evidence", "key_info_evidence", "clarity_evidence", "spelling_style_evidence"]
-            fix_fields = ["fix", "coherence_fix", "key_info_fix", "clarity_fix", "spelling_style_fix"]
-            
-            for i, (ev_field, fix_field) in enumerate(zip(evidence_fields, fix_fields)):
-                if ev_field in cv_diagnostic:
-                    shaped["diagnostico_cv"][ev_field] = str(cv_diagnostic[ev_field])
-                if fix_field in cv_diagnostic:
-                    shaped["diagnostico_cv"][fix_field] = str(cv_diagnostic[fix_field])
-            
-            # Correcciones concretas y sugerencias de reordenamiento
-            if "concrete_corrections" in cv_diagnostic:
-                corrections = cv_diagnostic["concrete_corrections"]
-                if isinstance(corrections, list):
-                    shaped["diagnostico_cv"]["concrete_corrections"] = corrections
-                elif isinstance(corrections, str):
-                    shaped["diagnostico_cv"]["concrete_corrections"] = [corrections]
-            
-            if "reorder_suggestion" in cv_diagnostic:
-                shaped["diagnostico_cv"]["reorder_suggestion"] = str(cv_diagnostic["reorder_suggestion"])
-        
-        # Roles sugeridos
-        roles = r.get("suggested_roles") or r.get("roles_sugeridos") or r.get("job_suggestions") or []
-        if isinstance(roles, list):
-            shaped["roles_sugeridos"] = roles
-        elif isinstance(roles, str):
-            shaped["roles_sugeridos"] = [roles]
-        
-        # Plan de acción
-        action_plan = r.get("action_plan") or r.get("plan_accion") or r.get("next_steps") or []
-        if isinstance(action_plan, list):
-            shaped["plan_accion"] = action_plan
-        elif isinstance(action_plan, str):
-            shaped["plan_accion"] = [action_plan]
-        
-        # Herramientas útiles
-        tools = r.get("useful_tools") or r.get("herramientas_utiles") or r.get("tools") or []
-        if isinstance(tools, list):
-            shaped["herramientas_utiles"] = tools
-        elif isinstance(tools, str):
-            shaped["herramientas_utiles"] = [tools]
-        
-        # Recursos adicionales
-        resources = r.get("additional_resources") or r.get("recursos_adicionales") or r.get("resources") or []
-        if isinstance(resources, list):
-            shaped["recursos_adicionales"] = resources
-        elif isinstance(resources, str):
-            shaped["recursos_adicionales"] = [resources]
-        
-        # Próximos pasos
-        next_steps = r.get("next_steps") or r.get("proximos_pasos") or r.get("action_items") or []
-        if isinstance(next_steps, list):
-            shaped["proximos_pasos"] = next_steps
-        elif isinstance(next_steps, str):
-            shaped["proximos_pasos"] = [next_steps]
-    
+
+    try:
+        expected_keys = [
+            "datos_personales","resumen_perfil","resumen_cv","fortalezas_clave","areas_mejora",
+            "diagnostico_cv","entornos_ideales","roles_sugeridos","plan_accion","consejos_busqueda",
+            "herramientas_utiles","juegos_completados","frase_final","resumen_ejecutivo"
+        ]
+        logger.info("🔎 UI adapter keys: %s", list(shaped.keys()))
+        missing = [k for k in expected_keys if k not in shaped]
+        if missing:
+            logger.warning("⚠️ Claves faltantes en recomendaciones UI: %s", missing)
+    except Exception:
+        pass
+
     return shaped
 
 
