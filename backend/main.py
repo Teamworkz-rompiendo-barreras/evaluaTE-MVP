@@ -113,7 +113,39 @@ def _as_json_schema_payload(schema_obj: dict, name: str = "EmployabilityReport")
     """
     if isinstance(schema_obj, dict) and "schema" in schema_obj:
         return schema_obj
+    
+    # Verificación rápida del schema (para debugging)
+    if name == "EmployabilityReport" and "properties" in schema_obj:
+        sr = schema_obj["properties"]["suggested_roles"]["items"]
+        logger.info("suggested_roles.items.required = %s", sr.get("required"))
+        # Esperado: ['role','reason','seniority','remote_viable']
+    
     return {"name": name, "schema": schema_obj, "strict": True}
+
+
+def _ensure_required_everywhere(schema: dict) -> dict:
+    """
+    Función preventiva: asegura que todos los objetos tengan campos required.
+    Si en el futuro alguien añade propiedades y se olvida de actualizar required,
+    esta función las añade automáticamente.
+    """
+    import copy
+    s = copy.deepcopy(schema)
+    
+    def walk(node):
+        if not isinstance(node, dict):
+            return
+        t = node.get("type")
+        if t == "object" and "properties" in node:
+            props = node["properties"]
+            node["required"] = list(props.keys())
+            for child in props.values():
+                walk(child)
+        if t == "array" and "items" in node:
+            walk(node["items"])
+    
+    walk(s)
+    return s
 
 def _allow_null(t):
     """Permite null en tipos para hacer campos opcionales"""
@@ -1168,7 +1200,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         
         # Structured Outputs para el informe mejorado usando configuración centralizada
         report_schema = PromptConfig.get_report_schema()
-        report_schema = harden_schema(report_schema)  # <--- harden aquí
+        report_schema = _ensure_required_everywhere(report_schema)  # <--- función preventiva aquí
         # 🔧 Azure SO no admite ['object','null'] en la raíz
         if isinstance(report_schema.get("type"), list):
             report_schema["type"] = "object"

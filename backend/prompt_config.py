@@ -320,10 +320,6 @@ REGLAS:
 
     @staticmethod
     def get_report_schema() -> dict:
-        """
-        JSON Schema que el modelo debe cumplir (13 apartados).
-        Devuelve SOLO el schema (el wrapper name/strict se añade en la llamada).
-        """
         return {
             "type": "object",
             "additionalProperties": False,
@@ -338,7 +334,8 @@ REGLAS:
                         "email": {"type": "string"},
                         "phone": {"type": "string"},
                         "disability_certificate": {"type": "string"}
-                    }
+                    },
+                    "required": ["name", "location", "email", "phone", "disability_certificate"]
                 },
                 "profile_summary": {"type": "string"},
                 "cv_summary": {"type": "string"},
@@ -374,11 +371,16 @@ REGLAS:
                                 "key_info": {"type": "string"},
                                 "clarity": {"type": "string"},
                                 "style": {"type": "string"}
-                            }
+                            },
+                            "required": ["structure", "coherence", "key_info", "clarity", "style"]
                         },
                         "corrections": {"type": "array", "items": {"type": "string"}},
                         "reordering_suggestions": {"type": "array", "items": {"type": "string"}}
-                    }
+                    },
+                    "required": [
+                        "structure_score","coherence_score","key_info_score",
+                        "clarity_score","style_score","evidence","corrections","reordering_suggestions"
+                    ]
                 },
                 "ideal_work_environment": {"type": "string"},
                 "suggested_roles": {
@@ -392,7 +394,7 @@ REGLAS:
                             "seniority": {"type": "string"},
                             "remote_viable": {"type": "boolean"}
                         },
-                        "required": ["role", "reason"]
+                        "required": ["role", "reason", "seniority", "remote_viable"]
                     }
                 },
                 "action_plan": {
@@ -402,7 +404,8 @@ REGLAS:
                         "short_term": {"type": "array", "items": {"type": "string"}},
                         "medium_term": {"type": "array", "items": {"type": "string"}},
                         "long_term": {"type": "array", "items": {"type": "string"}}
-                    }
+                    },
+                    "required": ["short_term","medium_term","long_term"]
                 },
                 "job_search_advice": {
                     "type": "object",
@@ -413,7 +416,10 @@ REGLAS:
                         "recommended_platforms": {"type": "array", "items": {"type": "string"}},
                         "networking": {"type": "string"},
                         "interview_tips": {"type": "string"}
-                    }
+                    },
+                    "required": [
+                        "cv_optimization","letters_portfolio","recommended_platforms","networking","interview_tips"
+                    ]
                 },
                 "useful_tools": {
                     "type": "object",
@@ -423,16 +429,17 @@ REGLAS:
                         "job_search": {"type": "array", "items": {"type": "string"}},
                         "learning": {"type": "array", "items": {"type": "string"}},
                         "accessibility": {"type": "array", "items": {"type": "string"}}
-                    }
+                    },
+                    "required": ["productivity","job_search","learning","accessibility"]
                 },
                 "completed_games": {"type": "array", "items": {"type": "string"}},
                 "final_message": {"type": "string"}
             },
             "required": [
-                "summary", "personal_data", "profile_summary", "cv_summary",
-                "strengths", "improvement_areas", "cv_analysis", "ideal_work_environment",
-                "suggested_roles", "action_plan", "job_search_advice", "useful_tools",
-                "completed_games", "final_message"
+                "summary","personal_data","profile_summary","cv_summary",
+                "strengths","improvement_areas","cv_analysis","ideal_work_environment",
+                "suggested_roles","action_plan","job_search_advice","useful_tools",
+                "completed_games","final_message"
             ]
         }
     
