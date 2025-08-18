@@ -871,21 +871,21 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         # Extender con claves legacy que consume el front actual
         try:
             # 2) Perfil
-            final_recommendations["profile_analysis"] = shaped.get("resumen_perfil", "")
+            final_recommendations["profile_analysis"] = shaped.get("resumen_perfil", "") or ""
             # 4) Fortalezas
             strengths_list = shaped.get("fortalezas_clave") or []
             final_recommendations["strengths_analysis"] = \
-                ("\n".join(f"- {s}" for s in strengths_list)) if isinstance(strengths_list, list) else str(strengths_list)
+                ("\n".join(f"- {s}" for s in strengths_list)) if isinstance(strengths_list, list) else (str(strengths_list) if strengths_list is not None else "")
             # 5) Áreas de mejora
             areas_list = shaped.get("areas_mejora") or []
             final_recommendations["improvement_areas"] = \
-                ("\n".join(f"- {x}" for x in areas_list)) if isinstance(areas_list, list) else str(areas_list)
+                ("\n".join(f"- {x}" for x in areas_list)) if isinstance(areas_list, list) else (str(areas_list) if areas_list is not None else "")
             # 6) CV (resumen textual)
-            final_recommendations["cv_analysis"] = shaped.get("evaluacion_cv", "")
+            final_recommendations["cv_analysis"] = shaped.get("evaluacion_cv", "") or ""
             # 8) Sugerencias laborales
             roles_list = shaped.get("roles_sugeridos") or []
             final_recommendations["job_suggestions"] = \
-                ("\n".join(f"- {r}" for r in roles_list)) if isinstance(roles_list, list) else str(roles_list)
+                ("\n".join(f"- {r}" for r in roles_list)) if isinstance(roles_list, list) else (str(roles_list) if roles_list is not None else "")
             # 9) Próximos pasos
             plan = shaped.get("plan_accion") or {}
             final_recommendations["next_steps"] = {
@@ -1007,11 +1007,21 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     """Genera un informe profesional usando IA con el prompt maestro mejorado"""
     
     # Preparar datos estructurados para el prompt
+    # Normalizar contacto para evitar None.get
+    _contact = None
+    if request.cvAnalysis:
+        try:
+            _contact = getattr(request.cvAnalysis, 'contact', None)
+        except Exception:
+            _contact = None
+    if not isinstance(_contact, dict):
+        _contact = {}
+
     candidate_data = {
         "fullName": request.fullName,
-        "location": getattr(request.cvAnalysis, 'contact', {}).get('location', 'No consta') if request.cvAnalysis else 'No consta',
-        "email": getattr(request.cvAnalysis, 'contact', {}).get('emails', ['No consta'])[0] if request.cvAnalysis and getattr(request.cvAnalysis, 'contact', {}) else 'No consta',
-        "phone": getattr(request.cvAnalysis, 'contact', {}).get('phones', ['No especificado'])[0] if request.cvAnalysis and getattr(request.cvAnalysis, 'contact', {}) else 'No consta',
+        "location": _contact.get('location', 'No consta'),
+        "email": (_contact.get('emails', ['No consta']) or ['No consta'])[0],
+        "phone": (_contact.get('phones', ['No especificado']) or ['No especificado'])[0],
         "hasDisabilityCertificate": request.jobPreferences.hasDisabilityCert if request.jobPreferences else None,
         "disabilityType": "No especificado"  # Campo opcional que no tienes implementado
     }
