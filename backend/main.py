@@ -715,6 +715,43 @@ def shape_report_for_ui(r: dict) -> dict:
         "resumen_ejecutivo": _txt(r.get("summary") or ""),
     }
 
+    # Compatibilidad con front legacy: alias esperados por UI antigua
+    try:
+        # Alias 2) Análisis del perfil
+        shaped["analisis_perfil"] = shaped.get("resumen_perfil", "")
+
+        # Alias 6) Análisis del CV (texto): construimos un resumen corto con las puntuaciones
+        cvx = shaped.get("diagnostico_cv", {}) or {}
+        def _cv_brief(cv):
+            try:
+                parts = []
+                if cv.get("structure_score"):
+                    parts.append(f"Estructura {cv['structure_score']}/5")
+                if cv.get("coherence_score"):
+                    parts.append(f"Coherencia {cv['coherence_score']}/5")
+                if cv.get("key_info_score"):
+                    parts.append(f"Información clave {cv['key_info_score']}/5")
+                if cv.get("clarity_score"):
+                    parts.append(f"Claridad {cv['clarity_score']}/5")
+                if cv.get("spelling_style_score"):
+                    parts.append(f"Ortografía/estilo {cv['spelling_style_score']}/5")
+                base = ", ".join(parts)
+                evid = cv.get("evidence") or {}
+                evid_summary = "; ".join(
+                    [
+                        f"{k.capitalize()}: {v}" for k, v in evid.items() if isinstance(v, str) and v.strip()
+                    ]
+                )
+                txt = base
+                if evid_summary:
+                    txt = (base + ". " if base else "") + evid_summary
+                return _txt(txt or (r.get("cv_summary") or ""))
+            except Exception:
+                return _txt(r.get("cv_summary") or "")
+        shaped["evaluacion_cv"] = _cv_brief(cvx)
+    except Exception:
+        pass
+
     try:
         expected_keys = [
             "datos_personales","resumen_perfil","resumen_cv","fortalezas_clave","areas_mejora",
