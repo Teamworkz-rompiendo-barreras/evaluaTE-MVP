@@ -491,7 +491,7 @@ REGLAS:
                 report += f"**{it.get('area','Área')}** — {it.get('reason','')} → **Acción sugerida:** {it.get('suggested_action','')}\n\n"
             
             report += "## 6. ANÁLISIS DEL CV CON PUNTUACIÓN 1–5 POR APARTADO\n"
-                report += f"""
+            report += f"""
 **Estructura:** {stars(cvx.get('structure_score'))} ({cvx.get('structure_score','0')}/5)
 **Coherencia:** {stars(cvx.get('coherence_score'))} ({cvx.get('coherence_score','0')}/5)
 **Información clave:** {stars(cvx.get('key_info_score'))} ({cvx.get('key_info_score','0')}/5)
