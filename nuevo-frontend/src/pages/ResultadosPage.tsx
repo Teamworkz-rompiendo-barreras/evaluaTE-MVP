@@ -331,174 +331,137 @@ const ResultadosPage: React.FC = () => {
             const cleanedSummary = formatListsForAccessibility(
               removeLeadingName(String(data.summary || ''), candidateName)
             );
+            const dp: any = (data as any)?.recommendations?.datos_personales || {};
+            const profileSummary = (data as any)?.recommendations?.resumen_perfil || (data as any)?.recommendations?.analisis_perfil || cleanedSummary;
+            const rec: any = (data as any)?.recommendations || {};
+
             const informe = `# Informe Profesional de Empleabilidad
 
-## Resumen del Perfil
-**Candidato:** ${candidateName}
-${cleanedSummary}
+## 1) Datos personales básicos
+- **Nombre**: ${dp.name || candidateName}
+- **Ubicación**: ${dp.location || 'No consta'}
+- **Email | Tel.**: ${(dp.email || 'No consta')} | ${(dp.phone || 'No consta')}
+- **Certificado de discapacidad**: ${(String(dp.disability_certificate || '').toLowerCase().includes('sí') ? 'Sí' : 'No')}
 
-## Análisis Detallado
+## 2) Resumen del perfil
+${formatListsForAccessibility(String(profileSummary || 'Resumen no disponible.'))}
 
-### Análisis del Perfil
-${data.recommendations?.profile_analysis || 'Análisis del perfil basado en la evaluación completa.'}
+## 3) Resumen del CV
+${formatListsForAccessibility(String(rec.resumen_cv || 'Resumen del CV no disponible.'))}
 
-### Análisis de Fortalezas
-${formatListsForAccessibility(data.recommendations?.strengths_analysis || 'Fortalezas identificadas en la evaluación.')}
+## 4) Fortalezas
+${(() => {
+  const arr = Array.isArray(rec.fortalezas_clave) ? rec.fortalezas_clave : [];
+  return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
+})()}
 
-### Áreas de Mejora
-${formatListsForAccessibility(data.recommendations?.improvement_areas || 'Áreas de mejora detectadas con recomendaciones.')}
+## 5) Áreas de mejora y consejos
+${(() => {
+  const arr = Array.isArray(rec.areas_mejora) ? rec.areas_mejora : [];
+  return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
+})()}
 
-### Resumen del CV
-${formatListsForAccessibility((data as any)?.recommendations?.resumen_cv || 'Resumen del CV no disponible.')}
-
-### Análisis del CV
+## 6) Análisis del CV (con puntuación 1–5 por apartado)
 ${(() => {
   const cv = data?.report?.cvAnalysis || cvAnalysis || null;
   const r = rateCv(cv);
-  const lines = [
-    `**Formato:** ${renderStars(r.formato)}`,
-    `**Claridad:** ${renderStars(r.claridad)}`,
-    `**Coherencia:** ${renderStars(r.coherencia)}`,
-    `**Información clave:** ${renderStars(r.infoClave)}`,
-    `**Ortografía:** ${renderStars(r.ortografia)}`,
-  ];
-  const consejoFuente: string = Array.isArray(r.razones) && r.razones.length > 0
-    ? r.razones.join('; ')
-    : String((data.recommendations?.cv_analysis as string) || '');
-  const consejo = `
-${formatListsForAccessibility(consejoFuente)}
-  `.trim();
-  return `${lines.join('\n')}\n\n${consejo}`;
+  const stars = [
+    `- Formato: ${renderStars(r.formato)}`,
+    `- Claridad: ${renderStars(r.claridad)}`,
+    `- Coherencia: ${renderStars(r.coherencia)}`,
+    `- Información clave: ${renderStars(r.infoClave)}`,
+    `- Ortografía: ${renderStars(r.ortografia)}`,
+  ].join('\n');
+  const razones = Array.isArray(r.razones) && r.razones.length > 0 ? `\n\n${r.razones.map(x => `- ${x}`).join('\n')}` : '';
+  return `${stars}${razones}`;
 })()}
 
-### Diagnóstico del CV
+### Tabla de diagnóstico
 ${(() => {
-  try {
-    const dx = (data as any)?.recommendations?.diagnostico_cv || {};
-    if (!dx || typeof dx !== 'object') return 'Diagnóstico no disponible.';
-    const scores = [
-      `- Estructura: ${renderStars(Number((dx as any).structure_score || 1))}`,
-      `- Coherencia: ${renderStars(Number((dx as any).coherence_score || 1))}`,
-      `- Información clave: ${renderStars(Number((dx as any).key_info_score || 1))}`,
-      `- Claridad: ${renderStars(Number((dx as any).clarity_score || 1))}`,
-      `- Ortografía/estilo: ${renderStars(Number((dx as any).spelling_style_score || 1))}`,
-    ].join('\n');
-    const ev: any = (dx as any).evidence || {};
-    const evidencias = [
-      ev.structure ? `- Structure: ${String(ev.structure)}` : '',
-      ev.coherence ? `- Coherence: ${String(ev.coherence)}` : '',
-      ev.key_info ? `- Key_info: ${String(ev.key_info)}` : '',
-      ev.clarity ? `- Clarity: ${String(ev.clarity)}` : '',
-      ev.style ? `- Style: ${String(ev.style)}` : '',
-    ].filter(Boolean).join('\n');
-    return `${scores}${evidencias ? `\n\n${evidencias}` : ''}`;
-  } catch {
-    return 'Diagnóstico no disponible.';
-  }
+  const dx: any = rec.diagnostico_cv || {};
+  if (!dx || typeof dx !== 'object') return 'Diagnóstico no disponible.';
+  const ev: any = dx.evidence || {};
+  const row = (label: string, score: any, evText: any) => `| ${label} | ${Number(score || 1)}/5 | ${String(evText || '')} | ${(Array.isArray(dx.corrections) && dx.corrections[0]) ? String(dx.corrections[0]) : ''} |`;
+  const header = '| Apartado | Nota (1–5) | Evidencia del CV | Correcciones/Acciones |\n|---|---|---|---|';
+  const rows = [
+    row('Estructura', dx.structure_score, ev.structure),
+    row('Coherencia', dx.coherence_score, ev.coherence),
+    row('Información clave', dx.key_info_score, ev.key_info),
+    row('Claridad', dx.clarity_score, ev.clarity),
+    row('Ortografía y estilo', (dx.spelling_style_score ?? dx.style_score), ev.style),
+  ].join('\n');
+  const reord = Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length > 0
+    ? `\n\n**Reordenación sugerida:**\n${dx.reordering_suggestions.map((x: any) => `- ${String(x)}`).join('\n')}`
+    : '';
+  return `${header}\n${rows}${reord}`;
 })()}
 
-## Sugerencias Laborales
-${formatListsForAccessibility(data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en preferencias y habilidades.')}
+## 7) Entornos de trabajo ideales
+${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}
 
-## Entornos de Trabajo Ideales
-${formatListsForAccessibility((data as any)?.recommendations?.entornos_ideales || 'Información no disponible.')}
-
-## Próximos Pasos
-
-### A Corto Plazo
+## 8) Roles profesionales sugeridos
 ${(() => {
-  try {
-    const steps = safeGetRecommendations(data, 'recommendations.next_steps.short_term') || [];
-    return Array.isArray(steps) && steps.length > 0 
-      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
-      : '- Actualizar CV\n- Crear perfil en LinkedIn';
-  } catch (e) {
-    return '- Actualizar CV\n- Crear perfil en LinkedIn';
-  }
+  const arr = Array.isArray(rec.roles_sugeridos) ? rec.roles_sugeridos : [];
+  return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
 })()}
 
-### A Medio Plazo
+## 9) Plan de acción
+### Corto plazo (0–30 días)
+${(() => { const steps = rec?.plan_accion?.corto_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Actualizar CV\n- Crear perfil en LinkedIn'; })()}
+
+### Medio plazo (1–3 meses)
+${(() => { const steps = rec?.plan_accion?.medio_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Completar formación específica\n- Ampliar red profesional'; })()}
+
+### Largo plazo (3–6+ meses)
+${(() => { const steps = rec?.plan_accion?.largo_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'; })()}
+
+## 10) Consejos de búsqueda de empleo
 ${(() => {
   try {
-    const steps = safeGetRecommendations(data, 'recommendations.next_steps.medium_term') || [];
-    return Array.isArray(steps) && steps.length > 0 
-      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
-      : '- Completar formación específica\n- Ampliar red profesional';
-  } catch (e) {
-    return '- Completar formación específica\n- Ampliar red profesional';
-  }
-})()}
-
-### A Largo Plazo
-${(() => {
-  try {
-    const steps = safeGetRecommendations(data, 'recommendations.next_steps.long_term') || [];
-    return Array.isArray(steps) && steps.length > 0 
-      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
-      : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo';
-  } catch (e) {
-    return '- Desarrollar especialización\n- Buscar oportunidades de liderazgo';
-  }
-})()}
-
-## Recursos y Apoyo
-
-${(() => {
-  try {
-    const resources = safeGetRecommendations(data, 'recommendations.resources') || [];
-    return Array.isArray(resources) && resources.length > 0 
-      ? resources.filter(resource => resource != null).map((resource: unknown) => {
-          const res = resource as { name?: string; description?: string; url?: string };
-          const title = `### ${res.name || 'Recurso'}`;
-          const desc = res.description && String(res.description).trim().length > 0 ? `\n${res.description}` : '';
-          const link = `\n[${res.name || 'Recurso'}](${res.url || '#'})`;
-          return `${title}${desc}${link}`;
-        }).join('\n\n')
-      : '### Recursos Generales\n- [LinkedIn](https://www.linkedin.com/learning/)\n- [InfoJobs](https://www.infojobs.net/)\n- [Platzi](https://platzi.com/)';
-  } catch (e) {
-    return '### Recursos Generales\n- [LinkedIn](https://www.linkedin.com/learning/)\n- [InfoJobs](https://www.infojobs.net/)\n- [Platzi](https://platzi.com/)';
-  }
-})()}
-
-## Consejos de Búsqueda
-
-${(() => {
-  try {
-    const adv: any = (data as any)?.recommendations?.consejos_busqueda || {};
+    const adv: any = rec.consejos_busqueda || {};
     const secciones: string[] = [];
     const cvOpt = Array.isArray(adv.cv_optimization) ? adv.cv_optimization : [];
-    if (cvOpt.length > 0) secciones.push(`### Optimización de CV\n${cvOpt.map((x: unknown) => `- ${String(x)}`).join('\n')}`);
-    if (adv.letters_portfolio) secciones.push(`### Cartas y Portafolio\n${String(adv.letters_portfolio)}`);
+    if (cvOpt.length > 0) secciones.push(`### Optimización del CV\n${cvOpt.map((x: unknown) => `- ${String(x)}`).join('\n')}`);
+    if (adv.letters_portfolio) secciones.push(`### Cartas y portfolio/casos\n${String(adv.letters_portfolio)}`);
     const plats = Array.isArray(adv.recommended_platforms) ? adv.recommended_platforms : [];
-    if (plats.length > 0) secciones.push(`### Plataformas recomendadas\n${plats.map((x: unknown) => `- ${String(x)}`).join('\n')}`);
-    if (adv.networking) secciones.push(`### Networking\n${String(adv.networking)}`);
-    if (adv.interview_tips) secciones.push(`### Entrevistas\n${String(adv.interview_tips)}`);
+    if (plats.length > 0) secciones.push(`### Plataformas\n${plats.map((x: unknown) => `- ${String(x)}`).join('\n')}`);
+    if (adv.networking) secciones.push(`### Networking dirigido\n${String(adv.networking)}`);
+    if (adv.interview_tips) secciones.push(`### Entrevistas (método STAR)\n${String(adv.interview_tips)}`);
     return secciones.length > 0 ? secciones.join('\n\n') : 'Consejos no disponibles.';
   } catch {
     return 'Consejos no disponibles.';
   }
 })()}
 
-## Juegos Completados
+## 11) Herramientas útiles y tecnología
 ${(() => {
-  const games = (data as any)?.report?.completedGames || (data as any)?.recommendations?.juegos_completados || [];
-  return Array.isArray(games) && games.length > 0 ? games.map((g: unknown) => `- ${String(g)}`).join('\n') : 'No consta.';
+  const tools: any = rec.herramientas_utiles || {};
+  const renderCat = (title: string, items: any[]) => {
+    if (!Array.isArray(items) || items.length === 0) return '';
+    return `### ${title}\n${items.map((it: any) => {
+      if (it && typeof it === 'object') {
+        const title = String(it.name || it.title || 'Recurso');
+        const desc = it.description ? `\n${String(it.description)}` : '';
+        const link = it.url ? `\n[${title}](${it.url})` : '';
+        return `- ${title}${desc}${link}`;
+      }
+      return `- ${String(it)}`;
+    }).join('\n')}`;
+  };
+  const parts = [
+    renderCat('Productividad/organización', tools.productividad || []),
+    renderCat('Búsqueda de empleo y alertas', tools.busqueda || []),
+    renderCat('Aprendizaje/certificación', tools.aprendizaje || []),
+    renderCat('Accesibilidad/neuroinclusión', tools.accesibilidad || []),
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join('\n\n') : 'Sin recomendaciones específicas. Prueba con LinkedIn Learning, InfoJobs y Platzi.';
 })()}
 
-## Frase Final
-${formatListsForAccessibility((data as any)?.recommendations?.frase_final || 'Gracias por completar tu evaluación. ¡Éxitos en tu búsqueda!')}
-
-### Preferencias Laborales
-- **Áreas de interés**: ${(() => {
-    const areas = data?.report?.jobPreferences?.areas;
-    return (areas && Array.isArray(areas) && areas.length > 0) ? areas.join(', ') : 'No especificadas';
-  })()}
-- **Modalidad de trabajo**: ${data?.report?.jobPreferences?.workMode || 'No especificada'}
-- **Disponibilidad**: ${data?.report?.jobPreferences?.availability || 'No especificada'}
+## 12) Frase final
+${formatListsForAccessibility(String(rec.frase_final || 'Este informe se ha realizado teniendo en cuenta toda la información que nos has proporcionado y tus preferencias laborales. Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!'))}
 
 ---
-*Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*
-          `;
+*Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*`;
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console
               console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', informe.length);
