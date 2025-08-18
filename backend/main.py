@@ -258,6 +258,29 @@ class CvAnalysis(BaseModel):
     education: Optional[List[str]] = Field([], description="Formación detectada")
     alerts: Optional[List[str]] = Field([], description="Alertas o puntos críticos detectados")
 
+    # Campos estructurados adicionales que puede enviar el frontend tras analizar el PDF
+    cv_structured: Optional[Dict[str, Any]] = None
+    cv_info: Optional[Dict[str, Any]] = None
+    candidate: Optional[Dict[str, Any]] = None
+    contact: Optional[Dict[str, Any]] = None
+    experience_detailed: Optional[List[Dict[str, Any]]] = None
+    education_detailed: Optional[List[Dict[str, Any]]] = None
+    languages: Optional[List[Dict[str, Any]]] = None
+    periods: Optional[List[str]] = None
+    highlights: Optional[List[str]] = None
+    volunteering: Optional[List[Dict[str, Any]]] = None
+    cv_analysis_structured: Optional[Dict[str, Any]] = None
+
+    # Campos de texto/libres
+    raw_text: Optional[str] = None
+    layout_sections: Optional[Dict[str, Any]] = None
+    ai_analysis: Optional[Dict[str, Any]] = None
+    basic_hints: Optional[Dict[str, Any]] = None
+    provenance: Optional[Dict[str, Any]] = None
+
+    class Config:
+        extra = 'allow'
+
 class JobPreference(BaseModel):
     areas: List[str]
     needs: List[str]
@@ -697,13 +720,25 @@ def shape_report_for_ui(r: dict) -> dict:
             "interview_tips": _txt((r.get("job_search_advice") or {}).get("interview_tips") or ""),
         },
 
-        # 11) Herramientas útiles
-        "herramientas_utiles": {
-            "productividad": _list_str((r.get("useful_tools") or {}).get("productivity") or []),
-            "busqueda": _list_str((r.get("useful_tools") or {}).get("search_alerts") or (r.get("useful_tools") or {}).get("job_search") or []),
-            "aprendizaje": _list_str((r.get("useful_tools") or {}).get("learning_certification") or (r.get("useful_tools") or {}).get("learning") or []),
-            "accesibilidad": _list_str((r.get("useful_tools") or {}).get("accessibility") or []),
-        },
+        # 11) Herramientas útiles (normalizamos a objetos {name, description, url})
+        "herramientas_utiles": (lambda tools: {
+            "productividad": [
+                (it if isinstance(it, dict) else {"name": str(it), "description": "", "url": ""})
+                for it in _list_str((tools or {}).get("productivity") or [])
+            ],
+            "busqueda": [
+                (it if isinstance(it, dict) else {"name": str(it), "description": "", "url": ""})
+                for it in _list_str((tools or {}).get("search_alerts") or (tools or {}).get("job_search") or [])
+            ],
+            "aprendizaje": [
+                (it if isinstance(it, dict) else {"name": str(it), "description": "", "url": ""})
+                for it in _list_str((tools or {}).get("learning_certification") or (tools or {}).get("learning") or [])
+            ],
+            "accesibilidad": [
+                (it if isinstance(it, dict) else {"name": str(it), "description": "", "url": ""})
+                for it in _list_str((tools or {}).get("accessibility") or [])
+            ],
+        })(r.get("useful_tools") or {}),
 
         # 12) Juegos completados
         "juegos_completados": _list_str(r.get("completed_games") or []),
@@ -864,7 +899,14 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             for cat_key in ("productividad", "busqueda", "aprendizaje", "accesibilidad"):
                 items = tools.get(cat_key) or []
                 if isinstance(items, list):
-                    resources_flat.extend(items)
+                    for it in items:
+                        if isinstance(it, dict):
+                            name = str(it.get("name") or it.get("title") or "Recurso")
+                            description = str(it.get("description") or it.get("desc") or "")
+                            url = str(it.get("url") or it.get("link") or "")
+                            resources_flat.append({"name": name, "description": description, "url": url})
+                        else:
+                            resources_flat.append({"name": str(it), "description": "", "url": ""})
             final_recommendations["resources"] = resources_flat
         except Exception:
             pass
