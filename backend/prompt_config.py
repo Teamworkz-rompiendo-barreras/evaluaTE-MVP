@@ -87,7 +87,7 @@ Tu informe DEBE incluir EXACTAMENTE estas 13 secciones en este orden:
 10. **CONSEJOS DE BÚSQUEDA DE EMPLEO (CV, NETWORKING, PLATAFORMAS, ENTREVISTAS)** - Estrategias y recursos
 11. **HERRAMIENTAS ÚTILES Y TECNOLOGÍA** - Productividad, búsqueda, aprendizaje, accesibilidad
 12. **JUEGOS COMPLETADOS (Y QUÉ EVIDENCIAN)** - Análisis de habilidades evaluadas y su aplicación laboral
-13. **FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA** - Mensaje final motivador y personalizado
+13) FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA - Mensaje final motivador y personalizado
 
 **OBLIGATORIO:** Cada sección debe estar completa y bien desarrollada. No omitas ninguna sección.
 
@@ -351,7 +351,7 @@ REGLAS:
                             "suggested_action": {"type": "string"}
                         },
                         "required": ["area", "reason", "suggested_action"]
-                    }
+                        }
                 },
                 "cv_analysis": {
                     "type": "object",
@@ -395,7 +395,7 @@ REGLAS:
                             "remote_viable": {"type": "boolean"}
                         },
                         "required": ["role", "reason", "seniority", "remote_viable"]
-                    }
+                        }
                 },
                 "action_plan": {
                     "type": "object",
@@ -485,13 +485,13 @@ REGLAS:
 """
             for s in json_data.get('strengths', []) or []:
                 report += f"- {s}\n"
-
+            
             report += "\n## 5. ÁREAS DE MEJORA Y CONSEJOS (PRIORIZADAS Y ACCIONABLES)\n"
             for it in json_data.get('improvement_areas', []) or []:
                 report += f"**{it.get('area','Área')}** — {it.get('reason','')} → **Acción sugerida:** {it.get('suggested_action','')}\n\n"
-
+            
             report += "## 6. ANÁLISIS DEL CV CON PUNTUACIÓN 1–5 POR APARTADO\n"
-            report += f"""
+                report += f"""
 **Estructura:** {stars(cvx.get('structure_score'))} ({cvx.get('structure_score','0')}/5)
 **Coherencia:** {stars(cvx.get('coherence_score'))} ({cvx.get('coherence_score','0')}/5)
 **Información clave:** {stars(cvx.get('key_info_score'))} ({cvx.get('key_info_score','0')}/5)
@@ -514,7 +514,7 @@ REGLAS:
                 report += "\n**Reordenación sugerida:**\n"
                 for r in cvx['reordering_suggestions']:
                     report += f"- {r}\n"
-
+            
             report += f"""
 
 ## 7. ENTORNOS DE TRABAJO IDEALES
@@ -525,7 +525,7 @@ REGLAS:
             for role in json_data.get('suggested_roles', []) or []:
                 remoto = "Sí" if role.get('remote_viable') else "No"
                 report += f"**{role.get('role','Rol')}** — {role.get('reason','')} (Seniority: {role.get('seniority','No especificado')}, Remoto: {remoto})\n\n"
-
+            
             report += "## 9. PLAN DE ACCIÓN A CORTO, MEDIO Y LARGO PLAZO\n"
             if a.get('short_term'):
                 report += "**Corto plazo (0–30 días):**\n" + "\n".join(f"- {x}" for x in a['short_term']) + "\n\n"
@@ -533,7 +533,7 @@ REGLAS:
                 report += "**Medio plazo (1–3 meses):**\n" + "\n".join(f"- {x}" for x in a['medium_term']) + "\n\n"
             if a.get('long_term'):
                 report += "**Largo plazo (3–6+ meses):**\n" + "\n".join(f"- {x}" for x in a['long_term']) + "\n\n"
-
+            
             report += "## 10. CONSEJOS DE BÚSQUEDA DE EMPLEO (CV, NETWORKING, PLATAFORMAS, ENTREVISTAS)\n"
             if adv.get('cv_optimization'):
                 report += "**Optimización del CV:**\n" + "\n".join(f"- {x}" for x in adv['cv_optimization']) + "\n\n"
@@ -562,7 +562,7 @@ REGLAS:
                 report += "\n".join(f"- {g}" for g in games) + "\n"
             else:
                 report += (games if isinstance(games, str) else "No disponible") + "\n"
-
+            
             report += f"""
 ## 13) FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA
 {json_data.get('final_message', 'No disponible')}

@@ -2126,7 +2126,9 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
                 "cv_analysis_structured": build_cv_json_schema()["schema"],
             },
         }
-        analysis_schema = harden_schema(analysis_schema)  # <---
+        # Asegurar 'required' exhaustivo en todos los objetos y cerrar objetos para modo estricto
+        analysis_schema = _ensure_required_everywhere(analysis_schema)
+        analysis_schema = harden_schema(analysis_schema)
         # 🔧 Azure SO no admite ['object','null'] en la raíz
         if isinstance(analysis_schema.get("type"), list):
             analysis_schema["type"] = "object"
