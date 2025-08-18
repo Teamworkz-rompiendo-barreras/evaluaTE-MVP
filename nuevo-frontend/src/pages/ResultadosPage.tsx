@@ -362,10 +362,11 @@ ${(() => {
     `**Información clave:** ${renderStars(r.infoClave)}`,
     `**Ortografía:** ${renderStars(r.ortografia)}`,
   ];
+  const consejoFuente: string = Array.isArray(r.razones) && r.razones.length > 0
+    ? r.razones.join('; ')
+    : String((data.recommendations?.cv_analysis as string) || '');
   const consejo = `
-${formatListsForAccessibility(
-  (data.recommendations?.cv_analysis as string) || r.razones.join('; ')
-)}
+${formatListsForAccessibility(consejoFuente)}
   `.trim();
   return `${lines.join('\n')}\n\n${consejo}`;
 })()}
