@@ -259,17 +259,18 @@ class CvAnalysis(BaseModel):
     alerts: Optional[List[str]] = Field([], description="Alertas o puntos críticos detectados")
 
     # Campos estructurados adicionales que puede enviar el frontend tras analizar el PDF
-    cv_structured: Optional[Dict[str, Any]] = None
-    cv_info: Optional[Dict[str, Any]] = None
-    candidate: Optional[Dict[str, Any]] = None
-    contact: Optional[Dict[str, Any]] = None
-    experience_detailed: Optional[List[Dict[str, Any]]] = None
-    education_detailed: Optional[List[Dict[str, Any]]] = None
-    languages: Optional[List[Dict[str, Any]]] = None
-    periods: Optional[List[str]] = None
-    highlights: Optional[List[str]] = None
-    volunteering: Optional[List[Dict[str, Any]]] = None
-    cv_analysis_structured: Optional[Dict[str, Any]] = None
+    cv_structured: Optional[Any] = None
+    cv_info: Optional[Any] = None
+    # Puede venir como string (nombre) o como objeto; aceptamos ambos
+    candidate: Optional[Any] = None
+    contact: Optional[Any] = None
+    experience_detailed: Optional[Any] = None
+    education_detailed: Optional[Any] = None
+    languages: Optional[Any] = None
+    periods: Optional[Any] = None
+    highlights: Optional[Any] = None
+    volunteering: Optional[Any] = None
+    cv_analysis_structured: Optional[Any] = None
 
     # Campos de texto/libres
     raw_text: Optional[str] = None
