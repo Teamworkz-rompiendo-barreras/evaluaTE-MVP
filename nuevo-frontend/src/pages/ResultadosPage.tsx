@@ -45,55 +45,7 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 // Función helper para mapeo seguro
 
 
-// Función más robusta para manejar datos anidados de recomendaciones
-function safeGetRecommendations(data: unknown, path: string): unknown[] {
-  try {
-    if (import.meta.env.MODE !== 'production') {
-      // eslint-disable-next-line no-console
-      console.log(`🔍 DEBUG - safeGetRecommendations llamada con path: ${path}`);
-      // eslint-disable-next-line no-console
-      console.log(`🔍 DEBUG - data:`, data);
-    }
-    
-    if (!data || typeof data !== 'object') {
-    // Debug opcional eliminado para producción
-      return [];
-    }
-    
-    const keys = path.split('.');
-    let current = data as Record<string, unknown>;
-    
-    for (const key of keys) {
-    // Debug opcional eliminado para producción
-      if (current && typeof current === 'object' && key in current) {
-        current = current[key] as Record<string, unknown>;
-      } else {
-        // Debug opcional eliminado para producción
-        return [];
-      }
-    }
-    
-    // CORRECCIÓN: Asegurar que siempre retornamos un array válido
-    if (Array.isArray(current)) {
-      // Filtrar elementos nulos o undefined
-      const result = current.filter(item => item != null && item !== undefined);
-    // Debug opcional eliminado para producción
-      return result;
-    } else {
-      if (import.meta.env.MODE !== 'production') {
-        // eslint-disable-next-line no-console
-        console.log(`🔍 DEBUG - Resultado no es array, retornando []`);
-      }
-      return [];
-    }
-  } catch (error) {
-    if (import.meta.env.MODE !== 'production') {
-      // eslint-disable-next-line no-console
-      console.warn(`Error accessing path ${path}:`, error);
-    }
-    return [];
-  }
-}
+// Eliminada: helper no usado tras la remaquetación del informe
 
 // Utilidades para limpiar duplicaciones de nombre en el resumen
 function escapeRegExp(text: string): string {
