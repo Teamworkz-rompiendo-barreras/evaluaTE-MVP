@@ -301,13 +301,13 @@ const ResultadosPage: React.FC = () => {
               removeLeadingName(String(data.summary || ''), candidateName)
             );
             // Datos personales: preferir recomendaciones, luego report.ui y por último contact del CV
-            const dpSrc: any = (data as any)?.recommendations?.datos_personales 
-              || (data as any)?.report?.ui?.datos_personales 
-              || {};
-            const contact: any = (data as any)?.report?.cvAnalysis?.contact 
-              || (cvAnalysis as any)?.contact 
-              || {};
-            const dp: any = {
+            const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
+              || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
+              || {} as Record<string, unknown>;
+            const contact = (data as { report?: { cvAnalysis?: { contact?: { emails?: string[]; phones?: string[]; location?: string } } } })?.report?.cvAnalysis?.contact
+              || (cvAnalysis as { contact?: { emails?: string[]; phones?: string[]; location?: string } } | null | undefined)?.contact
+              || {} as { emails?: string[]; phones?: string[]; location?: string };
+            const dp = {
               name: dpSrc?.name || candidateName,
               location: dpSrc?.location || contact?.location || 'No consta',
               email: dpSrc?.email || (Array.isArray(contact?.emails) ? contact.emails[0] : '') || 'No consta',
@@ -316,12 +316,14 @@ const ResultadosPage: React.FC = () => {
                 ? dpSrc.disability_certificate
                 : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
             };
-            const profileSummaryRaw = (data as any)?.recommendations?.resumen_perfil || (data as any)?.recommendations?.analisis_perfil || cleanedSummary;
+            const profileSummaryRaw = (data as { recommendations?: { resumen_perfil?: string; analisis_perfil?: string } })?.recommendations?.resumen_perfil
+              || (data as { recommendations?: { analisis_perfil?: string } })?.recommendations?.analisis_perfil
+              || cleanedSummary;
             const profileSummary = sanitizeProfileSummary(
               profileSummaryRaw,
               (data as any)?.report?.cvAnalysis || cvAnalysis
             );
-            const rec: any = (data as any)?.recommendations || {};
+            const rec = ((data as { recommendations?: Record<string, unknown> })?.recommendations) || {} as Record<string, unknown>;
 
             const informe = `# Informe Profesional de Empleabilidad
 
@@ -337,36 +339,36 @@ ${formatListsForAccessibility(String(profileSummary || 'Resumen no disponible.')
 ## 3) Resumen del CV
 ${(() => {
   const txt = String(rec.resumen_cv || '');
-  const cvx: any = (data?.report?.cvAnalysis || cvAnalysis || {}) as any;
-  const structured: any = (cvx && (cvx.cv_structured || {})) || {};
+  const cvx = (data?.report?.cvAnalysis || cvAnalysis || {}) as { cv_structured?: unknown };
+  const structured = (cvx && (cvx.cv_structured || {})) as Record<string, unknown>;
   const hasStructured = structured && (Array.isArray(structured.experience) || Array.isArray(structured.education));
   // 1) Si hay datos estructurados, siempre los mostramos (con o sin texto adicional)
   if (hasStructured) {
-    const fmtRange = (e: any) => {
+    const fmtRange = (e: { start_date?: string; end_date?: string; current?: boolean }) => {
       const s = String(e?.start_date || '').trim();
       const end = (e?.current ? 'actualidad' : String(e?.end_date || '').trim());
       const both = [s, end].filter(Boolean).join(' – ');
       return both ? ` (${both})` : '';
     };
     const take = <T,>(arr: T[] | undefined, n = 4): T[] => Array.isArray(arr) ? arr.slice(0, n) : [];
-    const expLines = take(structured.experience, 4).map((e: any) => {
+    const expLines = take(structured.experience as Array<{ position?: string; title?: string; company?: string; organization?: string; organisation?: string; start_date?: string; end_date?: string; current?: boolean }>, 4).map((e) => {
       const role = String(e?.position || e?.title || 'Puesto').trim();
       const company = String(e?.company || e?.organization || e?.organisation || '').trim();
       const at = company ? ` en ${company}` : '';
       return `- ${role}${at}${fmtRange(e)}`;
     });
-    const eduLines = take(structured.education, 4).map((it: any) => {
+    const eduLines = take(structured.education as Array<{ degree?: string; title?: string; institution?: string; school?: string; start_date?: string; end_date?: string }>, 4).map((it) => {
       const degree = String(it?.degree || it?.title || 'Estudios').trim();
       const inst = String(it?.institution || it?.school || '').trim();
       const years = [it?.start_date, it?.end_date].filter(Boolean).join(' – ');
       const tail = [inst, years].filter(Boolean).join(', ');
       return `- ${degree}${tail ? ` — ${tail}` : ''}`;
     });
-    const langLines = take(structured.languages, 5).map((l: any) => `- ${String(l?.language || l?.name || 'Idioma')} — ${String(l?.level || '').trim() || 'nivel no indicado'}`);
-    const skillsArr: any[] = (Array.isArray(structured.skills) && structured.skills.length > 0)
-      ? structured.skills
-      : (Array.isArray((structured as any).software) ? (structured as any).software : []);
-    const skillLines = take(skillsArr, 8).map((s: any) => `- ${String(s?.name || s?.tool || s || '')}`);
+    const langLines = take(structured.languages as Array<{ language?: string; name?: string; level?: string }>, 5).map((l) => `- ${String(l?.language || l?.name || 'Idioma')} — ${String(l?.level || '').trim() || 'nivel no indicado'}`);
+    const rawSkills = (structured.skills as Array<{ name?: string; tool?: string }> | undefined) ?? [];
+    const altSoftware = (structured as { software?: Array<{ name?: string; tool?: string }> }).software ?? [];
+    const skillsArr = (Array.isArray(rawSkills) && rawSkills.length > 0) ? rawSkills : altSoftware;
+    const skillLines = take(skillsArr, 8).map((s) => `- ${String((s as { name?: string }).name || (s as { tool?: string }).tool || s || '')}`);
 
     const blocks: string[] = [];
     if (expLines.length) blocks.push(`### Experiencia destacada\n${expLines.join('\n')}`);
@@ -453,7 +455,9 @@ ${(() => {
       const razonesBlock = `\n\n${[...evLines, ...corr, ...reord].join('\n')}`;
       return `${stars}${razonesBlock}`;
     }
-  } catch {}
+  } catch (e) {
+    // Silenciar errores no críticos en el renderizado del markdown del diagnóstico
+  }
   // Fallback heurístico
   const cv = data?.report?.cvAnalysis || cvAnalysis || null;
   const r = rateCv(cv);
@@ -478,13 +482,13 @@ ${(() => {
 
 ## 9) Plan de acción
 ### Corto plazo (0–30 días)
-${(() => { const steps = rec?.plan_accion?.corto_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Actualizar CV\n- Crear perfil en LinkedIn'; })()}
+${(() => { const steps = (rec as { plan_accion?: { corto_plazo?: unknown[] } })?.plan_accion?.corto_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Actualizar CV\n- Crear perfil en LinkedIn'; })()}
 
 ### Medio plazo (1–3 meses)
-${(() => { const steps = rec?.plan_accion?.medio_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Completar formación específica\n- Ampliar red profesional'; })()}
+${(() => { const steps = (rec as { plan_accion?: { medio_plazo?: unknown[] } })?.plan_accion?.medio_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Completar formación específica\n- Ampliar red profesional'; })()}
 
 ### Largo plazo (3–6+ meses)
-${(() => { const steps = rec?.plan_accion?.largo_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'; })()}
+${(() => { const steps = (rec as { plan_accion?: { largo_plazo?: unknown[] } })?.plan_accion?.largo_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'; })()}
 
 ## 10) Consejos de búsqueda de empleo
 ${(() => {

@@ -18,38 +18,69 @@ export interface CvAnalysis {
   
   // Campos estructurados del CV extraídos por IA
   cv_structured?: {
-    candidate?: any;
-    contact?: any;
-    experience?: any[];
-    education?: any[];
-    languages?: any[];
-    skills?: any[];
+    candidate?: string | Record<string, unknown>;
+    contact?: CvContact;
+    experience?: CvExperienceItem[];
+    education?: CvEducationItem[];
+    languages?: CvLanguageItem[];
+    skills?: CvSkillItem[];
     summary?: string;
   };
   
   // Campos directos del CV
-  candidate?: any;
-  contact?: {
-    emails?: string[];
-    phones?: string[];
-    location?: string;
-    linkedin?: string;
-  };
-  experience_detailed?: any[];
-  education_detailed?: any[];
-  languages?: any[];
+  candidate?: string | Record<string, unknown>;
+  contact?: CvContact;
+  experience_detailed?: CvExperienceItem[];
+  education_detailed?: CvEducationItem[];
+  languages?: CvLanguageItem[];
   periods?: string[];
   highlights?: string[];
-  volunteering?: any[];
+  volunteering?: Array<Record<string, unknown>>;
   
   // Campos de análisis estructurado
-  cv_analysis_structured?: any;
+  cv_analysis_structured?: Record<string, unknown>;
   raw_text?: string;
-  layout_sections?: any;
-  ai_analysis?: any;
-  basic_hints?: any;
-  provenance?: any;
+  layout_sections?: Record<string, unknown>;
+  ai_analysis?: Record<string, unknown>;
+  basic_hints?: Record<string, unknown>;
+  provenance?: Record<string, unknown>;
 }
+
+export interface CvContact {
+  emails?: string[];
+  phones?: string[];
+  location?: string;
+  linkedin?: string;
+}
+
+export interface CvExperienceItem {
+  position?: string;
+  title?: string;
+  company?: string;
+  organization?: string;
+  organisation?: string;
+  start_date?: string;
+  end_date?: string;
+  current?: boolean;
+  description?: string;
+}
+
+export interface CvEducationItem {
+  degree?: string;
+  title?: string;
+  institution?: string;
+  school?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface CvLanguageItem {
+  language?: string;
+  name?: string;
+  level?: string;
+}
+
+export type CvSkillItem = { name?: string; tool?: string } | string;
 
 /**
  * Preferencias laborales del candidato
