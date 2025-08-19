@@ -39,21 +39,31 @@ export const AZURE_CONFIG = {
     
     // Si estamos en Azure, usar el backend de Azure
     const isAzure = AZURE_CONFIG.isAzureEnvironment();
-    // Evitar logs en producción; en desarrollo puedes descomentar si lo necesitas
-    void isAzure; // evitar warning no-console asociado
-    
     if (isAzure) {
       if (import.meta.env.MODE !== 'production') {
         // eslint-disable-next-line no-console
-        console.log('✅ DEBUG - Usando Azure backend:', AZURE_CONFIG.AZURE_BACKEND_URL);
+        console.log('✅ DEBUG - Entorno Azure detectado. Backend:', AZURE_CONFIG.AZURE_BACKEND_URL);
       }
       return AZURE_CONFIG.AZURE_BACKEND_URL;
     }
-    
-    // TEMPORAL: Forzar uso de Azure backend para debugging
+
+    // Desarrollo/local: priorizar backend local
+    const host = (typeof window !== 'undefined' ? window.location.hostname : '') || '';
+    const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
+    if (isLocalHost || import.meta.env.MODE !== 'production') {
+      // Heurística simple: usar primero localhost:8080
+      const localUrl = AZURE_CONFIG.LOCAL_BACKEND_URLS[0] || 'http://localhost:8080';
+      if (import.meta.env.MODE !== 'production') {
+        // eslint-disable-next-line no-console
+        console.log('✅ DEBUG - Usando backend LOCAL:', localUrl);
+      }
+      return localUrl;
+    }
+
+    // Fallback seguro: Azure público
     if (import.meta.env.MODE !== 'production') {
       // eslint-disable-next-line no-console
-      console.log('⚠️ DEBUG - FORZANDO uso de Azure backend para debugging');
+      console.log('⚠️ DEBUG - Fallback a Azure backend (no local detectado)');
     }
     return AZURE_CONFIG.AZURE_BACKEND_URL;
   },

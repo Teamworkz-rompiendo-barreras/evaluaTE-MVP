@@ -6,6 +6,7 @@ import { buildApiUrl, API_CONFIG } from '../config/api';
 import { ResponsiveRadar } from '@nivo/radar';
 import logo from '../assets/Logo_teamworkz.png';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useMemo } from 'react';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
@@ -45,55 +46,7 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 // Función helper para mapeo seguro
 
 
-// Función más robusta para manejar datos anidados de recomendaciones
-function safeGetRecommendations(data: unknown, path: string): unknown[] {
-  try {
-    if (import.meta.env.MODE !== 'production') {
-      // eslint-disable-next-line no-console
-      console.log(`🔍 DEBUG - safeGetRecommendations llamada con path: ${path}`);
-      // eslint-disable-next-line no-console
-      console.log(`🔍 DEBUG - data:`, data);
-    }
-    
-    if (!data || typeof data !== 'object') {
-    // Debug opcional eliminado para producción
-      return [];
-    }
-    
-    const keys = path.split('.');
-    let current = data as Record<string, unknown>;
-    
-    for (const key of keys) {
-    // Debug opcional eliminado para producción
-      if (current && typeof current === 'object' && key in current) {
-        current = current[key] as Record<string, unknown>;
-      } else {
-        // Debug opcional eliminado para producción
-        return [];
-      }
-    }
-    
-    // CORRECCIÓN: Asegurar que siempre retornamos un array válido
-    if (Array.isArray(current)) {
-      // Filtrar elementos nulos o undefined
-      const result = current.filter(item => item != null && item !== undefined);
-    // Debug opcional eliminado para producción
-      return result;
-    } else {
-      if (import.meta.env.MODE !== 'production') {
-        // eslint-disable-next-line no-console
-        console.log(`🔍 DEBUG - Resultado no es array, retornando []`);
-      }
-      return [];
-    }
-  } catch (error) {
-    if (import.meta.env.MODE !== 'production') {
-      // eslint-disable-next-line no-console
-      console.warn(`Error accessing path ${path}:`, error);
-    }
-    return [];
-  }
-}
+// Eliminada: helper no usado tras la remaquetación del informe
 
 // Utilidades para limpiar duplicaciones de nombre en el resumen
 function escapeRegExp(text: string): string {
@@ -127,6 +80,38 @@ function formatListsForAccessibility(text: string): string {
 function renderStars(score: number): string {
   const n = Math.max(0, Math.min(5, Math.round(score)));
   return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
+// Sanea frases con sectores concretos no respaldados por el CV
+function sanitizeProfileSummary(text: string, cvData: unknown): string {
+  try {
+    const summary = String(text || '');
+    const haystack = JSON.stringify(cvData || {}).toLowerCase();
+    // Reemplazar "experiencia en el sector de X" si X no aparece en el CV
+    return summary.replace(/experiencia en el sector de ([^,.;\n]+)/gi, (_m, sector) => {
+      const token = String(sector || '').trim().toLowerCase();
+      if (!token) return 'experiencia relevante';
+      return haystack.includes(token) ? _m : 'experiencia relevante';
+    });
+  } catch {
+    return String(text || '');
+  }
+}
+
+// Limpia frases como "Puntuación baja (35/100)" dejando solo la puntuación
+function sanitizeImprovementText(text: string): string {
+  try {
+    let s = String(text || '').trim();
+    // Mantener únicamente el valor numérico si viene como "Puntuación baja (35/100)"
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*\((\d+\s*\/\s*\d+)\)/gi, '($1)');
+    // O como "Puntuación baja: 35/100" o "Puntuación baja 35/100"
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*:?\s*(\d+\s*\/\s*\d+)/gi, '$1');
+    // Eliminar etiquetas de calificación si no tienen número detrás
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)/gi, '').replace(/\s{2,}/g, ' ').trim();
+    return s;
+  } catch {
+    return String(text || '');
+  }
 }
 
   // Heurísticas simples para evaluar un CV sin IA (formato, claridad, coherencia, información clave, ortografía)
@@ -217,6 +202,7 @@ const ResultadosPage: React.FC = () => {
   const [loadingIa, setLoadingIa] = useState<boolean>(false);
   const [errorIa, setErrorIa] = useState<string>('');
   const fetchedRef = useRef(false);
+  const [finalPhrase, setFinalPhrase] = useState<string>('');
 
   // Llamar al endpoint de IA al cargar la página
   useEffect(() => {
@@ -263,6 +249,7 @@ const ResultadosPage: React.FC = () => {
           fullName: userFullName,
           softSkills: softSkillsToSend,
           cvAnalysis: cvAnalysis ? {
+            // Campos básicos del análisis
             strengths: cvAnalysis.strengths ?? [],
             weaknesses: cvAnalysis.weaknesses ?? [],
             feedback: cvAnalysis.feedback ?? '',
@@ -272,6 +259,25 @@ const ResultadosPage: React.FC = () => {
             skills: cvAnalysis.skills ?? [],
             education: cvAnalysis.education ?? [],
             alerts: cvAnalysis.alerts ?? [],
+            
+            // CRÍTICO: Incluir TODOS los datos estructurados del CV extraídos por IA
+            cv_structured: cvAnalysis.cv_structured ?? null,
+            candidate: cvAnalysis.candidate ?? null,
+            contact: cvAnalysis.contact ?? null,
+            experience_detailed: cvAnalysis.experience_detailed ?? null,
+            education_detailed: cvAnalysis.education_detailed ?? null,
+            languages: cvAnalysis.languages ?? null,
+            periods: cvAnalysis.periods ?? null,
+            highlights: cvAnalysis.highlights ?? null,
+            volunteering: cvAnalysis.volunteering ?? null,
+            cv_analysis_structured: cvAnalysis.cv_analysis_structured ?? null,
+            
+            // Campos adicionales que pueden estar disponibles
+            raw_text: cvAnalysis.raw_text ?? null,
+            layout_sections: cvAnalysis.layout_sections ?? null,
+            ai_analysis: cvAnalysis.ai_analysis ?? null,
+            basic_hints: cvAnalysis.basic_hints ?? null,
+            provenance: cvAnalysis.provenance ?? null,
           } : null,
           jobPreferences: personal.jobPreferences || report?.jobPreferences || null,
           completedGames: game?.completedGames || [],
@@ -311,112 +317,242 @@ const ResultadosPage: React.FC = () => {
             const cleanedSummary = formatListsForAccessibility(
               removeLeadingName(String(data.summary || ''), candidateName)
             );
+            // Datos personales: preferir recomendaciones, luego report.ui y por último contact del CV
+            const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
+              || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
+              || {} as Record<string, unknown>;
+            const contact = (data as { report?: { cvAnalysis?: { contact?: { emails?: string[]; phones?: string[]; location?: string } } } })?.report?.cvAnalysis?.contact
+              || (cvAnalysis as { contact?: { emails?: string[]; phones?: string[]; location?: string } } | null | undefined)?.contact
+              || {} as { emails?: string[]; phones?: string[]; location?: string };
+            const dp = {
+              name: dpSrc?.name || candidateName,
+              location: dpSrc?.location || contact?.location || 'No consta',
+              email: dpSrc?.email || (Array.isArray(contact?.emails) ? contact.emails[0] : '') || 'No consta',
+              phone: dpSrc?.phone || (Array.isArray(contact?.phones) ? contact.phones[0] : '') || 'No especificado',
+              disability_certificate: (dpSrc?.disability_certificate != null)
+                ? dpSrc.disability_certificate
+                : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
+            };
+            const profileSummaryRaw = (data as { recommendations?: { resumen_perfil?: string; analisis_perfil?: string } })?.recommendations?.resumen_perfil
+              || (data as { recommendations?: { analisis_perfil?: string } })?.recommendations?.analisis_perfil
+              || cleanedSummary;
+            const profileSummary = sanitizeProfileSummary(
+              profileSummaryRaw,
+              (data as any)?.report?.cvAnalysis || cvAnalysis
+            );
+            const rec = ((data as { recommendations?: Record<string, unknown> })?.recommendations) || {} as Record<string, unknown>;
+
             const informe = `# Informe Profesional de Empleabilidad
 
-## Resumen del Perfil
-**Candidato:** ${candidateName}
-${cleanedSummary}
+## Datos personales básicos
+- **Nombre**: ${dp.name || candidateName}
+- **Ubicación**: ${dp.location || 'No consta'}
+- **Email | Tel.**: ${(dp.email || 'No consta')} | ${(dp.phone || 'No consta')}
+- **Certificado de discapacidad**: ${(String(dp.disability_certificate || '').toLowerCase().includes('sí') ? 'Sí' : 'No')}
 
-## Análisis Detallado
+## Resumen del perfil
+${formatListsForAccessibility(String(profileSummary || 'Resumen no disponible.'))}
 
-### Análisis del Perfil
-${data.recommendations?.profile_analysis || 'Análisis del perfil basado en la evaluación completa.'}
-
-### Análisis de Fortalezas
-${formatListsForAccessibility(data.recommendations?.strengths_analysis || 'Fortalezas identificadas en la evaluación.')}
-
-### Áreas de Mejora
-${formatListsForAccessibility(data.recommendations?.improvement_areas || 'Áreas de mejora detectadas con recomendaciones.')}
-
-### Análisis del CV
+## Resumen del CV
 ${(() => {
+  const txt = String(rec.resumen_cv || '');
+  const cvx = (data?.report?.cvAnalysis || cvAnalysis || {}) as { cv_structured?: unknown };
+  const structured = (cvx && (cvx.cv_structured || {})) as Record<string, unknown>;
+  const hasStructured = structured && (Array.isArray(structured.experience) || Array.isArray(structured.education));
+  // 1) Si hay datos estructurados, siempre los mostramos (con o sin texto adicional)
+  if (hasStructured) {
+    const fmtRange = (e: { start_date?: string; end_date?: string; current?: boolean }) => {
+      const s = String(e?.start_date || '').trim();
+      const end = (e?.current ? 'actualidad' : String(e?.end_date || '').trim());
+      const both = [s, end].filter(Boolean).join(' – ');
+      return both ? ` (${both})` : '';
+    };
+    const take = <T,>(arr: T[] | undefined, n = 4): T[] => Array.isArray(arr) ? arr.slice(0, n) : [];
+    const expLines = take(structured.experience as Array<{ position?: string; title?: string; company?: string; organization?: string; organisation?: string; start_date?: string; end_date?: string; current?: boolean }>, 4).map((e) => {
+      const role = String(e?.position || e?.title || 'Puesto').trim();
+      const company = String(e?.company || e?.organization || e?.organisation || '').trim();
+      const at = company ? ` en ${company}` : '';
+      return `- ${role}${at}${fmtRange(e)}`;
+    });
+    const eduLines = take(structured.education as Array<{ degree?: string; title?: string; institution?: string; school?: string; start_date?: string; end_date?: string }>, 4).map((it) => {
+      const degree = String(it?.degree || it?.title || 'Estudios').trim();
+      const inst = String(it?.institution || it?.school || '').trim();
+      const years = [it?.start_date, it?.end_date].filter(Boolean).join(' – ');
+      const tail = [inst, years].filter(Boolean).join(', ');
+      return `- ${degree}${tail ? ` — ${tail}` : ''}`;
+    });
+    const langLines = take(structured.languages as Array<{ language?: string; name?: string; level?: string }>, 5).map((l) => `- ${String(l?.language || l?.name || 'Idioma')} — ${String(l?.level || '').trim() || 'nivel no indicado'}`);
+    const rawSkills = (structured.skills as Array<{ name?: string; tool?: string }> | undefined) ?? [];
+    const altSoftware = (structured as { software?: Array<{ name?: string; tool?: string }> }).software ?? [];
+    const skillsArr = (Array.isArray(rawSkills) && rawSkills.length > 0) ? rawSkills : altSoftware;
+    const skillLines = take(skillsArr, 8).map((s) => `- ${String((s as { name?: string }).name || (s as { tool?: string }).tool || s || '')}`);
+
+    const blocks: string[] = [];
+    if (expLines.length) blocks.push(`### Experiencia destacada\n${expLines.join('\n')}`);
+    if (eduLines.length) blocks.push(`### Formación\n${eduLines.join('\n')}`);
+    if (langLines.length) blocks.push(`### Idiomas\n${langLines.join('\n')}`);
+    if (skillLines.length) blocks.push(`### Herramientas/Software\n${skillLines.join('\n')}`);
+
+    const header = `Se ha extraído información estructurada del CV:`;
+    const textExtra = (txt && !/no hay información del cv/i.test(txt) && !/información.*limitad/i.test(txt))
+      ? `\n\n${formatListsForAccessibility(txt)}`
+      : '';
+    return `${header}\n\n${blocks.join('\n\n')}${textExtra}`;
+  }
+  // 2) Si no hay estructurado, usar el texto si es útil
+  if (txt && !/no hay información del cv/i.test(txt)) {
+    return formatListsForAccessibility(txt);
+  }
+  return 'Resumen del CV no disponible.';
+})()}
+
+## Fortalezas
+${(() => {
+  const arr = Array.isArray(rec.fortalezas_clave) ? rec.fortalezas_clave : [];
+  return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
+})()}
+
+## Áreas de mejora y consejos
+${(() => {
+  const arr = Array.isArray((rec as { areas_mejora?: unknown[] }).areas_mejora) ? (rec as { areas_mejora?: unknown[] }).areas_mejora as unknown[] : [];
+  return arr.length > 0
+    ? arr.map((x: unknown) => `- ${sanitizeImprovementText(String(x))}`).join('\n')
+    : '- Información no disponible.';
+})()}
+
+## Análisis del CV (con puntuación 1–5 por apartado)
+${(() => {
+  // Preferir el diagnóstico del backend si existe; si no, usar heurística local
+  try {
+    const dx: any = (rec && (rec as any).diagnostico_cv) || {};
+    const hasBackendScores = [dx.structure_score, dx.coherence_score, dx.key_info_score, dx.clarity_score, (dx.spelling_style_score ?? dx.style_score)]
+      .some((v: any) => typeof v === 'number' && v > 0);
+    if (hasBackendScores) {
+      const stars = [
+        `Formato: ${renderStars(Number(dx.structure_score || 1))}`,
+        `Claridad: ${renderStars(Number(dx.clarity_score || 1))}`,
+        `Coherencia: ${renderStars(Number(dx.coherence_score || 1))}`,
+        `Información clave: ${renderStars(Number(dx.key_info_score || 1))}`,
+        `Ortografía y estilo: ${renderStars(Number((dx.spelling_style_score ?? dx.style_score) || 1))}`,
+      ].join('  \\\n');
+      const ev: any = (dx && dx.evidence) || {};
+      const evLines: string[] = [];
+      const pushIfUseful = (label: string, value: unknown) => {
+        const s = typeof value === 'string' ? value.trim() : '';
+        if (!s) return;
+        if (/no hay información del cv/i.test(s)) return; // descartar textos genéricos
+        evLines.push(`- ${label}: ${s}`);
+      };
+      pushIfUseful('Estructura', ev.structure);
+      pushIfUseful('Claridad', ev.clarity);
+      pushIfUseful('Coherencia', ev.coherence);
+      pushIfUseful('Información clave', ev.key_info);
+      pushIfUseful('Ortografía y estilo', ev.style);
+      const corr = Array.isArray(dx.corrections) && dx.corrections.length > 0
+        ? [`\nCorrecciones/Acciones:`, ...dx.corrections.map((c: any) => `- ${String(c)}`)]
+        : [];
+      const reord = Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length > 0
+        ? [`\nReordenación sugerida:`, ...dx.reordering_suggestions.map((r: any) => `- ${String(r)}`)]
+        : [];
+
+      // Si no quedan evidencias útiles, usar heurística local con cvAnalysis
+      if (evLines.length === 0) {
+        const cvLocal = data?.report?.cvAnalysis || cvAnalysis || null;
+        const rLoc = rateCv(cvLocal);
+        const starsHeur = [
+          `Formato: ${renderStars(rLoc.formato)}`,
+          `Claridad: ${renderStars(rLoc.claridad)}`,
+          `Coherencia: ${renderStars(rLoc.coherencia)}`,
+          `Información clave: ${renderStars(rLoc.infoClave)}`,
+          `Ortografía: ${renderStars(rLoc.ortografia)}`,
+        ].join('  \\\n');
+        const razones = Array.isArray(rLoc.razones) && rLoc.razones.length > 0 ? `\n\n${rLoc.razones.map(x => `- ${x}`).join('\n')}` : '';
+        const extras = (corr.length || reord.length) ? `\n\n${[...corr, ...reord].join('\n')}` : '';
+        return `${starsHeur}${razones}${extras}`;
+      }
+
+      const razonesBlock = `\n\n${[...evLines, ...corr, ...reord].join('\n')}`;
+      return `${stars}${razonesBlock}`;
+    }
+  } catch (e) {
+    // Silenciar errores no críticos en el renderizado del markdown del diagnóstico
+  }
+  // Fallback heurístico
   const cv = data?.report?.cvAnalysis || cvAnalysis || null;
   const r = rateCv(cv);
-  const lines = [
-    `**Formato:** ${renderStars(r.formato)}`,
-    `**Claridad:** ${renderStars(r.claridad)}`,
-    `**Coherencia:** ${renderStars(r.coherencia)}`,
-    `**Información clave:** ${renderStars(r.infoClave)}`,
-    `**Ortografía:** ${renderStars(r.ortografia)}`,
-  ];
-  const consejo = `
-${formatListsForAccessibility(
-  (data.recommendations?.cv_analysis as string) || r.razones.join('; ')
-)}
-  `.trim();
-  return `${lines.join('\n')}\n\n${consejo}`;
+  const stars = [
+    `Formato: ${renderStars(r.formato)}`,
+    `Claridad: ${renderStars(r.claridad)}`,
+    `Coherencia: ${renderStars(r.coherencia)}`,
+    `Información clave: ${renderStars(r.infoClave)}`,
+    `Ortografía: ${renderStars(r.ortografia)}`,
+  ].join('  \\\n');
+  const razones = Array.isArray(r.razones) && r.razones.length > 0 ? `\n\n${r.razones.map(x => `- ${x}`).join('\n')}` : '';
+  return `${stars}${razones}`;
+})()}
+## Entornos de trabajo ideales
+${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}
+
+## Roles profesionales sugeridos
+${(() => {
+  const arr = Array.isArray(rec.roles_sugeridos) ? rec.roles_sugeridos : [];
+  return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
 })()}
 
-## Sugerencias Laborales
-${formatListsForAccessibility(data.recommendations?.job_suggestions || 'Sugerencias laborales basadas en preferencias y habilidades.')}
+## Plan de acción
+### Corto plazo (0–30 días)
+${(() => { const steps = (rec as { plan_accion?: { corto_plazo?: unknown[] } })?.plan_accion?.corto_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Actualizar CV\n- Crear perfil en LinkedIn'; })()}
 
-## Próximos Pasos
+### Medio plazo (1–3 meses)
+${(() => { const steps = (rec as { plan_accion?: { medio_plazo?: unknown[] } })?.plan_accion?.medio_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Completar formación específica\n- Ampliar red profesional'; })()}
 
-### A Corto Plazo
+### Largo plazo (3–6+ meses)
+${(() => { const steps = (rec as { plan_accion?: { largo_plazo?: unknown[] } })?.plan_accion?.largo_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'; })()}
+
+## Consejos de búsqueda de empleo
 ${(() => {
   try {
-    const steps = safeGetRecommendations(data, 'recommendations.next_steps.short_term') || [];
-    return Array.isArray(steps) && steps.length > 0 
-      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
-      : '- Actualizar CV\n- Crear perfil en LinkedIn';
-  } catch (e) {
-    return '- Actualizar CV\n- Crear perfil en LinkedIn';
+    const adv: any = rec.consejos_busqueda || {};
+    const secciones: string[] = [];
+    const cvOpt = Array.isArray(adv.cv_optimization) ? adv.cv_optimization : [];
+    if (cvOpt.length > 0) secciones.push(`### Optimización del CV\n${cvOpt.map((x: unknown) => `- ${String(x)}`).join('\n')}`);
+    if (adv.letters_portfolio) secciones.push(`### Cartas y portfolio/casos\n${String(adv.letters_portfolio)}`);
+    const plats = Array.isArray(adv.recommended_platforms) ? adv.recommended_platforms : [];
+    if (plats.length > 0) secciones.push(`### Plataformas\n${plats.map((x: unknown) => `- ${String(x)}`).join('\n')}`);
+    if (adv.networking) secciones.push(`### Networking dirigido\n${String(adv.networking)}`);
+    if (adv.interview_tips) secciones.push(`### Entrevistas (método STAR)\n${String(adv.interview_tips)}`);
+    return secciones.length > 0 ? secciones.join('\n\n') : 'Consejos no disponibles.';
+  } catch {
+    return 'Consejos no disponibles.';
   }
 })()}
 
-### A Medio Plazo
+## Herramientas útiles y tecnología
 ${(() => {
-  try {
-    const steps = safeGetRecommendations(data, 'recommendations.next_steps.medium_term') || [];
-    return Array.isArray(steps) && steps.length > 0 
-      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
-      : '- Completar formación específica\n- Ampliar red profesional';
-  } catch (e) {
-    return '- Completar formación específica\n- Ampliar red profesional';
-  }
+  const tools: any = rec.herramientas_utiles || {};
+  const renderCat = (title: string, items: any[]) => {
+    if (!Array.isArray(items) || items.length === 0) return '';
+    return `### ${title}\n${items.map((it: any) => {
+      if (it && typeof it === 'object') {
+        const title = String(it.name || it.title || 'Recurso');
+        const desc = it.description ? `\n${String(it.description)}` : '';
+        const link = it.url ? `\n[${title}](${it.url})` : '';
+        return `- ${title}${desc}${link}`;
+      }
+      return `- ${String(it)}`;
+    }).join('\n')}`;
+  };
+  const parts = [
+    renderCat('Productividad/organización', tools.productividad || []),
+    renderCat('Búsqueda de empleo y alertas', tools.busqueda || []),
+    renderCat('Aprendizaje/certificación', tools.aprendizaje || []),
+    renderCat('Accesibilidad/neuroinclusión', tools.accesibilidad || []),
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join('\n\n') : 'Sin recomendaciones específicas. Prueba con LinkedIn Learning, InfoJobs y Platzi.';
 })()}
-
-### A Largo Plazo
-${(() => {
-  try {
-    const steps = safeGetRecommendations(data, 'recommendations.next_steps.long_term') || [];
-    return Array.isArray(steps) && steps.length > 0 
-      ? steps.filter(step => step != null).map((step: unknown) => `- ${String(step)}`).join('\n')
-      : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo';
-  } catch (e) {
-    return '- Desarrollar especialización\n- Buscar oportunidades de liderazgo';
-  }
-})()}
-
-## Recursos y Apoyo
-
-${(() => {
-  try {
-    const resources = safeGetRecommendations(data, 'recommendations.resources') || [];
-    return Array.isArray(resources) && resources.length > 0 
-      ? resources.filter(resource => resource != null).map((resource: unknown) => {
-          const res = resource as { name?: string; description?: string; url?: string };
-          return `### ${res.name || 'Recurso'}
-${res.description || 'Descripción no disponible'}
-[${res.name || 'Recurso'}](${res.url || '#'})`;
-        }).join('\n\n')
-      : '### Recursos Generales\n- [LinkedIn](https://www.linkedin.com/learning/)\n- [InfoJobs](https://www.infojobs.net/)\n- [Platzi](https://platzi.com/)';
-  } catch (e) {
-    return '### Recursos Generales\n- [LinkedIn](https://www.linkedin.com/learning/)\n- [InfoJobs](https://www.infojobs.net/)\n- [Platzi](https://platzi.com/)';
-  }
-})()}
-
-### Preferencias Laborales
-- **Áreas de interés**: ${(() => {
-    const areas = data?.report?.jobPreferences?.areas;
-    return (areas && Array.isArray(areas) && areas.length > 0) ? areas.join(', ') : 'No especificadas';
-  })()}
-- **Modalidad de trabajo**: ${data?.report?.jobPreferences?.workMode || 'No especificada'}
-- **Disponibilidad**: ${data?.report?.jobPreferences?.availability || 'No especificada'}
 
 ---
-*Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*
-          `;
+*Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*`;
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console
               console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', informe.length);
@@ -424,6 +560,11 @@ ${res.description || 'Descripción no disponible'}
               console.log('✅ DEBUG - Primeros 200 caracteres:', informe.substring(0, 200));
             }
             setIaReport(informe);
+            // Frase motivacional final destacada (fuera del markdown principal)
+            const frase = String(rec.frase_final || '').trim();
+            const prefix = 'Este informe ha sido elaborado en base a tus preferencias laborales, los resultados de los minijuegos y tu CV. ';
+            const composed = (frase && !frase.toLowerCase().startsWith('este informe')) ? prefix + frase : (frase || prefix + 'Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!');
+            setFinalPhrase(composed);
             setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console
@@ -590,7 +731,7 @@ ${res.description || 'Descripción no disponible'}
   // 1. Portada
   const portada = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
-      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4" />
+      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4 print-shadow-none" />
       <h1 className="text-4xl font-bold mb-2">Informe de Empleabilidad</h1>
       <h2 className="text-2xl font-semibold mb-1">{report?.firstName} {report?.lastName}</h2>
       <p className="text-gray-600 dark:text-gray-300">{fecha}</p>
@@ -784,9 +925,10 @@ ${res.description || 'Descripción no disponible'}
       
       {iaReport && (
         <>
-          <div className="informe-empleabilidad report-container">
-            <div className="report-content professional-report">
+          <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none">
+            <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   // Configuración mejorada para renderizado profesional
                   h1: ({ children, ...props }) => (
@@ -893,14 +1035,16 @@ ${res.description || 'Descripción no disponible'}
                     const text = extractText(children);
                     if (text.includes('★')) {
                       // Verificar si es una línea de indicadores de calidad
-                      if (text.includes('Formato:') || text.includes('Claridad:') || text.includes('Información clave:') || text.includes('Ortografía:')) {
+                      if (/(Formato|Claridad|Coherencia|Información clave|Ortografía(?: y estilo)?):\s*[★☆]/.test(text)) {
                         // Extraer pares etiqueta + estrellas y mostrarlos en columna
                         const indicators: Array<{ label: string; stars: string }> = [];
-                        const re = /(Formato|Claridad|Coherencia|Información clave|Ortografía):\s*([★☆]+)/g;
+                        const re = /(Formato|Claridad|Coherencia|Información clave|Ortografía(?: y estilo)?):\s*([★☆]+)/g;
                         let m: RegExpExecArray | null;
                         // eslint-disable-next-line no-cond-assign
                         while ((m = re.exec(text)) !== null) {
-                          indicators.push({ label: m[1], stars: m[2] });
+                          const rawLabel = m[1];
+                          const normLabel = rawLabel.startsWith('Ortografía') ? 'Ortografía' : rawLabel;
+                          indicators.push({ label: normLabel, stars: m[2] });
                         }
                         return (
                           <div {...props} className="quality-indicators">
@@ -977,6 +1121,14 @@ ${res.description || 'Descripción no disponible'}
               </ReactMarkdown>
             </div>
           </div>
+
+          {finalPhrase && (
+            <div className="bg-blue-50 border-2 border-blue-200 text-gray-800 rounded-xl p-6 my-8 shadow-sm report-highlight" role="note">
+              <p className="mb-0">
+                {finalPhrase}
+              </p>
+            </div>
+          )}
 
           {!feedbackSent && (
             <div className="bg-gray-50 rounded-lg shadow-md p-6 mb-8 print-hidden">

@@ -5,6 +5,7 @@
  * Análisis del CV cargado
  */
 export interface CvAnalysis {
+  // Campos básicos del análisis
   strengths: string[];
   weaknesses: string[];
   feedback?: string;
@@ -14,7 +15,72 @@ export interface CvAnalysis {
   skills?: string[];
   education?: string[];
   alerts?: string[];
+  
+  // Campos estructurados del CV extraídos por IA
+  cv_structured?: {
+    candidate?: string | Record<string, unknown>;
+    contact?: CvContact;
+    experience?: CvExperienceItem[];
+    education?: CvEducationItem[];
+    languages?: CvLanguageItem[];
+    skills?: CvSkillItem[];
+    summary?: string;
+  };
+  
+  // Campos directos del CV
+  candidate?: string | Record<string, unknown>;
+  contact?: CvContact;
+  experience_detailed?: CvExperienceItem[];
+  education_detailed?: CvEducationItem[];
+  languages?: CvLanguageItem[];
+  periods?: string[];
+  highlights?: string[];
+  volunteering?: Array<Record<string, unknown>>;
+  
+  // Campos de análisis estructurado
+  cv_analysis_structured?: Record<string, unknown>;
+  raw_text?: string;
+  layout_sections?: Record<string, unknown>;
+  ai_analysis?: Record<string, unknown>;
+  basic_hints?: Record<string, unknown>;
+  provenance?: Record<string, unknown>;
 }
+
+export interface CvContact {
+  emails?: string[];
+  phones?: string[];
+  location?: string;
+  linkedin?: string;
+}
+
+export interface CvExperienceItem {
+  position?: string;
+  title?: string;
+  company?: string;
+  organization?: string;
+  organisation?: string;
+  start_date?: string;
+  end_date?: string;
+  current?: boolean;
+  description?: string;
+}
+
+export interface CvEducationItem {
+  degree?: string;
+  title?: string;
+  institution?: string;
+  school?: string;
+  start_date?: string;
+  end_date?: string;
+}
+
+export interface CvLanguageItem {
+  language?: string;
+  name?: string;
+  level?: string;
+}
+
+export type CvSkillItem = { name?: string; tool?: string } | string;
 
 /**
  * Preferencias laborales del candidato

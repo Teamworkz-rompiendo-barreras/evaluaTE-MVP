@@ -1,6 +1,13 @@
 /* Estilos para impresión del informe de empleabilidad */
 
 @media print {
+  /* Asegurar fondo blanco y texto negro para todo el documento impreso */
+  html, body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
   /* Ocultar elementos que no deben aparecer en la impresión */
   .print-hidden {
     display: none !important;
@@ -123,7 +130,7 @@
   
   /* Encabezado y pie de página */
   @page {
-    margin: 1in;
+    margin: 20mm 15mm;
     size: A4;
   }
   
@@ -138,5 +145,14 @@
   .btn,
   .form-controls {
     display: none !important;
+  }
+
+  /* Asegurar que la portada y secciones principales ocupan todo el ancho en impresión */
+  .professional-report, .report-content, .informe-empleabilidad {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
   }
 } 

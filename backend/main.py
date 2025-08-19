@@ -105,6 +105,89 @@ def _supports_json_schema_response_format(version_str: Optional[str]) -> bool:
     except Exception:
         return False
 
+def _as_json_schema_payload(schema_obj: dict, name: str = "EmployabilityReport") -> dict:
+    """
+    Asegura el formato requerido por Azure para response_format.json_schema:
+    - Si ya viene envuelto con 'schema', lo devuelve tal cual.
+    - Si es el esquema "puro", lo envuelve con {name, schema, strict}.
+    """
+    if isinstance(schema_obj, dict) and "schema" in schema_obj:
+        return schema_obj
+    
+    # Verificación rápida del schema (para debugging)
+    if name == "EmployabilityReport" and "properties" in schema_obj:
+        sr = schema_obj["properties"]["suggested_roles"]["items"]
+        logger.info("suggested_roles.items.required = %s", sr.get("required"))
+        # Esperado: ['role','reason','seniority','remote_viable']
+    
+    return {"name": name, "schema": schema_obj, "strict": True}
+
+
+def _ensure_required_everywhere(schema: dict) -> dict:
+    """
+    Función preventiva: asegura que todos los objetos tengan campos required.
+    Si en el futuro alguien añade propiedades y se olvida de actualizar required,
+    esta función las añade automáticamente.
+    """
+    import copy
+    s = copy.deepcopy(schema)
+    
+    def walk(node):
+        if not isinstance(node, dict):
+            return
+        t = node.get("type")
+        if t == "object" and "properties" in node:
+            props = node["properties"]
+            node["required"] = list(props.keys())
+            for child in props.values():
+                walk(child)
+        if t == "array" and "items" in node:
+            walk(node["items"])
+    
+    walk(s)
+    return s
+
+def _allow_null(t):
+    """Permite null en tipos para hacer campos opcionales"""
+    if isinstance(t, list):
+        return t if "null" in t else t + ["null"]
+    if isinstance(t, str):
+        return [t, "null"]
+    return t
+
+def harden_schema(node: dict, _depth: int = 0) -> dict:
+    """
+    Sanitiza un JSON Schema para Azure OpenAI strict mode:
+    1) Cierra todos los objetos con additionalProperties: false.
+    2) Si el nodo no define "required", lo pone a todas las props (pero si ya define "required", se respeta).
+    3) NO introduce tipos con 'null' (evitamos que el modelo devuelva null).
+    """
+    if not isinstance(node, dict):
+        return node
+
+    t = node.get("type")
+
+    if t == "object":
+        props = node.get("properties", {}) or {}
+        node["additionalProperties"] = False
+        # Respetar 'required' existente; si no hay, las hacemos todas requeridas
+        if "required" not in node:
+            node["required"] = list(props.keys())
+        # Recorremos propiedades
+        for k, v in list(props.items()):
+            node["properties"][k] = harden_schema(v, _depth + 1)
+
+    elif t == "array":
+        if "items" in node and isinstance(node["items"], dict):
+            node["items"] = harden_schema(node["items"], _depth + 1)
+
+    # Combinadores
+    for key in ("oneOf", "anyOf", "allOf"):
+        if key in node and isinstance(node[key], list):
+            node[key] = [harden_schema(x, _depth + 1) if isinstance(x, dict) else x for x in node[key]]
+
+    return node
+
 # Configurar NO_PROXY específicamente para el endpoint de Azure OpenAI
 if ENDPOINT:
     # Extraer el dominio del endpoint (ej: teamworkzevaluate-openai.openai.azure.com)
@@ -174,6 +257,30 @@ class CvAnalysis(BaseModel):
     skills: Optional[List[str]] = Field([], description="Habilidades técnicas detectadas")
     education: Optional[List[str]] = Field([], description="Formación detectada")
     alerts: Optional[List[str]] = Field([], description="Alertas o puntos críticos detectados")
+
+    # Campos estructurados adicionales que puede enviar el frontend tras analizar el PDF
+    cv_structured: Optional[Any] = None
+    cv_info: Optional[Any] = None
+    # Puede venir como string (nombre) o como objeto; aceptamos ambos
+    candidate: Optional[Any] = None
+    contact: Optional[Any] = None
+    experience_detailed: Optional[Any] = None
+    education_detailed: Optional[Any] = None
+    languages: Optional[Any] = None
+    periods: Optional[Any] = None
+    highlights: Optional[Any] = None
+    volunteering: Optional[Any] = None
+    cv_analysis_structured: Optional[Any] = None
+
+    # Campos de texto/libres
+    raw_text: Optional[str] = None
+    layout_sections: Optional[Dict[str, Any]] = None
+    ai_analysis: Optional[Dict[str, Any]] = None
+    basic_hints: Optional[Dict[str, Any]] = None
+    provenance: Optional[Dict[str, Any]] = None
+
+    class Config:
+        extra = 'allow'
 
 class JobPreference(BaseModel):
     areas: List[str]
@@ -399,8 +506,8 @@ def build_cv_json_schema() -> Dict[str, Any]:
                             "position": {"type": "string"},
                             "company": {"type": "string"},
                             "location": {"type": "string"},
-                            "start_date": {"type": "string", "pattern": "^\\\d{4}(-\\\d{2})?$"},
-                            "end_date": {"type": ["string", "null"], "pattern": "^\\\d{4}(-\\\d{2})?$"},
+                            "start_date": {"type": "string", "pattern": "^\\d{4}(-\\d{2})?$"},
+                            "end_date": {"type": ["string", "null"], "pattern": "^\\d{4}(-\\d{2})?$"},
                             "current": {"type": "boolean"},
                             "description": {"type": "string"},
                             "bullets": {"type": "array", "items": {"type": "string"}},
@@ -416,8 +523,8 @@ def build_cv_json_schema() -> Dict[str, Any]:
                             "degree": {"type": "string"},
                             "institution": {"type": "string"},
                             "location": {"type": "string"},
-                            "start_date": {"type": "string", "pattern": "^\\\d{4}(-\\\d{2})?$"},
-                            "end_date": {"type": "string", "pattern": "^\\\d{4}(-\\\d{2})?$"},
+                            "start_date": {"type": "string", "pattern": "^\\d{4}(-\\d{2})?$"},
+                            "end_date": {"type": "string", "pattern": "^\\d{4}(-\\d{2})?$"},
                             "notes": {"type": "string"},
                         },
                     },
@@ -435,7 +542,7 @@ def build_cv_json_schema() -> Dict[str, Any]:
                 },
                 "certifications": {
                     "type": "array",
-                    "items": {"type": "object", "properties": {"name": {"type": "string"}, "date": {"type": "string", "pattern": "^\\\d{4}(-\\\d{2})?$"}}},
+                                            "items": {"type": "object", "properties": {"name": {"type": "string"}, "date": {"type": "string", "pattern": "^\\d{4}(-\\d{2})?$"}}},
                 },
                 "projects": {
                     "type": "array",
@@ -527,6 +634,205 @@ async def log_game_complete(data: Dict[str, Any]):
         logger.error(f"Error registrando juego completado: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
+def shape_report_for_ui(r: dict) -> dict:
+    """
+    Adaptador: convierte la salida JSON del modelo al layout de 13 apartados de la UI.
+    Garantiza strings en secciones textuales y sanea None -> "No consta".
+    """
+    def _txt(x, default="No consta"):
+        if x is None:
+            return default
+        if isinstance(x, str) and x.strip() == "":
+            return default
+        return str(x)
+
+    def _list_str(xs):
+        if not isinstance(xs, list) or not xs:
+            return []
+        return [_txt(x) for x in xs]
+
+    shaped: dict = {
+        # 1) Datos personales (objeto)
+        "datos_personales": {
+            "name": _txt((r.get("personal_data") or {}).get("name")),
+            "location": _txt((r.get("personal_data") or {}).get("location")),
+            "email": _txt((r.get("personal_data") or {}).get("email")),
+            "phone": _txt((r.get("personal_data") or {}).get("phone")),
+            "disability_certificate": _txt((r.get("personal_data") or {}).get("disability_certificate")),
+        },
+
+        # 2) Resumen del perfil
+        "resumen_perfil": _txt(r.get("profile_summary") or r.get("profile_analysis") or ""),
+
+        # 3) Resumen del CV
+        "resumen_cv": _txt(r.get("cv_summary") or ""),
+
+        # 4) Fortalezas
+        "fortalezas_clave": _list_str(r.get("strengths") or []),
+
+        # 5) Áreas de mejora
+        "areas_mejora": [
+            _txt(f"{it.get('area','Área')} — {it.get('reason','')} → Acción: {it.get('suggested_action','')}")
+            for it in (r.get("improvement_areas") or [])
+            if isinstance(it, dict)
+        ],
+
+        # 6) Diagnóstico del CV (tabla 1–5 + evidencias/correcciones)
+        "diagnostico_cv": (lambda cv: (
+            (lambda _cv: (
+                # Ensamblar diagnóstico base
+                {
+                    "structure_score": int((_cv.get("structure_score") or 1) or 1),
+                    "coherence_score": int((_cv.get("coherence_score") or 1) or 1),
+                    "key_info_score": int((_cv.get("key_info_score") or 1) or 1),
+                    "clarity_score": int((_cv.get("clarity_score") or 1) or 1),
+                    "spelling_style_score": int((_cv.get("style_score") or _cv.get("spelling_style_score") or 1) or 1),
+                    "evidence": (lambda E, S: {
+                        "structure": (
+                            E.get("structure") if (E.get("structure") and not str(E.get("structure")).lower().startswith("no hay información"))
+                            else ((
+                                f"Secciones presentes: experiencia={len(S.get('experience') or [])}, "
+                                f"educación={len(S.get('education') or [])}, idiomas={len(S.get('languages') or [])}"
+                            ) if isinstance(S, dict) and (S.get('experience') or S.get('education') or S.get('languages')) else "")
+                        ),
+                        "coherence": (
+                            E.get("coherence") if (E.get("coherence") and not str(E.get("coherence")).lower().startswith("no hay información"))
+                            else ("Fechas normalizadas en experiencia" if isinstance(S, dict) and (S.get('experience') or []) else "")
+                        ),
+                        "key_info": (
+                            E.get("key_info") if (E.get("key_info") and not str(E.get("key_info")).lower().startswith("no hay información"))
+                            else ((
+                                f"Contacto detectado: email={bool(((S.get('contact') or {}).get('emails') or []))}, "
+                                f"teléfono={bool(((S.get('contact') or {}).get('phones') or []))}"
+                            ) if isinstance(S, dict) else "")
+                        ),
+                        "clarity": E.get("clarity") or ("Se detectan bullets y títulos claros en secciones extraídas" if isinstance(S, dict) else ""),
+                        "style": E.get("style") or "Corrección ortográfica no evaluable sin texto raw; se recomiendan tildes y mayúsculas adecuadas",
+                    })(
+                        {
+                            "structure": _txt((_cv.get("evidence") or {}).get("structure", "")),
+                            "coherence": _txt((_cv.get("evidence") or {}).get("coherence", "")),
+                            "key_info": _txt((_cv.get("evidence") or {}).get("key_info", "")),
+                            "clarity": _txt((_cv.get("evidence") or {}).get("clarity", "")),
+                            "style": _txt((_cv.get("evidence") or {}).get("style", "")),
+                        },
+                        (r.get("cv_analysis") or {}).get("cv_structured") or {}
+                    ),
+                    "corrections": _list_str(_cv.get("corrections") or []),
+                    "reordering_suggestions": _list_str(_cv.get("reordering_suggestions") or []),
+                }
+            ))(cv)
+        ))(r.get("cv_analysis") or {}),
+
+        # 7) Entornos ideales
+        "entornos_ideales": _txt(r.get("ideal_work_environment") or ""),
+
+        # 8) Roles sugeridos (texto legible)
+        "roles_sugeridos": [
+            _txt(f"{it.get('role','Rol')} — {it.get('reason','')} (Seniority: {it.get('seniority','No especificado')}; Remoto: {'Sí' if it.get('remote_viable') else 'No'})")
+            for it in (r.get("suggested_roles") or [])
+            if isinstance(it, dict)
+        ],
+
+        # 9) Plan de acción
+        "plan_accion": {
+            "corto_plazo": _list_str((r.get("action_plan") or {}).get("short_term") or []),
+            "medio_plazo": _list_str((r.get("action_plan") or {}).get("medium_term") or []),
+            "largo_plazo": _list_str((r.get("action_plan") or {}).get("long_term") or []),
+        },
+
+        # 10) Consejos de búsqueda
+        "consejos_busqueda": {
+            "cv_optimization": _list_str((r.get("job_search_advice") or {}).get("cv_optimization") or []),
+            "letters_portfolio": _txt((r.get("job_search_advice") or {}).get("letters_portfolio") or ""),
+            "recommended_platforms": _list_str((r.get("job_search_advice") or {}).get("recommended_platforms") or []),
+            "networking": _txt((r.get("job_search_advice") or {}).get("networking") or ""),
+            "interview_tips": _txt((r.get("job_search_advice") or {}).get("interview_tips") or ""),
+        },
+
+        # 11) Herramientas útiles (normalizamos a objetos {name, description, url})
+        "herramientas_utiles": (lambda tools: {
+            "productividad": [
+                (it if isinstance(it, dict) else {"name": str(it), "description": "", "url": ""})
+                for it in _list_str((tools or {}).get("productivity") or [])
+            ],
+            "busqueda": [
+                (it if isinstance(it, dict) else {"name": str(it), "description": "", "url": ""})
+                for it in _list_str((tools or {}).get("search_alerts") or (tools or {}).get("job_search") or [])
+            ],
+            "aprendizaje": [
+                (it if isinstance(it, dict) else {"name": str(it), "description": "", "url": ""})
+                for it in _list_str((tools or {}).get("learning_certification") or (tools or {}).get("learning") or [])
+            ],
+            "accesibilidad": [
+                (it if isinstance(it, dict) else {"name": str(it), "description": "", "url": ""})
+                for it in _list_str((tools or {}).get("accessibility") or [])
+            ],
+        })(r.get("useful_tools") or {}),
+
+        # 12) Juegos completados
+        "juegos_completados": _list_str(r.get("completed_games") or []),
+
+        # 13) Frase final
+        "frase_final": _txt(r.get("final_message") or ""),
+
+        # Extra: resumen ejecutivo
+        "resumen_ejecutivo": _txt(r.get("summary") or ""),
+    }
+
+    # Compatibilidad con front legacy: alias esperados por UI antigua
+    try:
+        # Alias 2) Análisis del perfil
+        shaped["analisis_perfil"] = shaped.get("resumen_perfil", "")
+
+        # Alias 6) Análisis del CV (texto): construimos un resumen corto con las puntuaciones
+        cvx = shaped.get("diagnostico_cv", {}) or {}
+        def _cv_brief(cv):
+            try:
+                parts = []
+                if cv.get("structure_score"):
+                    parts.append(f"Estructura {cv['structure_score']}/5")
+                if cv.get("coherence_score"):
+                    parts.append(f"Coherencia {cv['coherence_score']}/5")
+                if cv.get("key_info_score"):
+                    parts.append(f"Información clave {cv['key_info_score']}/5")
+                if cv.get("clarity_score"):
+                    parts.append(f"Claridad {cv['clarity_score']}/5")
+                if cv.get("spelling_style_score"):
+                    parts.append(f"Ortografía/estilo {cv['spelling_style_score']}/5")
+                base = ", ".join(parts)
+                evid = cv.get("evidence") or {}
+                evid_summary = "; ".join(
+                    [
+                        f"{k.capitalize()}: {v}" for k, v in evid.items() if isinstance(v, str) and v.strip()
+                    ]
+                )
+                txt = base
+                if evid_summary:
+                    txt = (base + ". " if base else "") + evid_summary
+                return _txt(txt or (r.get("cv_summary") or ""))
+            except Exception:
+                return _txt(r.get("cv_summary") or "")
+        shaped["evaluacion_cv"] = _cv_brief(cvx)
+    except Exception:
+        pass
+
+    try:
+        expected_keys = [
+            "datos_personales","resumen_perfil","resumen_cv","fortalezas_clave","areas_mejora",
+            "diagnostico_cv","entornos_ideales","roles_sugeridos","plan_accion","consejos_busqueda",
+            "herramientas_utiles","juegos_completados","frase_final","resumen_ejecutivo"
+        ]
+        logger.info("🔎 UI adapter keys: %s", list(shaped.keys()))
+        missing = [k for k in expected_keys if k not in shaped]
+        if missing:
+            logger.warning("⚠️ Claves faltantes en recomendaciones UI: %s", missing)
+    except Exception:
+        pass
+
+    return shaped
+
+
 @app.post("/api/informe-ia", response_model=ReportResponse)
 async def generate_ia_report(request: EmployabilityReportRequest):
     """Genera un informe profesional de empleabilidad con IA"""
@@ -584,16 +890,115 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             avg_score = employability_score
 
         # Adjuntar análisis de CV si se subió durante el flujo (/api/pdf/analyze-cv)
-        final_recommendations = professional_report.get("recommendations", {}) if isinstance(professional_report, dict) else {}
+        # Usar el adaptador para convertir la salida del modelo a las 13 secciones estándar
+        if isinstance(professional_report, dict):
+            shaped = shape_report_for_ui(professional_report)
+        else:
+            shaped = shape_report_for_ui({})
+        
+        # Mantener compatibilidad con el frontend actual usando final_recommendations
+        final_recommendations = dict(shaped)
+        # Extender con claves legacy que consume el front actual
+        try:
+            # 2) Perfil
+            final_recommendations["profile_analysis"] = shaped.get("resumen_perfil", "") or ""
+            # 4) Fortalezas
+            strengths_list = shaped.get("fortalezas_clave") or []
+            final_recommendations["strengths_analysis"] = \
+                ("\n".join(f"- {s}" for s in strengths_list)) if isinstance(strengths_list, list) else (str(strengths_list) if strengths_list is not None else "")
+            # 5) Áreas de mejora
+            areas_list = shaped.get("areas_mejora") or []
+            final_recommendations["improvement_areas"] = \
+                ("\n".join(f"- {x}" for x in areas_list)) if isinstance(areas_list, list) else (str(areas_list) if areas_list is not None else "")
+            # 6) CV (resumen textual)
+            final_recommendations["cv_analysis"] = shaped.get("evaluacion_cv", "") or ""
+            # 8) Sugerencias laborales
+            roles_list = shaped.get("roles_sugeridos") or []
+            final_recommendations["job_suggestions"] = \
+                ("\n".join(f"- {r}" for r in roles_list)) if isinstance(roles_list, list) else (str(roles_list) if roles_list is not None else "")
+            # 9) Próximos pasos
+            plan = shaped.get("plan_accion") or {}
+            final_recommendations["next_steps"] = {
+                "short_term": plan.get("corto_plazo") or [],
+                "medium_term": plan.get("medio_plazo") or [],
+                "long_term": plan.get("largo_plazo") or [],
+            }
+            # 11) Recursos (apoyo)
+            tools = shaped.get("herramientas_utiles") or {}
+            resources_flat = []
+            for cat_key in ("productividad", "busqueda", "aprendizaje", "accesibilidad"):
+                items = tools.get(cat_key) or []
+                if isinstance(items, list):
+                    for it in items:
+                        if isinstance(it, dict):
+                            name = str(it.get("name") or it.get("title") or "Recurso")
+                            description = str(it.get("description") or it.get("desc") or "")
+                            url = str(it.get("url") or it.get("link") or "")
+                            resources_flat.append({"name": name, "description": description, "url": url})
+                        else:
+                            resources_flat.append({"name": str(it), "description": "", "url": ""})
+            final_recommendations["resources"] = resources_flat
+        except Exception:
+            pass
         try:
             # Si existe un campo cvAnalysis enriquecido en el informe devuelto por IA, úsalo; si no, conservar el del request
             enriched_cv = None
             if isinstance(final_recommendations, dict):
                 enriched_cv = final_recommendations.get("cv_analysis_structured")
-            if not report.get("cvAnalysis") and enriched_cv and isinstance(enriched_cv, dict):
-                report["cvAnalysis"] = enriched_cv
-        except Exception:
+            
+            # Asegurar que la información del CV se incluya en el informe final
+            if enriched_cv and isinstance(enriched_cv, dict):
+                # Si la IA generó información enriquecida del CV, úsala
+                if not report.get("cvAnalysis"):
+                    report["cvAnalysis"] = {}
+                # Fusionar información enriquecida con la existente
+                if isinstance(report["cvAnalysis"], dict):
+                    report["cvAnalysis"].update(enriched_cv)
+                else:
+                    report["cvAnalysis"] = enriched_cv
+            elif request.cvAnalysis:
+                # Si no hay información enriquecida pero sí hay análisis del CV, asegurar que se incluya
+                if not report.get("cvAnalysis"):
+                    report["cvAnalysis"] = request.cvAnalysis.dict()
+                
+                # También incluir información detallada si está disponible
+                cv_data = request.cvAnalysis.dict()
+                if hasattr(request.cvAnalysis, 'cv_structured') and request.cvAnalysis.cv_structured:
+                    cv_data['cv_structured'] = request.cvAnalysis.cv_structured
+                if hasattr(request.cvAnalysis, 'candidate') and request.cvAnalysis.candidate:
+                    cv_data['candidate'] = request.cvAnalysis.candidate
+                if hasattr(request.cvAnalysis, 'contact') and request.cvAnalysis.contact:
+                    cv_data['contact'] = request.cvAnalysis.contact
+                if hasattr(request.cvAnalysis, 'experience') and request.cvAnalysis.experience:
+                    cv_data['experience'] = request.cvAnalysis.experience
+                if hasattr(request.cvAnalysis, 'education') and request.cvAnalysis.education:
+                    cv_data['education'] = request.cvAnalysis.education
+                if hasattr(request.cvAnalysis, 'languages') and request.cvAnalysis.languages:
+                    cv_data['languages'] = request.cvAnalysis.languages
+                if hasattr(request.cvAnalysis, 'periods') and request.cvAnalysis.periods:
+                    cv_data['periods'] = request.cvAnalysis.periods
+                
+                report["cvAnalysis"] = cv_data
+        except Exception as e:
+            logger.warning(f"Error procesando información del CV: {e}")
             pass
+
+        # Enriquecer 'report' con representaciones estándar para el front
+        try:
+            if isinstance(professional_report, dict):
+                # Markdown legible (opcional para front legacy)
+                try:
+                    from .prompt_config import PromptConfig as _PC  # type: ignore
+                    markdown_report = _PC.convert_json_to_markdown_report(professional_report)
+                except Exception:
+                    markdown_report = ""
+                report["json"] = professional_report
+                report["ui"] = shaped
+                report["markdown"] = markdown_report
+            else:
+                report["ui"] = shaped
+        except Exception:
+            report["ui"] = shaped
 
         response_data = ReportResponse(
             report=report,
@@ -608,6 +1013,20 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         logger.info(f"Summary presente: {'✅' if response_data.summary else '❌'}")
         logger.info(f"Recommendations presente: {'✅' if response_data.recommendations else '❌'}")
         
+        # Logging adicional para verificar información del CV
+        if report.get("cvAnalysis"):
+            cv_info = report["cvAnalysis"]
+            logger.info(f"Información del CV incluida en el informe:")
+            logger.info(f"  - Fortalezas: {cv_info.get('strengths', [])}")
+            logger.info(f"  - Experiencia: {cv_info.get('experience', [])}")
+            logger.info(f"  - Formación: {cv_info.get('education', [])}")
+            if hasattr(request.cvAnalysis, 'cv_structured') and request.cvAnalysis.cv_structured:
+                logger.info(f"  - CV estructurado: ✅")
+            if hasattr(request.cvAnalysis, 'candidate') and request.cvAnalysis.candidate:
+                logger.info(f"  - Candidato: {request.cvAnalysis.candidate}")
+        else:
+            logger.warning("❌ No se incluyó información del CV en el informe final")
+        
         return response_data
 
     except Exception as e:
@@ -615,184 +1034,411 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         raise HTTPException(status_code=500, detail=str(e))
 
 async def generate_professional_report_with_ai(request: EmployabilityReportRequest, employability_score: int, level: str) -> dict:
-    """Genera un informe profesional usando IA"""
+    """Genera un informe profesional usando IA con el prompt maestro mejorado"""
     
-    # Preparar datos para el prompt
-    soft_skills_text = "\n".join([f"- {skill.skill}: {skill.score}% ({skill.level})" for skill in request.softSkills])
-    
-    cv_analysis_text = ""
+    # Preparar datos estructurados para el prompt
+    # Normalizar contacto para evitar None.get
+    _contact = None
     if request.cvAnalysis:
-        cv_analysis_text = f"""
-        Análisis del CV:
-        - Fortalezas: {', '.join(request.cvAnalysis.strengths)}
-        - Debilidades: {', '.join(request.cvAnalysis.weaknesses)}
-        - Estructura: {request.cvAnalysis.structure}
-        - Coherencia: {request.cvAnalysis.coherence}
-        - Experiencia: {request.cvAnalysis.experience}
-        - Habilidades técnicas: {', '.join(request.cvAnalysis.skills)}
-        - Formación: {', '.join(request.cvAnalysis.education)}
-        """
+        try:
+            _contact = getattr(request.cvAnalysis, 'contact', None)
+        except Exception:
+            _contact = None
+    if not isinstance(_contact, dict):
+        _contact = {}
+
+    candidate_data = {
+        "fullName": request.fullName,
+        "location": _contact.get('location', 'No consta'),
+        "email": (_contact.get('emails', ['No consta']) or ['No consta'])[0],
+        "phone": (_contact.get('phones', ['No especificado']) or ['No especificado'])[0],
+        "hasDisabilityCertificate": request.jobPreferences.hasDisabilityCert if request.jobPreferences else None,
+        "disabilityType": "No especificado"  # Campo opcional que no tienes implementado
+    }
     
-    job_preferences_text = ""
-    if request.jobPreferences:
-        job_preferences_text = f"""
-        Preferencias laborales:
-        - Áreas de interés: {', '.join(request.jobPreferences.areas)}
-        - Necesidades: {', '.join(request.jobPreferences.needs)}
-        - Modalidad: {request.jobPreferences.workMode}
-        - Disponibilidad: {request.jobPreferences.availability}
-        - Dispuesto a mudarse: {'Sí' if request.jobPreferences.willingToRelocate else 'No'}
-        - Certificado de discapacidad: {'Sí' if request.jobPreferences.hasDisabilityCert else 'No'}
-        """
+    # Preparar soft skills con puntuaciones
+    soft_skills_data = []
+    for skill in request.softSkills:
+        # Convertir level a puntuación numérica para el análisis
+        level_norm = (skill.level or "").strip().lower()
+        level_score = {"bajo": 35, "medio": 60, "alto": 85}.get(level_norm, 50)
+        soft_skills_data.append({
+            "skill": skill.skill,
+            "score": level_score,
+            "level": skill.level,
+            "evidence": getattr(skill, 'feedback', None) or "Evaluado mediante juego interactivo"
+        })
     
-    # Prompt para generar informe profesional
-    prompt = f"""
-    Eres un orientador laboral experto. Genera un informe profesional de empleabilidad basado en los siguientes datos:
+    # Preparar análisis del CV - CORRECCIÓN CRÍTICA
+    cv_data = {
+        "rawText": "No disponible",
+        "sections": {}
+    }
+    
+    # Logging para debug
+    logger.info(f"🔍 Preparando datos del CV para el prompt")
+    logger.info(f"  - cvAnalysis presente: {'✅' if request.cvAnalysis else '❌'}")
+    
+    if request.cvAnalysis:
+        # CRÍTICO: Priorizar cv_structured (donde CV-Extractor guarda los datos)
+        cv_structured = getattr(request.cvAnalysis, 'cv_structured', {})
+        
+        if cv_structured and isinstance(cv_structured, dict):
+            logger.info(f"✅ CV estructurado encontrado con campos: {list(cv_structured.keys())}")
+            # Mapear campos de CV-Extractor a la estructura del prompt
+            cv_data["sections"] = {
+                "profile": cv_structured.get('candidate', 'No especificado'),
+                "experience": cv_structured.get('experience', []),
+                "education": cv_structured.get('education', []),
+                "courses": "No especificado",
+                "languages": cv_structured.get('languages', []),
+                "software": cv_structured.get('skills', []),
+                "contact": cv_structured.get('contact', {})
+            }
+            
+            # CRÍTICO: Extraer texto raw del CV si está disponible
+            if hasattr(request.cvAnalysis, 'raw_text') and request.cvAnalysis.raw_text:
+                cv_data["rawText"] = request.cvAnalysis.raw_text[:3000]  # Limitar a 3000 caracteres
+                logger.info(f"✅ Texto raw del CV extraído: {len(request.cvAnalysis.raw_text)} caracteres")
+            elif hasattr(request.cvAnalysis, 'layout_sections') and request.cvAnalysis.layout_sections:
+                # Extraer texto de las secciones de layout
+                layout_text = ""
+                for section_name, section_data in request.cvAnalysis.layout_sections.items():
+                    if isinstance(section_data, dict) and section_data.get('text'):
+                        layout_text += f"\n{section_name}: {section_data['text']}"
+                if layout_text:
+                    cv_data["rawText"] = layout_text[:3000]
+                    logger.info(f"✅ Texto de layout extraído: {len(layout_text)} caracteres")
+            
+            # Logging detallado de lo que se extrajo
+            logger.info(f"📊 Datos extraídos de CV-Extractor:")
+            logger.info(f"  - Profile: {cv_data['sections']['profile']}")
+            logger.info(f"  - Experience: {len(cv_data['sections']['experience']) if isinstance(cv_data['sections']['experience'], list) else 'No es lista'}")
+            logger.info(f"  - Education: {len(cv_data['sections']['education']) if isinstance(cv_data['sections']['education'], list) else 'No es lista'}")
+            logger.info(f"  - Languages: {len(cv_data['sections']['languages']) if isinstance(cv_data['sections']['languages'], list) else 'No es lista'}")
+            logger.info(f"  - Skills: {len(cv_data['sections']['software']) if isinstance(cv_data['sections']['software'], list) else 'No es lista'}")
+            logger.info(f"  - Contact: {cv_data['sections']['contact']}")
+            
+        else:
+            # CORRECCIÓN CRÍTICA: Usar la estructura correcta de document_intelligence.py
+            # Verificar si hay datos en cv_info (estructura de document_intelligence.py)
+            cv_info = getattr(request.cvAnalysis, 'cv_info', {})
+            if cv_info and isinstance(cv_info, dict):
+                logger.info(f"✅ cv_info encontrado con campos: {list(cv_info.keys())}")
+                # Mapear campos de document_intelligence.py a la estructura del prompt
+                cv_data["sections"] = {
+                    "profile": cv_info.get('perfil', 'No especificado'),
+                    "experience": cv_info.get('experiencia', []),
+                    "education": cv_info.get('educacion', []),
+                    "courses": "No especificado",
+                    "languages": cv_info.get('idiomas', []),
+                    "software": cv_info.get('software', []),
+                    "contact": cv_info.get('contacto', {})
+                }
+                
+                # Extraer texto raw del CV
+                if hasattr(request.cvAnalysis, 'raw_text') and request.cvAnalysis.raw_text:
+                    cv_data["rawText"] = request.cvAnalysis.raw_text[:3000]
+                    logger.info(f"✅ Texto raw del CV extraído: {len(request.cvAnalysis.raw_text)} caracteres")
+                
+                logger.info(f"📊 Datos extraídos de cv_info:")
+                logger.info(f"  - Profile: {cv_data['sections']['profile']}")
+                logger.info(f"  - Experience: {len(cv_data['sections']['experience']) if isinstance(cv_data['sections']['experience'], list) else 'No es lista'}")
+                logger.info(f"  - Education: {len(cv_data['sections']['education']) if isinstance(cv_data['sections']['education'], list) else 'No es lista'}")
+                logger.info(f"  - Languages: {len(cv_data['sections']['languages']) if isinstance(cv_data['sections']['languages'], list) else 'No es lista'}")
+                logger.info(f"  - Skills: {len(cv_data['sections']['software']) if isinstance(cv_data['sections']['software'], list) else 'No es lista'}")
+                logger.info(f"  - Contact: {cv_data['sections']['contact']}")
+            
+            else:
+                # Fallback a campos directos solo si cv_structured y cv_info están vacíos
+                logger.info("⚠️ cv_structured y cv_info vacíos, usando campos directos como fallback")
+                _cand = getattr(request.cvAnalysis, 'candidate', None)
+                _exp = getattr(request.cvAnalysis, 'experience_detailed', [])
+                _edu = getattr(request.cvAnalysis, 'education_detailed', [])
+                _langs = getattr(request.cvAnalysis, 'languages', [])
+                _skills = getattr(request.cvAnalysis, 'skills', [])
+                _contact_fallback = getattr(request.cvAnalysis, 'contact', {})
+                cv_data["sections"] = {
+                    "profile": _cand if (_cand and _cand != 'No especificado') else 'No especificado',
+                    "experience": _exp if isinstance(_exp, list) else [],
+                    "education": _edu if isinstance(_edu, list) else [],
+                    "courses": "No especificado",
+                    "languages": _langs if isinstance(_langs, list) else [],
+                    "software": _skills if isinstance(_skills, list) else [],
+                    "contact": _contact_fallback if isinstance(_contact_fallback, dict) else {}
+                }
+                
+                # Logging del fallback
+                logger.info(f"📊 Datos extraídos de campos directos:")
+                logger.info(f"  - Profile: {cv_data['sections']['profile']}")
+                logger.info(f"  - Experience: {len(cv_data['sections']['experience']) if isinstance(cv_data['sections']['experience'], list) else 'No es lista'}")
+                logger.info(f"  - Education: {len(cv_data['sections']['education']) if isinstance(cv_data['sections']['education'], list) else 'No es lista'}")
+        
+        # También intentar extraer información de cv_analysis_structured si está disponible
+        cv_analysis_structured = getattr(request.cvAnalysis, 'cv_analysis_structured', {})
+        if cv_analysis_structured and isinstance(cv_analysis_structured, dict):
+            logger.info(f"✅ cv_analysis_structured encontrado, mezclando información")
+            # Mezclar información estructurada con la básica
+            if cv_analysis_structured.get('candidate') and cv_analysis_structured.get('candidate') != 'No especificado':
+                cv_data["sections"]["profile"] = cv_analysis_structured['candidate']
+            if cv_analysis_structured.get('experience'):
+                cv_data["sections"]["experience"] = cv_analysis_structured['experience']
+            if cv_analysis_structured.get('education'):
+                cv_data["sections"]["education"] = cv_analysis_structured['education']
+            if cv_analysis_structured.get('languages'):
+                cv_data["sections"]["languages"] = cv_analysis_structured['languages']
+            if cv_analysis_structured.get('skills'):
+                cv_data["sections"]["software"] = cv_analysis_structured['skills']
+            if cv_analysis_structured.get('contact'):
+                cv_data["sections"]["contact"] = cv_analysis_structured['contact']
+        
+        # Verificar si hay datos reales o solo valores por defecto
+        has_real_data = False
+        for section_name, section_data in cv_data['sections'].items():
+            if section_data and section_data != 'No especificado' and section_data != [] and section_data != {}:
+                has_real_data = True
+                break
+        
+        logger.info(f"🔍 ¿Hay datos reales del CV?: {'✅ SÍ' if has_real_data else '❌ NO'}")
+        if not has_real_data:
+            logger.warning("⚠️ CRÍTICO: No hay datos reales del CV para enviar al prompt")
+            logger.warning("⚠️ Esto causará que la IA genere 'CV no disponible'")
+            
+            # Intentar extraer información adicional de otros campos del CV
+            logger.info("🔍 Intentando extraer información adicional de otros campos...")
+            
+            # Buscar información en campos adicionales
+            additional_fields = ['raw_text', 'layout_sections', 'ai_analysis', 'basic_hints']
+            for field in additional_fields:
+                field_value = getattr(request.cvAnalysis, field, None)
+                if field_value:
+                    logger.info(f"  - {field}: {type(field_value)} - {str(field_value)[:100]}...")
+                    if field == 'raw_text' and isinstance(field_value, str) and len(field_value) > 50:
+                        cv_data["rawText"] = field_value[:2000]  # Limitar a 2000 caracteres
+                        logger.info(f"✅ Texto raw del CV extraído: {len(field_value)} caracteres")
+                    elif field == 'layout_sections' and isinstance(field_value, dict):
+                        # Extraer texto de las secciones de layout
+                        layout_text = ""
+                        for section_name, section_data in field_value.items():
+                            if isinstance(section_data, dict) and section_data.get('text'):
+                                layout_text += f"\n{section_name}: {section_data['text']}"
+                        if layout_text:
+                            cv_data["rawText"] = layout_text[:2000]
+                            logger.info(f"✅ Texto de layout extraído: {len(layout_text)} caracteres")
 
-    CANDIDATO: {request.fullName}
-    PUNTAJE DE EMPLEABILIDAD: {employability_score}/100 (Nivel: {level})
+        logger.info(f"✅ Información del CV extraída: {list(cv_data['sections'].keys())}")
+        logger.info(f"  - Profile: {cv_data['sections']['profile']}")
+        logger.info(f"  - Experience: {len(cv_data['sections']['experience']) if isinstance(cv_data['sections']['experience'], list) else 'No es lista'} elementos")
+        logger.info(f"  - Education: {len(cv_data['sections']['education']) if isinstance(cv_data['sections']['education'], list) else 'No es lista'} elementos")
+        logger.info(f"  - Languages: {len(cv_data['sections']['languages']) if isinstance(cv_data['sections']['languages'], list) else 'No es lista'} elementos")
+        logger.info(f"  - Software: {len(cv_data['sections']['software']) if isinstance(cv_data['sections']['software'], list) else 'No es lista'} elementos")
+    
+    # Preparar preferencias laborales
+    job_preferences_data = {
+        "desired_roles": request.jobPreferences.areas if request.jobPreferences else [],
+        "desired_sectors": request.jobPreferences.areas if request.jobPreferences else [],
+        "work_modes": [request.jobPreferences.workMode] if request.jobPreferences else ["No especificado"],
+        "availability": request.jobPreferences.availability if request.jobPreferences else "No especificado",
+        "salary_range": "No especificado",
+        "relocation": request.jobPreferences.willingToRelocate if request.jobPreferences else None,
+        "notes": f"Necesidades: {', '.join(request.jobPreferences.needs) if request.jobPreferences and hasattr(request.jobPreferences, 'needs') and request.jobPreferences.needs else 'No especificadas'}" if request.jobPreferences else "No especificado"
+    }
+    
+    # CRÍTICO: Logging detallado de preferencias laborales
+    logger.info(f"🔍 Preferencias laborales procesadas:")
+    logger.info(f"  - Roles deseados: {job_preferences_data['desired_roles']}")
+    logger.info(f"  - Sectores: {job_preferences_data['desired_sectors']}")
+    logger.info(f"  - Modalidad: {job_preferences_data['work_modes']}")
+    logger.info(f"  - Disponibilidad: {job_preferences_data['availability']}")
+    logger.info(f"  - Relocalización: {job_preferences_data['relocation']}")
+    logger.info(f"  - Notas: {job_preferences_data['notes']}")
+    
+    # Preparar idiomas (robusto ante None o tipos inesperados)
+    languages_data = []
+    if request.cvAnalysis and hasattr(request.cvAnalysis, 'languages'):
+        try:
+            langs = getattr(request.cvAnalysis, 'languages')
+            if not isinstance(langs, list):
+                langs = []
+            for lang in langs:
+                if isinstance(lang, dict):
+                    languages_data.append({
+                        "language": lang.get('language', 'No especificado'),
+                        "level": lang.get('level', 'No especificado')
+                    })
+                else:
+                    languages_data.append({
+                        "language": str(lang),
+                        "level": "No especificado"
+                    })
+        except Exception:
+            languages_data = []
+    
+    # CRÍTICO: Logging detallado de minijuegos completados
+    logger.info(f"🔍 Minijuegos completados:")
+    logger.info(f"  - Lista: {request.completedGames}")
+    logger.info(f"  - Cantidad: {len(request.completedGames)}")
+    logger.info(f"  - Detalles: {request.completedGames[:5] if request.completedGames else 'Ninguno'}")
+    
+    # CRÍTICO: Logging detallado de soft skills evaluadas
+    logger.info(f"🔍 Soft skills evaluadas:")
+    for i, skill in enumerate(soft_skills_data):
+        logger.info(f"  - {i+1}. {skill.get('skill', 'N/A')}: {skill.get('level', 'N/A')} ({skill.get('score', 'N/A')}/100)")
+    
+    # Importar configuración de prompts
+    try:
+        from .prompt_config import PromptConfig
+    except ImportError:
+        from prompt_config import PromptConfig
+    
+    # Prompt maestro mejorado usando configuración centralizada
+    prompt = PromptConfig.get_employability_report_prompt(
+        candidate_data=candidate_data,
+        soft_skills_data=soft_skills_data,
+        cv_data=cv_data,
+        job_preferences_data=job_preferences_data,
+        employability_score=employability_score,
+        level=level,
+        completed_games=request.completedGames,
+        languages_data=languages_data
+    )
+    
+    # CRÍTICO: Verificar que el prompt se generó correctamente
+    logger.info(f"🔍 Prompt generado exitosamente:")
+    logger.info(f"  - Longitud: {len(prompt)} caracteres")
+    logger.info(f"  - Contiene '13) FRASE FINAL': {'✅' if '13) FRASE FINAL' in prompt else '❌'}")
+    logger.info(f"  - Contiene 'CV ANALIZADO': {'✅' if 'CV ANALIZADO' in prompt else '❌'}")
+    logger.info(f"  - Contiene 'JUEGOS COMPLETADOS': {'✅' if 'JUEGOS COMPLETADOS' in prompt else '❌'}")
+    logger.info(f"  - Contiene 'PREFERENCIAS LABORALES': {'✅' if 'PREFERENCIAS LABORALES' in prompt else '❌'}")
+    
+    # Logging del prompt generado para debug
+    logger.info(f"📝 Prompt generado con información del CV:")
+    logger.info(f"  - rawText: {cv_data['rawText']}")
+    logger.info(f"  - sections: {list(cv_data['sections'].keys())}")
+    logger.info(f"  - profile: {cv_data['sections'].get('profile', 'No disponible')}")
+    logger.info(f"  - experience: {len(cv_data['sections'].get('experience', [])) if isinstance(cv_data['sections'].get('experience'), list) else 'No es lista'} elementos")
+    logger.info(f"  - education: {len(cv_data['sections'].get('education', [])) if isinstance(cv_data['sections'].get('education'), list) else 'No es lista'} elementos")
+    
+    # CRÍTICO: Verificar que los datos del CV se están enviando al prompt
+    logger.info(f"🔍 VERIFICACIÓN FINAL - Datos del CV enviados al prompt:")
+    for section_name, section_data in cv_data['sections'].items():
+        if isinstance(section_data, list):
+            logger.info(f"  - {section_name}: {len(section_data)} elementos - {section_data[:3] if section_data else 'Lista vacía'}")
+        elif isinstance(section_data, dict):
+            logger.info(f"  - {section_name}: {list(section_data.keys()) if section_data else 'Diccionario vacío'}")
+        else:
+            logger.info(f"  - {section_name}: {section_data}")
+    
+    # Verificar si hay datos reales o solo valores por defecto
+    has_real_data = False
+    for section_name, section_data in cv_data['sections'].items():
+        if section_data and section_data != 'No especificado' and section_data != [] and section_data != {}:
+            has_real_data = True
+            break
+    
+    logger.info(f"🔍 ¿Hay datos reales del CV?: {'✅ SÍ' if has_real_data else '❌ NO'}")
+    if not has_real_data:
+        logger.warning("⚠️ CRÍTICO: No hay datos reales del CV para enviar al prompt")
+        logger.warning("⚠️ Esto causará que la IA genere 'CV no disponible'")
+        # Logging adicional para debug
+        logger.info(f"🔍 Campos del request.cvAnalysis disponibles:")
+        if request.cvAnalysis:
+            for attr_name in dir(request.cvAnalysis):
+                if not attr_name.startswith('_'):
+                    try:
+                        attr_value = getattr(request.cvAnalysis, attr_name)
+                        if attr_value and attr_value != 'No especificado' and attr_value != [] and attr_value != {}:
+                            logger.info(f"  - {attr_name}: {attr_value}")
+                    except Exception:
+                        pass
 
-    HABILIDADES SOFT EVALUADAS:
-    {soft_skills_text}
-
-    {cv_analysis_text}
-
-    {job_preferences_text}
-
-    JUEGOS COMPLETADOS: {', '.join(request.completedGames)}
-
-    Genera un informe profesional que incluya:
-
-    1. RESUMEN DEL PERFIL: Análisis general del candidato
-    2. ANÁLISIS DE FORTALEZAS: Basado en habilidades soft y CV
-    3. ÁREAS DE MEJORA: Con recomendaciones específicas
-    4. ANÁLISIS DEL CV: Estructura, coherencia, claridad, formación, ortografía
-    5. SUGERENCIAS LABORALES: Roles específicos según preferencias y habilidades
-    6. PRÓXIMOS PASOS: A corto, medio y largo plazo
-    7. RECURSOS Y APOYO: Enlaces a plataformas, cursos, herramientas
-
-    IMPORTANTE: 
-    - Si NO tiene certificado de discapacidad, NO recomiendes plataformas específicas para personas con discapacidad
-    - Si SÍ tiene certificado, incluye recursos específicos para personas con discapacidad
-    - Todos los enlaces deben abrirse en nueva ventana
-    - Sé específico y personalizado
-
-    Responde en formato JSON:
-    {{
-        "summary": "resumen del perfil",
-        "recommendations": {{
-            "profile_analysis": "análisis detallado del perfil",
-            "strengths_analysis": "análisis de fortalezas",
-            "improvement_areas": "áreas de mejora con recomendaciones",
-            "cv_analysis": "análisis detallado del CV",
-            "job_suggestions": "sugerencias laborales específicas",
-            "next_steps": {{
-                "short_term": ["paso1", "paso2"],
-                "medium_term": ["paso1", "paso2"],
-                "long_term": ["paso1", "paso2"]
-            }},
-            "resources": [
-                {{
-                    "name": "nombre del recurso",
-                    "url": "https://ejemplo.com",
-                    "description": "descripción del recurso"
-                }}
-            ]
-        }}
-    }}
-    """
     
     try:
         # Limpiar el nombre del deployment para evitar problemas con espacios
         deployment_name = DEPLOYMENT.strip()
         
-        # Structured Outputs para el informe
-        report_schema = {
-            "name": "EmployabilityReportSchema",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "summary": {"type": "string"},
-                    "recommendations": {
-                        "type": "object",
-                        "properties": {
-                            "profile_analysis": {"type": "string"},
-                            "strengths_analysis": {"type": "string"},
-                            "improvement_areas": {"type": "string"},
-                            "cv_analysis": {"type": "string"},
-                            "job_suggestions": {"type": "string"},
-                            "next_steps": {
-                                "type": "object",
-                                "properties": {
-                                    "short_term": {"type": "array", "items": {"type": "string"}},
-                                    "medium_term": {"type": "array", "items": {"type": "string"}},
-                                    "long_term": {"type": "array", "items": {"type": "string"}},
-                                },
-                            },
-                            "resources": {
-                                "type": "array",
-                                "items": {"type": "object", "properties": {"name": {"type": "string"}, "url": {"type": "string"}, "description": {"type": "string"}}},
-                            },
-                            "cv_analysis_structured": build_cv_json_schema()["schema"],
-                        },
-                    },
-                },
-            },
-            "strict": False,
-        }
+        # Structured Outputs para el informe mejorado usando configuración centralizada
+        report_schema = PromptConfig.get_report_schema()
+        report_schema = _ensure_required_everywhere(report_schema)  # <--- función preventiva aquí
+        # 🔧 Azure SO no admite ['object','null'] en la raíz
+        if isinstance(report_schema.get("type"), list):
+            report_schema["type"] = "object"
+        
+        # CRÍTICO: Verificar que el esquema JSON se cargó correctamente
+        logger.info(f"🔍 Esquema JSON del informe:")
+        logger.info(f"  - Esquema cargado: {'✅' if report_schema else '❌'}")
+        logger.info(f"  - Propiedades requeridas: {report_schema.get('required', []) if report_schema else 'N/A'}")
+        logger.info(f"  - Cantidad de propiedades: {len(report_schema.get('properties', {})) if report_schema else 0}")
 
         chat_kwargs = {
             "model": deployment_name,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [
+                {"role": "system", "content": PromptConfig.get_system_prompt()},
+                {"role": "user", "content": prompt},
+            ],
             "temperature": 0.3,
-            "max_tokens": 2000,
-            "timeout": 60,
+            "max_tokens": 4000,  # Aumentado para el informe más detallado
+            "timeout": 120,  # Aumentado para el análisis más complejo
         }
         if _supports_json_schema_response_format(API_VERSION):
-            chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": report_schema}
+            chat_kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": _as_json_schema_payload(report_schema, name="EmployabilityReport")
+            }
+            # (Opcional) sanity log:
+            js = chat_kwargs["response_format"]["json_schema"]
+            logger.info(f"Wrapper JSON schema keys: {list(js.keys())}")  # debe incluir 'schema' y 'name'
+            logger.info(f"✅ JSON Schema aplicado para respuesta estructurada")
+        else:
+            chat_kwargs["response_format"] = {"type": "json_object"}
+            logger.warning(f"⚠️ JSON Schema no disponible en API version {API_VERSION}")
         response = client.chat.completions.create(**chat_kwargs)
         
         # Obtener y loggear la respuesta cruda
         raw_content = response.choices[0].message.content
-        logger.info(f"Respuesta cruda de Azure OpenAI: {repr(raw_content[:500])}...")
+        logger.info(f"Respuesta cruda de Azure OpenAI (informe mejorado): {repr(raw_content[:500])}...")
         
         if not raw_content or not raw_content.strip():
-            logger.error("Azure OpenAI devolvió respuesta vacía")
+            logger.error("Azure OpenAI devolvió respuesta vacía para informe mejorado")
             raise Exception("Respuesta vacía de Azure OpenAI")
         
         # Limpiar la respuesta antes de parsear
         content_to_parse = raw_content.strip()
         
-        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto o markdown)
-        import re
-        
-        # Primero, intentar extraer contenido entre ```json y ```
-        json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
-        if json_code_block_match:
-            content_to_parse = json_code_block_match.group(1).strip()
-            logger.info(f"JSON extraído de bloque de código para informe: {repr(content_to_parse[:200])}...")
+        # Si ya parece JSON puro, úsalo tal cual
+        if content_to_parse.strip().startswith("{") and content_to_parse.strip().endswith("}"):
+            pass  # ya está OK
         else:
-            # Si no hay bloque de código, buscar el JSON directamente
-            json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
-            if json_match:
-                content_to_parse = json_match.group(0)
-                logger.info(f"JSON extraído directamente para informe: {repr(content_to_parse[:200])}...")
+            # Buscar el JSON dentro de la respuesta
+            import re
+            
+            # Primero, intentar extraer contenido entre ```json y ```
+            json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
+            if json_code_block_match:
+                content_to_parse = json_code_block_match.group(1).strip()
+                logger.info(f"JSON extraído de bloque de código para informe mejorado: {repr(content_to_parse[:200])}...")
             else:
-                logger.error(f"No se pudo extraer JSON de la respuesta de informe: {repr(content_to_parse[:500])}")
-                raise Exception("No se encontró JSON válido en la respuesta")
+                # Si no hay bloque de código, buscar el JSON directamente
+                json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
+                if json_match:
+                    content_to_parse = json_match.group(0)
+                    logger.info(f"JSON extraído directamente para informe mejorado: {repr(content_to_parse[:200])}...")
+                else:
+                    logger.error(f"No se pudo extraer JSON de la respuesta de informe mejorado: {repr(content_to_parse[:500])}")
+                    raise Exception("No se encontró JSON válido en la respuesta")
         
         import json
         try:
             report_data = json.loads(content_to_parse)
-            logger.info(f"JSON parseado exitosamente para informe. Claves: {list(report_data.keys()) if isinstance(report_data, dict) else 'No es dict'}")
+            logger.info(f"JSON parseado exitosamente para informe mejorado. Claves: {list(report_data.keys()) if isinstance(report_data, dict) else 'No es dict'}")
             return report_data
         except json.JSONDecodeError as je:
-            logger.error(f"Error parseando JSON: {je}")
+            logger.error(f"Error parseando JSON del informe mejorado: {je}")
             logger.error(f"Contenido que causó el error: {repr(content_to_parse[:1000])}")
-            raise Exception(f"Error parseando respuesta JSON: {je}")
+            raise Exception(f"Error parseando respuesta JSON del informe mejorado: {je}")
         
     except Exception as e:
-        logger.error(f"Error generando informe con IA: {e}")
+        logger.error(f"Error generando informe mejorado con IA: {e}")
         return generate_basic_report(request, employability_score, level)
 
 def generate_basic_report(request: EmployabilityReportRequest, employability_score: int, level: str) -> dict:
@@ -900,6 +1546,7 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
         # Ejecutar TODAS las rutas disponibles y fusionar resultados para máxima cobertura
         texts: List[str] = []
         merged: Dict[str, Any] = {}
+        logger.info(f"🔍 Iniciando análisis completo del CV: {file.filename}")
 
         # A) Módulo mejorado de Document Intelligence
         try:
@@ -959,14 +1606,21 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
 
         # Texto combinado
         combined_text = "\n".join([t for t in texts if t])
+        logger.info(f"📝 Texto combinado extraído: {len(combined_text)} caracteres")
         basic = _extract_basic_cv_info_from_text(combined_text) if combined_text else None
+        if basic:
+            logger.info(f"✅ Información básica extraída: {list(basic.keys())}")
+        else:
+            logger.warning("⚠️ No se pudo extraer información básica del CV")
 
         # 1) Structured Outputs sobre secciones Layout si disponibles
         structured: Dict[str, Any] = {}
         try:
-            if locals().get('layout_sections'):
-                structured = _structured_extract_with_ai(layout_sections, file.filename)
-        except Exception:
+            if locals().get('layout_sections') and layout_sections:
+                structured = await _structured_extract_with_ai(layout_sections, file.filename)
+                logger.info(f"✅ Extracción estructurada completada: {len(structured)} campos")
+        except Exception as e:
+            logger.warning(f"⚠️ Error en extracción estructurada: {e}")
             structured = {}
 
         # 2) LLM clásico como respaldo
@@ -1086,6 +1740,138 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
         logger.error(f"Error generando PDF: {e}")
         raise HTTPException(status_code=500, detail="No se pudo generar el PDF")
 
+async def _structured_extract_with_ai(layout_sections: Dict[str, Any], filename: str) -> Dict[str, Any]:
+    """Extrae información estructurada del CV usando IA sobre las secciones de layout"""
+    try:
+        if not client:
+            logger.warning("Azure OpenAI no disponible para extracción estructurada")
+            return {}
+        
+        # Preparar contexto de las secciones
+        sections_text = ""
+        for section_name, section_data in layout_sections.items():
+            if isinstance(section_data, dict) and section_data.get('text'):
+                sections_text += f"\n## {section_name.upper()}\n{section_data['text']}\n"
+        
+        if not sections_text.strip():
+            logger.warning("No hay texto en las secciones de layout para extraer")
+            return {}
+        
+        # Prompt para extracción estructurada
+        prompt = f"""
+        Eres un experto en análisis de CVs. Analiza las siguientes secciones extraídas de un CV y proporciona información estructurada en formato JSON.
+        
+        CV: {sections_text[:3000]}
+        
+        Extrae y estructura la siguiente información:
+        - candidate: nombre completo del candidato
+        - contact: emails, teléfonos, ubicación, LinkedIn si aparece
+        - experience: experiencia laboral con empresa, cargo, fechas, descripción
+        - education: formación académica con institución, título, fechas
+        - languages: idiomas con niveles
+        - skills: habilidades técnicas y herramientas
+        - summary: resumen profesional del candidato
+        
+        Responde SOLO en formato JSON válido, sin texto adicional.
+        """
+        
+        # Configurar parámetros de Azure OpenAI
+        deployment_name = DEPLOYMENT.strip()
+        chat_kwargs = {
+            "model": deployment_name,
+            "messages": [{"role": "user", "content": prompt}],
+            "temperature": 0.1,  # Baja temperatura para extracción precisa
+            "max_tokens": 2000,
+            "timeout": 60,
+        }
+        
+        # Usar JSON Schema si está disponible
+        if _supports_json_schema_response_format(API_VERSION):
+            schema = {
+                "type": "object",
+                "properties": {
+                    "candidate": {"type": "string"},
+                    "contact": {
+                        "type": "object",
+                        "properties": {
+                            "emails": {"type": "array", "items": {"type": "string"}},
+                            "phones": {"type": "array", "items": {"type": "string"}},
+                            "location": {"type": "string"},
+                            "linkedin": {"type": "string"}
+                        }
+                    },
+                    "experience": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "position": {"type": "string"},
+                                "company": {"type": "string"},
+                                "start_date": {"type": "string"},
+                                "end_date": {"type": "string"},
+                                "current": {"type": "boolean"},
+                                "description": {"type": "string"}
+                            }
+                        }
+                    },
+                    "education": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "degree": {"type": "string"},
+                                "institution": {"type": "string"},
+                                "start_date": {"type": "string"},
+                                "end_date": {"type": "string"}
+                            }
+                        }
+                    },
+                    "languages": {
+                        "type": "array",
+                        "items": {
+                            "type": "object",
+                            "properties": {
+                                "language": {"type": "string"},
+                                "level": {"type": "string"}
+                            }
+                        }
+                    },
+                    "skills": {"type": "array", "items": {"type": "string"}},
+                    "summary": {"type": "string"}
+                }
+            }
+            schema = harden_schema(schema)  # <---
+            # 🔧 Azure SO no admite ['object','null'] en la raíz
+            if isinstance(schema.get("type"), list):
+                schema["type"] = "object"
+            chat_kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": _as_json_schema_payload(schema, name="CVLayoutExtraction")
+            }
+        
+        # Llamar a Azure OpenAI
+        response = client.chat.completions.create(**chat_kwargs)
+        raw_content = response.choices[0].message.content
+        
+        if not raw_content or not raw_content.strip():
+            logger.warning("Respuesta vacía de Azure OpenAI para extracción estructurada")
+            return {}
+        
+        # Parsear JSON
+        import json
+        try:
+            structured_data = json.loads(raw_content.strip())
+            logger.info(f"✅ Datos estructurados extraídos: {list(structured_data.keys())}")
+            return structured_data
+        except json.JSONDecodeError as je:
+            logger.error(f"Error parseando JSON de extracción estructurada: {je}")
+            logger.error(f"Contenido: {repr(raw_content[:500])}")
+            return {}
+            
+    except Exception as e:
+        logger.error(f"Error en extracción estructurada: {e}")
+        return {}
+
 def _extract_basic_cv_info_from_text(text_content: str) -> Dict[str, Any]:
     """Extrae heurísticamente nombre del candidato, contactos y periodos laborales/educativos."""
     try:
@@ -1118,7 +1904,7 @@ def _extract_basic_cv_info_from_text(text_content: str) -> Dict[str, Any]:
             location = loc_candidates[0]
 
         # Fechas/periodos: detectar rangos tipo "junio 2023 - actualidad" o "2018–2020"
-        months = "enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|ene\.|feb\.|mar\.|abr\.|may\.|jun\.|jul\.|ago\.|sep\.|oct\.|nov\.|dic\."
+        months = "enero|febrero|marzo|abril|mayo|junio|julio|agosto|septiembre|setiembre|octubre|noviembre|diciembre|ene\\.|feb\\.|mar\\.|abr\\.|may\\.|jun\\.|jul\\.|ago\\.|sep\\.|oct\\.|nov\\.|dic\\."
         period_re = re.compile(rf"((?:{months})?\s*\d{{4}})\s*[-–a]\s*((?:{months})?\s*(?:\d{{4}}|actualidad|presente))", re.IGNORECASE)
         periods: List[str] = []
         for ln in lines:
@@ -1131,6 +1917,148 @@ def _extract_basic_cv_info_from_text(text_content: str) -> Dict[str, Any]:
         return basic
     except Exception:
         return {"candidate": None, "contact": {}, "periods": []}
+
+
+# --- UTILIDADES PARA MODELO CUSTOM cv-extractor-v1 ---
+def _field_value(f) -> Any:
+    """Extrae el valor de un campo de Document Intelligence de forma robusta"""
+    if f is None:
+        return None
+    # SDK v4 expone content + value_*; intentamos varias
+    for attr in ("value", "value_string", "value_phone_number", "value_email", "value_date", "value_boolean", "content"):
+        if hasattr(f, attr):
+            v = getattr(f, attr)
+            if v not in (None, ""):
+                return v
+    # Arrays / objetos
+    if hasattr(f, "value_array") and f.value_array:
+        return [_field_value(x) for x in f.value_array]
+    if hasattr(f, "value_object") and f.value_object:
+        return {k: _field_value(v) for k, v in f.value_object.items()}
+    try:
+        return str(f)
+    except Exception:
+        return None
+
+_SPLIT_RE = re.compile(r"[,\n;•·|]+")
+def _split_list(txt: Any) -> list[str]:
+    """Divide texto en lista usando separadores comunes"""
+    if not txt:
+        return []
+    return [s.strip(" •-").strip() for s in _SPLIT_RE.split(str(txt)) if s.strip()]
+
+def _truthy(x: Any) -> bool:
+    """Convierte valor a booleano de forma robusta"""
+    return str(x).strip().lower() in {"1", "true", "sí", "si", "yes", "y", "s"}
+
+
+def _map_cv_extractor_fields(doc) -> tuple[dict, dict]:
+    """Mapea campos del modelo custom cv-extractor-v1 a estructuras estándar"""
+    # doc.fields -> dict[str, DocumentField]
+    flds = getattr(doc, "fields", {}) or {}
+    g = lambda k: _field_value(flds.get(k))
+
+    # Candidate + Contacto
+    emails = [g("candidate_email_1"), g("candidate_email_2")]
+    emails = [e for e in emails if e]
+    phones = [g("candidate_phone_1"), g("candidate_phone_2")]
+    phones = [p for p in phones if p]
+
+    candidate = {
+        "full_name": g("candidate_full_name"),
+        "location": g("candidate_location"),
+        "emails": emails,
+        "phones": phones,
+        "links": {"linkedin": g("candidate_linkedin")},
+        "role": g("candidate_rol"),
+        "has_driving_license": _truthy(g("candidate_has_driving_license")),
+    }
+
+    # Idiomas
+    languages = []
+    for i in range(1, 6):
+        name = g(f"lang{i}_name")
+        level = g(f"lang{i}_level")
+        if name or level:
+            languages.append({"name": str(name or ""), "level": str(level or "")})
+
+    # Skills
+    hard = _split_list(g("hard_skills"))
+    soft = _split_list(g("soft_skills"))
+
+    # Certificaciones (2 pares)
+    certs = []
+    n1, y1 = g("candidate_certifications"), g("candidate_certification_years")
+    n2, y2 = g("candidate_certifications_2"), g("candidate_certification_years_2")
+    if n1 or y1: certs.append({"name": str(n1 or ""), "date": str(y1 or "")})
+    if n2 or y2: certs.append({"name": str(n2 or ""), "date": str(y2 or "")})
+
+    # Cursos -> los metemos en education como entries con notas
+    education = []
+    if any([g("course3_provider"), g("course3_date"), g("course3_hours")]):
+        education.append({
+            "degree": str(g("course3_provider") or "Curso"),
+            "institution": str(g("course3_provider") or ""),
+            "start_date": None,
+            "end_date": str(g("course3_date") or ""),
+            "notes": f"Horas: {g('course3_hours') or ''}".strip()
+        })
+    if any([g("course4_name"), g("course4_provider"), g("course4_date"), g("course4_hours")]):
+        education.append({
+            "degree": str(g("course4_name") or "Curso"),
+            "institution": str(g("course4_provider") or ""),
+            "start_date": None,
+            "end_date": str(g("course4_date") or ""),
+            "notes": f"Horas: {g('course4_hours') or ''}".strip()
+        })
+
+    # Voluntariado
+    volunteering = []
+    for i in range(1, 4):
+        if any([g(f"vol{i}_org"), g(f"vol{i}_role"), g(f"vol{i}_start_date"), g(f"vol{i}_end_date"), g(f"vol{i}_description")]):
+            volunteering.append({
+                "organization": g(f"vol{i}_org"),
+                "role": g(f"vol{i}_role"),
+                "location": g(f"vol{i}_location"),
+                "start_date": g(f"vol{i}_start_date"),
+                "end_date": g(f"vol{i}_end_date"),
+                "description": g(f"vol{i}_description"),
+            })
+
+    # cv_info (la forma "ligera" usada por tu prompt)
+    cv_info = {
+        "perfil": candidate["role"] or candidate["full_name"],
+        "contacto": {
+            "emails": candidate["emails"],
+            "phones": candidate["phones"],
+            "location": candidate["location"],
+            "linkedin": candidate["links"]["linkedin"],
+        },
+        "idiomas": languages,
+        "software": hard,          # hard skills
+        "aptitudes": soft,         # soft skills
+        "certificaciones": certs,
+        "voluntariado": volunteering,
+    }
+
+    # cv_structured (encaja con tu JSON Schema usado más adelante)
+    cv_structured = {
+        "candidate": {
+            "full_name": candidate["full_name"],
+            "location": candidate["location"],
+            "emails": candidate["emails"],
+            "phones": candidate["phones"],
+            "links": {"linkedin": candidate["links"]["linkedin"]} if candidate["links"]["linkedin"] else {},
+        },
+        "summary": None,
+        "experience": [],                             # tu modelo aún no etiqueta experiencia
+        "education": education,
+        "languages": [{"name": l["name"], "level": l["level"]} for l in languages],
+        "skills": {"hard": hard, "soft": soft},
+        "certifications": certs,
+        "projects": [],
+    }
+    return cv_info, cv_structured
 
 
 async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]:
@@ -1156,6 +2084,27 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
                 logger.info(f"Iniciando análisis de documento con modelo '{model_id}'...")
                 poller = client.begin_analyze_document(model_id, document)
                 result = poller.result()
+                
+                # (Opcional para depurar): loguea los campos que te devuelve el modelo
+                try:
+                    if getattr(result, "documents", None):
+                        for k, v in result.documents[0].fields.items():
+                            logger.info(f"[cv-extractor] {k} = {_field_value(v)} (conf={getattr(v,'confidence',None)})")
+                except Exception:
+                    pass
+                
+                # --- NUEVO: si es tu modelo custom, mapeamos sus campos ---
+                try:
+                    if getattr(result, "documents", None):
+                        doc0 = result.documents[0]
+                        cv_info_map, cv_struct = _map_cv_extractor_fields(doc0)
+                        logger.info(f"🧩 Mapper cv-extractor aplicado: {list(cv_info_map.keys()) if cv_info_map else 'sin datos'}")
+                    else:
+                        cv_info_map, cv_struct = {}, {}
+                except Exception as _e:
+                    logger.warning(f"Mapper cv-extractor falló: {_e}")
+                    cv_info_map, cv_struct = {}, {}
+                
             except Exception as e:
                 if model_id != "prebuilt-layout":
                     logger.warning(f"Fallo con modelo custom '{model_id}', reintentando con 'prebuilt-layout': {e}")
@@ -1186,6 +2135,13 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
         merged: Dict[str, Any] = {**analysis}
         merged.update({k: v for k, v in basic.items() if v})
         merged.update({"raw_text": text_content, "layout_sections": layout_sections})
+        
+        # --- NUEVO: incorpora salidas del modelo custom
+        if cv_info_map:
+            merged["cv_info"] = cv_info_map
+        if cv_struct:
+            merged["cv_structured"] = cv_struct
+        
         return merged
         
     except Exception as e:
@@ -1253,6 +2209,12 @@ async def analyze_cv_with_ocr(file_path: str, filename: str) -> Dict[str, Any]:
 async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optional[Dict[str, Any]] = None) -> Dict[str, Any]:
     """Analiza el contenido del CV usando IA"""
     try:
+        # Importar PromptConfig para usar el prompt centralizado
+        try:
+            from .prompt_config import PromptConfig
+        except ImportError:
+            from prompt_config import PromptConfig
+        
         # Chequeo de ortografía simple con fallback silencioso
         spelling_issues: list[str] = []
         try:
@@ -1301,70 +2263,52 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
         except Exception:
             basic_hint = ""
 
-        prompt = f"""
-        Eres un orientador laboral experto, con experiencia en neurodivergencias y discapacidad intelectual.
-        Debes generar información precisa, útil y de lectura fácil (frases cortas, listas, términos claros).
-        Analiza el siguiente CV y proporciona un análisis detallado en formato JSON:
-        
-        CV: {content[:4000]}
-        {basic_hint}
-        
-        Responde en este formato JSON exacto:
-        {{
-            "strengths": ["fortaleza1", "fortaleza2"],
-            "weaknesses": ["debilidad1", "debilidad2"],
-            "feedback": "feedback general",
-            "structure": "buena/regular/mala",
-            "coherence": "buena/regular/mala",
-            "experience": "alta/regular/baja",
-            "skills": ["skill1", "skill2"],
-            "education": ["educación1", "educación2"],
-            "alerts": ["alerta1", "alerta2"],
-            "cv_analysis_structured": {{
-                "candidate": "Nombre completo si aparece",
-                "contact": {{"emails": ["..."], "phones": ["..."], "location": "...", "linkedin": "..."}},
-                "periods": ["ene 2020 - dic 2022", "2023 - actualidad"],
-                "languages": ["Español (nativo)", "Inglés (intermedio)"],
-                "highlights": ["...", "..."],
-                "volunteering": ["Entidad y rol si aparece"],
-                "education_synonyms": ["estudios", "formación", "educación", "cursos"]
-            }}
-        }}
-        """
+        # Usar prompt centralizado para análisis de CV
+        prompt = PromptConfig.get_cv_analysis_prompt(content, basic)
         
         # Limpiar el nombre del deployment para evitar problemas con espacios
         deployment_name = DEPLOYMENT.strip()
 
         # Structured Outputs con esquema laxo para el análisis + esquema fuerte para cv_analysis_structured
         analysis_schema = {
-            "name": "CVFreeformAnalysis",
-            "schema": {
-                "type": "object",
-                "properties": {
-                    "strengths": {"type": "array", "items": {"type": "string"}},
-                    "weaknesses": {"type": "array", "items": {"type": "string"}},
-                    "feedback": {"type": "string"},
-                    "structure": {"type": "string"},
-                    "coherence": {"type": "string"},
-                    "experience": {"type": "string"},
-                    "skills": {"type": "array", "items": {"type": "string"}},
-                    "education": {"type": "array", "items": {"type": "string"}},
-                    "alerts": {"type": "array", "items": {"type": "string"}},
-                    "cv_analysis_structured": build_cv_json_schema()["schema"],
-                },
+            "type": "object",
+            "properties": {
+                "strengths": {"type": "array", "items": {"type": "string"}},
+                "weaknesses": {"type": "array", "items": {"type": "string"}},
+                "feedback": {"type": "string"},
+                "structure": {"type": "string"},
+                "coherence": {"type": "string"},
+                "experience": {"type": "string"},
+                "skills": {"type": "array", "items": {"type": "string"}},
+                "education": {"type": "array", "items": {"type": "string"}},
+                "alerts": {"type": "array", "items": {"type": "string"}},
+                "cv_analysis_structured": build_cv_json_schema()["schema"],
             },
-            "strict": False,
         }
+        # Asegurar 'required' exhaustivo en todos los objetos y cerrar objetos para modo estricto
+        analysis_schema = _ensure_required_everywhere(analysis_schema)
+        analysis_schema = harden_schema(analysis_schema)
+        # 🔧 Azure SO no admite ['object','null'] en la raíz
+        if isinstance(analysis_schema.get("type"), list):
+            analysis_schema["type"] = "object"
 
         chat_kwargs = {
             "model": deployment_name,
-            "messages": [{"role": "user", "content": prompt}],
+            "messages": [
+                {"role": "system", "content": PromptConfig.get_system_prompt()},
+                {"role": "user", "content": prompt},
+            ],
             "temperature": 0.2,
             "max_tokens": 1500,
             "timeout": 60,
         }
         if _supports_json_schema_response_format(API_VERSION):
-            chat_kwargs["response_format"] = {"type": "json_schema", "json_schema": analysis_schema}
+            chat_kwargs["response_format"] = {
+                "type": "json_schema",
+                "json_schema": _as_json_schema_payload(analysis_schema, name="CVAnalysis")
+            }
+        else:
+            chat_kwargs["response_format"] = {"type": "json_object"}
         response = client.chat.completions.create(**chat_kwargs)
         
         # Obtener y loggear la respuesta cruda
@@ -1378,18 +2322,22 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
         # Limpiar la respuesta antes de parsear
         content_to_parse = raw_content.strip()
         
-        # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto o markdown)
-        import re
-        
-        # Primero, intentar extraer contenido entre ```json y ```
-        json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
-        if json_code_block_match:
-            content_to_parse = json_code_block_match.group(1).strip()
+        # Si ya parece JSON puro, úsalo tal cual
+        if content_to_parse.strip().startswith("{") and content_to_parse.strip().endswith("}"):
+            pass  # ya está OK
         else:
-            # Si no hay bloque de código, buscar el JSON directamente
-            json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
-            if json_match:
-                content_to_parse = json_match.group(0)
+            # Buscar el JSON dentro de la respuesta (puede estar rodeado de texto o markdown)
+            import re
+            
+            # Primero, intentar extraer contenido entre ```json y ```
+            json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
+            if json_code_block_match:
+                content_to_parse = json_code_block_match.group(1).strip()
+            else:
+                # Si no hay bloque de código, buscar el JSON directamente
+                json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
+                if json_match:
+                    content_to_parse = json_match.group(0)
         
         # Parsear respuesta JSON
         import json
@@ -1404,12 +2352,47 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
             # Devolver dict plano del análisis más estructura; si falla validación, caeremos al except
             base = CvAnalysis(**analysis_data)
             result: Dict[str, Any] = base.dict()
-            # Anexar estructura si existe
+            
+            # Anexar estructura detallada del CV si existe
             if isinstance(analysis_data, dict) and isinstance(analysis_data.get('cv_analysis_structured'), dict):
-                result.update(analysis_data['cv_analysis_structured'])
+                cv_structured = analysis_data['cv_analysis_structured']
+                # Mapear campos estructurados a campos del modelo
+                if cv_structured.get('candidate'):
+                    result['candidate'] = cv_structured['candidate']
+                if cv_structured.get('contact'):
+                    result['contact'] = cv_structured['contact']
+                if cv_structured.get('experience'):
+                    result['experience_detailed'] = cv_structured['experience']
+                if cv_structured.get('education'):
+                    result['education_detailed'] = cv_structured['education']
+                if cv_structured.get('languages'):
+                    result['languages'] = cv_structured['languages']
+                if cv_structured.get('periods'):
+                    result['periods'] = cv_structured['periods']
+                if cv_structured.get('highlights'):
+                    result['highlights'] = cv_structured['highlights']
+                
+                # También incluir en cv_structured para compatibilidad
+                result['cv_structured'] = cv_structured
+            
             # Mezclar hints básicos
             if basic:
                 result.update({k: v for k, v in (basic or {}).items() if v})
+            
+            # Logging para verificar que la información del CV se procesó correctamente
+            logger.info(f"✅ Análisis del CV procesado exitosamente")
+            if result.get('cv_structured'):
+                logger.info(f"  - CV estructurado: ✅")
+                cv_struct = result['cv_structured']
+                if cv_struct.get('candidate'):
+                    logger.info(f"  - Candidato: {cv_struct['candidate']}")
+                if cv_struct.get('experience'):
+                    logger.info(f"  - Experiencia: {len(cv_struct['experience'])} posiciones")
+                if cv_struct.get('education'):
+                    logger.info(f"  - Formación: {len(cv_struct['education'])} elementos")
+                if cv_struct.get('languages'):
+                    logger.info(f"  - Idiomas: {len(cv_struct['languages'])} detectados")
+            
             return result
         except json.JSONDecodeError as je:
             logger.error(f"Error parseando JSON en análisis CV: {je}")
@@ -1495,6 +2478,37 @@ if __name__ == "__main__":
     # Usar variables de entorno para host y puerto, con fallbacks
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8080"))
+    
+    # Test de la función harden_schema
+    def test_harden_schema_handles_strict_mode():
+        src = {
+            "type": "object",
+            "properties": {
+                "a": {"type": "string"},
+                "b": {
+                    "type": "object",
+                    "properties": {"c": {"type": "number"}}
+                },
+                "d": {
+                    "type": "array",
+                    "items": {"type": "object", "properties": {"e": {"type": "boolean"}}}
+                }
+            }
+        }
+        out = harden_schema(src)
+        assert out["additionalProperties"] is False
+        assert out["required"] == ["a", "b", "d"]  # Todas las propiedades
+        assert out["properties"]["b"]["additionalProperties"] is False
+        assert out["properties"]["b"]["required"] == ["c"]  # Todas las propiedades
+        assert out["properties"]["d"]["items"]["additionalProperties"] is False
+        assert out["properties"]["d"]["items"]["required"] == ["e"]  # Todas las propiedades
+        assert out["type"] == ["object", "null"]  # Permite null
+        print("✅ Test harden_schema: PASSED")
+    
+    try:
+        test_harden_schema_handles_strict_mode()
+    except Exception as e:
+        print(f"❌ Test harden_schema: FAILED - {e}")
     
     logger.info(f"🚀 Iniciando servidor en {host}:{port}")
     uvicorn.run(app, host=host, port=port)
