@@ -1130,7 +1130,7 @@ ${(() => {
 
           {finalPhrase && (
             <div
-              className="rounded-xl p-6 my-8 shadow-sm report-highlight border-2 bg-blue-50 border-blue-200 text-gray-800 dark:bg-blue-900/30 dark:border-blue-700 dark:text-blue-50 print:bg-white print:text-black"
+              className="rounded-xl p-6 my-8 shadow-sm report-highlight border-2 bg-blue-50 border-blue-200 text-gray-800 dark:!bg-blue-800 dark:!border-blue-400 dark:!text-white print:bg-white print:text-black"
               role="note"
             >
               <p className="mb-0 leading-relaxed">
