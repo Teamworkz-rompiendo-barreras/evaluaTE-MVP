@@ -343,16 +343,16 @@ const ResultadosPage: React.FC = () => {
 
             const informe = `# Informe Profesional de Empleabilidad
 
-## 1) Datos personales básicos
+## Datos personales básicos
 - **Nombre**: ${dp.name || candidateName}
 - **Ubicación**: ${dp.location || 'No consta'}
 - **Email | Tel.**: ${(dp.email || 'No consta')} | ${(dp.phone || 'No consta')}
 - **Certificado de discapacidad**: ${(String(dp.disability_certificate || '').toLowerCase().includes('sí') ? 'Sí' : 'No')}
 
-## 2) Resumen del perfil
+## Resumen del perfil
 ${formatListsForAccessibility(String(profileSummary || 'Resumen no disponible.'))}
 
-## 3) Resumen del CV
+## Resumen del CV
 ${(() => {
   const txt = String(rec.resumen_cv || '');
   const cvx = (data?.report?.cvAnalysis || cvAnalysis || {}) as { cv_structured?: unknown };
@@ -405,13 +405,13 @@ ${(() => {
   return 'Resumen del CV no disponible.';
 })()}
 
-## 4) Fortalezas
+## Fortalezas
 ${(() => {
   const arr = Array.isArray(rec.fortalezas_clave) ? rec.fortalezas_clave : [];
   return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
 })()}
 
-## 5) Áreas de mejora y consejos
+## Áreas de mejora y consejos
 ${(() => {
   const arr = Array.isArray((rec as { areas_mejora?: unknown[] }).areas_mejora) ? (rec as { areas_mejora?: unknown[] }).areas_mejora as unknown[] : [];
   return arr.length > 0
@@ -419,7 +419,7 @@ ${(() => {
     : '- Información no disponible.';
 })()}
 
-## 6) Análisis del CV (con puntuación 1–5 por apartado)
+## Análisis del CV (con puntuación 1–5 por apartado)
 ${(() => {
   // Preferir el diagnóstico del backend si existe; si no, usar heurística local
   try {
@@ -489,16 +489,16 @@ ${(() => {
   const razones = Array.isArray(r.razones) && r.razones.length > 0 ? `\n\n${r.razones.map(x => `- ${x}`).join('\n')}` : '';
   return `${stars}${razones}`;
 })()}
-## 7) Entornos de trabajo ideales
+## Entornos de trabajo ideales
 ${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}
 
-## 8) Roles profesionales sugeridos
+## Roles profesionales sugeridos
 ${(() => {
   const arr = Array.isArray(rec.roles_sugeridos) ? rec.roles_sugeridos : [];
   return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
 })()}
 
-## 9) Plan de acción
+## Plan de acción
 ### Corto plazo (0–30 días)
 ${(() => { const steps = (rec as { plan_accion?: { corto_plazo?: unknown[] } })?.plan_accion?.corto_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Actualizar CV\n- Crear perfil en LinkedIn'; })()}
 
@@ -508,7 +508,7 @@ ${(() => { const steps = (rec as { plan_accion?: { medio_plazo?: unknown[] } })?
 ### Largo plazo (3–6+ meses)
 ${(() => { const steps = (rec as { plan_accion?: { largo_plazo?: unknown[] } })?.plan_accion?.largo_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'; })()}
 
-## 10) Consejos de búsqueda de empleo
+## Consejos de búsqueda de empleo
 ${(() => {
   try {
     const adv: any = rec.consejos_busqueda || {};
@@ -526,7 +526,7 @@ ${(() => {
   }
 })()}
 
-## 11) Herramientas útiles y tecnología
+## Herramientas útiles y tecnología
 ${(() => {
   const tools: any = rec.herramientas_utiles || {};
   const renderCat = (title: string, items: any[]) => {
@@ -550,7 +550,7 @@ ${(() => {
   return parts.length > 0 ? parts.join('\n\n') : 'Sin recomendaciones específicas. Prueba con LinkedIn Learning, InfoJobs y Platzi.';
 })()}
 
-## 12) Frase final
+## Frase final
 ${formatListsForAccessibility(String(rec.frase_final || 'Este informe se ha realizado teniendo en cuenta toda la información que nos has proporcionado y tus preferencias laborales. Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!'))}
 
 ---
