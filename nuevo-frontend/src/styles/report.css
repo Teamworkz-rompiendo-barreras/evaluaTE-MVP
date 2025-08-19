@@ -713,38 +713,25 @@
   padding: 1rem; /* Padding más generoso */
 }
 
-/* Estilos para el modo oscuro: mantener los mismos colores que en modo claro (fondo blanco) */
-@media (prefers-color-scheme: dark) {
-  .report-content {
-    color: #374151;
-  }
-  
-  .report-content h1 { color: #1f2937; }
-  .report-content h2 { color: #374151; }
-  .report-content h3 { color: #4b5563; }
-  .report-content h4 { color: #6b7280; }
-  
-  .report-content strong { color: #1f2937; }
-  
-  .report-content code {
-    background-color: #f3f4f6;
-    color: #1f2937;
-    border-color: #e5e7eb;
-  }
-  
-  .report-content pre {
-    background-color: #f9fafb;
-    border-color: #e5e7eb;
-  }
-  
-  .report-content table th,
-  .report-content table td {
-    border-color: #d1d5db;
-    color: #374151;
-  }
-  
-  .report-content table th {
-    background-color: #f8fafc;
-    color: #1f2937;
-  }
+/* Modo oscuro: forzar el mismo esquema visual que en modo claro dentro del informe */
+.dark .informe-empleabilidad,
+.dark .informe-empleabilidad .report-content {
+  background-color: #ffffff !important;
+  color: #374151 !important;
 }
+
+.dark .informe-empleabilidad .report-content h1 { color: #1f2937 !important; }
+.dark .informe-empleabilidad .report-content h2 { color: #374151 !important; }
+.dark .informe-empleabilidad .report-content h3 { color: #4b5563 !important; }
+.dark .informe-empleabilidad .report-content h4 { color: #6b7280 !important; }
+.dark .informe-empleabilidad .report-content p,
+.dark .informe-empleabilidad .report-content li,
+.dark .informe-empleabilidad .report-content td { color: #374151 !important; }
+.dark .informe-empleabilidad .report-content strong { color: #1f2937 !important; }
+.dark .informe-empleabilidad .report-content a { color: #2563eb !important; }
+.dark .informe-empleabilidad .report-content code { background-color: #f3f4f6 !important; color: #1f2937 !important; border-color: #e5e7eb !important; }
+.dark .informe-empleabilidad .report-content pre { background-color: #f9fafb !important; border-color: #e5e7eb !important; }
+.dark .informe-empleabilidad .report-content table th,
+.dark .informe-empleabilidad .report-content table td { border-color: #d1d5db !important; color: #374151 !important; }
+.dark .informe-empleabilidad .report-content table th { background-color: #f8fafc !important; color: #1f2937 !important; }
+.dark .informe-empleabilidad blockquote { background-color: #eff6ff !important; color: #4b5563 !important; }
