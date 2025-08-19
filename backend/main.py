@@ -1678,6 +1678,36 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             if v and k not in final:
                 final[k] = v
 
+        # 3) Analizador determinista de estructura → mapeo a diagnostico_cv UI
+        try:
+            from .cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico
+        except Exception:
+            try:
+                from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico
+            except Exception:
+                compute_review_from_text_sections = None  # type: ignore
+                review_to_ui_diagnostico = None  # type: ignore
+
+        try:
+            if compute_review_from_text_sections and review_to_ui_diagnostico:
+                sections_for_review: Dict[str, Any] = {}
+                # Adaptar posibles estructuras ya calculadas
+                if standardized:
+                    sections_for_review = {
+                        "profile": (standardized.get("candidate") or {}).get("summary") if isinstance(standardized.get("candidate"), dict) else standardized.get("candidate"),
+                        "experience": standardized.get("experience") or [],
+                        "education": standardized.get("education") or [],
+                        "languages": standardized.get("languages") or [],
+                        "skills": standardized.get("skills") or (standardized.get("software") or []),
+                        "contact": standardized.get("candidate") or standardized.get("contact") or {},
+                    }
+                review = compute_review_from_text_sections(combined_text, sections_for_review)
+                final["cv_structure_review"] = review
+                final["diagnostico_cv"] = review_to_ui_diagnostico(review)
+        except Exception:
+            # No bloquear el flujo si el analizador determinista falla
+            pass
+
         return final
         
     except Exception as e:
@@ -2283,6 +2313,15 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
                 "education": {"type": "array", "items": {"type": "string"}},
                 "alerts": {"type": "array", "items": {"type": "string"}},
                 "cv_analysis_structured": build_cv_json_schema()["schema"],
+                # 👇 Añadimos espacio para que el modelo devuelva también el resumen determinista si lo desea
+                "cv_structure_review": {
+                    "type": "object",
+                    "properties": {
+                        "name": {"type": "string"},
+                        "language": {"type": "string"},
+                        "scores": {"type": "object"}
+                    }
+                }
             },
         }
         # Asegurar 'required' exhaustivo en todos los objetos y cerrar objetos para modo estricto

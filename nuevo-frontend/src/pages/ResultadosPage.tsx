@@ -108,6 +108,12 @@ function sanitizeImprovementText(text: string): string {
     s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*:?\s*(\d+\s*\/\s*\d+)/gi, '$1');
     // Eliminar etiquetas de calificación si no tienen número detrás
     s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)/gi, '').replace(/\s{2,}/g, ' ').trim();
+    // Quitar guiones directamente antes de la puntuación para que quede como en "Fortalezas"
+    // Ej.: "Toma de decisiones - (35/100)" -> "Toma de decisiones (35/100)"
+    s = s.replace(/\s*[-–—]\s*\((\d+\s*\/\s*\d+)\)/g, ' ($1)');
+    // Y si viniera sin paréntesis: "- 35/100" -> " 35/100"
+    s = s.replace(/\s*[-–—]\s*(\d+\s*\/\s*\d+)\b/g, ' $1');
+    s = s.replace(/\s{2,}/g, ' ').trim();
     return s;
   } catch {
     return String(text || '');
