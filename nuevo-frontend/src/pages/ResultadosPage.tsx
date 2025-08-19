@@ -202,6 +202,7 @@ const ResultadosPage: React.FC = () => {
   const [loadingIa, setLoadingIa] = useState<boolean>(false);
   const [errorIa, setErrorIa] = useState<string>('');
   const fetchedRef = useRef(false);
+  const [finalPhrase, setFinalPhrase] = useState<string>('');
 
   // Llamar al endpoint de IA al cargar la página
   useEffect(() => {
@@ -550,9 +551,6 @@ ${(() => {
   return parts.length > 0 ? parts.join('\n\n') : 'Sin recomendaciones específicas. Prueba con LinkedIn Learning, InfoJobs y Platzi.';
 })()}
 
-## Frase final
-${formatListsForAccessibility(String(rec.frase_final || 'Este informe se ha realizado teniendo en cuenta toda la información que nos has proporcionado y tus preferencias laborales. Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!'))}
-
 ---
 *Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*`;
             if (import.meta.env.MODE !== 'production') {
@@ -562,6 +560,11 @@ ${formatListsForAccessibility(String(rec.frase_final || 'Este informe se ha real
               console.log('✅ DEBUG - Primeros 200 caracteres:', informe.substring(0, 200));
             }
             setIaReport(informe);
+            // Frase motivacional final destacada (fuera del markdown principal)
+            const frase = String(rec.frase_final || '').trim();
+            const prefix = 'Este informe ha sido elaborado en base a tus preferencias laborales, los resultados de los minijuegos y tu CV. ';
+            const composed = (frase && !frase.toLowerCase().startsWith('este informe')) ? prefix + frase : (frase || prefix + 'Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!');
+            setFinalPhrase(composed);
             setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console
@@ -1118,6 +1121,14 @@ ${formatListsForAccessibility(String(rec.frase_final || 'Este informe se ha real
               </ReactMarkdown>
             </div>
           </div>
+
+          {finalPhrase && (
+            <div className="bg-blue-50 border-2 border-blue-200 text-gray-800 rounded-xl p-6 my-8 shadow-sm report-highlight" role="note">
+              <p className="mb-0">
+                {finalPhrase}
+              </p>
+            </div>
+          )}
 
           {!feedbackSent && (
             <div className="bg-gray-50 rounded-lg shadow-md p-6 mb-8 print-hidden">
