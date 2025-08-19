@@ -6,6 +6,7 @@ import { buildApiUrl, API_CONFIG } from '../config/api';
 import { ResponsiveRadar } from '@nivo/radar';
 import logo from '../assets/Logo_teamworkz.png';
 import ReactMarkdown from 'react-markdown';
+import remarkGfm from 'remark-gfm';
 import { useMemo } from 'react';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
@@ -79,6 +80,22 @@ function formatListsForAccessibility(text: string): string {
 function renderStars(score: number): string {
   const n = Math.max(0, Math.min(5, Math.round(score)));
   return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
+
+// Sanea frases con sectores concretos no respaldados por el CV
+function sanitizeProfileSummary(text: string, cvData: unknown): string {
+  try {
+    const summary = String(text || '');
+    const haystack = JSON.stringify(cvData || {}).toLowerCase();
+    // Reemplazar "experiencia en el sector de X" si X no aparece en el CV
+    return summary.replace(/experiencia en el sector de ([^,.;\n]+)/gi, (_m, sector) => {
+      const token = String(sector || '').trim().toLowerCase();
+      if (!token) return 'experiencia relevante';
+      return haystack.includes(token) ? _m : 'experiencia relevante';
+    });
+  } catch {
+    return String(text || '');
+  }
 }
 
   // Heurísticas simples para evaluar un CV sin IA (formato, claridad, coherencia, información clave, ortografía)
@@ -283,8 +300,27 @@ const ResultadosPage: React.FC = () => {
             const cleanedSummary = formatListsForAccessibility(
               removeLeadingName(String(data.summary || ''), candidateName)
             );
-            const dp: any = (data as any)?.recommendations?.datos_personales || {};
-            const profileSummary = (data as any)?.recommendations?.resumen_perfil || (data as any)?.recommendations?.analisis_perfil || cleanedSummary;
+            // Datos personales: preferir recomendaciones, luego report.ui y por último contact del CV
+            const dpSrc: any = (data as any)?.recommendations?.datos_personales 
+              || (data as any)?.report?.ui?.datos_personales 
+              || {};
+            const contact: any = (data as any)?.report?.cvAnalysis?.contact 
+              || (cvAnalysis as any)?.contact 
+              || {};
+            const dp: any = {
+              name: dpSrc?.name || candidateName,
+              location: dpSrc?.location || contact?.location || 'No consta',
+              email: dpSrc?.email || (Array.isArray(contact?.emails) ? contact.emails[0] : '') || 'No consta',
+              phone: dpSrc?.phone || (Array.isArray(contact?.phones) ? contact.phones[0] : '') || 'No especificado',
+              disability_certificate: (dpSrc?.disability_certificate != null)
+                ? dpSrc.disability_certificate
+                : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
+            };
+            const profileSummaryRaw = (data as any)?.recommendations?.resumen_perfil || (data as any)?.recommendations?.analisis_perfil || cleanedSummary;
+            const profileSummary = sanitizeProfileSummary(
+              profileSummaryRaw,
+              (data as any)?.report?.cvAnalysis || cvAnalysis
+            );
             const rec: any = (data as any)?.recommendations || {};
 
             const informe = `# Informe Profesional de Empleabilidad
@@ -299,7 +335,57 @@ const ResultadosPage: React.FC = () => {
 ${formatListsForAccessibility(String(profileSummary || 'Resumen no disponible.'))}
 
 ## 3) Resumen del CV
-${formatListsForAccessibility(String(rec.resumen_cv || 'Resumen del CV no disponible.'))}
+${(() => {
+  const txt = String(rec.resumen_cv || '');
+  const cvx: any = (data?.report?.cvAnalysis || cvAnalysis || {}) as any;
+  const structured: any = (cvx && (cvx.cv_structured || {})) || {};
+  const hasStructured = structured && (Array.isArray(structured.experience) || Array.isArray(structured.education));
+  // 1) Si hay datos estructurados, siempre los mostramos (con o sin texto adicional)
+  if (hasStructured) {
+    const fmtRange = (e: any) => {
+      const s = String(e?.start_date || '').trim();
+      const end = (e?.current ? 'actualidad' : String(e?.end_date || '').trim());
+      const both = [s, end].filter(Boolean).join(' – ');
+      return both ? ` (${both})` : '';
+    };
+    const take = <T,>(arr: T[] | undefined, n = 4): T[] => Array.isArray(arr) ? arr.slice(0, n) : [];
+    const expLines = take(structured.experience, 4).map((e: any) => {
+      const role = String(e?.position || e?.title || 'Puesto').trim();
+      const company = String(e?.company || e?.organization || e?.organisation || '').trim();
+      const at = company ? ` en ${company}` : '';
+      return `- ${role}${at}${fmtRange(e)}`;
+    });
+    const eduLines = take(structured.education, 4).map((it: any) => {
+      const degree = String(it?.degree || it?.title || 'Estudios').trim();
+      const inst = String(it?.institution || it?.school || '').trim();
+      const years = [it?.start_date, it?.end_date].filter(Boolean).join(' – ');
+      const tail = [inst, years].filter(Boolean).join(', ');
+      return `- ${degree}${tail ? ` — ${tail}` : ''}`;
+    });
+    const langLines = take(structured.languages, 5).map((l: any) => `- ${String(l?.language || l?.name || 'Idioma')} — ${String(l?.level || '').trim() || 'nivel no indicado'}`);
+    const skillsArr: any[] = (Array.isArray(structured.skills) && structured.skills.length > 0)
+      ? structured.skills
+      : (Array.isArray((structured as any).software) ? (structured as any).software : []);
+    const skillLines = take(skillsArr, 8).map((s: any) => `- ${String(s?.name || s?.tool || s || '')}`);
+
+    const blocks: string[] = [];
+    if (expLines.length) blocks.push(`### Experiencia destacada\n${expLines.join('\n')}`);
+    if (eduLines.length) blocks.push(`### Formación\n${eduLines.join('\n')}`);
+    if (langLines.length) blocks.push(`### Idiomas\n${langLines.join('\n')}`);
+    if (skillLines.length) blocks.push(`### Herramientas/Software\n${skillLines.join('\n')}`);
+
+    const header = `Se ha extraído información estructurada del CV:`;
+    const textExtra = (txt && !/no hay información del cv/i.test(txt) && !/información.*limitad/i.test(txt))
+      ? `\n\n${formatListsForAccessibility(txt)}`
+      : '';
+    return `${header}\n\n${blocks.join('\n\n')}${textExtra}`;
+  }
+  // 2) Si no hay estructurado, usar el texto si es útil
+  if (txt && !/no hay información del cv/i.test(txt)) {
+    return formatListsForAccessibility(txt);
+  }
+  return 'Resumen del CV no disponible.';
+})()}
 
 ## 4) Fortalezas
 ${(() => {
@@ -315,39 +401,72 @@ ${(() => {
 
 ## 6) Análisis del CV (con puntuación 1–5 por apartado)
 ${(() => {
+  // Preferir el diagnóstico del backend si existe; si no, usar heurística local
+  try {
+    const dx: any = (rec && (rec as any).diagnostico_cv) || {};
+    const hasBackendScores = [dx.structure_score, dx.coherence_score, dx.key_info_score, dx.clarity_score, (dx.spelling_style_score ?? dx.style_score)]
+      .some((v: any) => typeof v === 'number' && v > 0);
+    if (hasBackendScores) {
+      const stars = [
+        `Formato: ${renderStars(Number(dx.structure_score || 1))}`,
+        `Claridad: ${renderStars(Number(dx.clarity_score || 1))}`,
+        `Coherencia: ${renderStars(Number(dx.coherence_score || 1))}`,
+        `Información clave: ${renderStars(Number(dx.key_info_score || 1))}`,
+        `Ortografía y estilo: ${renderStars(Number((dx.spelling_style_score ?? dx.style_score) || 1))}`,
+      ].join('  \\\n');
+      const ev: any = (dx && dx.evidence) || {};
+      const evLines: string[] = [];
+      const pushIfUseful = (label: string, value: unknown) => {
+        const s = typeof value === 'string' ? value.trim() : '';
+        if (!s) return;
+        if (/no hay información del cv/i.test(s)) return; // descartar textos genéricos
+        evLines.push(`- ${label}: ${s}`);
+      };
+      pushIfUseful('Estructura', ev.structure);
+      pushIfUseful('Claridad', ev.clarity);
+      pushIfUseful('Coherencia', ev.coherence);
+      pushIfUseful('Información clave', ev.key_info);
+      pushIfUseful('Ortografía y estilo', ev.style);
+      const corr = Array.isArray(dx.corrections) && dx.corrections.length > 0
+        ? [`\nCorrecciones/Acciones:`, ...dx.corrections.map((c: any) => `- ${String(c)}`)]
+        : [];
+      const reord = Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length > 0
+        ? [`\nReordenación sugerida:`, ...dx.reordering_suggestions.map((r: any) => `- ${String(r)}`)]
+        : [];
+
+      // Si no quedan evidencias útiles, usar heurística local con cvAnalysis
+      if (evLines.length === 0) {
+        const cvLocal = data?.report?.cvAnalysis || cvAnalysis || null;
+        const rLoc = rateCv(cvLocal);
+        const starsHeur = [
+          `Formato: ${renderStars(rLoc.formato)}`,
+          `Claridad: ${renderStars(rLoc.claridad)}`,
+          `Coherencia: ${renderStars(rLoc.coherencia)}`,
+          `Información clave: ${renderStars(rLoc.infoClave)}`,
+          `Ortografía: ${renderStars(rLoc.ortografia)}`,
+        ].join('  \\\n');
+        const razones = Array.isArray(rLoc.razones) && rLoc.razones.length > 0 ? `\n\n${rLoc.razones.map(x => `- ${x}`).join('\n')}` : '';
+        const extras = (corr.length || reord.length) ? `\n\n${[...corr, ...reord].join('\n')}` : '';
+        return `${starsHeur}${razones}${extras}`;
+      }
+
+      const razonesBlock = `\n\n${[...evLines, ...corr, ...reord].join('\n')}`;
+      return `${stars}${razonesBlock}`;
+    }
+  } catch {}
+  // Fallback heurístico
   const cv = data?.report?.cvAnalysis || cvAnalysis || null;
   const r = rateCv(cv);
   const stars = [
-    `- Formato: ${renderStars(r.formato)}`,
-    `- Claridad: ${renderStars(r.claridad)}`,
-    `- Coherencia: ${renderStars(r.coherencia)}`,
-    `- Información clave: ${renderStars(r.infoClave)}`,
-    `- Ortografía: ${renderStars(r.ortografia)}`,
-  ].join('\n');
+    `Formato: ${renderStars(r.formato)}`,
+    `Claridad: ${renderStars(r.claridad)}`,
+    `Coherencia: ${renderStars(r.coherencia)}`,
+    `Información clave: ${renderStars(r.infoClave)}`,
+    `Ortografía: ${renderStars(r.ortografia)}`,
+  ].join('  \\\n');
   const razones = Array.isArray(r.razones) && r.razones.length > 0 ? `\n\n${r.razones.map(x => `- ${x}`).join('\n')}` : '';
   return `${stars}${razones}`;
 })()}
-
-### Tabla de diagnóstico
-${(() => {
-  const dx: any = rec.diagnostico_cv || {};
-  if (!dx || typeof dx !== 'object') return 'Diagnóstico no disponible.';
-  const ev: any = dx.evidence || {};
-  const row = (label: string, score: any, evText: any) => `| ${label} | ${Number(score || 1)}/5 | ${String(evText || '')} | ${(Array.isArray(dx.corrections) && dx.corrections[0]) ? String(dx.corrections[0]) : ''} |`;
-  const header = '| Apartado | Nota (1–5) | Evidencia del CV | Correcciones/Acciones |\n|---|---|---|---|';
-  const rows = [
-    row('Estructura', dx.structure_score, ev.structure),
-    row('Coherencia', dx.coherence_score, ev.coherence),
-    row('Información clave', dx.key_info_score, ev.key_info),
-    row('Claridad', dx.clarity_score, ev.clarity),
-    row('Ortografía y estilo', (dx.spelling_style_score ?? dx.style_score), ev.style),
-  ].join('\n');
-  const reord = Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length > 0
-    ? `\n\n**Reordenación sugerida:**\n${dx.reordering_suggestions.map((x: any) => `- ${String(x)}`).join('\n')}`
-    : '';
-  return `${header}\n${rows}${reord}`;
-})()}
-
 ## 7) Entornos de trabajo ideales
 ${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}
 
@@ -587,7 +706,7 @@ ${formatListsForAccessibility(String(rec.frase_final || 'Este informe se ha real
   // 1. Portada
   const portada = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
-      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4" />
+      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4 print-shadow-none" />
       <h1 className="text-4xl font-bold mb-2">Informe de Empleabilidad</h1>
       <h2 className="text-2xl font-semibold mb-1">{report?.firstName} {report?.lastName}</h2>
       <p className="text-gray-600 dark:text-gray-300">{fecha}</p>
@@ -781,9 +900,10 @@ ${formatListsForAccessibility(String(rec.frase_final || 'Este informe se ha real
       
       {iaReport && (
         <>
-          <div className="informe-empleabilidad report-container">
-            <div className="report-content professional-report">
+          <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none">
+            <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none">
               <ReactMarkdown
+                remarkPlugins={[remarkGfm]}
                 components={{
                   // Configuración mejorada para renderizado profesional
                   h1: ({ children, ...props }) => (
@@ -890,14 +1010,16 @@ ${formatListsForAccessibility(String(rec.frase_final || 'Este informe se ha real
                     const text = extractText(children);
                     if (text.includes('★')) {
                       // Verificar si es una línea de indicadores de calidad
-                      if (text.includes('Formato:') || text.includes('Claridad:') || text.includes('Información clave:') || text.includes('Ortografía:')) {
+                      if (/(Formato|Claridad|Coherencia|Información clave|Ortografía(?: y estilo)?):\s*[★☆]/.test(text)) {
                         // Extraer pares etiqueta + estrellas y mostrarlos en columna
                         const indicators: Array<{ label: string; stars: string }> = [];
-                        const re = /(Formato|Claridad|Coherencia|Información clave|Ortografía):\s*([★☆]+)/g;
+                        const re = /(Formato|Claridad|Coherencia|Información clave|Ortografía(?: y estilo)?):\s*([★☆]+)/g;
                         let m: RegExpExecArray | null;
                         // eslint-disable-next-line no-cond-assign
                         while ((m = re.exec(text)) !== null) {
-                          indicators.push({ label: m[1], stars: m[2] });
+                          const rawLabel = m[1];
+                          const normLabel = rawLabel.startsWith('Ortografía') ? 'Ortografía' : rawLabel;
+                          indicators.push({ label: normLabel, stars: m[2] });
                         }
                         return (
                           <div {...props} className="quality-indicators">
