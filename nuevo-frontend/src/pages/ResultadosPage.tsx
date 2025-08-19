@@ -98,6 +98,22 @@ function sanitizeProfileSummary(text: string, cvData: unknown): string {
   }
 }
 
+// Limpia frases como "Puntuación baja (35/100)" dejando solo la puntuación
+function sanitizeImprovementText(text: string): string {
+  try {
+    let s = String(text || '').trim();
+    // Mantener únicamente el valor numérico si viene como "Puntuación baja (35/100)"
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*\((\d+\s*\/\s*\d+)\)/gi, '($1)');
+    // O como "Puntuación baja: 35/100" o "Puntuación baja 35/100"
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*:?\s*(\d+\s*\/\s*\d+)/gi, '$1');
+    // Eliminar etiquetas de calificación si no tienen número detrás
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)/gi, '').replace(/\s{2,}/g, ' ').trim();
+    return s;
+  } catch {
+    return String(text || '');
+  }
+}
+
   // Heurísticas simples para evaluar un CV sin IA (formato, claridad, coherencia, información clave, ortografía)
 type CvHeuristicInput = Partial<{
   strengths: string[];
@@ -397,8 +413,10 @@ ${(() => {
 
 ## 5) Áreas de mejora y consejos
 ${(() => {
-  const arr = Array.isArray(rec.areas_mejora) ? rec.areas_mejora : [];
-  return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
+  const arr = Array.isArray((rec as { areas_mejora?: unknown[] }).areas_mejora) ? (rec as { areas_mejora?: unknown[] }).areas_mejora as unknown[] : [];
+  return arr.length > 0
+    ? arr.map((x: unknown) => `- ${sanitizeImprovementText(String(x))}`).join('\n')
+    : '- Información no disponible.';
 })()}
 
 ## 6) Análisis del CV (con puntuación 1–5 por apartado)
