@@ -16,6 +16,7 @@ import logging
 import sys
 import tempfile
 import re
+from uuid import uuid4
 
 # Cargar variables de entorno desde .env
 try:
@@ -67,6 +68,10 @@ logging.basicConfig(
     force=True,
 )
 logger = logging.getLogger(__name__)
+cv_logger = logging.getLogger("cv")
+
+def with_ctx(**kv):
+    return {"ctx": kv}
 
 # Variables de entorno para Azure OpenAI (opcionales)
 API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
@@ -1387,6 +1392,26 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     except ImportError:
         from prompt_config import PromptConfig
     
+    # Adjuntar analysis.json si report_id llegó por cvAnalysis
+    try:
+        report_id = None
+        if isinstance(request.cvAnalysis, dict):
+            report_id = (request.cvAnalysis or {}).get("report_id")
+        elif request.cvAnalysis and hasattr(request.cvAnalysis, "report_id"):
+            report_id = getattr(request.cvAnalysis, "report_id")
+        # Importar attach para enriquecer cv_data
+        try:
+            from .generate_report import attach_analysis_json_to_prompt as _attach
+        except Exception:
+            from generate_report import attach_analysis_json_to_prompt as _attach
+        if report_id:
+            cv_data = _attach(cv_data, report_id)
+        elif isinstance(report.get("cvAnalysis"), dict) and report["cvAnalysis"].get("analysis"):
+            # Si el analyze-cv v2 devolvió inline analysis, adjuntarlo
+            cv_data = _attach({**cv_data, "analysis": report["cvAnalysis"].get("analysis")}, None)
+    except Exception:
+        pass
+
     # Prompt maestro mejorado usando configuración centralizada
     prompt = PromptConfig.get_employability_report_prompt(
         candidate_data=candidate_data,
@@ -1626,7 +1651,7 @@ async def get_feedback_stats():
 
 @app.post("/api/pdf/analyze-cv")
 async def analyze_cv_pdf(file: UploadFile = File(...), userId: Optional[str] = Form(None)):
-    """Analiza un CV en formato PDF usando Azure Document Intelligence"""
+    """Analiza un CV en formato PDF usando Azure Document Intelligence o la tubería V2 (feature flag)."""
     temp_file_path = None
     try:
         logger.info(f"Analizando CV PDF: {file.filename}")
@@ -1643,6 +1668,112 @@ async def analyze_cv_pdf(file: UploadFile = File(...), userId: Optional[str] = F
         texts: List[str] = []
         merged: Dict[str, Any] = {}
         logger.info(f"🔍 Iniciando análisis completo del CV: {file.filename}")
+        correlation_id = str(uuid4())
+        cv_logger.info("extraction_start", extra=with_ctx(correlation_id=correlation_id))
+
+        # CV_PIPELINE_V2 feature flag
+        use_v2 = (os.getenv("CV_PIPELINE_V2", "off").lower() in ("1", "on", "true", "yes"))
+        if use_v2:
+            try:
+                from app.cv_pipeline.extract import extract_cv  # type: ignore
+                from app.cv_pipeline.normalize import normalize_contact, pick_candidate_name  # type: ignore
+                from app.cv_pipeline.quality import cv_quality_ok  # type: ignore
+                from app.cv_pipeline.scoring import compute_cv_analysis  # type: ignore
+            except Exception as e:
+                logger.warning(f"⚠️ CV_PIPELINE_V2 activo pero módulos no disponibles: {e}")
+                use_v2 = False
+
+        if use_v2:
+            endpoint = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT", "")
+            key = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY", "")
+            try:
+                cv_logger.info("extraction_v2_run", extra=with_ctx(correlation_id=correlation_id))
+                extraction = extract_cv(content, endpoint=endpoint, key=key)
+                base_cv: Dict[str, Any] = {
+                    "text": extraction.text,
+                    "char_count": extraction.char_count,
+                    "sections": extraction.sections or {},
+                    "source": extraction.source,
+                }
+                # contacto básico
+                contact_raw: Dict[str, Any] = (base_cv.get("sections", {}) or {}).get("contact") or {}
+                base_cv["contact"] = normalize_contact(contact_raw)
+                base_cv["candidate"] = {"name": pick_candidate_name(base_cv)}
+
+                ok, reason = cv_quality_ok(base_cv)
+                if not ok:
+                    cv_logger.info("quality_gate_failed", extra=with_ctx(correlation_id=correlation_id, reason=reason))
+                    raise HTTPException(status_code=422, detail={"code": "CV_PARSE_FAILED", "reason": reason})
+
+                # construir objeto para scoring determinista
+                scoring_input: Dict[str, Any] = {
+                    "experience": (base_cv.get("sections") or {}).get("experience") or [],
+                    "education": (base_cv.get("sections") or {}).get("education") or [],
+                    "languages": (base_cv.get("sections") or {}).get("languages") or [],
+                    "skills": (base_cv.get("sections") or {}).get("skills") or (base_cv.get("sections") or {}).get("software") or [],
+                    "contact": base_cv.get("contact") or {},
+                    "summary": (base_cv.get("sections") or {}).get("profile"),
+                    "sections": base_cv.get("sections") or {},
+                }
+                analysis_json = compute_cv_analysis(scoring_input)
+                cv_logger.info("scoring_done", extra=with_ctx(correlation_id=correlation_id, overall=analysis_json.get("overall", {}).get("score")))
+
+                # Persistencia blob/local
+                report_id = str(uuid4())
+                storage_conn = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+                container_reports = os.getenv("AZURE_STORAGE_CONTAINER_REPORTS", "reports")
+                pdf_blob_path = f"blob://reports/{report_id}/cv.pdf"
+                json_blob_path = f"blob://reports/{report_id}/analysis.json"
+
+                # Guardar localmente en ./reports si no hay storage
+                base_dir = os.path.join(os.getcwd(), "reports", report_id)
+                os.makedirs(base_dir, exist_ok=True)
+                # Guardar pdf
+                try:
+                    with open(os.path.join(base_dir, "cv.pdf"), "wb") as fh:
+                        fh.write(content)
+                except Exception:
+                    pass
+                # Guardar analysis.json
+                try:
+                    with open(os.path.join(base_dir, "analysis.json"), "w", encoding="utf-8") as fh:
+                        json.dump(analysis_json, fh, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
+
+                # Subir a Blob si está configurado
+                if storage_conn:
+                    try:
+                        from azure.storage.blob import BlobServiceClient  # type: ignore
+                        bsc = BlobServiceClient.from_connection_string(storage_conn)
+                        cont = bsc.get_container_client(container_reports)
+                        try:
+                            if not cont.exists():
+                                cont.create_container()
+                        except Exception:
+                            pass
+                        cv_client = cont.get_blob_client(f"reports/{report_id}/cv.pdf")
+                        cv_client.upload_blob(content, overwrite=True, content_type="application/pdf")
+                        an_client = cont.get_blob_client(f"reports/{report_id}/analysis.json")
+                        an_client.upload_blob(json.dumps(analysis_json).encode("utf-8"), overwrite=True, content_type="application/json")
+                    except Exception as e:
+                        logger.warning(f"No se pudo subir a Blob Storage (reports): {e}")
+
+                final_v2 = {
+                    "report_id": report_id,
+                    "blob_paths": {"pdf": pdf_blob_path, "analysis": json_blob_path},
+                    "analysis": analysis_json,
+                    "char_count": extraction.char_count,
+                    "source": extraction.source,
+                }
+                _LAST_CV_BY_USER[userId.strip() if userId else "anonymous"] = dict(final_v2)
+                cv_logger.info("extraction_done", extra=with_ctx(correlation_id=correlation_id))
+                return final_v2
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.warning(f"CV_PIPELINE_V2 falló, intentando flujo legacy: {e}")
+                cv_logger.info("extraction_fallback_legacy", extra=with_ctx(correlation_id=correlation_id))
 
         # A) Módulo mejorado de Document Intelligence
         try:
@@ -1855,6 +1986,20 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
         except Exception:
             # Fallback cuando se ejecuta el archivo directamente
             from pdf_service import create_employability_pdf
+
+        # Aserción: si hay analysis_json declarado, validar overall.score
+        analysis_json = None
+        try:
+            analysis_json = ((payload.get("cvAnalysis") or {}).get("analysis_json"))
+        except Exception:
+            analysis_json = None
+        if analysis_json is not None:
+            try:
+                overall_score = (analysis_json.get("overall") or {}).get("score")
+                if overall_score is None:
+                    raise HTTPException(status_code=422, detail="Falta overall.score en analysis_json. No se puede renderizar PDF.")
+            except Exception:
+                raise HTTPException(status_code=422, detail="Falta overall.score en analysis_json. No se puede renderizar PDF.")
 
         # Generar PDF
         pdf_bytes = create_employability_pdf(payload)

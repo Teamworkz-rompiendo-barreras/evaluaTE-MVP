@@ -345,6 +345,31 @@ def generar_informe(
             employability_score, level, completed_games, languages_data
         )
 
+
+def attach_analysis_json_to_prompt(cv_data: dict, report_id: Optional[str] = None) -> dict:
+    """Carga analysis.json si existe y lo adjunta en cv_data['analysis_json'] para consumo de la IA."""
+    try:
+        analysis = None
+        # Preferencia: si viene ruta directa en cv_data
+        if isinstance(cv_data, dict) and cv_data.get('analysis_json'):
+            return cv_data
+        # Buscar por report_id
+        if report_id:
+            local_path = os.path.join(os.getcwd(), 'reports', report_id, 'analysis.json')
+            if os.path.exists(local_path):
+                with open(local_path, 'r', encoding='utf-8') as fh:
+                    analysis = json.load(fh)
+        # Si no, intentar inline si viene en cv_data
+        if not analysis and isinstance(cv_data, dict) and cv_data.get('analysis'):
+            analysis = cv_data.get('analysis')
+        if analysis:
+            cv_data = dict(cv_data)
+            cv_data['analysis_json'] = analysis
+        return cv_data
+    except Exception as e:
+        logger.warning(f"No se pudo adjuntar analysis_json al prompt: {e}")
+        return cv_data
+
 def cargar_feedback_previo():
     """
     Carga el feedback previo de los usuarios

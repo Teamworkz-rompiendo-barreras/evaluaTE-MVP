@@ -81,6 +81,30 @@ class PDFService:
         # Extraer datos
         game_data = data.get('gameData', [])
         cv_analysis = data.get('cvAnalysis', {})
+        # Si viene analysis_json con dimensiones/overall, preparar un resumen visual mínimo
+        try:
+            analysis_json = cv_analysis.get('analysis_json') if isinstance(cv_analysis, dict) else None
+            if analysis_json and isinstance(analysis_json.get('overall'), dict):
+                overall = analysis_json.get('overall', {}).get('score')
+                dims = analysis_json.get('dimensions') or []
+                if overall is not None:
+                    from reportlab.platypus import Table, TableStyle
+                    from reportlab.lib import colors
+                    story.append(Paragraph("Resumen objetivo del CV (1–5)", self.styles['CustomHeading']))
+                    data_tbl = [["Dimensión", "Puntuación (1–5)"]]
+                    for d in dims:
+                        data_tbl.append([str(d.get('label') or d.get('id')), str(d.get('score'))])
+                    data_tbl.append(["Global", str(overall)])
+                    table = Table(data_tbl, hAlign='LEFT')
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                    ]))
+                    story.append(table)
+                    story.append(PageBreak())
+        except Exception:
+            pass
         job_preferences = data.get('jobPreferences', {})
         user_info = data.get('userInfo', {})
         informe_profesional = data.get('informeProfesional', '')
