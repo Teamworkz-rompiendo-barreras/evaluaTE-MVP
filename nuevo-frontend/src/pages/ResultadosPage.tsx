@@ -363,6 +363,12 @@ const ResultadosPage: React.FC = () => {
             );
             const rec = ((data as { recommendations?: Record<string, unknown> })?.recommendations) || {} as Record<string, unknown>;
 
+            // Preferir analysis_json (persistido por backend) como fuente única de verdad para puntuaciones 1–5
+            const analysisJson: any = (data?.report?.cvAnalysis as any)?.analysis_json || null;
+            if (analysisJson && (!analysisJson.overall || analysisJson.overall.score == null)) {
+              throw new Error('Falta overall.score en analysis_json');
+            }
+
             const informe = `# Informe Profesional de Empleabilidad
 
 ## Datos personales básicos
@@ -455,59 +461,28 @@ ${(() => {
 
 ## Análisis del CV (con puntuación 1–5 por apartado)
 ${(() => {
-  // 1) Preferimos el diagnóstico determinista que genera el backend al analizar el PDF
+  if (analysisJson && Array.isArray(analysisJson.dimensions)) {
+    const dims = analysisJson.dimensions as Array<{ id?: string; label?: string; score: number }>;
+    const name = (d: any) => (d.label || d.id || '').toString().trim();
+    return dims.map(d => `- ${name(d) || 'Dimensión'}: ${renderStars(Number(d.score))} (${Number(d.score)}/5)`).join('\n');
+  }
+  // Fallback diagnóstico
   const dxFromReport: any = (data?.report?.cvAnalysis as any)?.diagnostico_cv || undefined;
-  // 2) Como plan B, usamos el diagnostico que venga en recommendations
   const dxFromRec: any = (rec && (rec as any).diagnostico_cv) || {};
   const dx: any = dxFromReport || dxFromRec || {};
-
-  const hasScores = [dx.structure_score, dx.coherence_score, dx.key_info_score, dx.clarity_score, (dx.spelling_style_score ?? dx.style_score)]
-    .some((v: any) => typeof v === 'number' && v > 0);
-
-  if (hasScores || (Array.isArray(dx.corrections) && dx.corrections.length) || (Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length)) {
-    const stars = [
-      (typeof dx.structure_score === 'number') ? `Formato: ${renderStars(Number(dx.structure_score))}` : null,
-      (typeof dx.clarity_score === 'number') ? `Claridad: ${renderStars(Number(dx.clarity_score))}` : null,
-      (typeof dx.coherence_score === 'number') ? `Coherencia: ${renderStars(Number(dx.coherence_score))}` : null,
-      (typeof dx.key_info_score === 'number') ? `Información clave: ${renderStars(Number(dx.key_info_score))}` : null,
-      (typeof (dx.spelling_style_score ?? dx.style_score) === 'number') ? `Ortografía: ${renderStars(Number(dx.spelling_style_score ?? dx.style_score))}` : null,
-    ].filter(Boolean).join('  \\\n');
-
-    const ev = (dx && dx.evidence) || {};
-    const evLines: string[] = [];
-    const pushIfUseful = (label: string, value: unknown) => {
-      const s = typeof value === 'string' ? value.trim() : '';
-      if (!s) return;
-      if (/no hay información del cv/i.test(s)) return;
-      evLines.push(`- ${label}: ${s}`);
-    };
-    pushIfUseful('Estructura', ev.structure);
-    pushIfUseful('Claridad', ev.clarity);
-    pushIfUseful('Coherencia', ev.coherence);
-    pushIfUseful('Información clave', ev.key_info);
-    pushIfUseful('Ortografía y estilo', ev.style);
-
-    const corr = Array.isArray(dx.corrections) && dx.corrections.length
-      ? [`\nCorrecciones/Acciones:`, ...dx.corrections.map((c: any) => `- ${String(c)}`)]
-      : [];
-    const reord = Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length
-      ? [`\nReordenación sugerida:`, ...dx.reordering_suggestions.map((r: any) => `- ${String(r)}`)]
-      : [];
-
-    const extras = (evLines.length ? `\n\n${evLines.join('\n')}` : '') + (corr.length ? `\n\n${corr.join('\n')}` : '') + (reord.length ? `\n\n${reord.join('\n')}` : '');
-    return `${stars}${extras}`;
-  }
-
-  // Último recurso: solo estrellas heurísticas (sin “razones”)
-  const cvLocal = data?.report?.cvAnalysis || cvAnalysis || null;
-  const r = rateCv(cvLocal);
-  return [
-    `Formato: ${renderStars(r.formato)}`,
-    `Claridad: ${renderStars(r.claridad)}`,
-    `Coherencia: ${renderStars(r.coherencia)}`,
-    `Información clave: ${renderStars(r.infoClave)}`,
-    `Ortografía: ${renderStars(r.ortografia)}`,
-  ].join('  \\\n');
+  const lines: string[] = [];
+  const push = (k: string, v: any) => {
+    if (v == null) return;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return;
+    lines.push(`- ${k}: ${renderStars(n)} (${n}/5)`);
+  };
+  push('Estructura', dx.structure_score ?? dx.struct_score);
+  push('Coherencia', dx.coherence_score);
+  push('Información clave', dx.key_info_score);
+  push('Claridad', dx.clarity_score);
+  push('Ortografía y estilo', dx.spelling_style_score ?? dx.style_score);
+  return lines.join('\n') || 'no consta';
 })()}
 ## Entornos de trabajo ideales
 ${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}

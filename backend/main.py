@@ -1513,7 +1513,9 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         else:
             chat_kwargs["response_format"] = {"type": "json_object"}
             logger.warning(f"⚠️ JSON Schema no disponible en API version {API_VERSION}")
+        cv_logger.info("openai_request", extra=with_ctx(model=deployment_name))
         response = client.chat.completions.create(**chat_kwargs)
+        cv_logger.info("openai_response", extra=with_ctx(tokens=len(str(response.choices[0].message.content or ""))))
         
         # Obtener y loggear la respuesta cruda
         raw_content = response.choices[0].message.content
@@ -2002,7 +2004,9 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
                 raise HTTPException(status_code=422, detail="Falta overall.score en analysis_json. No se puede renderizar PDF.")
 
         # Generar PDF
+        cv_logger.info("pdf_render_start", extra=with_ctx())
         pdf_bytes = create_employability_pdf(payload)
+        cv_logger.info("pdf_render_done", extra=with_ctx(bytes=len(pdf_bytes) if isinstance(pdf_bytes, (bytes, bytearray)) else None))
 
         # Responder como fichero descargable
         filename_safe = (
