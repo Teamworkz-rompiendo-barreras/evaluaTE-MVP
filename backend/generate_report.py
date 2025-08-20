@@ -415,7 +415,17 @@ def cargar_feedback_previo():
         if not feedbacks:
             return ""
         
-        feedbacks_utiles = [f for f in feedbacks if f.get('rating') == 'Útil']
+        def es_util(fb: dict) -> bool:
+            r = fb.get('rating')
+            try:
+                if isinstance(r, (int, float)) and float(r) >= 4:
+                    return True
+            except Exception:
+                pass
+            label = str(fb.get('ratingLabel') or fb.get('rating') or '').strip().lower()
+            return label in ('útil','util','useful')
+
+        feedbacks_utiles = [f for f in feedbacks if es_util(f)]
         
         if not feedbacks_utiles:
             return ""

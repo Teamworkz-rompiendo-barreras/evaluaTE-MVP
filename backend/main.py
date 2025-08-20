@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, F
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from pydantic import conint  # tipo 1..5 para feedback
 import uvicorn
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
@@ -16,6 +17,7 @@ import logging
 import sys
 import tempfile
 import re
+import asyncio
 from uuid import uuid4
 
 # Cargar variables de entorno desde .env
@@ -380,6 +382,10 @@ app = FastAPI(title="EvaluaTE Backend", version="1.0.0")
 # Memoria temporal: último CV analizado por usuario (clave: userId)
 _LAST_CV_BY_USER: Dict[str, Any] = {}
 
+# Feedback store (persistente y seguro)
+FEEDBACK_FILE = os.getenv("FEEDBACK_FILE", "feedback_ia.json")
+_feedback_lock: "asyncio.Lock" = asyncio.Lock()
+
 @app.get("/")
 async def root():
     """Endpoint raíz"""
@@ -403,6 +409,48 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# ====== Feedback persistente ======
+class ReportFeedback(BaseModel):
+    userId: str = Field(..., min_length=1)
+    reportId: str = Field(..., min_length=1)
+    rating: conint(ge=1, le=5)
+    comment: Optional[str] = None
+    createdAt: Optional[str] = None
+
+
+@app.post("/api/report/feedback")
+async def save_report_feedback(item: ReportFeedback):
+    """Guarda feedback del informe de forma atómica y thread-safe."""
+    item.createdAt = item.createdAt or datetime.utcnow().isoformat() + "Z"
+
+    async with _feedback_lock:
+        data: List[Dict[str, Any]] = []
+        if os.path.exists(FEEDBACK_FILE):
+            try:
+                with open(FEEDBACK_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f) or []
+            except Exception:
+                data = []
+
+        payload = item.dict()
+        if int(payload.get("rating", 0)) >= 4:
+            payload["ratingLabel"] = "Útil"
+        data.append(payload)
+
+        fd, tmp_path = tempfile.mkstemp(prefix="feedback_", suffix=".json")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as tf:
+                json.dump(data, tf, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, FEEDBACK_FILE)
+        finally:
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+
+    return {"status": "ok"}
+
 
 # ===== Normalizadores y utilidades de extracción estructurada =====
 try:

@@ -15,6 +15,7 @@ import { validateSoftSkills } from '../utils/debug-state';
 import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport } from '../features/personal/personalSlice';
+import useCvRating from '../hooks/useCvRating';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -133,7 +134,7 @@ type CvHeuristicInput = Partial<{
     alerts: string[];
 }> | null;
 
-  function rateCv(cv: CvHeuristicInput): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
+  function rateCvHeuristic(cv: CvHeuristicInput): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
   if (!cv || typeof cv !== 'object') {
     return { formato: 3, claridad: 3, coherencia: 3, infoClave: 3, ortografia: 3, razones: ['No se encontraron datos del CV.'] };
   }
@@ -195,6 +196,11 @@ const ResultadosPage: React.FC = () => {
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
 
+  // Hook de valoración (alias para evitar choque de nombres)
+  const uid = report?.userId ?? '';
+  const rid = (report as any)?.id ?? '';
+  const { rateCv: submitRating, rating, ratingSaving, ratingError } = useCvRating(uid, rid);
+
   // Debug logging usando la utilidad (comentado para producción)
   // debugState(state, 'ResultadosPage');
 
@@ -204,6 +210,12 @@ const ResultadosPage: React.FC = () => {
       dispatch(generateFinalReport());
     }
   }, [report, personal.softSkills, dispatch]);
+
+  // Exponer submitRating (v:number) para el bloque embebido del informe
+  useEffect(() => {
+    (window as any).__rateCv = (v: number) => submitRating(v);
+    return () => { try { delete (window as any).__rateCv; } catch { /* no-op */ } };
+  }, [submitRating]);
 
   // Estado para el informe IA
   const [iaReport, setIaReport] = useState<string>('');
@@ -445,6 +457,14 @@ ${(() => {
   return 'Resumen del CV no disponible.';
 })()}
 
+### Valora este informe
+${(() => {
+  // Render simplificado de estrellas; cada click invoca el hook real
+  const disabledAttr = ratingSaving ? ' disabled' : '';
+  const stars = [1,2,3,4,5].map(v => `\n<button${disabledAttr} aria-label=\"Valorar ${v}\" onClick=\"(window.__rateCv)&&window.__rateCv(${v})\" style=\"background:none;border:none;cursor:pointer;font-size:22px;line-height:1;\" title=\"Valorar con ${v} estrellas\">${(rating ?? 0) >= v ? '★' : '☆'}</button>`).join('');
+  return `<div style=\"display:flex;align-items:center;gap:8px;\">${stars}${ratingSaving ? ' Guardando…' : ''}${rating ? ' ¡Gracias!' : ''}${ratingError ? ` <span style=\\\"color:crimson\\\">${ratingError}</span>` : ''}</div>`;
+})()}
+
 ## Fortalezas
 ${(() => {
   const arr = Array.isArray(rec.fortalezas_clave) ? rec.fortalezas_clave : [];
@@ -487,7 +507,7 @@ ${(() => {
   // Último recurso: heurística local usando rateCv para evitar dejar el bloque vacío
   const cvLocal: any = (data?.report?.cvAnalysis || cvAnalysis || null);
   try {
-    const r = rateCv(cvLocal);
+    const r = rateCvHeuristic(cvLocal);
     return [
       `- Formato: ${renderStars(r.formato)} (${r.formato}/5)`,
       `- Claridad: ${renderStars(r.claridad)} (${r.claridad}/5)`,
