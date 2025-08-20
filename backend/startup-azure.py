@@ -3,6 +3,7 @@ import os
 import subprocess
 import sys
 import time
+import shutil
 
 
 def log(level: str, msg: str) -> None:
@@ -24,19 +25,50 @@ def ensure_utf8() -> None:
         pass
 
 
-def install_requirements() -> None:
-    req_file_candidates = [
+VENV_DIR = os.environ.get("PERSISTENT_VENV_DIR", "/home/venv-evaluate")
+VENV_BIN = os.path.join(VENV_DIR, "Scripts" if os.name == "nt" else "bin")
+VENV_PY = os.path.join(VENV_BIN, "python")
+DEPS_MARKER = os.path.join(os.getcwd(), ".venv_ready")
+
+def _detect_requirements_path() -> str | None:
+    candidates = [
         os.path.join(os.getcwd(), "requirements-azure.txt"),
         os.path.join(os.getcwd(), "requirements.txt"),
     ]
-    req_file = next((p for p in req_file_candidates if os.path.exists(p)), None)
+    return next((p for p in candidates if os.path.exists(p)), None)
+
+def install_requirements() -> None:
+    if os.environ.get("SKIP_PIP_ON_START", "").lower() in ("1", "true", "yes"):
+        log("INFO", "⏭️  SKIP_PIP_ON_START=1, saltando instalación de dependencias")
+        return
+
+    req_file = _detect_requirements_path()
     if not req_file:
         log("WARN", "No se encontró requirements*.txt; se continúa sin instalar dependencias")
         return
-    log("INFO", f"📦 Instalando dependencias desde: {os.path.basename(req_file)}")
+
+    # Si ya existe un entorno y marcador, no reinstalar
+    if os.path.exists(VENV_PY) and os.path.exists(DEPS_MARKER):
+        log("INFO", f"🔁 Reutilizando entorno virtual en {VENV_DIR}")
+        return
+
     try:
-        subprocess.check_call([sys.executable, "-m", "pip", "install", "--disable-pip-version-check", "-r", req_file])
-        log("INFO", "✅ Dependencias instaladas correctamente")
+        if not os.path.exists(VENV_PY):
+            log("INFO", f"🧰 Creando entorno virtual persistente en {VENV_DIR}...")
+            # Crear directorio contenedor si no existe
+            os.makedirs(VENV_DIR, exist_ok=True)
+            subprocess.check_call([sys.executable, "-m", "venv", VENV_DIR])
+        # Actualizar pip e instalar deps
+        log("INFO", f"📦 Instalando dependencias desde: {os.path.basename(req_file)}")
+        subprocess.check_call([VENV_PY, "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"])  # pragma: no cover
+        subprocess.check_call([VENV_PY, "-m", "pip", "install", "--disable-pip-version-check", "-r", req_file])
+        # Crear marcador
+        try:
+            with open(DEPS_MARKER, "w", encoding="utf-8") as f:
+                f.write(time.strftime("%Y-%m-%d %H:%M:%S"))
+        except Exception:
+            pass
+        log("INFO", "✅ Dependencias instaladas/reutilizadas correctamente")
     except subprocess.CalledProcessError as e:
         log("ERROR", f"Falló la instalación de dependencias: {e}")
         # Continuar para permitir arranque si ya estaban instaladas
@@ -46,8 +78,12 @@ def run_uvicorn() -> None:
     host = os.getenv("HOST", "0.0.0.0")
     port = os.getenv("PORT", "8080")
     app_path = os.getenv("APP", "main:app")
+    # Si existe venv, usar su intérprete para cargar dependencias persistidas
+    python_exec = VENV_PY if os.path.exists(VENV_PY) else sys.executable
+    if python_exec != sys.executable:
+        log("INFO", f"🚀 Iniciando con entorno virtual: {python_exec}")
     log("INFO", f"🚀 Iniciando Uvicorn {app_path} en {host}:{port}")
-    os.execvp(sys.executable, [sys.executable, "-m", "uvicorn", app_path, "--host", host, "--port", port])
+    os.execvp(python_exec, [python_exec, "-m", "uvicorn", app_path, "--host", host, "--port", port])
 
 
 def main() -> None:
