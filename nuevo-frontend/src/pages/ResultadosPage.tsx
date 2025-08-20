@@ -482,7 +482,22 @@ ${(() => {
   push('Información clave', dx.key_info_score);
   push('Claridad', dx.clarity_score);
   push('Ortografía y estilo', dx.spelling_style_score ?? dx.style_score);
-  return lines.join('\n') || 'no consta';
+  const text = lines.join('\n');
+  if (text.trim()) return text;
+  // Último recurso: heurística local usando rateCv para evitar dejar el bloque vacío
+  const cvLocal: any = (data?.report?.cvAnalysis || cvAnalysis || null);
+  try {
+    const r = rateCv(cvLocal);
+    return [
+      `- Formato: ${renderStars(r.formato)} (${r.formato}/5)`,
+      `- Claridad: ${renderStars(r.claridad)} (${r.claridad}/5)`,
+      `- Coherencia: ${renderStars(r.coherencia)} (${r.coherencia}/5)`,
+      `- Información clave: ${renderStars(r.infoClave)} (${r.infoClave}/5)`,
+      `- Ortografía: ${renderStars(r.ortografia)} (${r.ortografia}/5)`
+    ].join('\n');
+  } catch {
+    return 'no consta';
+  }
 })()}
 ## Entornos de trabajo ideales
 ${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}
