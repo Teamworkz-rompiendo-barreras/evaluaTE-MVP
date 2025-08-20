@@ -67,6 +67,20 @@ class PromptConfig:
         
         # Si se proporcionó analysis_json en cv_data, añadir reglas estrictas
         analysis_json = cv_data.get('analysis_json') if isinstance(cv_data, dict) else None
+        instr_block = ""
+        analysis_block = ""
+        if analysis_json:
+            instr_block = (
+                "## INSTRUCCIONES (OBLIGATORIAS)\n"
+                "- Usa las puntuaciones del objeto analysis_json tal cual; NO las cambies ni inventes.\n"
+                "- Si falta un dato del CV, escribe “no consta”, nunca “CV no disponible”.\n"
+                "- Debes citar en el texto los números tal como vienen (1–5) y mantener coherencia en todo el informe.\n"
+            )
+            analysis_block = (
+                "### ANALYSIS_JSON (INMUTABLE)\n"
+                + json.dumps(analysis_json, ensure_ascii=False)
+                + "\n"
+            )
 
         prompt = f"""
 # PROMPT MAESTRO: INFORME DE EMPLEABILIDAD + ANÁLISIS DE CV (NEUROINCLUSIVO, ES-ES)
@@ -147,9 +161,8 @@ Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No 
 ### IDIOMAS
 {languages_text}
 
-{'## INSTRUCCIONES (OBLIGATORIAS)\n- Usa las puntuaciones del objeto analysis_json tal cual; NO las cambies ni inventes.\n- Si falta un dato del CV, escribe “no consta”, nunca “CV no disponible”.\n- Debes citar en el texto los números tal como vienen (1–5) y mantener coherencia en todo el informe.\n' if analysis_json else ''}
-
-{f'### ANALYSIS_JSON (INMUTABLE)\n{json.dumps(analysis_json, ensure_ascii=False)}\n' if analysis_json else ''}
+{instr_block}
+{analysis_block}
 
 ## REGLAS DE ANÁLISIS (PASOS OBLIGATORIOS)
 
