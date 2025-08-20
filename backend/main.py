@@ -188,6 +188,47 @@ def harden_schema(node: dict, _depth: int = 0) -> dict:
 
     return node
 
+# --- Limpieza estable de texto del CV (solo para informe) ---
+_LIGATURES = {"ﬁ":"fi","ﬂ":"fl","ﬀ":"ff","ﬃ":"ffi","ﬄ":"ffl"}
+_BULLETS = ("•","-","–","—","·","*","◦","▪")
+
+def _fix_ligatures(t: str) -> str:
+    for k,v in _LIGATURES.items():
+        t = t.replace(k, v)
+    return t
+
+def _normalize_eols(t: str) -> str:
+    t = t.replace("\r\n","\n").replace("\r","\n")
+    return t
+
+def _unhyphenate(t: str) -> str:
+    # une palabras cortadas al final de línea: infor-\nmación -> información
+    return re.sub(r"(?<=\w)-\n(?=\w)", "", t)
+
+def _collapse_spaces(t: str) -> str:
+    return "\n".join(re.sub(r"\s{2,}", " ", ln).strip() for ln in t.splitlines())
+
+def _preserve_bullets(t: str) -> str:
+    lines = []
+    for raw in t.splitlines():
+        ln = raw.strip()
+        if not ln:
+            lines.append("")
+            continue
+        if ln.startswith(_BULLETS) or re.match(r"^[\-\–—·*]\s+\S+", ln):
+            lines.append(ln)
+        else:
+            lines.append(ln)
+    return "\n".join(lines)
+
+def _clean_text_for_report(t: str) -> str:
+    t = _fix_ligatures(t)
+    t = _normalize_eols(t)
+    t = _unhyphenate(t)
+    t = _collapse_spaces(t)
+    t = _preserve_bullets(t)
+    return t.strip()
+
 # Configurar NO_PROXY específicamente para el endpoint de Azure OpenAI
 if ENDPOINT:
     # Extraer el dominio del endpoint (ej: teamworkzevaluate-openai.openai.azure.com)
@@ -670,9 +711,9 @@ def shape_report_for_ui(r: dict) -> dict:
         # 4) Fortalezas
         "fortalezas_clave": _list_str(r.get("strengths") or []),
 
-        # 5) Áreas de mejora
+        # 5) Áreas de mejora (sin em-dash)
         "areas_mejora": [
-            _txt(f"{it.get('area','Área')} — {it.get('reason','')} → Acción: {it.get('suggested_action','')}")
+            _txt(f"{it.get('area','Área')}: {it.get('reason','')}. Acción: {it.get('suggested_action','')}")
             for it in (r.get("improvement_areas") or [])
             if isinstance(it, dict)
         ],
@@ -722,7 +763,7 @@ def shape_report_for_ui(r: dict) -> dict:
                     "reordering_suggestions": _list_str(_cv.get("reordering_suggestions") or []),
                 }
             ))(cv)
-        ))(r.get("cv_analysis") or {}),
+        ))(r.get("cv_analysis") or r.get("diagnostico_cv") or {}),
 
         # 7) Entornos ideales
         "entornos_ideales": _txt(r.get("ideal_work_environment") or ""),
@@ -1008,7 +1049,24 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             summary=str(professional_report.get("summary", "")) if isinstance(professional_report, dict) else "",
             createdAt=datetime.now().isoformat()
         )
-        
+        # Refuerzo defensivo de compatibilidad de estructuras (alias y contacto desde candidate)
+        try:
+            if isinstance(report.get("cvAnalysis"), dict):
+                ca = report["cvAnalysis"]
+                if ca.get("cv_analysis_structured") and not ca.get("cv_structured"):
+                    ca["cv_structured"] = ca["cv_analysis_structured"]
+                if not ca.get("contact"):
+                    cand = (ca.get("cv_structured") or {}).get("candidate") or {}
+                    if isinstance(cand, dict) and any([cand.get("emails"), cand.get("phones"), cand.get("location")]):
+                        ca["contact"] = {
+                            "emails": cand.get("emails") or [],
+                            "phones": cand.get("phones") or [],
+                            "location": cand.get("location"),
+                            "linkedin": ((cand.get("links") or {}) or {}).get("linkedin")
+                        }
+        except Exception:
+            pass
+
         logger.info(f"Respuesta final del informe generada exitosamente para {request.userId}")
         logger.info(f"Summary presente: {'✅' if response_data.summary else '❌'}")
         logger.info(f"Recommendations presente: {'✅' if response_data.recommendations else '❌'}")
@@ -1081,19 +1139,42 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     
     if request.cvAnalysis:
         # CRÍTICO: Priorizar cv_structured (donde CV-Extractor guarda los datos)
-        cv_structured = getattr(request.cvAnalysis, 'cv_structured', {})
+        cv_structured = (
+            getattr(request.cvAnalysis, 'cv_structured', None)
+            or getattr(request.cvAnalysis, 'cv_analysis_structured', {})
+        )
         
         if cv_structured and isinstance(cv_structured, dict):
             logger.info(f"✅ CV estructurado encontrado con campos: {list(cv_structured.keys())}")
             # Mapear campos de CV-Extractor a la estructura del prompt
+            # Normalizar skills y contacto
+            cand = cv_structured.get('candidate') or {}
+            skills_field = cv_structured.get('skills', [])
+            skills_list = []
+            if isinstance(skills_field, dict):
+                if isinstance(skills_field.get("hard"), list):
+                    skills_list += skills_field["hard"]
+                if isinstance(skills_field.get("soft"), list):
+                    skills_list += skills_field["soft"]
+            elif isinstance(skills_field, list):
+                skills_list = skills_field
+            contact_struct = cv_structured.get('contact') or {}
+            if not contact_struct and isinstance(cand, dict):
+                contact_struct = {
+                    "emails": cand.get("emails") or [],
+                    "phones": cand.get("phones") or [],
+                    "location": cand.get("location"),
+                    "linkedin": ((cand.get("links") or {}) or {}).get("linkedin")
+                }
+
             cv_data["sections"] = {
-                "profile": cv_structured.get('candidate', 'No especificado'),
+                "profile": cand or cv_structured.get('candidate', 'No especificado'),
                 "experience": cv_structured.get('experience', []),
                 "education": cv_structured.get('education', []),
                 "courses": "No especificado",
                 "languages": cv_structured.get('languages', []),
-                "software": cv_structured.get('skills', []),
-                "contact": cv_structured.get('contact', {})
+                "software": skills_list,
+                "contact": contact_struct
             }
             
             # CRÍTICO: Extraer texto raw del CV si está disponible
@@ -1879,8 +1960,19 @@ async def _structured_extract_with_ai(layout_sections: Dict[str, Any], filename:
                 "json_schema": _as_json_schema_payload(schema, name="CVLayoutExtraction")
             }
         
-        # Llamar a Azure OpenAI
-        response = client.chat.completions.create(**chat_kwargs)
+        # Llamar a Azure OpenAI con fallback si el schema estricto falla
+        try:
+            response = client.chat.completions.create(**chat_kwargs)
+        except Exception as e:
+            try:
+                msg = str(e)
+            except Exception:
+                msg = ""
+            logger.warning(f"⚠️ Error con Structured Outputs (layout extraction): {msg}. Reintentando sin JSON Schema...")
+            # Quitar response_format para usar json_object
+            chat_kwargs.pop("response_format", None)
+            chat_kwargs["response_format"] = {"type": "json_object"}
+            response = client.chat.completions.create(**chat_kwargs)
         raw_content = response.choices[0].message.content
         
         if not raw_content or not raw_content.strip():
@@ -2164,7 +2256,9 @@ async def analyze_cv_with_azure(file_path: str, filename: str) -> Dict[str, Any]
         # Unir análisis con básicos
         merged: Dict[str, Any] = {**analysis}
         merged.update({k: v for k, v in basic.items() if v})
-        merged.update({"raw_text": text_content, "layout_sections": layout_sections})
+        # Limpiar texto solo para el informe (no afecta combined_text del punto 6)
+        clean_text = _clean_text_for_report(text_content or "")
+        merged.update({"raw_text": clean_text, "layout_sections": layout_sections})
         
         # --- NUEVO: incorpora salidas del modelo custom
         if cv_info_map:
@@ -2190,12 +2284,14 @@ async def analyze_cv_with_pymupdf(file_path: str, filename: str) -> Dict[str, An
             text_content += page.get_text()
         
         doc.close()
-        # Información básica
-        basic = _extract_basic_cv_info_from_text(text_content)
-        # Analizar contenido con IA
-        analysis = await analyze_cv_content_with_ai(text_content, filename, basic)
+        clean_text = _clean_text_for_report(text_content or "")
+        # Información básica (se puede extraer del limpio)
+        basic = _extract_basic_cv_info_from_text(clean_text)
+        # Analizar contenido con IA usando texto limpio
+        analysis = await analyze_cv_content_with_ai(clean_text, filename, basic)
         merged: Dict[str, Any] = {**analysis}
         merged.update({k: v for k, v in basic.items() if v})
+        merged["raw_text"] = clean_text
         return merged
         
     except Exception as e:
@@ -2229,10 +2325,15 @@ async def analyze_cv_with_ocr(file_path: str, filename: str) -> Dict[str, Any]:
     except Exception:
         pass
     text_content = "\n".join(lines)
-    basic = _extract_basic_cv_info_from_text(text_content)
-    analysis = await analyze_cv_content_with_ai(text_content, filename, basic)
+    # 👇 Aplicar el mismo patrón de limpieza estable
+    clean_text = _clean_text_for_report(text_content or "")
+    # Extraer básicos desde el texto limpio (mejor email/teléfono/periodos)
+    basic = _extract_basic_cv_info_from_text(clean_text)
+    # Analizar con IA sobre texto limpio (más coherente para el informe)
+    analysis = await analyze_cv_content_with_ai(clean_text, filename, basic)
     merged: Dict[str, Any] = {**analysis}
     merged.update({k: v for k, v in basic.items() if v})
+    merged['raw_text'] = clean_text
     merged['ocr_used'] = True
     return merged
 
@@ -2319,7 +2420,51 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
                     "properties": {
                         "name": {"type": "string"},
                         "language": {"type": "string"},
-                        "scores": {"type": "object"}
+                        "scores": {
+                            "type": "object",
+                            "properties": {
+                                "format": {
+                                    "type": "object",
+                                    "properties": {
+                                        "score": {"type": "number"},
+                                        "stars": {"type": "integer"},
+                                        "explanation": {"type": "string"}
+                                    }
+                                },
+                                "clarity": {
+                                    "type": "object",
+                                    "properties": {
+                                        "score": {"type": "number"},
+                                        "stars": {"type": "integer"},
+                                        "explanation": {"type": "string"}
+                                    }
+                                },
+                                "coherence": {
+                                    "type": "object",
+                                    "properties": {
+                                        "score": {"type": "number"},
+                                        "stars": {"type": "integer"},
+                                        "explanation": {"type": "string"}
+                                    }
+                                },
+                                "key_information": {
+                                    "type": "object",
+                                    "properties": {
+                                        "score": {"type": "number"},
+                                        "stars": {"type": "integer"},
+                                        "explanation": {"type": "string"}
+                                    }
+                                },
+                                "spelling": {
+                                    "type": "object",
+                                    "properties": {
+                                        "score": {"type": "number"},
+                                        "stars": {"type": "integer"},
+                                        "explanation": {"type": "string"}
+                                    }
+                                }
+                            }
+                        }
                     }
                 }
             },
@@ -2348,7 +2493,18 @@ async def analyze_cv_content_with_ai(content: str, filename: str, basic: Optiona
             }
         else:
             chat_kwargs["response_format"] = {"type": "json_object"}
-        response = client.chat.completions.create(**chat_kwargs)
+        try:
+            response = client.chat.completions.create(**chat_kwargs)
+        except Exception as e:
+            # Fallback sin JSON Schema si hay problemas de validación de esquema
+            try:
+                msg = str(e)
+            except Exception:
+                msg = ""
+            logger.warning(f"⚠️ Error con Structured Outputs (CVAnalysis): {msg}. Reintentando sin JSON Schema...")
+            chat_kwargs.pop("response_format", None)
+            chat_kwargs["response_format"] = {"type": "json_object"}
+            response = client.chat.completions.create(**chat_kwargs)
         
         # Obtener y loggear la respuesta cruda
         raw_content = response.choices[0].message.content

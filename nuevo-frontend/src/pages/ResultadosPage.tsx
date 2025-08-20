@@ -102,17 +102,20 @@ function sanitizeProfileSummary(text: string, cvData: unknown): string {
 function sanitizeImprovementText(text: string): string {
   try {
     let s = String(text || '').trim();
+    // Normaliza espacios no separables
+    s = s.replace(/\u00A0/g, ' ');
     // Mantener únicamente el valor numérico si viene como "Puntuación baja (35/100)"
-    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*\((\d+\s*\/\s*\d+)\)/gi, '($1)');
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*\((\d+\s*\/\s*\d+)\)/giu, '($1)');
     // O como "Puntuación baja: 35/100" o "Puntuación baja 35/100"
-    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*:?\s*(\d+\s*\/\s*\d+)/gi, '$1');
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*:?\s*(\d+\s*\/\s*\d+)/giu, '$1');
     // Eliminar etiquetas de calificación si no tienen número detrás
-    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)/gi, '').replace(/\s{2,}/g, ' ').trim();
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)/giu, '').replace(/\s{2,}/g, ' ').trim();
     // Quitar guiones directamente antes de la puntuación para que quede como en "Fortalezas"
-    // Ej.: "Toma de decisiones - (35/100)" -> "Toma de decisiones (35/100)"
-    s = s.replace(/\s*[-–—]\s*\((\d+\s*\/\s*\d+)\)/g, ' ($1)');
+    s = s.replace(/\s*[-–—]\s*\((\d+\s*\/\s*\d+)\)/gu, ' ($1)');
     // Y si viniera sin paréntesis: "- 35/100" -> " 35/100"
-    s = s.replace(/\s*[-–—]\s*(\d+\s*\/\s*\d+)\b/g, ' $1');
+    s = s.replace(/\s*[-–—]\s*(\d+\s*\/\s*\d+)\b/gu, ' $1');
+    // Caso extra: em dash justo antes de paréntesis
+    s = s.replace(/([^\s])\s*[–—]\s*\(/gu, '$1 (');
     s = s.replace(/\s{2,}/g, ' ').trim();
     return s;
   } catch {
@@ -216,6 +219,13 @@ const ResultadosPage: React.FC = () => {
       setLoadingIa(true);
       setErrorIa('');
       
+      // Esperar a tener el análisis del CV si ya hay un archivo cargado
+      // Evita lanzar el informe sin datos del CV recién subido
+      if (personal?.cvFile && !personal?.cvAnalysis) {
+        setLoadingIa(false);
+        return;
+      }
+
       try {
         // SOLUCIÓN: Asegurar que siempre hay datos mínimos para el informe
         const userFullName = `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario';
@@ -327,9 +337,14 @@ const ResultadosPage: React.FC = () => {
             const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
               || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
               || {} as Record<string, unknown>;
-            const contact = (data as { report?: { cvAnalysis?: { contact?: { emails?: string[]; phones?: string[]; location?: string } } } })?.report?.cvAnalysis?.contact
-              || (cvAnalysis as { contact?: { emails?: string[]; phones?: string[]; location?: string } } | null | undefined)?.contact
-              || {} as { emails?: string[]; phones?: string[]; location?: string };
+            const ca = (data?.report?.cvAnalysis || cvAnalysis || {}) as any;
+            const contactDirect = (ca && ca.contact) || {};
+            const candidateObj = (ca && (ca.cv_structured || ca.cv_analysis_structured || {}).candidate) || {};
+            const contact = (contactDirect && (contactDirect.emails || contactDirect.phones || contactDirect.location) ? contactDirect : {
+              emails: Array.isArray(candidateObj.emails) ? candidateObj.emails : [],
+              phones: Array.isArray(candidateObj.phones) ? candidateObj.phones : [],
+              location: candidateObj.location
+            }) as { emails?: string[]; phones?: string[]; location?: string };
             const dp = {
               name: dpSrc?.name || candidateName,
               location: dpSrc?.location || contact?.location || 'No consta',
@@ -362,9 +377,13 @@ ${formatListsForAccessibility(String(profileSummary || 'Resumen no disponible.')
 ## Resumen del CV
 ${(() => {
   const txt = String(rec.resumen_cv || '');
-  const cvx = (data?.report?.cvAnalysis || cvAnalysis || {}) as { cv_structured?: unknown };
-  const structured = (cvx && (cvx.cv_structured || {})) as Record<string, unknown>;
-  const hasStructured = structured && (Array.isArray(structured.experience) || Array.isArray(structured.education));
+  const cvx = (data?.report?.cvAnalysis || cvAnalysis || {}) as { cv_structured?: any; cv_analysis_structured?: any };
+  const structured = (cvx.cv_structured || cvx.cv_analysis_structured || {}) as Record<string, any>;
+  const hasStructured = structured && (
+    Array.isArray(structured.experience) ||
+    Array.isArray(structured.education) ||
+    !!structured.candidate
+  );
   // 1) Si hay datos estructurados, siempre los mostramos (con o sin texto adicional)
   if (hasStructured) {
     const fmtRange = (e: { start_date?: string; end_date?: string; current?: boolean }) => {
@@ -388,9 +407,17 @@ ${(() => {
       return `- ${degree}${tail ? ` — ${tail}` : ''}`;
     });
     const langLines = take(structured.languages as Array<{ language?: string; name?: string; level?: string }>, 5).map((l) => `- ${String(l?.language || l?.name || 'Idioma')} — ${String(l?.level || '').trim() || 'nivel no indicado'}`);
-    const rawSkills = (structured.skills as Array<{ name?: string; tool?: string }> | undefined) ?? [];
-    const altSoftware = (structured as { software?: Array<{ name?: string; tool?: string }> }).software ?? [];
-    const skillsArr = (Array.isArray(rawSkills) && rawSkills.length > 0) ? rawSkills : altSoftware;
+    const rawSkills = structured?.skills as any;
+    let skillsArr: Array<{ name?: string; tool?: string } | string> = [];
+    if (Array.isArray(rawSkills)) {
+      skillsArr = rawSkills;
+    } else if (rawSkills && typeof rawSkills === 'object') {
+      const hard = Array.isArray(rawSkills.hard) ? rawSkills.hard : [];
+      const soft = Array.isArray(rawSkills.soft) ? rawSkills.soft : [];
+      skillsArr = [...hard, ...soft];
+    } else if (Array.isArray((structured as any)?.software)) {
+      skillsArr = (structured as any).software;
+    }
     const skillLines = take(skillsArr, 8).map((s) => `- ${String((s as { name?: string }).name || (s as { tool?: string }).tool || s || '')}`);
 
     const blocks: string[] = [];
@@ -428,73 +455,59 @@ ${(() => {
 
 ## Análisis del CV (con puntuación 1–5 por apartado)
 ${(() => {
-  // Preferir el diagnóstico del backend si existe; si no, usar heurística local
-  try {
-    const dx: any = (rec && (rec as any).diagnostico_cv) || {};
-    const hasBackendScores = [dx.structure_score, dx.coherence_score, dx.key_info_score, dx.clarity_score, (dx.spelling_style_score ?? dx.style_score)]
-      .some((v: any) => typeof v === 'number' && v > 0);
-    if (hasBackendScores) {
-      const stars = [
-        `Formato: ${renderStars(Number(dx.structure_score || 1))}`,
-        `Claridad: ${renderStars(Number(dx.clarity_score || 1))}`,
-        `Coherencia: ${renderStars(Number(dx.coherence_score || 1))}`,
-        `Información clave: ${renderStars(Number(dx.key_info_score || 1))}`,
-        `Ortografía y estilo: ${renderStars(Number((dx.spelling_style_score ?? dx.style_score) || 1))}`,
-      ].join('  \\\n');
-      const ev: any = (dx && dx.evidence) || {};
-      const evLines: string[] = [];
-      const pushIfUseful = (label: string, value: unknown) => {
-        const s = typeof value === 'string' ? value.trim() : '';
-        if (!s) return;
-        if (/no hay información del cv/i.test(s)) return; // descartar textos genéricos
-        evLines.push(`- ${label}: ${s}`);
-      };
-      pushIfUseful('Estructura', ev.structure);
-      pushIfUseful('Claridad', ev.clarity);
-      pushIfUseful('Coherencia', ev.coherence);
-      pushIfUseful('Información clave', ev.key_info);
-      pushIfUseful('Ortografía y estilo', ev.style);
-      const corr = Array.isArray(dx.corrections) && dx.corrections.length > 0
-        ? [`\nCorrecciones/Acciones:`, ...dx.corrections.map((c: any) => `- ${String(c)}`)]
-        : [];
-      const reord = Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length > 0
-        ? [`\nReordenación sugerida:`, ...dx.reordering_suggestions.map((r: any) => `- ${String(r)}`)]
-        : [];
+  // 1) Preferimos el diagnóstico determinista que genera el backend al analizar el PDF
+  const dxFromReport: any = (data?.report?.cvAnalysis as any)?.diagnostico_cv || undefined;
+  // 2) Como plan B, usamos el diagnostico que venga en recommendations
+  const dxFromRec: any = (rec && (rec as any).diagnostico_cv) || {};
+  const dx: any = dxFromReport || dxFromRec || {};
 
-      // Si no quedan evidencias útiles, usar heurística local con cvAnalysis
-      if (evLines.length === 0) {
-        const cvLocal = data?.report?.cvAnalysis || cvAnalysis || null;
-        const rLoc = rateCv(cvLocal);
-        const starsHeur = [
-          `Formato: ${renderStars(rLoc.formato)}`,
-          `Claridad: ${renderStars(rLoc.claridad)}`,
-          `Coherencia: ${renderStars(rLoc.coherencia)}`,
-          `Información clave: ${renderStars(rLoc.infoClave)}`,
-          `Ortografía: ${renderStars(rLoc.ortografia)}`,
-        ].join('  \\\n');
-        const razones = Array.isArray(rLoc.razones) && rLoc.razones.length > 0 ? `\n\n${rLoc.razones.map(x => `- ${x}`).join('\n')}` : '';
-        const extras = (corr.length || reord.length) ? `\n\n${[...corr, ...reord].join('\n')}` : '';
-        return `${starsHeur}${razones}${extras}`;
-      }
+  const hasScores = [dx.structure_score, dx.coherence_score, dx.key_info_score, dx.clarity_score, (dx.spelling_style_score ?? dx.style_score)]
+    .some((v: any) => typeof v === 'number' && v > 0);
 
-      const razonesBlock = `\n\n${[...evLines, ...corr, ...reord].join('\n')}`;
-      return `${stars}${razonesBlock}`;
-    }
-  } catch (e) {
-    // Silenciar errores no críticos en el renderizado del markdown del diagnóstico
+  if (hasScores || (Array.isArray(dx.corrections) && dx.corrections.length) || (Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length)) {
+    const stars = [
+      (typeof dx.structure_score === 'number') ? `Formato: ${renderStars(Number(dx.structure_score))}` : null,
+      (typeof dx.clarity_score === 'number') ? `Claridad: ${renderStars(Number(dx.clarity_score))}` : null,
+      (typeof dx.coherence_score === 'number') ? `Coherencia: ${renderStars(Number(dx.coherence_score))}` : null,
+      (typeof dx.key_info_score === 'number') ? `Información clave: ${renderStars(Number(dx.key_info_score))}` : null,
+      (typeof (dx.spelling_style_score ?? dx.style_score) === 'number') ? `Ortografía: ${renderStars(Number(dx.spelling_style_score ?? dx.style_score))}` : null,
+    ].filter(Boolean).join('  \\\n');
+
+    const ev = (dx && dx.evidence) || {};
+    const evLines: string[] = [];
+    const pushIfUseful = (label: string, value: unknown) => {
+      const s = typeof value === 'string' ? value.trim() : '';
+      if (!s) return;
+      if (/no hay información del cv/i.test(s)) return;
+      evLines.push(`- ${label}: ${s}`);
+    };
+    pushIfUseful('Estructura', ev.structure);
+    pushIfUseful('Claridad', ev.clarity);
+    pushIfUseful('Coherencia', ev.coherence);
+    pushIfUseful('Información clave', ev.key_info);
+    pushIfUseful('Ortografía y estilo', ev.style);
+
+    const corr = Array.isArray(dx.corrections) && dx.corrections.length
+      ? [`\nCorrecciones/Acciones:`, ...dx.corrections.map((c: any) => `- ${String(c)}`)]
+      : [];
+    const reord = Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length
+      ? [`\nReordenación sugerida:`, ...dx.reordering_suggestions.map((r: any) => `- ${String(r)}`)]
+      : [];
+
+    const extras = (evLines.length ? `\n\n${evLines.join('\n')}` : '') + (corr.length ? `\n\n${corr.join('\n')}` : '') + (reord.length ? `\n\n${reord.join('\n')}` : '');
+    return `${stars}${extras}`;
   }
-  // Fallback heurístico
-  const cv = data?.report?.cvAnalysis || cvAnalysis || null;
-  const r = rateCv(cv);
-  const stars = [
+
+  // Último recurso: solo estrellas heurísticas (sin “razones”)
+  const cvLocal = data?.report?.cvAnalysis || cvAnalysis || null;
+  const r = rateCv(cvLocal);
+  return [
     `Formato: ${renderStars(r.formato)}`,
     `Claridad: ${renderStars(r.claridad)}`,
     `Coherencia: ${renderStars(r.coherencia)}`,
     `Información clave: ${renderStars(r.infoClave)}`,
     `Ortografía: ${renderStars(r.ortografia)}`,
   ].join('  \\\n');
-  const razones = Array.isArray(r.razones) && r.razones.length > 0 ? `\n\n${r.razones.map(x => `- ${x}`).join('\n')}` : '';
-  return `${stars}${razones}`;
 })()}
 ## Entornos de trabajo ideales
 ${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}
