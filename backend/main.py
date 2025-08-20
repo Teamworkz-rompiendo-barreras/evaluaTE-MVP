@@ -372,6 +372,9 @@ class FeedbackRequest(BaseModel):
 
 app = FastAPI(title="EvaluaTE Backend", version="1.0.0")
 
+# Memoria temporal: último CV analizado por usuario (clave: userId)
+_LAST_CV_BY_USER: Dict[str, Any] = {}
+
 @app.get("/")
 async def root():
     """Endpoint raíz"""
@@ -931,6 +934,18 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             avg_score = employability_score
 
         # Adjuntar análisis de CV si se subió durante el flujo (/api/pdf/analyze-cv)
+        # Fallback: si no vino cvAnalysis en la request, intentar recuperar el último por userId
+        try:
+            if not request.cvAnalysis and request.userId:
+                cached = _LAST_CV_BY_USER.get(request.userId)
+                if cached and isinstance(cached, dict):
+                    logger.info("♻️ Fallback: usando CV almacenado temporalmente para este usuario")
+                    if not report.get("cvAnalysis"):
+                        report["cvAnalysis"] = {}
+                    if isinstance(report["cvAnalysis"], dict):
+                        report["cvAnalysis"].update(cached)
+        except Exception:
+            pass
         # Usar el adaptador para convertir la salida del modelo a las 13 secciones estándar
         if isinstance(professional_report, dict):
             shaped = shape_report_for_ui(professional_report)
@@ -1610,7 +1625,7 @@ async def get_feedback_stats():
     }
 
 @app.post("/api/pdf/analyze-cv")
-async def analyze_cv_pdf(file: UploadFile = File(...)):
+async def analyze_cv_pdf(file: UploadFile = File(...), userId: Optional[str] = Form(None)):
     """Analiza un CV en formato PDF usando Azure Document Intelligence"""
     temp_file_path = None
     try:
@@ -1789,6 +1804,13 @@ async def analyze_cv_pdf(file: UploadFile = File(...)):
             # No bloquear el flujo si el analizador determinista falla
             pass
 
+        # Guardar en memoria temporal por usuario si se proporcionó userId
+        try:
+            if userId and isinstance(userId, str) and userId.strip():
+                _LAST_CV_BY_USER[userId.strip()] = dict(final)
+                logger.info(f"💾 CV almacenado temporalmente para userId={userId.strip()}")
+        except Exception:
+            pass
         return final
         
     except Exception as e:
