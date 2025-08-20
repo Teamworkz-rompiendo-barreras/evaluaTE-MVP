@@ -3,7 +3,7 @@ uvicorn[standard]==0.24.0
 gunicorn==22.0.0
 python-dotenv==1.0.0
 pypdf==3.17.4
-openai==1.99.1
+openai>=1.35.0
 python-multipart==0.0.20
 pytesseract==0.3.13
 pillow==11.3.0

@@ -1989,6 +1989,44 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
             # Fallback cuando se ejecuta el archivo directamente
             from pdf_service import create_employability_pdf
 
+        # Integración: si no llega 'informeProfesional' pero sí datos estructurados, generarlo aquí (JSON + MD)
+        pdf_input = payload
+        try:
+            needs_generation = not (isinstance(payload.get("informeProfesional"), str) and payload.get("informeProfesional").strip())
+            has_structured = any(k in payload for k in ("candidate_data", "cv_data", "soft_skills_data", "job_preferences_data"))
+            if needs_generation and has_structured:
+                try:
+                    try:
+                        from .generate_report import generar_informe  # type: ignore[relative-beyond-top-level]
+                    except Exception:
+                        from generate_report import generar_informe
+                    md, j = generar_informe(
+                        candidate_data=payload.get("candidate_data") or {},
+                        soft_skills_data=payload.get("soft_skills_data", []) or [],
+                        cv_data=payload.get("cv_data") or {},
+                        job_preferences_data=payload.get("job_preferences_data") or {},
+                        employability_score=payload.get("employability_score", 0),
+                        level=payload.get("level", "No evaluado"),
+                        completed_games=payload.get("completed_games", []) or [],
+                        languages_data=payload.get("languages_data", []) or [],
+                        return_json=True
+                    )
+                    pdf_input = {
+                        "gameData": payload.get("gameData", []),
+                        "cvAnalysis": (payload.get("cv_data") or {}),
+                        "jobPreferences": (payload.get("job_preferences_data") or {}),
+                        "userInfo": {
+                            "fullName": (payload.get("candidate_data") or {}).get("fullName", "Usuario")
+                        },
+                        "informeProfesional": md,
+                        "informeProfesionalJson": j,
+                    }
+                except Exception as _gen_e:
+                    logger.warning(f"No se pudo generar el informe en el endpoint de PDF, usando payload original: {_gen_e}")
+                    pdf_input = payload
+        except Exception:
+            pdf_input = payload
+
         # Aserción: si hay analysis_json declarado, validar overall.score
         analysis_json = None
         try:
@@ -2005,7 +2043,7 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
 
         # Generar PDF
         cv_logger.info("pdf_render_start", extra=with_ctx())
-        pdf_bytes = create_employability_pdf(payload)
+        pdf_bytes = create_employability_pdf(pdf_input)
         cv_logger.info("pdf_render_done", extra=with_ctx(bytes=len(pdf_bytes) if isinstance(pdf_bytes, (bytes, bytearray)) else None))
 
         # Responder como fichero descargable
