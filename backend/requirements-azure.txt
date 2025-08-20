@@ -1,6 +1,7 @@
 # Dependencias mínimas para Azure Web App
 fastapi==0.104.1
 uvicorn[standard]==0.24.0
+gunicorn==22.0.0
 python-multipart==0.0.6
 pypdf==3.17.4
 openai>=1.99.1
