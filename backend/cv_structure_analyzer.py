@@ -100,7 +100,8 @@ def _avg_words_per_sentence(text: str) -> float:
     # Cortes sencillos de frase
     sentences = re.split(r"[\.!?]+\s+", text)
     sentences = [s for s in sentences if s.strip()]
-    words = re.findall(r"\p{L}+", text, flags=re.UNICODE)
+    # Python re no soporta \p{L}; usar rango de letras latinas comunes
+    words = re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+", text)
     if not sentences:
         return float(len(words))
     return float(len(words)) / float(len(sentences))
@@ -189,7 +190,8 @@ def compute_review_from_text_sections(text: str, sections: Dict[str, Any]) -> Di
     # 1) Formato: encabezados presentes + bullets + densidad
     headers = sum(1 for k in ("experience", "education", "profile", "skills", "languages", "contact") if sections.get(k))
     bullets = _bullet_count(text)
-    words = len(re.findall(r"\p{L}+", text, flags=re.UNICODE))
+    # Python re no soporta \p{L}; usar rango de letras latinas comunes
+    words = len(re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]+", text))
     pages_est = max(1.0, len(text) / 2000.0)
     density = words / pages_est
     font_diversity_proxy = 100.0  # sin layout real, no penalizamos por fuentes
