@@ -15,6 +15,8 @@ import { validateSoftSkills } from '../utils/debug-state';
 import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport } from '../features/personal/personalSlice';
+import useCvRating from '../hooks/useCvRating';
+import type { CvStars } from '../hooks/useCvRating';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -133,7 +135,7 @@ type CvHeuristicInput = Partial<{
     alerts: string[];
 }> | null;
 
-  function rateCv(cv: CvHeuristicInput): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
+  function rateCvHeuristic(cv: CvHeuristicInput): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
   if (!cv || typeof cv !== 'object') {
     return { formato: 3, claridad: 3, coherencia: 3, infoClave: 3, ortografia: 3, razones: ['No se encontraron datos del CV.'] };
   }
@@ -195,6 +197,13 @@ const ResultadosPage: React.FC = () => {
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
 
+  // Hook de valoración (alias para evitar choque de nombres)
+  const uid = report?.userId ?? '';
+  const rid = (report as any)?.id ?? '';
+  const { rateCv: submitRating, rating, ratingSaving, ratingError } = useCvRating(uid, rid);
+
+  const asStars = (n: number): CvStars => (n < 1 ? 1 : n > 5 ? 5 : Math.round(n)) as CvStars;
+
   // Debug logging usando la utilidad (comentado para producción)
   // debugState(state, 'ResultadosPage');
 
@@ -204,6 +213,12 @@ const ResultadosPage: React.FC = () => {
       dispatch(generateFinalReport());
     }
   }, [report, personal.softSkills, dispatch]);
+
+  // Exponer submitRating (v:number) para el bloque embebido del informe
+  useEffect(() => {
+    (window as any).__rateCv = (v: number) => submitRating(asStars(v));
+    return () => { try { delete (window as any).__rateCv; } catch { /* no-op */ } };
+  }, [submitRating]);
 
   // Estado para el informe IA
   const [iaReport, setIaReport] = useState<string>('');
@@ -363,6 +378,12 @@ const ResultadosPage: React.FC = () => {
             );
             const rec = ((data as { recommendations?: Record<string, unknown> })?.recommendations) || {} as Record<string, unknown>;
 
+            // Preferir analysis_json (persistido por backend) como fuente única de verdad para puntuaciones 1–5
+            const analysisJson: any = (data?.report?.cvAnalysis as any)?.analysis_json || null;
+            if (analysisJson && (!analysisJson.overall || analysisJson.overall.score == null)) {
+              throw new Error('Falta overall.score en analysis_json');
+            }
+
             const informe = `# Informe Profesional de Empleabilidad
 
 ## Datos personales básicos
@@ -439,6 +460,14 @@ ${(() => {
   return 'Resumen del CV no disponible.';
 })()}
 
+### Valora este informe
+${(() => {
+  // Render simplificado de estrellas; cada click invoca el hook real
+  const disabledAttr = ratingSaving ? ' disabled' : '';
+  const stars = [1,2,3,4,5].map(v => `\n<button${disabledAttr} aria-label="Valorar ${v}" onClick="(window.__rateCv)&&window.__rateCv(${v})" style="background:none;border:none;cursor:pointer;font-size:22px;line-height:1;" title="Valorar con ${v} estrellas">${(rating ?? 0) >= v ? '★' : '☆'}</button>`).join('');
+  return `<div style="display:flex;align-items:center;gap:8px;">${stars}${ratingSaving ? ' Guardando…' : ''}${rating ? ' ¡Gracias!' : ''}${ratingError ? ` <span style="color:crimson">${ratingError}</span>` : ''}</div>`;
+})()}
+
 ## Fortalezas
 ${(() => {
   const arr = Array.isArray(rec.fortalezas_clave) ? rec.fortalezas_clave : [];
@@ -455,59 +484,43 @@ ${(() => {
 
 ## Análisis del CV (con puntuación 1–5 por apartado)
 ${(() => {
-  // 1) Preferimos el diagnóstico determinista que genera el backend al analizar el PDF
+  if (analysisJson && Array.isArray(analysisJson.dimensions)) {
+    const dims = analysisJson.dimensions as Array<{ id?: string; label?: string; score: number }>;
+    const name = (d: any) => (d.label || d.id || '').toString().trim();
+    return dims.map(d => `- ${name(d) || 'Dimensión'}: ${renderStars(Number(d.score))} (${Number(d.score)}/5)`).join('\n');
+  }
+  // Fallback diagnóstico
   const dxFromReport: any = (data?.report?.cvAnalysis as any)?.diagnostico_cv || undefined;
-  // 2) Como plan B, usamos el diagnostico que venga en recommendations
   const dxFromRec: any = (rec && (rec as any).diagnostico_cv) || {};
   const dx: any = dxFromReport || dxFromRec || {};
-
-  const hasScores = [dx.structure_score, dx.coherence_score, dx.key_info_score, dx.clarity_score, (dx.spelling_style_score ?? dx.style_score)]
-    .some((v: any) => typeof v === 'number' && v > 0);
-
-  if (hasScores || (Array.isArray(dx.corrections) && dx.corrections.length) || (Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length)) {
-    const stars = [
-      (typeof dx.structure_score === 'number') ? `Formato: ${renderStars(Number(dx.structure_score))}` : null,
-      (typeof dx.clarity_score === 'number') ? `Claridad: ${renderStars(Number(dx.clarity_score))}` : null,
-      (typeof dx.coherence_score === 'number') ? `Coherencia: ${renderStars(Number(dx.coherence_score))}` : null,
-      (typeof dx.key_info_score === 'number') ? `Información clave: ${renderStars(Number(dx.key_info_score))}` : null,
-      (typeof (dx.spelling_style_score ?? dx.style_score) === 'number') ? `Ortografía: ${renderStars(Number(dx.spelling_style_score ?? dx.style_score))}` : null,
-    ].filter(Boolean).join('  \\\n');
-
-    const ev = (dx && dx.evidence) || {};
-    const evLines: string[] = [];
-    const pushIfUseful = (label: string, value: unknown) => {
-      const s = typeof value === 'string' ? value.trim() : '';
-      if (!s) return;
-      if (/no hay información del cv/i.test(s)) return;
-      evLines.push(`- ${label}: ${s}`);
-    };
-    pushIfUseful('Estructura', ev.structure);
-    pushIfUseful('Claridad', ev.clarity);
-    pushIfUseful('Coherencia', ev.coherence);
-    pushIfUseful('Información clave', ev.key_info);
-    pushIfUseful('Ortografía y estilo', ev.style);
-
-    const corr = Array.isArray(dx.corrections) && dx.corrections.length
-      ? [`\nCorrecciones/Acciones:`, ...dx.corrections.map((c: any) => `- ${String(c)}`)]
-      : [];
-    const reord = Array.isArray(dx.reordering_suggestions) && dx.reordering_suggestions.length
-      ? [`\nReordenación sugerida:`, ...dx.reordering_suggestions.map((r: any) => `- ${String(r)}`)]
-      : [];
-
-    const extras = (evLines.length ? `\n\n${evLines.join('\n')}` : '') + (corr.length ? `\n\n${corr.join('\n')}` : '') + (reord.length ? `\n\n${reord.join('\n')}` : '');
-    return `${stars}${extras}`;
+  const lines: string[] = [];
+  const push = (k: string, v: any) => {
+    if (v == null) return;
+    const n = Number(v);
+    if (!Number.isFinite(n)) return;
+    lines.push(`- ${k}: ${renderStars(n)} (${n}/5)`);
+  };
+  push('Estructura', dx.structure_score ?? dx.struct_score);
+  push('Coherencia', dx.coherence_score);
+  push('Información clave', dx.key_info_score);
+  push('Claridad', dx.clarity_score);
+  push('Ortografía y estilo', dx.spelling_style_score ?? dx.style_score);
+  const text = lines.join('\n');
+  if (text.trim()) return text;
+  // Último recurso: heurística local usando rateCv para evitar dejar el bloque vacío
+  const cvLocal: any = (data?.report?.cvAnalysis || cvAnalysis || null);
+  try {
+    const r = rateCvHeuristic(cvLocal);
+    return [
+      `- Formato: ${renderStars(r.formato)} (${r.formato}/5)`,
+      `- Claridad: ${renderStars(r.claridad)} (${r.claridad}/5)`,
+      `- Coherencia: ${renderStars(r.coherencia)} (${r.coherencia}/5)`,
+      `- Información clave: ${renderStars(r.infoClave)} (${r.infoClave}/5)`,
+      `- Ortografía: ${renderStars(r.ortografia)} (${r.ortografia}/5)`
+    ].join('\n');
+  } catch {
+    return 'no consta';
   }
-
-  // Último recurso: solo estrellas heurísticas (sin “razones”)
-  const cvLocal = data?.report?.cvAnalysis || cvAnalysis || null;
-  const r = rateCv(cvLocal);
-  return [
-    `Formato: ${renderStars(r.formato)}`,
-    `Claridad: ${renderStars(r.claridad)}`,
-    `Coherencia: ${renderStars(r.coherencia)}`,
-    `Información clave: ${renderStars(r.infoClave)}`,
-    `Ortografía: ${renderStars(r.ortografia)}`,
-  ].join('  \\\n');
 })()}
 ## Entornos de trabajo ideales
 ${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}

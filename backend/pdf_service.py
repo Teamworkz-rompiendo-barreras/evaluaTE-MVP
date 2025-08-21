@@ -38,6 +38,14 @@ class PDFService:
             spaceAfter=20,
             textColor=colors.darkblue
         ))
+        # Estilo intermedio para tablas/resúmenes
+        self.styles.add(ParagraphStyle(
+            name='CustomHeading',
+            parent=self.styles['Heading2'],
+            fontSize=16,
+            spaceAfter=12,
+            textColor=colors.darkblue
+        ))
         
         # Estilo para texto normal
         self.styles.add(ParagraphStyle(
@@ -81,6 +89,34 @@ class PDFService:
         # Extraer datos
         game_data = data.get('gameData', [])
         cv_analysis = data.get('cvAnalysis', {})
+        informe_profesional_json = data.get('informeProfesionalJson')  # NUEVO
+        cv_diag_ui = (data.get('cvAnalysis') or {}).get('cv_diagnostico_ui') \
+             or (informe_profesional_json or {}).get('cv_analysis') \
+             or {}
+        # Si viene analysis_json con dimensiones/overall, preparar un resumen visual mínimo
+        try:
+            analysis_json = cv_analysis.get('analysis_json') if isinstance(cv_analysis, dict) else None
+            if analysis_json and isinstance(analysis_json.get('overall'), dict):
+                overall = analysis_json.get('overall', {}).get('score')
+                dims = analysis_json.get('dimensions') or []
+                if overall is not None:
+                    from reportlab.platypus import Table, TableStyle
+                    from reportlab.lib import colors
+                    story.append(Paragraph("Resumen objetivo del CV (1–5)", self.styles['CustomHeading']))
+                    data_tbl = [["Dimensión", "Puntuación (1–5)"]]
+                    for d in dims:
+                        data_tbl.append([str(d.get('label') or d.get('id')), str(d.get('score'))])
+                    data_tbl.append(["Global", str(overall)])
+                    table = Table(data_tbl, hAlign='LEFT')
+                    table.setStyle(TableStyle([
+                        ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                        ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                    ]))
+                    story.append(table)
+                    story.append(PageBreak())
+        except Exception:
+            pass
         job_preferences = data.get('jobPreferences', {})
         user_info = data.get('userInfo', {})
         informe_profesional = data.get('informeProfesional', '')
@@ -93,6 +129,17 @@ class PDFService:
         if informe_profesional:
             story.extend(self._create_ai_professional_report(informe_profesional))
             story.append(PageBreak())
+        # Si llega JSON estructurado, añadir un breve sumario antes del resto
+        if informe_profesional_json and isinstance(informe_profesional_json, dict):
+            try:
+                summary = informe_profesional_json.get('summary')
+                if summary:
+                    story.append(Paragraph("Resumen del informe (IA)", self.styles['CustomSubtitle']))
+                    story.append(Spacer(1, 8))
+                    story.append(Paragraph(summary, self.styles['CustomBody']))
+                    story.append(PageBreak())
+            except Exception:
+                pass
         
         # 3. Resumen ejecutivo
         story.extend(self._create_executive_summary(game_data, cv_analysis))
@@ -103,7 +150,8 @@ class PDFService:
         story.append(PageBreak())
         
         # 5. Análisis del CV
-        story.extend(self._create_cv_analysis(cv_analysis))
+        # Pasar el diagnóstico combinado para render moderno
+        story.extend(self._create_cv_analysis({"cv_diagnostico_ui": cv_diag_ui} if cv_diag_ui else cv_analysis))
         story.append(PageBreak())
         
         # 6. Preferencias laborales
@@ -342,109 +390,58 @@ class PDFService:
         return elements
     
     def _create_cv_analysis(self, cv_analysis: Dict) -> List:
-        """Crear la sección de análisis del CV"""
         elements = []
-        
-        # Título
-        elements.append(Paragraph(
-            "Análisis del Currículum Vitae",
-            self.styles['CustomSubtitle']
-        ))
+        elements.append(Paragraph("Análisis del Currículum Vitae", self.styles['CustomSubtitle']))
         elements.append(Spacer(1, 20))
-        
-        if not cv_analysis:
-            elements.append(Paragraph(
-                "No se realizó análisis del CV.",
-                self.styles['CustomBody']
-            ))
+
+        diag = (cv_analysis or {}).get("cv_diagnostico_ui") or cv_analysis or {}
+        evidence = diag.get("evidence") or {}
+
+        keys = [
+            ("Estructura", "structure_score", "structure"),
+            ("Coherencia", "coherence_score", "coherence"),
+            ("Información clave", "key_info_score", "key_info"),
+            ("Claridad", "clarity_score", "clarity"),
+            ("Ortografía y estilo", "style_score", "style"),
+        ]
+        if all(k[1] in diag for k in keys):
+            from reportlab.platypus import Table, TableStyle
+            data_tbl = [["Dimensión", "Puntuación (1–5)", "Evidencia"]]
+            for label, score_key, ev_key in keys:
+                score = diag.get(score_key, "—")
+                ev = (evidence.get(ev_key) or "—").strip()
+                data_tbl.append([label, str(score), ev])
+            table = Table(data_tbl, hAlign='LEFT', colWidths=[2.6*inch, 1.2*inch, 3.2*inch])
+            table.setStyle(TableStyle([
+                ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
+                ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
+                ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+                ('VALIGN', (0,0), (-1,-1), 'TOP'),
+            ]))
+            elements.append(table)
+            elements.append(Spacer(1, 16))
+
+            corrections = diag.get("corrections") or []
+            if corrections:
+                elements.append(Paragraph("<b>Correcciones sugeridas:</b>", self.styles['CustomBody']))
+                for c in corrections:
+                    elements.append(Paragraph(f"• {c}", self.styles['CustomList']))
+                elements.append(Spacer(1, 10))
+
+            reord = diag.get("reordering_suggestions") or []
+            if reord:
+                elements.append(Paragraph("<b>Reordenación sugerida:</b>", self.styles['CustomBody']))
+                for r in reord:
+                    elements.append(Paragraph(f"• {r}", self.styles['CustomList']))
             return elements
-        
-        # Estructura del CV
+
+        # Fallback legacy
         structure = cv_analysis.get('structure', 'No evaluado')
-        elements.append(Paragraph(
-            f"<b>Estructura del CV:</b> {structure}",
-            self.styles['CustomBody']
-        ))
-        
-        # Coherencia
+        elements.append(Paragraph(f"<b>Estructura del CV:</b> {structure}", self.styles['CustomBody']))
         coherence = cv_analysis.get('coherence', 'No evaluado')
-        elements.append(Paragraph(
-            f"<b>Coherencia:</b> {coherence}",
-            self.styles['CustomBody']
-        ))
-        
-        # Experiencia
+        elements.append(Paragraph(f"<b>Coherencia:</b> {coherence}", self.styles['CustomBody']))
         experience = cv_analysis.get('experience', 'No evaluado')
-        elements.append(Paragraph(
-            f"<b>Experiencia laboral:</b> {experience}",
-            self.styles['CustomBody']
-        ))
-        
-        elements.append(Spacer(1, 20))
-        
-        # Habilidades técnicas detectadas
-        skills = cv_analysis.get('skills', [])
-        if skills:
-            elements.append(Paragraph("<b>Habilidades técnicas detectadas:</b>", self.styles['CustomBody']))
-            for skill in skills:
-                elements.append(Paragraph(
-                    f"• {skill}",
-                    self.styles['CustomList']
-                ))
-            elements.append(Spacer(1, 20))
-        
-        # Formación detectada
-        education = cv_analysis.get('education', [])
-        if education:
-            elements.append(Paragraph("<b>Formación detectada:</b>", self.styles['CustomBody']))
-            for edu in education:
-                elements.append(Paragraph(
-                    f"• {edu}",
-                    self.styles['CustomList']
-                ))
-            elements.append(Spacer(1, 20))
-        
-        # Fortalezas del CV
-        strengths = cv_analysis.get('strengths', [])
-        if strengths:
-            elements.append(Paragraph("<b>Fortalezas del CV:</b>", self.styles['CustomBody']))
-            for strength in strengths:
-                elements.append(Paragraph(
-                    f"• {strength}",
-                    self.styles['CustomList']
-                ))
-            elements.append(Spacer(1, 20))
-        
-        # Áreas de mejora
-        weaknesses = cv_analysis.get('weaknesses', [])
-        if weaknesses:
-            elements.append(Paragraph("<b>Áreas de mejora:</b>", self.styles['CustomBody']))
-            for weakness in weaknesses:
-                elements.append(Paragraph(
-                    f"• {weakness}",
-                    self.styles['CustomList']
-                ))
-            elements.append(Spacer(1, 20))
-        
-        # Alertas o puntos críticos
-        alerts = cv_analysis.get('alerts', [])
-        if alerts:
-            elements.append(Paragraph("<b>Alertas o puntos críticos:</b>", self.styles['CustomBody']))
-            for alert in alerts:
-                elements.append(Paragraph(
-                    f"⚠️ {alert}",
-                    self.styles['CustomList']
-                ))
-            elements.append(Spacer(1, 20))
-        
-        # Feedback general
-        feedback = cv_analysis.get('feedback', '')
-        if feedback:
-            elements.append(Paragraph(
-                f"<b>Feedback general:</b> {feedback}",
-                self.styles['CustomBody']
-            ))
-        
+        elements.append(Paragraph(f"<b>Experiencia laboral:</b> {experience}", self.styles['CustomBody']))
         return elements
     
     def _create_job_preferences(self, job_preferences: Dict) -> List:

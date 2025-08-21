@@ -31,7 +31,7 @@ load_dotenv()
 API_KEY = os.getenv('AZURE_OPENAI_API_KEY')
 ENDPOINT = os.getenv('AZURE_OPENAI_ENDPOINT')
 DEPLOYMENT = os.getenv('AZURE_OPENAI_DEPLOYMENT')
-API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION', '2024-11-20')
+API_VERSION = os.getenv('AZURE_OPENAI_API_VERSION', '2024-10-21')
 
 # Verificar si Azure OpenAI está configurado
 AZURE_OPENAI_CONFIGURED = all([API_KEY, ENDPOINT, DEPLOYMENT])
@@ -186,8 +186,9 @@ def generar_informe(
     employability_score: int,
     level: str,
     completed_games: list,
-    languages_data: list
-) -> str:
+    languages_data: list,
+    return_json: bool = False
+) -> str | tuple[str, dict]:
     """
     Genera un informe de empleabilidad usando Azure OpenAI o modo de prueba
     IMPORTANTE: Los minijuegos y CV son obligatorios para todos los candidatos
@@ -195,10 +196,11 @@ def generar_informe(
     
     if not AZURE_OPENAI_CONFIGURED:
         logger.warning("⚠️ Azure OpenAI no configurado - usando modo de prueba")
-        return generar_informe_prueba(
+        md = generar_informe_prueba(
             candidate_data, soft_skills_data, cv_data, job_preferences_data,
             employability_score, level, completed_games, languages_data
         )
+        return (md, {}) if return_json else md
     
     try:
         # Verificar que las variables no sean None
@@ -226,8 +228,38 @@ def generar_informe(
         except ImportError:
             from prompt_config import PromptConfig
         
-        # Usar prompt centralizado para informe de empleabilidad
-        # IMPORTANTE: Los minijuegos y CV son obligatorios para todos los candidatos
+        # INYECTAR diagnóstico determinista y estructura CV
+        try:
+            try:
+                from .cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico
+            except ImportError:
+                from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico
+            # Asegurar rawText y sections
+            raw_text = (cv_data or {}).get("rawText") or (cv_data or {}).get("raw_text") or ""
+            sections = (cv_data or {}).get("sections") or {}
+            review = compute_review_from_text_sections(raw_text, sections)
+            cv_ui_diag = review_to_ui_diagnostico(review)
+            # Normalizar style_score
+            if "spelling_style_score" in cv_ui_diag and "style_score" not in cv_ui_diag:
+                cv_ui_diag["style_score"] = cv_ui_diag["spelling_style_score"]
+
+            cv_structured = {
+                "profile": (sections.get("profile") or ""),
+                "experience": (sections.get("experience") or []),
+                "education": (sections.get("education") or []),
+                "languages": (sections.get("languages") or []),
+                "software": (sections.get("software") or sections.get("skills") or []),
+                "contact": (sections.get("contact") or {}),
+            }
+            cv_data = dict(cv_data or {})
+            cv_data["rawText"] = raw_text
+            cv_data["cv_structured"] = cv_structured
+            cv_data["cv_diagnostico_ui"] = cv_ui_diag
+        except Exception as _e:
+            logger.warning(f"No se pudo computar diagnóstico determinista: {_e}")
+            cv_ui_diag = {}
+
+        analysis_block = PromptConfig.make_cv_analysis_block(cv_ui_diag, cv_data)
         prompt = PromptConfig.get_employability_report_prompt(
             candidate_data=candidate_data,
             soft_skills_data=soft_skills_data,
@@ -236,7 +268,8 @@ def generar_informe(
             employability_score=employability_score,
             level=level,
             completed_games=completed_games,
-            languages_data=languages_data
+            languages_data=languages_data,
+            analysis_block=analysis_block
         )
         
         # Llamar a Azure OpenAI
@@ -314,28 +347,25 @@ def generar_informe(
         
         content = response.choices[0].message.content
         
-        # Si la respuesta es JSON, convertirla a formato de informe legible
+        # Si la respuesta es JSON, devolver Markdown + JSON
         if content and content.strip().startswith('{'):
             try:
-                # Parsear la respuesta JSON
                 json_response = json.loads(content)
-                
-                # Convertir el JSON estructurado a formato de informe markdown
-                return PromptConfig.convert_json_to_markdown_report(json_response)
-                
+                md = PromptConfig.convert_json_to_markdown_report(json_response)
+                return (md, json_response) if return_json else md
             except json.JSONDecodeError as e:
                 logger.warning(f"⚠️ Error parseando respuesta JSON: {str(e)}")
-                # Si falla el parsing, usar la respuesta raw
                 return content if content else generar_informe_prueba(
                     candidate_data, soft_skills_data, cv_data, job_preferences_data,
                     employability_score, level, completed_games, languages_data
                 )
         else:
-            # Si no es JSON, usar la respuesta directamente
-            return content if content else generar_informe_prueba(
+            # Si no es JSON, devolver también en formato esperado
+            md = content if content else generar_informe_prueba(
                 candidate_data, soft_skills_data, cv_data, job_preferences_data,
                 employability_score, level, completed_games, languages_data
             )
+            return (md, {}) if return_json else md
         
     except Exception as e:
         logger.error(f"❌ Error generando informe con Azure OpenAI: {str(e)}")
@@ -344,6 +374,31 @@ def generar_informe(
             candidate_data, soft_skills_data, cv_data, job_preferences_data,
             employability_score, level, completed_games, languages_data
         )
+
+
+def attach_analysis_json_to_prompt(cv_data: dict, report_id: Optional[str] = None) -> dict:
+    """Carga analysis.json si existe y lo adjunta en cv_data['analysis_json'] para consumo de la IA."""
+    try:
+        analysis = None
+        # Preferencia: si viene ruta directa en cv_data
+        if isinstance(cv_data, dict) and cv_data.get('analysis_json'):
+            return cv_data
+        # Buscar por report_id
+        if report_id:
+            local_path = os.path.join(os.getcwd(), 'reports', report_id, 'analysis.json')
+            if os.path.exists(local_path):
+                with open(local_path, 'r', encoding='utf-8') as fh:
+                    analysis = json.load(fh)
+        # Si no, intentar inline si viene en cv_data
+        if not analysis and isinstance(cv_data, dict) and cv_data.get('analysis'):
+            analysis = cv_data.get('analysis')
+        if analysis:
+            cv_data = dict(cv_data)
+            cv_data['analysis_json'] = analysis
+        return cv_data
+    except Exception as e:
+        logger.warning(f"No se pudo adjuntar analysis_json al prompt: {e}")
+        return cv_data
 
 def cargar_feedback_previo():
     """
@@ -360,7 +415,17 @@ def cargar_feedback_previo():
         if not feedbacks:
             return ""
         
-        feedbacks_utiles = [f for f in feedbacks if f.get('rating') == 'Útil']
+        def es_util(fb: dict) -> bool:
+            r = fb.get('rating')
+            try:
+                if isinstance(r, (int, float)) and float(r) >= 4:
+                    return True
+            except Exception:
+                pass
+            label = str(fb.get('ratingLabel') or fb.get('rating') or '').strip().lower()
+            return label in ('útil','util','useful')
+
+        feedbacks_utiles = [f for f in feedbacks if es_util(f)]
         
         if not feedbacks_utiles:
             return ""

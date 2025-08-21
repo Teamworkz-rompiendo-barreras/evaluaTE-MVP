@@ -3,10 +3,41 @@
 
 import json
 from datetime import datetime
+from typing import Any, Dict, List
 
 class PromptConfig:
     """Configuración centralizada de prompts para el sistema EvaluaTE"""
     
+    @staticmethod
+    def get_system_prompt() -> str:
+        return (
+            "Eres un/a orientador/a laboral senior con formación en psicología del trabajo y neurodivergencias. "
+            "Escribes en español de España, tono profesional, claro, directo y neuroinclusivo. "
+            "Tu salida debe respetar estrictamente el esquema JSON proporcionado (strict)."
+        )
+
+    @staticmethod
+    def make_cv_analysis_block(cv_ui_diag: Dict[str, Any], cv_data: Dict[str, Any]) -> str:
+        """Bloque que fija las puntuaciones 1–5 y aporta contexto al modelo sin que las re-calcule."""
+        diag = cv_ui_diag or {}
+        ev  = (diag.get("evidence") or {})
+        def _g(k, d="—"): return str(diag.get(k, d))
+        def _e(k): return (ev.get(k) or "—").strip()
+
+        lines = [
+            "### DIAGNÓSTICO DETERMINISTA DEL CV (NO MODIFICAR PUNTUACIONES, SOLO EXPLICAR Y COMPLEMENTAR)",
+            f"- Estructura: { _g('structure_score') }/5 | Evidencia: {_e('structure')}",
+            f"- Coherencia: { _g('coherence_score') }/5 | Evidencia: {_e('coherence')}",
+            f"- Información clave: { _g('key_info_score') }/5 | Evidencia: {_e('key_info')}",
+            f"- Claridad: { _g('clarity_score') }/5 | Evidencia: {_e('clarity')}",
+            f"- Ortografía y estilo: { _g('style_score') }/5 | Evidencia: {_e('style')}",
+        ]
+        corr = [f"- {c}" for c in (diag.get("corrections") or [])]
+        if corr:
+            lines.append("Correcciones detectadas:")
+            lines.extend(corr)
+        return "\n".join(lines)
+
     @staticmethod
     def get_employability_report_prompt(
         candidate_data: dict,
@@ -16,7 +47,8 @@ class PromptConfig:
         employability_score: int,
         level: str,
         completed_games: list,
-        languages_data: list
+        languages_data: list,
+        analysis_block: str = ""
     ) -> str:
         """
         Genera el prompt maestro para el informe de empleabilidad completo
@@ -65,6 +97,23 @@ class PromptConfig:
         # Preparar juegos completados
         games_text = ", ".join(completed_games) if completed_games else "No consta"
         
+        # Si se proporcionó analysis_json en cv_data, añadir reglas estrictas
+        analysis_json = cv_data.get('analysis_json') if isinstance(cv_data, dict) else None
+        instr_block = ""
+        analysis_json_block = ""
+        if analysis_json:
+            instr_block = (
+                "## INSTRUCCIONES (OBLIGATORIAS)\n"
+                "- Usa las puntuaciones del objeto analysis_json tal cual; NO las cambies ni inventes.\n"
+                "- Si falta un dato del CV, escribe “no consta”, nunca “CV no disponible”.\n"
+                "- Debes citar en el texto los números tal como vienen (1–5) y mantener coherencia en todo el informe.\n"
+            )
+            analysis_json_block = (
+                "### ANALYSIS_JSON (INMUTABLE)\n"
+                + json.dumps(analysis_json, ensure_ascii=False)
+                + "\n"
+            )
+
         prompt = f"""
 # PROMPT MAESTRO: INFORME DE EMPLEABILIDAD + ANÁLISIS DE CV (NEUROINCLUSIVO, ES-ES)
 
@@ -91,7 +140,7 @@ Tu informe DEBE incluir EXACTAMENTE estas 13 secciones en este orden:
 
 **OBLIGATORIO:** Cada sección debe estar completa y bien desarrollada. No omitas ninguna sección.
 
-**FORMATO DE RESPUESTA:** Debes responder EXCLUSIVAMENTE en formato JSON válido que siga exactamente el esquema proporcionado. NO uses markdown ni texto libre.
+**FORMATO DE RESPUESTA:** EXCLUSIVAMENTE JSON válido que siga el esquema proporcionado (strict). NO uses markdown ni texto libre.
 
 ## ENTRADAS (ESTRUCTURA DE DATOS)
 
@@ -122,7 +171,7 @@ Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No 
 **IMPORTANTE:** Si alguno de estos campos muestra "No consta" o está vacío, significa que la información del CV no se pudo extraer correctamente. En ese caso, indica claramente en el informe que "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".
 
 ### TEXTO RAW DEL CV (SI ESTÁ DISPONIBLE)
-{cv_data.get('rawText', 'No disponible')}
+{cv_data.get('rawText', 'No disponible')[:4000]}
 
 **CRÍTICO:** Si hay texto raw del CV disponible, úsalo para:
 - Extraer información adicional que no esté en las secciones estructuradas
@@ -143,6 +192,10 @@ Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No 
 
 ### IDIOMAS
 {languages_text}
+
+{instr_block}
+{analysis_json_block}
+{analysis_block}
 
 ## REGLAS DE ANÁLISIS (PASOS OBLIGATORIOS)
 
@@ -167,6 +220,10 @@ Califica y justifica cada apartado con evidencia del CV y correcciones accionabl
 - **Información clave (1–5)**: logros medibles, KPIs, métricas, enlaces de contacto
 - **Claridad (1–5)**: calidad de bullets y verbos de acción
 - **Ortografía y estilo (1–5)**: tildes, nombres propios, marcas registradas, mayúsculas
+### REGLA CRÍTICA SOBRE EL CV
+- Si existen secciones estructuradas del CV (experience/education/languages/skills/contact), está PROHIBIDO afirmar “no hay información del CV”. Debes puntuar 1–5 usando esas secciones como evidencia.
+- Solo puedes escribir “No hay información del CV disponible para analizar” si NO hay texto raw NI secciones estructuradas.
+
 
 **CRÍTICO:** Cada puntuación debe estar respaldada por evidencia específica del CV. Si no hay información del CV:
 - Estructura: 1/5 - "No hay información del CV para evaluar la estructura"
@@ -313,10 +370,11 @@ REGLAS:
     
     @staticmethod
     def get_system_prompt() -> str:
-        """
-        Retorna el prompt del sistema para el rol del asistente
-        """
-        return "Eres un/a orientador/a laboral senior con formación en psicología, psicología del trabajo y neurodivergencias. Redactas informes profesionales, claros y accionables en español de España, con lenguaje neutro, tono respetuoso y directo, y enfoque neuroinclusivo (nunca patologizante)."
+        return (
+            "Eres un/a orientador/a laboral senior con formación en psicología del trabajo y neurodivergencias. "
+            "Escribes en español de España, tono profesional, claro, directo y neuroinclusivo. "
+            "Tu salida debe respetar estrictamente el esquema JSON proporcionado (strict)."
+        )
 
     @staticmethod
     def get_report_schema() -> dict:

@@ -5,6 +5,7 @@ from fastapi import FastAPI, HTTPException, Depends, status, File, UploadFile, F
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, FileResponse, StreamingResponse
 from pydantic import BaseModel, Field
+from pydantic import conint  # tipo 1..5 para feedback
 import uvicorn
 from typing import List, Optional, Dict, Any, Tuple
 from datetime import datetime
@@ -16,6 +17,8 @@ import logging
 import sys
 import tempfile
 import re
+import asyncio
+from uuid import uuid4
 
 # Cargar variables de entorno desde .env
 try:
@@ -67,6 +70,10 @@ logging.basicConfig(
     force=True,
 )
 logger = logging.getLogger(__name__)
+cv_logger = logging.getLogger("cv")
+
+def with_ctx(**kv):
+    return {"ctx": kv}
 
 # Variables de entorno para Azure OpenAI (opcionales)
 API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
@@ -375,6 +382,10 @@ app = FastAPI(title="EvaluaTE Backend", version="1.0.0")
 # Memoria temporal: último CV analizado por usuario (clave: userId)
 _LAST_CV_BY_USER: Dict[str, Any] = {}
 
+# Feedback store (persistente y seguro)
+FEEDBACK_FILE = os.getenv("FEEDBACK_FILE", "feedback_ia.json")
+_feedback_lock: "asyncio.Lock" = asyncio.Lock()
+
 @app.get("/")
 async def root():
     """Endpoint raíz"""
@@ -398,6 +409,48 @@ app.add_middleware(
     allow_methods=["*"],
     allow_headers=["*"],
 )
+# ====== Feedback persistente ======
+class ReportFeedback(BaseModel):
+    userId: str = Field(..., min_length=1)
+    reportId: str = Field(..., min_length=1)
+    rating: conint(ge=1, le=5)
+    comment: Optional[str] = None
+    createdAt: Optional[str] = None
+
+
+@app.post("/api/report/feedback")
+async def save_report_feedback(item: ReportFeedback):
+    """Guarda feedback del informe de forma atómica y thread-safe."""
+    item.createdAt = item.createdAt or datetime.utcnow().isoformat() + "Z"
+
+    async with _feedback_lock:
+        data: List[Dict[str, Any]] = []
+        if os.path.exists(FEEDBACK_FILE):
+            try:
+                with open(FEEDBACK_FILE, "r", encoding="utf-8") as f:
+                    data = json.load(f) or []
+            except Exception:
+                data = []
+
+        payload = item.dict()
+        if int(payload.get("rating", 0)) >= 4:
+            payload["ratingLabel"] = "Útil"
+        data.append(payload)
+
+        fd, tmp_path = tempfile.mkstemp(prefix="feedback_", suffix=".json")
+        try:
+            with os.fdopen(fd, "w", encoding="utf-8") as tf:
+                json.dump(data, tf, ensure_ascii=False, indent=2)
+            os.replace(tmp_path, FEEDBACK_FILE)
+        finally:
+            try:
+                if os.path.exists(tmp_path):
+                    os.remove(tmp_path)
+            except Exception:
+                pass
+
+    return {"status": "ok"}
+
 
 # ===== Normalizadores y utilidades de extracción estructurada =====
 try:
@@ -678,7 +731,13 @@ async def log_game_complete(data: Dict[str, Any]):
         logger.error(f"Error registrando juego completado: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-def shape_report_for_ui(r: dict) -> dict:
+from typing import Optional, Dict, Any
+
+def shape_report_for_ui(
+    r: dict,
+    cv_structured: Optional[Dict[str, Any]] = None,
+    *_, **__
+) -> dict:
     """
     Adaptador: convierte la salida JSON del modelo al layout de 13 apartados de la UI.
     Garantiza strings en secciones textuales y sanea None -> "No consta".
@@ -694,6 +753,12 @@ def shape_report_for_ui(r: dict) -> dict:
         if not isinstance(xs, list) or not xs:
             return []
         return [_txt(x) for x in xs]
+
+    def _as_int(x, default=1):
+        try:
+            return int(x)
+        except Exception:
+            return default
 
     shaped: dict = {
         # 1) Datos personales (objeto)
@@ -726,11 +791,11 @@ def shape_report_for_ui(r: dict) -> dict:
             (lambda _cv: (
                 # Ensamblar diagnóstico base
                 {
-                    "structure_score": int((_cv.get("structure_score") or 1) or 1),
-                    "coherence_score": int((_cv.get("coherence_score") or 1) or 1),
-                    "key_info_score": int((_cv.get("key_info_score") or 1) or 1),
-                    "clarity_score": int((_cv.get("clarity_score") or 1) or 1),
-                    "spelling_style_score": int((_cv.get("style_score") or _cv.get("spelling_style_score") or 1) or 1),
+                    "structure_score": _as_int((_cv.get("structure_score") or 1)),
+                    "coherence_score": _as_int((_cv.get("coherence_score") or 1)),
+                    "key_info_score": _as_int((_cv.get("key_info_score") or 1)),
+                    "clarity_score": _as_int((_cv.get("clarity_score") or 1)),
+                    "spelling_style_score": _as_int((_cv.get("style_score") or _cv.get("spelling_style_score") or 1)),
                     "evidence": (lambda E, S: {
                         "structure": (
                             E.get("structure") if (E.get("structure") and not str(E.get("structure")).lower().startswith("no hay información"))
@@ -760,7 +825,7 @@ def shape_report_for_ui(r: dict) -> dict:
                             "clarity": _txt((_cv.get("evidence") or {}).get("clarity", "")),
                             "style": _txt((_cv.get("evidence") or {}).get("style", "")),
                         },
-                        (r.get("cv_analysis") or {}).get("cv_structured") or {}
+                        (cv_structured or (r.get("cv_analysis") or {}).get("cv_structured") or {})
                     ),
                     "corrections": _list_str(_cv.get("corrections") or []),
                     "reordering_suggestions": _list_str(_cv.get("reordering_suggestions") or []),
@@ -903,6 +968,49 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         # Generar informe profesional con IA
         if client:
             professional_report = await generate_professional_report_with_ai(request, employability_score, level)
+            # Fallback determinista del diagnóstico si el modelo no aporta evidencias reales
+            try:
+                from .cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            except Exception:
+                from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            def _needs_cv_override(cv_block: dict) -> bool:
+                try:
+                    if not cv_block or not isinstance(cv_block, dict):
+                        return True
+                    ev = (cv_block.get("evidence") or {})
+                    flags = [str((ev or {}).get(k, "")).lower().startswith("no hay información") for k in ("structure","coherence","key_info","clarity","style")]
+                    return any(flags)
+                except Exception:
+                    return True
+            sections = (cv_data or {}).get("sections", {}) if 'cv_data' in locals() else {}
+            review = compute_review_from_text_sections(str((cv_data or {}).get("rawText", "")) if 'cv_data' in locals() else "", sections)
+            ui_diag = review_to_ui_diagnostico(review)
+            try:
+                if _needs_cv_override(professional_report.get("cv_analysis")):
+                    professional_report["cv_analysis"] = {
+                        "structure_score": ui_diag.get("structure_score"),
+                        "coherence_score": ui_diag.get("coherence_score"),
+                        "key_info_score": ui_diag.get("key_info_score"),
+                        "clarity_score": ui_diag.get("clarity_score"),
+                        "style_score": ui_diag.get("spelling_style_score"),
+                        "evidence": ui_diag.get("evidence"),
+                        "corrections": [
+                            "Elaborar un CV estructurado con secciones claras: perfil, experiencia, formación, idiomas y herramientas.",
+                            "Añadir logros cuantificables (KPI) y descripciones con verbos de acción.",
+                            "Incluir enlaces a LinkedIn / web y datos de contacto actualizados.",
+                        ],
+                        "reordering_suggestions": [
+                            "Colocar el perfil profesional al inicio.",
+                            "Ordenar la experiencia de la más reciente a la más antigua.",
+                        ],
+                    }
+                # Pasar secciones al análisis para que el adaptador tenga acceso
+                if "cv_analysis" not in professional_report:
+                    professional_report["cv_analysis"] = {}
+                if isinstance(professional_report["cv_analysis"], dict):
+                    professional_report["cv_analysis"]["cv_structured"] = sections
+            except Exception:
+                pass
         else:
             professional_report = generate_basic_report(request, employability_score, level)
 
@@ -948,7 +1056,20 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             pass
         # Usar el adaptador para convertir la salida del modelo a las 13 secciones estándar
         if isinstance(professional_report, dict):
-            shaped = shape_report_for_ui(professional_report)
+            # Construir cv_structured para el adaptador de UI si disponemos de secciones del CV
+            try:
+                sections = (cv_data or {}).get("sections", {}) if 'cv_data' in locals() else {}
+            except Exception:
+                sections = {}
+            cv_struct_for_ui = {
+                "profile": sections.get("profile"),
+                "experience": sections.get("experience"),
+                "education": sections.get("education"),
+                "languages": sections.get("languages"),
+                "skills": sections.get("software"),
+                "contact": sections.get("contact"),
+            }
+            shaped = shape_report_for_ui(professional_report, cv_structured=cv_struct_for_ui)
         else:
             shaped = shape_report_for_ui({})
         
@@ -1387,6 +1508,26 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
     except ImportError:
         from prompt_config import PromptConfig
     
+    # Adjuntar analysis.json si report_id llegó por cvAnalysis
+    try:
+        report_id = None
+        if isinstance(request.cvAnalysis, dict):
+            report_id = (request.cvAnalysis or {}).get("report_id")
+        elif request.cvAnalysis and hasattr(request.cvAnalysis, "report_id"):
+            report_id = getattr(request.cvAnalysis, "report_id")
+        # Importar attach para enriquecer cv_data
+        try:
+            from .generate_report import attach_analysis_json_to_prompt as _attach
+        except Exception:
+            from generate_report import attach_analysis_json_to_prompt as _attach
+        if report_id:
+            cv_data = _attach(cv_data, report_id)
+        elif isinstance(report.get("cvAnalysis"), dict) and report["cvAnalysis"].get("analysis"):
+            # Si el analyze-cv v2 devolvió inline analysis, adjuntarlo
+            cv_data = _attach({**cv_data, "analysis": report["cvAnalysis"].get("analysis")}, None)
+    except Exception:
+        pass
+
     # Prompt maestro mejorado usando configuración centralizada
     prompt = PromptConfig.get_employability_report_prompt(
         candidate_data=candidate_data,
@@ -1488,7 +1629,9 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         else:
             chat_kwargs["response_format"] = {"type": "json_object"}
             logger.warning(f"⚠️ JSON Schema no disponible en API version {API_VERSION}")
+        cv_logger.info("openai_request", extra=with_ctx(model=deployment_name))
         response = client.chat.completions.create(**chat_kwargs)
+        cv_logger.info("openai_response", extra=with_ctx(tokens=len(str(response.choices[0].message.content or ""))))
         
         # Obtener y loggear la respuesta cruda
         raw_content = response.choices[0].message.content
@@ -1626,7 +1769,7 @@ async def get_feedback_stats():
 
 @app.post("/api/pdf/analyze-cv")
 async def analyze_cv_pdf(file: UploadFile = File(...), userId: Optional[str] = Form(None)):
-    """Analiza un CV en formato PDF usando Azure Document Intelligence"""
+    """Analiza un CV en formato PDF usando Azure Document Intelligence o la tubería V2 (feature flag)."""
     temp_file_path = None
     try:
         logger.info(f"Analizando CV PDF: {file.filename}")
@@ -1643,6 +1786,112 @@ async def analyze_cv_pdf(file: UploadFile = File(...), userId: Optional[str] = F
         texts: List[str] = []
         merged: Dict[str, Any] = {}
         logger.info(f"🔍 Iniciando análisis completo del CV: {file.filename}")
+        correlation_id = str(uuid4())
+        cv_logger.info("extraction_start", extra=with_ctx(correlation_id=correlation_id))
+
+        # CV_PIPELINE_V2 feature flag
+        use_v2 = (os.getenv("CV_PIPELINE_V2", "off").lower() in ("1", "on", "true", "yes"))
+        if use_v2:
+            try:
+                from app.cv_pipeline.extract import extract_cv  # type: ignore
+                from app.cv_pipeline.normalize import normalize_contact, pick_candidate_name  # type: ignore
+                from app.cv_pipeline.quality import cv_quality_ok  # type: ignore
+                from app.cv_pipeline.scoring import compute_cv_analysis  # type: ignore
+            except Exception as e:
+                logger.warning(f"⚠️ CV_PIPELINE_V2 activo pero módulos no disponibles: {e}")
+                use_v2 = False
+
+        if use_v2:
+            endpoint = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT", "")
+            key = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY", "")
+            try:
+                cv_logger.info("extraction_v2_run", extra=with_ctx(correlation_id=correlation_id))
+                extraction = extract_cv(content, endpoint=endpoint, key=key)
+                base_cv: Dict[str, Any] = {
+                    "text": extraction.text,
+                    "char_count": extraction.char_count,
+                    "sections": extraction.sections or {},
+                    "source": extraction.source,
+                }
+                # contacto básico
+                contact_raw: Dict[str, Any] = (base_cv.get("sections", {}) or {}).get("contact") or {}
+                base_cv["contact"] = normalize_contact(contact_raw)
+                base_cv["candidate"] = {"name": pick_candidate_name(base_cv)}
+
+                ok, reason = cv_quality_ok(base_cv)
+                if not ok:
+                    cv_logger.info("quality_gate_failed", extra=with_ctx(correlation_id=correlation_id, reason=reason))
+                    raise HTTPException(status_code=422, detail={"code": "CV_PARSE_FAILED", "reason": reason})
+
+                # construir objeto para scoring determinista
+                scoring_input: Dict[str, Any] = {
+                    "experience": (base_cv.get("sections") or {}).get("experience") or [],
+                    "education": (base_cv.get("sections") or {}).get("education") or [],
+                    "languages": (base_cv.get("sections") or {}).get("languages") or [],
+                    "skills": (base_cv.get("sections") or {}).get("skills") or (base_cv.get("sections") or {}).get("software") or [],
+                    "contact": base_cv.get("contact") or {},
+                    "summary": (base_cv.get("sections") or {}).get("profile"),
+                    "sections": base_cv.get("sections") or {},
+                }
+                analysis_json = compute_cv_analysis(scoring_input)
+                cv_logger.info("scoring_done", extra=with_ctx(correlation_id=correlation_id, overall=analysis_json.get("overall", {}).get("score")))
+
+                # Persistencia blob/local
+                report_id = str(uuid4())
+                storage_conn = os.getenv("AZURE_STORAGE_CONNECTION_STRING")
+                container_reports = os.getenv("AZURE_STORAGE_CONTAINER_REPORTS", "reports")
+                pdf_blob_path = f"blob://reports/{report_id}/cv.pdf"
+                json_blob_path = f"blob://reports/{report_id}/analysis.json"
+
+                # Guardar localmente en ./reports si no hay storage
+                base_dir = os.path.join(os.getcwd(), "reports", report_id)
+                os.makedirs(base_dir, exist_ok=True)
+                # Guardar pdf
+                try:
+                    with open(os.path.join(base_dir, "cv.pdf"), "wb") as fh:
+                        fh.write(content)
+                except Exception:
+                    pass
+                # Guardar analysis.json
+                try:
+                    with open(os.path.join(base_dir, "analysis.json"), "w", encoding="utf-8") as fh:
+                        json.dump(analysis_json, fh, ensure_ascii=False, indent=2)
+                except Exception:
+                    pass
+
+                # Subir a Blob si está configurado
+                if storage_conn:
+                    try:
+                        from azure.storage.blob import BlobServiceClient  # type: ignore
+                        bsc = BlobServiceClient.from_connection_string(storage_conn)
+                        cont = bsc.get_container_client(container_reports)
+                        try:
+                            if not cont.exists():
+                                cont.create_container()
+                        except Exception:
+                            pass
+                        cv_client = cont.get_blob_client(f"reports/{report_id}/cv.pdf")
+                        cv_client.upload_blob(content, overwrite=True, content_type="application/pdf")
+                        an_client = cont.get_blob_client(f"reports/{report_id}/analysis.json")
+                        an_client.upload_blob(json.dumps(analysis_json).encode("utf-8"), overwrite=True, content_type="application/json")
+                    except Exception as e:
+                        logger.warning(f"No se pudo subir a Blob Storage (reports): {e}")
+
+                final_v2 = {
+                    "report_id": report_id,
+                    "blob_paths": {"pdf": pdf_blob_path, "analysis": json_blob_path},
+                    "analysis": analysis_json,
+                    "char_count": extraction.char_count,
+                    "source": extraction.source,
+                }
+                _LAST_CV_BY_USER[userId.strip() if userId else "anonymous"] = dict(final_v2)
+                cv_logger.info("extraction_done", extra=with_ctx(correlation_id=correlation_id))
+                return final_v2
+            except HTTPException:
+                raise
+            except Exception as e:
+                logger.warning(f"CV_PIPELINE_V2 falló, intentando flujo legacy: {e}")
+                cv_logger.info("extraction_fallback_legacy", extra=with_ctx(correlation_id=correlation_id))
 
         # A) Módulo mejorado de Document Intelligence
         try:
@@ -1856,8 +2105,62 @@ async def generate_pdf_endpoint(payload: Dict[str, Any]):
             # Fallback cuando se ejecuta el archivo directamente
             from pdf_service import create_employability_pdf
 
+        # Integración: si no llega 'informeProfesional' pero sí datos estructurados, generarlo aquí (JSON + MD)
+        pdf_input = payload
+        try:
+            needs_generation = not (isinstance(payload.get("informeProfesional"), str) and payload.get("informeProfesional").strip())
+            has_structured = any(k in payload for k in ("candidate_data", "cv_data", "soft_skills_data", "job_preferences_data"))
+            if needs_generation and has_structured:
+                try:
+                    try:
+                        from .generate_report import generar_informe  # type: ignore[relative-beyond-top-level]
+                    except Exception:
+                        from generate_report import generar_informe
+                    md, j = generar_informe(
+                        candidate_data=payload.get("candidate_data") or {},
+                        soft_skills_data=payload.get("soft_skills_data", []) or [],
+                        cv_data=payload.get("cv_data") or {},
+                        job_preferences_data=payload.get("job_preferences_data") or {},
+                        employability_score=payload.get("employability_score", 0),
+                        level=payload.get("level", "No evaluado"),
+                        completed_games=payload.get("completed_games", []) or [],
+                        languages_data=payload.get("languages_data", []) or [],
+                        return_json=True
+                    )
+                    pdf_input = {
+                        "gameData": payload.get("gameData", []),
+                        "cvAnalysis": (payload.get("cv_data") or {}),
+                        "jobPreferences": (payload.get("job_preferences_data") or {}),
+                        "userInfo": {
+                            "fullName": (payload.get("candidate_data") or {}).get("fullName", "Usuario")
+                        },
+                        "informeProfesional": md,
+                        "informeProfesionalJson": j,
+                    }
+                except Exception as _gen_e:
+                    logger.warning(f"No se pudo generar el informe en el endpoint de PDF, usando payload original: {_gen_e}")
+                    pdf_input = payload
+        except Exception:
+            pdf_input = payload
+
+        # Aserción: si hay analysis_json declarado, validar overall.score
+        analysis_json = None
+        try:
+            analysis_json = ((payload.get("cvAnalysis") or {}).get("analysis_json"))
+        except Exception:
+            analysis_json = None
+        if analysis_json is not None:
+            try:
+                overall_score = (analysis_json.get("overall") or {}).get("score")
+                if overall_score is None:
+                    raise HTTPException(status_code=422, detail="Falta overall.score en analysis_json. No se puede renderizar PDF.")
+            except Exception:
+                raise HTTPException(status_code=422, detail="Falta overall.score en analysis_json. No se puede renderizar PDF.")
+
         # Generar PDF
-        pdf_bytes = create_employability_pdf(payload)
+        cv_logger.info("pdf_render_start", extra=with_ctx())
+        pdf_bytes = create_employability_pdf(pdf_input)
+        cv_logger.info("pdf_render_done", extra=with_ctx(bytes=len(pdf_bytes) if isinstance(pdf_bytes, (bytes, bytearray)) else None))
 
         # Responder como fichero descargable
         filename_safe = (

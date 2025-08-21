@@ -44,6 +44,22 @@ except Exception:  # pragma: no cover
     parse_date = None  # type: ignore
 
 
+# Correcciones automáticas simples (typos frecuentes)
+AUTO_FIXES = {
+    "indesing": "InDesign",
+    "teamwokz": "Teamworkz",
+}
+
+
+def _auto_corrections(text: str) -> list[str]:
+    t = (text or "").lower()
+    found = []
+    for wrong, right in AUTO_FIXES.items():
+        if wrong in t:
+            found.append(f'“{wrong}” → “{right}”')
+    return found
+
+
 def stars_from_score(score_0_100: float) -> int:
     """Convierte 0–100 a estrellas 1–5."""
     try:
@@ -219,6 +235,8 @@ def compute_review_from_text_sections(text: str, sections: Dict[str, Any]) -> Di
             "spelling": {"score": spell, "stars": stars_from_score(spell), "explanation": spell_expl},
         },
     }
+    corrections = _auto_corrections(text)
+    out["corrections"] = corrections
     return out
 
 
@@ -280,6 +298,7 @@ def review_to_ui_diagnostico(review: Dict[str, Any]) -> Dict[str, Any]:
     coh = scores.get("coherence", {}) or {}
     key = scores.get("key_information", {}) or {}
     spe = scores.get("spelling", {}) or {}
+    corr = (review or {}).get("corrections") or []
     return {
         "structure_score": int(fmt.get("stars") or 3),
         "coherence_score": int(coh.get("stars") or 3),
@@ -293,7 +312,7 @@ def review_to_ui_diagnostico(review: Dict[str, Any]) -> Dict[str, Any]:
             "clarity": str(cla.get("explanation") or ""),
             "style": str(spe.get("explanation") or ""),
         },
-        "corrections": [],
+        "corrections": [str(c) for c in corr],
         "reordering_suggestions": [],
     }
 

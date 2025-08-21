@@ -42,6 +42,11 @@ def install_requirements() -> None:
         log("INFO", "⏭️  SKIP_PIP_ON_START=1, saltando instalación de dependencias")
         return
 
+    # Si el build ocurre durante despliegue (Oryx/Kudu), no instalar en runtime
+    if os.environ.get("SCM_DO_BUILD_DURING_DEPLOYMENT", "").lower() in ("1", "true", "yes"):
+        log("INFO", "🛠️  SCM_DO_BUILD_DURING_DEPLOYMENT=1, omitiendo pip en runtime (Oryx instalará).")
+        return
+
     req_file = _detect_requirements_path()
     if not req_file:
         log("WARN", "No se encontró requirements*.txt; se continúa sin instalar dependencias")
