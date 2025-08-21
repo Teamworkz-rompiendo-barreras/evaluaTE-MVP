@@ -224,6 +224,17 @@ Califica y justifica cada apartado con evidencia del CV y correcciones accionabl
 - Si existen secciones estructuradas del CV (experience/education/languages/skills/contact), está PROHIBIDO afirmar “no hay información del CV”. Debes puntuar 1–5 usando esas secciones como evidencia.
 - Solo puedes escribir “No hay información del CV disponible para analizar” si NO hay texto raw NI secciones estructuradas.
 
+### FORMATO REQUERIDO DE CONTENIDO (ESTILO DEL INFORME)
+- Resumen ejecutivo: 3–5 líneas. Cita explícitamente fortalezas principales con sus valores en formato (N/100), preferencias laborales y áreas a potenciar.
+- Fortalezas clave: lista; cada ítem como "Nombre (N/100): explicación breve ligada al rol" usando las soft skills con mejor puntuación.
+- Áreas de mejora: lista priorizada; cada ítem como "Nombre (N/100): diagnóstico. Acción: micro-acción concreta".
+- Diagnóstico del CV (mejoras rápidas): usa las correcciones/evidencias del bloque de diagnóstico determinista y añade sugerencias prácticas (ortografía de marcas, KPIs, ATS, orden de secciones, LinkedIn).
+- Entornos de trabajo ideales: bullets operativos (tareas, métricas, modalidad, comunicación, cultura).
+- Roles sugeridos: cada elemento incluye "Rol — Seniority — Remoto?" y una "Razón:" breve.
+- Plan de acción: 3 listas (0–30, 31–60, 61–90 días) con 4–6 bullets accionables por bloque.
+- Consejos prácticos de búsqueda: incluye frases listas (titular, acerca de, mensaje corto) dentro de una subsección textual.
+- Juegos completados: lista formateada como "Nombre: cómo capitalizarlo".
+
 
 **CRÍTICO:** Cada puntuación debe estar respaldada por evidencia específica del CV. Si no hay información del CV:
 - Estructura: 1/5 - "No hay información del CV para evaluar la estructura"
