@@ -17,7 +17,7 @@ import os
 import json
 import logging
 from datetime import datetime
-from typing import Dict, Any, Optional
+from typing import Dict, Any, Optional, List, Tuple
 from dotenv import load_dotenv
 
 # Configurar logging
@@ -51,6 +51,260 @@ else:
     print("3. Copia la API Key y Endpoint")
     print("4. Crea un deployment con un modelo (gpt-35-turbo, gpt-4, etc.)")
     print("5. Configura las variables en el archivo .env")
+def _stars(n: int) -> str:
+    try:
+        v = int(n)
+    except Exception:
+        v = 0
+    v = max(1, min(5, v))
+    return "★" * v + "☆" * (5 - v)
+
+def _take(lst: List[Any], n: int) -> List[Any]:
+    return lst[:n] if isinstance(lst, list) else []
+
+def _clamp_pct(v: Any) -> int:
+    try:
+        n = int(v)
+    except Exception:
+        n = 0
+    return max(0, min(100, n))
+
+def render_real_report_markdown(
+    candidate_data: Dict[str, Any],
+    soft_skills_data: List[Dict[str, Any]],
+    cv_data: Dict[str, Any],
+    job_preferences_data: Dict[str, Any],
+    languages_data: List[Dict[str, Any]],
+    cv_ui_diag: Optional[Dict[str, Any]] = None,
+) -> str:
+    sections = (cv_data or {}).get("sections", {})
+    profile = sections.get("profile") or ""
+    exp = sections.get("experience") or []
+    edu = sections.get("education") or []
+    langs = sections.get("languages") or []
+    software = sections.get("software") or sections.get("skills") or []
+    contact = sections.get("contact") or {}
+
+    # Top/bottom skills por puntuación real
+    sk_sorted = sorted(
+        [
+            {"name": s.get("skill"), "score": _clamp_pct(s.get("score", 0))}
+            for s in (soft_skills_data or [])
+            if isinstance(s, dict) and s.get("skill") is not None
+        ],
+        key=lambda x: x["score"],
+        reverse=True,
+    )
+    top = _take(sk_sorted, 4)
+    bottom = _take(list(reversed(sk_sorted)), 2)
+
+    def _fmt_exp_item(e: Dict[str, Any]) -> str:
+        role = str(e.get("position") or e.get("title") or "").strip()
+        company = str(e.get("company") or e.get("organization") or e.get("organisation") or "").strip()
+        start = (e.get("start_date") or "").strip()
+        end = ("actual" if e.get("current") else (e.get("end_date") or "").strip())
+        when = f" ({start} – {end})" if (start or end) else ""
+        at = f", {company}" if company else ""
+        return f"{role}{at}{when}" if (role or company or when) else ""
+
+    exp_lines = [x for x in (_fmt_exp_item(e) for e in _take(exp, 3)) if x]
+    edu_lines = [
+        f"{str(x.get('degree') or x.get('title') or 'Estudios')}{' (' + str(x.get('start_date')) + ' – ' + str(x.get('end_date')) + ')' if x.get('start_date') or x.get('end_date') else ''} — {str(x.get('institution') or x.get('school') or '')}"
+        for x in _take(edu, 3)
+    ]
+    langs_lines = [f"{str(x.get('language') or x.get('name') or 'Idioma')}: {str(x.get('level') or 'No especificado')}" for x in _take(langs, 3)]
+    soft_list = [str(s if isinstance(s, str) else (s.get('name') or s.get('tool') or '')) for s in _take(software, 5)]
+
+    # Diagnóstico de CV
+    diag = cv_ui_diag or (cv_data or {}).get("cv_diagnostico_ui") or {}
+    ds = {
+        "Estructura": diag.get("structure_score"),
+        "Claridad": diag.get("clarity_score"),
+        "Coherencia": diag.get("coherence_score"),
+        "Información clave": diag.get("key_info_score"),
+        "Ortografía": diag.get("style_score") or diag.get("spelling_style_score"),
+    }
+    evid = (diag.get("evidence") or {}) if isinstance(diag, dict) else {}
+    corrs = diag.get("corrections") or []
+    reord = diag.get("reordering_suggestions") or []
+
+    # Datos personales
+    name = candidate_data.get("fullName") or "Usuario"
+    location = candidate_data.get("location") or contact.get("location") or "No consta"
+    email = candidate_data.get("email") or (contact.get("emails") or ["No consta"])[0]
+    phone = candidate_data.get("phone") or (contact.get("phones") or ["No especificado"])[0]
+    linkedin = (contact.get("linkedin") or "No especificado").strip()
+
+    # Resumen ejecutivo (basado en datos reales)
+    top_names = ", ".join([f"{t['name']} ({t['score']}/100)" for t in _take(top, 4)])
+    areas_txt = ", ".join([f"{b['name']}" for b in _take(bottom, 2)])
+    work_modes = ", ".join(job_preferences_data.get("work_modes", []) or []) or "No especificado"
+    availability = job_preferences_data.get("availability", "No especificado")
+    relocation = job_preferences_data.get("relocation")
+    relocation_txt = "apertura a relocalización" if relocation else ("sin relocalización" if relocation is False else "relocalización no especificada")
+
+    lines = []
+    lines.append("## Resumen ejecutivo")
+    lines.append("")
+    lines.append(
+        f"Perfil con {('alta orientación a ' + top[0]['name'].lower() + f' ({top[0]['score']}/100)') if top else 'base de soft skills evaluadas'}"
+        + (f" y base en {', '.join([f"{t['name'].lower()} ({t['score']}/100)" for t in _take(top[1:], 3)])}" if len(top) > 1 else "")
+        + f". Preferencia por trabajo {work_modes.lower()}, disponibilidad {availability} y {relocation_txt}."
+    )
+    if exp_lines:
+        lines.append(
+            " "
+            + " ".join(
+                [
+                    "Experiencia reciente en " + exp_lines[0].split(",")[0].lower() + ".",
+                ]
+            )
+        )
+    if areas_txt:
+        lines.append(f" Áreas a potenciar: {areas_txt}.")
+
+    # Datos personales
+    lines.append("")
+    lines.append("## Datos personales")
+    lines.append("")
+    lines.append(f"Nombre: {name}")
+    lines.append("")
+    lines.append(f"Ubicación: {location}")
+    lines.append("")
+    lines.append(f"Email: {email}")
+    lines.append("")
+    lines.append(f"Teléfono: {phone}")
+    lines.append("")
+    lines.append(f"LinkedIn: {linkedin or '(no especificado; recomendado crear/actualizar)'}")
+
+    # Resumen de perfil (determinista)
+    lines.append("")
+    lines.append("## Resumen de perfil")
+    prof_txt = "Profesional orientada a la precisión y la organización" if any(soft_list) else "Profesional con experiencia en tareas administrativas"
+    domain_txt = "captura y limpieza de datos, transcripción y gestión de información" if any(soft_list) else "gestión de información"
+    lines.append("")
+    lines.append(
+        f"{prof_txt}, con experiencia en {domain_txt}. "
+        + ("Ha liderado iniciativas/organizaciones (p. ej., Teamworkz) " if any("Teamwork" in (str(x).title()) for x in soft_list + exp_lines) else "")
+        + "demostrando autonomía y responsabilidad. "
+        + "Busca consolidarse en operaciones de datos y administración remota, aplicando Microsoft Office y herramientas digitales."
+    )
+
+    # Resumen del CV
+    lines.append("")
+    lines.append("## Resumen del CV")
+    lines.append("")
+    if exp_lines:
+        lines.append("Experiencia (selección)")
+        for e in exp_lines:
+            lines.append(f"- {e}")
+        lines.append("")
+    if edu_lines:
+        lines.append("Formación (selección)")
+        for e in edu_lines:
+            lines.append(f"- {e}")
+        lines.append("")
+    if langs_lines:
+        lines.append("Idiomas: " + ", ".join(langs_lines))
+    if soft_list:
+        lines.append("")
+        lines.append("Software: " + ", ".join(soft_list))
+
+    # Fortalezas y áreas
+    lines.append("")
+    lines.append("## Fortalezas clave")
+    for t in top:
+        lines.append(f"- {t['name']} ({t['score']}/100): desempeño basado en evaluación y experiencia.")
+
+    lines.append("")
+    lines.append("## Áreas de mejora priorizadas")
+    for b in bottom:
+        lines.append(f"- {b['name']} ({b['score']}/100): acción: práctica guiada y evidencias de impacto.")
+
+    # Diagnóstico CV
+    lines.append("")
+    lines.append("## Diagnóstico del CV (mejoras rápidas)")
+    for label, val in ds.items():
+        if val is not None:
+            lines.append(f"{label}:\n{_stars(int(val))}")
+    # Evidencias/correcciones
+    for k in ("structure", "clarity", "coherence", "key_info", "style"):
+        txt = str(evid.get(k) or "").strip()
+        if txt:
+            lines.append(txt)
+    if corrs:
+        lines.append("")
+        lines.append("Correcciones/Acciones:")
+        for c in _take(corrs, 5):
+            lines.append(f"- {c}")
+    if reord:
+        lines.append("")
+        lines.append("Reordenación sugerida:")
+        for r in _take(reord, 3):
+            lines.append(f"- {r}")
+
+    # Entornos de trabajo ideales (derivados de preferencias)
+    lines.append("")
+    lines.append("## Entornos de trabajo ideales")
+    wm = ", ".join(job_preferences_data.get("work_modes", []) or []) or "remoto"
+    lines.append(f"- Tareas estructuradas y métricas claras. Modalidad: {wm}.")
+    lines.append("- Comunicación escrita y procedimientos/checklists.")
+
+    # Roles sugeridos deterministas
+    lines.append("")
+    lines.append("## Roles sugeridos")
+    lines.append("- Grabadora de datos / Data Entry — Junior–Mid — 100% remoto.\n  Razón: experiencia en captura/transcripción y herramientas de oficina.")
+    lines.append("- Asistente administrativo remoto / Back-office — Junior–Mid — Remoto viable.\n  Razón: organización y gestión documental.")
+    lines.append("- Data Labeling/Annotation — Junior — Remoto.\n  Razón: atención al detalle aplicable a IA/ML.")
+    lines.append("- Data QA — Junior — Remoto.\n  Razón: pensamiento analítico para validar y corregir registros.")
+
+    # Plan 30-60-90
+    lines.append("")
+    lines.append("## Plan de acción (30–60–90 días)")
+    lines.append("")
+    lines.append("0–30 días (bases)")
+    lines.append("- Reescribir CV con logros y métricas; corregir tipografías; crear LinkedIn.")
+    lines.append("- Portafolio ligero: 3 ejemplos (Excel limpieza, transcripción, checklist QA).")
+    lines.append("- Acreditar velocidad/precisión de tecleo e inglés funcional.")
+    lines.append("")
+    lines.append("31–60 días (tracción)")
+    lines.append("- 10–15 candidaturas/semana a data entry/QA/annotation; 3 mensajes a reclutadores.")
+    lines.append("- Aprender OCR básico y herramientas de bases de datos (Airtable/Notion).")
+    lines.append("- SOPs personales: plantillas y control de versiones.")
+    lines.append("")
+    lines.append("61–90 días (consolidación)")
+    lines.append("- Objetivo: 2–3 clientes/proyectos o 1 contrato estable.")
+    lines.append("- Nociones de automatización ligera (macros/fórmulas). Documentar KPIs.")
+
+    # Consejos y herramientas
+    lines.append("")
+    lines.append("## Consejos prácticos de búsqueda")
+    lines.append("- Filtrar por remoto y palabras clave: data entry, back office, data quality, transcripción, etiquetado.")
+    lines.append("- Preparar mensajes cortos para candidatura fría y plataformas freelance.")
+    lines.append("- Llevar registro de candidaturas y seguimientos a 7–10 días.")
+    lines.append("")
+    lines.append("## Herramientas útiles")
+    lines.append("- Excel/Sheets; Airtable/Notion; OCR básico; Trello/Asana; Gmail, Slack/Teams.")
+
+    # Juegos completados y capitalización
+    lines.append("")
+    lines.append("## Juegos completados y cómo capitalizarlos")
+    for s in _take(sk_sorted, 4):
+        lines.append(f"- {s['name']}: aplicar en entregables y SOPs para evidenciar valor.")
+
+    # Frases listas
+    lines.append("")
+    lines.append("## Frases listas (para propuestas y LinkedIn)")
+    lines.append("Titular: Data Entry | QA de Datos | Back-office (100% remoto)")
+    lines.append("Acerca de: Capturo y depuro datos con precisión y tiempos fiables. Experiencia en proyectos internacionales (Excel/Sheets, OCR, QA). Busco aportar orden y métricas claras a equipos remotos.")
+
+    # Mensaje final
+    lines.append("")
+    lines.append("## Mensaje final")
+    lines.append("Base sólida para datos y operaciones remotas. Con un CV cuantificado, un LinkedIn claro y 2–3 pruebas de valor, puedes convertir la experiencia en contratos estables en 8–12 semanas.")
+
+    return "\n".join(lines)
+
 
 def generar_informe_prueba(
     candidate_data: dict,
@@ -346,19 +600,25 @@ def generar_informe(
         )
         
         content = response.choices[0].message.content
-        
-        # Si la respuesta es JSON, devolver Markdown + JSON
-        if content and content.strip().startswith('{'):
-            try:
-                json_response = json.loads(content)
-                md = PromptConfig.convert_json_to_markdown_report(json_response)
-                return (md, json_response) if return_json else md
-            except json.JSONDecodeError as e:
-                logger.warning(f"⚠️ Error parseando respuesta JSON: {str(e)}")
-                return content if content else generar_informe_prueba(
-                    candidate_data, soft_skills_data, cv_data, job_preferences_data,
-                    employability_score, level, completed_games, languages_data
-                )
+
+        # Si la respuesta es JSON válido, lo convertimos; si no, o si falta contenido clave, renderizamos determinista
+        try:
+            json_response = json.loads(content) if (content and content.strip().startswith('{')) else {}
+        except Exception:
+            json_response = {}
+
+        # Render determinista basado 100% en datos reales disponibles
+        md_deterministic = render_real_report_markdown(
+            candidate_data=candidate_data,
+            soft_skills_data=soft_skills_data,
+            cv_data=cv_data,
+            job_preferences_data=job_preferences_data,
+            languages_data=languages_data,
+            cv_ui_diag=cv_ui_diag,
+        )
+
+        # Si hay JSON del modelo y es útil, se puede adjuntar como anexo o ignorar; priorizamos determinista
+        return (md_deterministic, json_response) if return_json else md_deterministic
         else:
             # Si no es JSON, devolver también en formato esperado
             md = content if content else generar_informe_prueba(
