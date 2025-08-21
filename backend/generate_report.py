@@ -146,10 +146,17 @@ def render_real_report_markdown(
     lines = []
     lines.append("## Resumen ejecutivo")
     lines.append("")
+    # Construir descripción del perfil de manera más clara
+    if top:
+        profile_desc = f"alta orientación a {top[0]['name'].lower()} ({top[0]['score']}/100)"
+        if len(top) > 1:
+            additional = ", ".join([f"{t['name'].lower()} ({t['score']}/100)" for t in _take(top[1:], 3)])
+            profile_desc += f" y base en {additional}"
+    else:
+        profile_desc = "base de soft skills evaluadas"
+    
     lines.append(
-        f"Perfil con {('alta orientación a ' + top[0]['name'].lower() + f' ({top[0]['score']}/100)') if top else 'base de soft skills evaluadas'}"
-        + (f" y base en {', '.join([f"{t['name'].lower()} ({t['score']}/100)" for t in _take(top[1:], 3)])}" if len(top) > 1 else "")
-        + f". Preferencia por trabajo {work_modes.lower()}, disponibilidad {availability} y {relocation_txt}."
+        f"Perfil con {profile_desc}. Preferencia por trabajo {work_modes.lower()}, disponibilidad {availability} y {relocation_txt}."
     )
     if exp_lines:
         lines.append(
@@ -630,13 +637,6 @@ def generar_informe(
 
         # Si hay JSON del modelo y es útil, se puede adjuntar como anexo o ignorar; priorizamos determinista
         return (md_deterministic, json_response) if return_json else md_deterministic
-        else:
-            # Si no es JSON, devolver también en formato esperado
-            md = content if content else generar_informe_prueba(
-                candidate_data, soft_skills_data, cv_data, job_preferences_data,
-                employability_score, level, completed_games, languages_data
-            )
-            return (md, {}) if return_json else md
         
     except Exception as e:
         logger.error(f"❌ Error generando informe con Azure OpenAI: {str(e)}")
