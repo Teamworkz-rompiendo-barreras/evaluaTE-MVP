@@ -38,6 +38,14 @@ class PDFService:
             spaceAfter=20,
             textColor=colors.darkblue
         ))
+        # Estilo intermedio para tablas/resúmenes
+        self.styles.add(ParagraphStyle(
+            name='CustomHeading',
+            parent=self.styles['Heading2'],
+            fontSize=16,
+            spaceAfter=12,
+            textColor=colors.darkblue
+        ))
         
         # Estilo para texto normal
         self.styles.add(ParagraphStyle(

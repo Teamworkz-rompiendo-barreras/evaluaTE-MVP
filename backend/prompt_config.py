@@ -220,6 +220,10 @@ Califica y justifica cada apartado con evidencia del CV y correcciones accionabl
 - **Información clave (1–5)**: logros medibles, KPIs, métricas, enlaces de contacto
 - **Claridad (1–5)**: calidad de bullets y verbos de acción
 - **Ortografía y estilo (1–5)**: tildes, nombres propios, marcas registradas, mayúsculas
+### REGLA CRÍTICA SOBRE EL CV
+- Si existen secciones estructuradas del CV (experience/education/languages/skills/contact), está PROHIBIDO afirmar “no hay información del CV”. Debes puntuar 1–5 usando esas secciones como evidencia.
+- Solo puedes escribir “No hay información del CV disponible para analizar” si NO hay texto raw NI secciones estructuradas.
+
 
 **CRÍTICO:** Cada puntuación debe estar respaldada por evidencia específica del CV. Si no hay información del CV:
 - Estructura: 1/5 - "No hay información del CV para evaluar la estructura"

@@ -733,7 +733,11 @@ async def log_game_complete(data: Dict[str, Any]):
 
 from typing import Optional, Dict, Any
 
-def shape_report_for_ui(r: dict, cv_structured: Optional[Dict[str, Any]] = None) -> dict:
+def shape_report_for_ui(
+    r: dict,
+    cv_structured: Optional[Dict[str, Any]] = None,
+    *_, **__
+) -> dict:
     """
     Adaptador: convierte la salida JSON del modelo al layout de 13 apartados de la UI.
     Garantiza strings en secciones textuales y sanea None -> "No consta".
@@ -749,6 +753,12 @@ def shape_report_for_ui(r: dict, cv_structured: Optional[Dict[str, Any]] = None)
         if not isinstance(xs, list) or not xs:
             return []
         return [_txt(x) for x in xs]
+
+    def _as_int(x, default=1):
+        try:
+            return int(x)
+        except Exception:
+            return default
 
     shaped: dict = {
         # 1) Datos personales (objeto)
@@ -781,11 +791,11 @@ def shape_report_for_ui(r: dict, cv_structured: Optional[Dict[str, Any]] = None)
             (lambda _cv: (
                 # Ensamblar diagnóstico base
                 {
-                    "structure_score": int((_cv.get("structure_score") or 1) or 1),
-                    "coherence_score": int((_cv.get("coherence_score") or 1) or 1),
-                    "key_info_score": int((_cv.get("key_info_score") or 1) or 1),
-                    "clarity_score": int((_cv.get("clarity_score") or 1) or 1),
-                    "spelling_style_score": int((_cv.get("style_score") or _cv.get("spelling_style_score") or 1) or 1),
+                    "structure_score": _as_int((_cv.get("structure_score") or 1)),
+                    "coherence_score": _as_int((_cv.get("coherence_score") or 1)),
+                    "key_info_score": _as_int((_cv.get("key_info_score") or 1)),
+                    "clarity_score": _as_int((_cv.get("clarity_score") or 1)),
+                    "spelling_style_score": _as_int((_cv.get("style_score") or _cv.get("spelling_style_score") or 1)),
                     "evidence": (lambda E, S: {
                         "structure": (
                             E.get("structure") if (E.get("structure") and not str(E.get("structure")).lower().startswith("no hay información"))
