@@ -731,7 +731,9 @@ async def log_game_complete(data: Dict[str, Any]):
         logger.error(f"Error registrando juego completado: {str(e)}")
         raise HTTPException(status_code=500, detail=str(e))
 
-def shape_report_for_ui(r: dict) -> dict:
+from typing import Optional, Dict, Any
+
+def shape_report_for_ui(r: dict, cv_structured: Optional[Dict[str, Any]] = None) -> dict:
     """
     Adaptador: convierte la salida JSON del modelo al layout de 13 apartados de la UI.
     Garantiza strings en secciones textuales y sanea None -> "No consta".
@@ -813,7 +815,7 @@ def shape_report_for_ui(r: dict) -> dict:
                             "clarity": _txt((_cv.get("evidence") or {}).get("clarity", "")),
                             "style": _txt((_cv.get("evidence") or {}).get("style", "")),
                         },
-                        (r.get("cv_analysis") or {}).get("cv_structured") or {}
+                        (cv_structured or (r.get("cv_analysis") or {}).get("cv_structured") or {})
                     ),
                     "corrections": _list_str(_cv.get("corrections") or []),
                     "reordering_suggestions": _list_str(_cv.get("reordering_suggestions") or []),
@@ -956,6 +958,49 @@ async def generate_ia_report(request: EmployabilityReportRequest):
         # Generar informe profesional con IA
         if client:
             professional_report = await generate_professional_report_with_ai(request, employability_score, level)
+            # Fallback determinista del diagnóstico si el modelo no aporta evidencias reales
+            try:
+                from .cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            except Exception:
+                from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            def _needs_cv_override(cv_block: dict) -> bool:
+                try:
+                    if not cv_block or not isinstance(cv_block, dict):
+                        return True
+                    ev = (cv_block.get("evidence") or {})
+                    flags = [str((ev or {}).get(k, "")).lower().startswith("no hay información") for k in ("structure","coherence","key_info","clarity","style")]
+                    return any(flags)
+                except Exception:
+                    return True
+            sections = (cv_data or {}).get("sections", {}) if 'cv_data' in locals() else {}
+            review = compute_review_from_text_sections(str((cv_data or {}).get("rawText", "")) if 'cv_data' in locals() else "", sections)
+            ui_diag = review_to_ui_diagnostico(review)
+            try:
+                if _needs_cv_override(professional_report.get("cv_analysis")):
+                    professional_report["cv_analysis"] = {
+                        "structure_score": ui_diag.get("structure_score"),
+                        "coherence_score": ui_diag.get("coherence_score"),
+                        "key_info_score": ui_diag.get("key_info_score"),
+                        "clarity_score": ui_diag.get("clarity_score"),
+                        "style_score": ui_diag.get("spelling_style_score"),
+                        "evidence": ui_diag.get("evidence"),
+                        "corrections": [
+                            "Elaborar un CV estructurado con secciones claras: perfil, experiencia, formación, idiomas y herramientas.",
+                            "Añadir logros cuantificables (KPI) y descripciones con verbos de acción.",
+                            "Incluir enlaces a LinkedIn / web y datos de contacto actualizados.",
+                        ],
+                        "reordering_suggestions": [
+                            "Colocar el perfil profesional al inicio.",
+                            "Ordenar la experiencia de la más reciente a la más antigua.",
+                        ],
+                    }
+                # Pasar secciones al análisis para que el adaptador tenga acceso
+                if "cv_analysis" not in professional_report:
+                    professional_report["cv_analysis"] = {}
+                if isinstance(professional_report["cv_analysis"], dict):
+                    professional_report["cv_analysis"]["cv_structured"] = sections
+            except Exception:
+                pass
         else:
             professional_report = generate_basic_report(request, employability_score, level)
 
@@ -1001,7 +1046,20 @@ async def generate_ia_report(request: EmployabilityReportRequest):
             pass
         # Usar el adaptador para convertir la salida del modelo a las 13 secciones estándar
         if isinstance(professional_report, dict):
-            shaped = shape_report_for_ui(professional_report)
+            # Construir cv_structured para el adaptador de UI si disponemos de secciones del CV
+            try:
+                sections = (cv_data or {}).get("sections", {}) if 'cv_data' in locals() else {}
+            except Exception:
+                sections = {}
+            cv_struct_for_ui = {
+                "profile": sections.get("profile"),
+                "experience": sections.get("experience"),
+                "education": sections.get("education"),
+                "languages": sections.get("languages"),
+                "skills": sections.get("software"),
+                "contact": sections.get("contact"),
+            }
+            shaped = shape_report_for_ui(professional_report, cv_structured=cv_struct_for_ui)
         else:
             shaped = shape_report_for_ui({})
         
