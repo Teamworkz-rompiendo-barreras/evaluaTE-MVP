@@ -1250,15 +1250,17 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         "disabilityType": "No especificado"  # Campo opcional que no tienes implementado
     }
     
-    # Preparar soft skills con puntuaciones
+    # Preparar soft skills con puntuaciones reales (0–100) para alinear radar y texto
     soft_skills_data = []
     for skill in request.softSkills:
-        # Convertir level a puntuación numérica para el análisis
-        level_norm = (skill.level or "").strip().lower()
-        level_score = {"bajo": 35, "medio": 60, "alto": 85}.get(level_norm, 50)
+        try:
+            real_score = int(getattr(skill, 'score', 0))
+        except Exception:
+            real_score = 0
+        real_score = max(0, min(100, real_score))
         soft_skills_data.append({
             "skill": skill.skill,
-            "score": level_score,
+            "score": real_score,
             "level": skill.level,
             "evidence": getattr(skill, 'feedback', None) or "Evaluado mediante juego interactivo"
         })
