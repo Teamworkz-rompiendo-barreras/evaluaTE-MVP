@@ -1352,6 +1352,7 @@ class ImprovedDocumentIntelligenceService:
                 },
                 "analysis": analysis,
                 "raw_text": raw_text[:1000] if raw_text else "",  # Primeros 1000 caracteres
+                "rawText": raw_text[:1000] if raw_text else "",  # Clave camelCase para el prompt maestro
                 "full_cv_data": cv_data,
                 "document_intelligence_used": True
             }

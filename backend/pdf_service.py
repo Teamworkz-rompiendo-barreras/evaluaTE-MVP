@@ -394,45 +394,58 @@ class PDFService:
         elements.append(Paragraph("Análisis del Currículum Vitae", self.styles['CustomSubtitle']))
         elements.append(Spacer(1, 20))
 
-        diag = (cv_analysis or {}).get("cv_diagnostico_ui") or cv_analysis or {}
-        evidence = diag.get("evidence") or {}
+        def _stars(n: int) -> str:
+            try:
+                n = max(1, min(5, int(n)))
+            except Exception:
+                n = 1
+            return "★" * n + "☆" * (5 - n)
 
-        keys = [
-            ("Estructura", "structure_score", "structure"),
-            ("Coherencia", "coherence_score", "coherence"),
-            ("Información clave", "key_info_score", "key_info"),
-            ("Claridad", "clarity_score", "clarity"),
-            ("Ortografía y estilo", "style_score", "style"),
-        ]
-        if all(k[1] in diag for k in keys):
-            from reportlab.platypus import Table, TableStyle
-            data_tbl = [["Dimensión", "Puntuación (1–5)", "Evidencia"]]
-            for label, score_key, ev_key in keys:
-                score = diag.get(score_key, "—")
-                ev = (evidence.get(ev_key) or "—").strip()
-                data_tbl.append([label, str(score), ev])
-            table = Table(data_tbl, hAlign='LEFT', colWidths=[2.6*inch, 1.2*inch, 3.2*inch])
+        # CRÍTICO: Priorizar diagnóstico determinista del CV
+        diag = (cv_analysis or {}).get("diagnostico_cv") or (cv_analysis or {}).get("cv_diagnostico_ui") or cv_analysis or {}
+        ev = (diag.get("evidence") or {})
+
+        if diag and any(diag.get(k) for k in ["structure_score", "clarity_score", "coherence_score", "key_info_score", "spelling_style_score"]):
+            # Usar análisis determinista con estrellas
+            rows = [
+                ["Formato", _stars(diag.get("structure_score", 1))],
+                ["Claridad", _stars(diag.get("clarity_score", 1))],
+                ["Coherencia", _stars(diag.get("coherence_score", 1))],
+                ["Información clave", _stars(diag.get("key_info_score", 1))],
+                ["Ortografía", _stars(diag.get("spelling_style_score", 1))],
+            ]
+            table = Table([["Dimensión", "Puntuación"]] + rows, hAlign='LEFT')
             table.setStyle(TableStyle([
                 ('BACKGROUND', (0,0), (-1,0), colors.lightgrey),
                 ('GRID', (0,0), (-1,-1), 0.5, colors.grey),
                 ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
-                ('VALIGN', (0,0), (-1,-1), 'TOP'),
             ]))
             elements.append(table)
-            elements.append(Spacer(1, 16))
-
+            elements.append(Spacer(1, 12))
+            
+            # Mostrar evidencias
+            elements.append(Paragraph(f"<b>Estructura:</b> {ev.get('structure','')}", self.styles['CustomBody']))
+            elements.append(Paragraph(f"<b>Coherencia:</b> {ev.get('coherence','')}", self.styles['CustomBody']))
+            elements.append(Paragraph(f"<b>Información clave:</b> {ev.get('key_info','')}", self.styles['CustomBody']))
+            elements.append(Paragraph(f"<b>Claridad:</b> {ev.get('clarity','')}", self.styles['CustomBody']))
+            elements.append(Paragraph(f"<b>Ortografía y estilo:</b> {ev.get('style','')}", self.styles['CustomBody']))
+            
+            # Mostrar correcciones si las hay
             corrections = diag.get("corrections") or []
             if corrections:
-                elements.append(Paragraph("<b>Correcciones sugeridas:</b>", self.styles['CustomBody']))
+                elements.append(Spacer(1, 12))
+                elements.append(Paragraph("<b>Correcciones/Acciones:</b>", self.styles['CustomBody']))
                 for c in corrections:
                     elements.append(Paragraph(f"• {c}", self.styles['CustomList']))
-                elements.append(Spacer(1, 10))
-
-            reord = diag.get("reordering_suggestions") or []
-            if reord:
+            
+            # Mostrar sugerencias de reordenación si las hay
+            reordering = diag.get("reordering_suggestions") or []
+            if reordering:
+                elements.append(Spacer(1, 12))
                 elements.append(Paragraph("<b>Reordenación sugerida:</b>", self.styles['CustomBody']))
-                for r in reord:
-                    elements.append(Paragraph(f"• {r}", self.styles['CustomList']))
+                for s in reordering:
+                    elements.append(Paragraph(f"• {s}", self.styles['CustomList']))
+            
             return elements
 
         # Fallback legacy

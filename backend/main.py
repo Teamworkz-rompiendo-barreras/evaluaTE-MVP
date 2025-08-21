@@ -402,9 +402,17 @@ async def health_check():
     }
 
 # Middleware CORS
+# Configurar CORS desde variables de entorno
+allowed_origins = os.getenv("ALLOWED_ORIGINS", "http://localhost:5173,http://localhost:3000").split(",")
+allowed_origins = [origin.strip() for origin in allowed_origins if origin.strip()]
+
+# Añadir localhost por defecto si no está en la lista
+if "http://localhost:5173" not in allowed_origins:
+    allowed_origins.append("http://localhost:5173")
+
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=["*"],
+    allow_origins=allowed_origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
@@ -1318,6 +1326,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
             # CRÍTICO: Extraer texto raw del CV si está disponible
             if hasattr(request.cvAnalysis, 'raw_text') and request.cvAnalysis.raw_text:
                 cv_data["rawText"] = request.cvAnalysis.raw_text[:3000]  # Limitar a 3000 caracteres
+                cv_data["raw_text"] = request.cvAnalysis.raw_text[:3000]  # Conservar snake_case para compatibilidad
                 logger.info(f"✅ Texto raw del CV extraído: {len(request.cvAnalysis.raw_text)} caracteres")
             elif hasattr(request.cvAnalysis, 'layout_sections') and request.cvAnalysis.layout_sections:
                 # Extraer texto de las secciones de layout
@@ -1327,6 +1336,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
                         layout_text += f"\n{section_name}: {section_data['text']}"
                 if layout_text:
                     cv_data["rawText"] = layout_text[:3000]
+                    cv_data["raw_text"] = layout_text[:3000]  # Conservar snake_case para compatibilidad
                     logger.info(f"✅ Texto de layout extraído: {len(layout_text)} caracteres")
             
             # Logging detallado de lo que se extrajo
@@ -1358,6 +1368,7 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
                 # Extraer texto raw del CV
                 if hasattr(request.cvAnalysis, 'raw_text') and request.cvAnalysis.raw_text:
                     cv_data["rawText"] = request.cvAnalysis.raw_text[:3000]
+                    cv_data["raw_text"] = request.cvAnalysis.raw_text[:3000]  # Conservar snake_case para compatibilidad
                     logger.info(f"✅ Texto raw del CV extraído: {len(request.cvAnalysis.raw_text)} caracteres")
                 
                 logger.info(f"📊 Datos extraídos de cv_info:")
@@ -1418,6 +1429,25 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
                 has_real_data = True
                 break
         
+        # CRÍTICO: Asegurar que siempre haya rawText disponible
+        if "rawText" not in cv_data or not cv_data["rawText"]:
+            # Fallback: usar texto de las secciones si no hay rawText
+            sections_text = ""
+            for section_name, section_data in cv_data['sections'].items():
+                if isinstance(section_data, str) and section_data and section_data != 'No especificado':
+                    sections_text += f"\n{section_name}: {section_data}"
+                elif isinstance(section_data, list) and section_data:
+                    sections_text += f"\n{section_name}: {', '.join(str(item) for item in section_data)}"
+            
+            if sections_text:
+                cv_data["rawText"] = sections_text[:3000]
+                cv_data["raw_text"] = sections_text[:3000]
+                logger.info(f"✅ rawText generado desde secciones: {len(sections_text)} caracteres")
+            else:
+                cv_data["rawText"] = "No disponible"
+                cv_data["raw_text"] = "No disponible"
+                logger.warning("⚠️ No se pudo generar rawText, usando 'No disponible'")
+        
         logger.info(f"🔍 ¿Hay datos reales del CV?: {'✅ SÍ' if has_real_data else '❌ NO'}")
         if not has_real_data:
             logger.warning("⚠️ CRÍTICO: No hay datos reales del CV para enviar al prompt")
@@ -1451,6 +1481,51 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
         logger.info(f"  - Education: {len(cv_data['sections']['education']) if isinstance(cv_data['sections']['education'], list) else 'No es lista'} elementos")
         logger.info(f"  - Languages: {len(cv_data['sections']['languages']) if isinstance(cv_data['sections']['languages'], list) else 'No es lista'} elementos")
         logger.info(f"  - Software: {len(cv_data['sections']['software']) if isinstance(cv_data['sections']['software'], list) else 'No es lista'} elementos")
+    
+    # CRÍTICO: Analizador determinista del CV (estrellas 1–5) siempre activo
+    try:
+        from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico
+        logger.info("🚀 Iniciando análisis determinista del CV...")
+        
+        # Obtener texto y secciones para el análisis
+        text = (cv_data.get("rawText") or cv_data.get("raw_text") or "").strip()
+        sections = (cv_data.get("sections") or {})
+        
+        # Calcular review determinista
+        review = compute_review_from_text_sections(text, sections)
+        diagnostico_cv = review_to_ui_diagnostico(review)
+        
+        # Guardar resultados para backend y prompt
+        cv_data["analysis_json"] = review
+        cv_data["diagnostico_cv"] = diagnostico_cv
+        
+        logger.info(f"✅ Análisis determinista completado:")
+        logger.info(f"  - Formato: {diagnostico_cv.get('structure_score', 'No')}/5")
+        logger.info(f"  - Claridad: {diagnostico_cv.get('clarity_score', 'No')}/5")
+        logger.info(f"  - Coherencia: {diagnostico_cv.get('coherence_score', 'No')}/5")
+        logger.info(f"  - Información clave: {diagnostico_cv.get('key_info_score', 'No')}/5")
+        logger.info(f"  - Ortografía: {diagnostico_cv.get('spelling_style_score', 'No')}/5")
+        
+    except Exception as e:
+        logger.warning(f"⚠️ Analizador determinista no disponible o falló: {e}")
+        # Crear diagnóstico por defecto para no romper el flujo
+        cv_data["diagnostico_cv"] = {
+            "structure_score": 3,
+            "coherence_score": 3,
+            "key_info_score": 3,
+            "clarity_score": 3,
+            "spelling_style_score": 3,
+            "evidence": {
+                "structure": "Análisis no disponible",
+                "coherence": "Análisis no disponible",
+                "key_info": "Análisis no disponible",
+                "clarity": "Análisis no disponible",
+                "style": "Análisis no disponible",
+            },
+            "corrections": [],
+            "reordering_suggestions": [],
+        }
+        cv_data["analysis_json"] = {}
     
     # Preparar preferencias laborales
     job_preferences_data = {
@@ -1593,90 +1668,60 @@ async def generate_professional_report_with_ai(request: EmployabilityReportReque
 
     
     try:
-        # Limpiar el nombre del deployment para evitar problemas con espacios
-        deployment_name = DEPLOYMENT.strip()
+        # CRÍTICO: Usar el generador centralizado que ya incluye el analizador determinista
+        logger.info("🚀 Usando generador centralizado de informes...")
         
-        # Structured Outputs para el informe mejorado usando configuración centralizada
-        report_schema = PromptConfig.get_report_schema()
-        report_schema = _ensure_required_everywhere(report_schema)  # <--- función preventiva aquí
-        # 🔧 Azure SO no admite ['object','null'] en la raíz
-        if isinstance(report_schema.get("type"), list):
-            report_schema["type"] = "object"
-        
-        # CRÍTICO: Verificar que el esquema JSON se cargó correctamente
-        logger.info(f"🔍 Esquema JSON del informe:")
-        logger.info(f"  - Esquema cargado: {'✅' if report_schema else '❌'}")
-        logger.info(f"  - Propiedades requeridas: {report_schema.get('required', []) if report_schema else 'N/A'}")
-        logger.info(f"  - Cantidad de propiedades: {len(report_schema.get('properties', {})) if report_schema else 0}")
-
-        chat_kwargs = {
-            "model": deployment_name,
-            "messages": [
-                {"role": "system", "content": PromptConfig.get_system_prompt()},
-                {"role": "user", "content": prompt},
-            ],
-            "temperature": 0.3,
-            "max_tokens": 4000,  # Aumentado para el informe más detallado
-            "timeout": 120,  # Aumentado para el análisis más complejo
-        }
-        if _supports_json_schema_response_format(API_VERSION):
-            chat_kwargs["response_format"] = {
-                "type": "json_schema",
-                "json_schema": _as_json_schema_payload(report_schema, name="EmployabilityReport")
-            }
-            # (Opcional) sanity log:
-            js = chat_kwargs["response_format"]["json_schema"]
-            logger.info(f"Wrapper JSON schema keys: {list(js.keys())}")  # debe incluir 'schema' y 'name'
-            logger.info(f"✅ JSON Schema aplicado para respuesta estructurada")
-        else:
-            chat_kwargs["response_format"] = {"type": "json_object"}
-            logger.warning(f"⚠️ JSON Schema no disponible en API version {API_VERSION}")
-        cv_logger.info("openai_request", extra=with_ctx(model=deployment_name))
-        response = client.chat.completions.create(**chat_kwargs)
-        cv_logger.info("openai_response", extra=with_ctx(tokens=len(str(response.choices[0].message.content or ""))))
-        
-        # Obtener y loggear la respuesta cruda
-        raw_content = response.choices[0].message.content
-        logger.info(f"Respuesta cruda de Azure OpenAI (informe mejorado): {repr(raw_content[:500])}...")
-        
-        if not raw_content or not raw_content.strip():
-            logger.error("Azure OpenAI devolvió respuesta vacía para informe mejorado")
-            raise Exception("Respuesta vacía de Azure OpenAI")
-        
-        # Limpiar la respuesta antes de parsear
-        content_to_parse = raw_content.strip()
-        
-        # Si ya parece JSON puro, úsalo tal cual
-        if content_to_parse.strip().startswith("{") and content_to_parse.strip().endswith("}"):
-            pass  # ya está OK
-        else:
-            # Buscar el JSON dentro de la respuesta
-            import re
-            
-            # Primero, intentar extraer contenido entre ```json y ```
-            json_code_block_match = re.search(r'```json\s*([\s\S]*?)\s*```', content_to_parse, re.IGNORECASE)
-            if json_code_block_match:
-                content_to_parse = json_code_block_match.group(1).strip()
-                logger.info(f"JSON extraído de bloque de código para informe mejorado: {repr(content_to_parse[:200])}...")
-            else:
-                # Si no hay bloque de código, buscar el JSON directamente
-                json_match = re.search(r'\{.*\}', content_to_parse, re.DOTALL)
-                if json_match:
-                    content_to_parse = json_match.group(0)
-                    logger.info(f"JSON extraído directamente para informe mejorado: {repr(content_to_parse[:200])}...")
-                else:
-                    logger.error(f"No se pudo extraer JSON de la respuesta de informe mejorado: {repr(content_to_parse[:500])}")
-                    raise Exception("No se encontró JSON válido en la respuesta")
-        
-        import json
+        # Importar el generador centralizado
         try:
-            report_data = json.loads(content_to_parse)
-            logger.info(f"JSON parseado exitosamente para informe mejorado. Claves: {list(report_data.keys()) if isinstance(report_data, dict) else 'No es dict'}")
-            return report_data
-        except json.JSONDecodeError as je:
-            logger.error(f"Error parseando JSON del informe mejorado: {je}")
-            logger.error(f"Contenido que causó el error: {repr(content_to_parse[:1000])}")
-            raise Exception(f"Error parseando respuesta JSON del informe mejorado: {je}")
+            from .generate_report import generar_informe
+        except ImportError:
+            from generate_report import generar_informe
+        
+        # Generar informe usando el sistema centralizado
+        md, json_response = generar_informe(
+            candidate_data=candidate_data,
+            soft_skills_data=soft_skills_data,
+            cv_data=cv_data,
+            job_preferences_data=job_preferences_data,
+            employability_score=employability_score,
+            level=level,
+            completed_games=request.completedGames,
+            languages_data=languages_data,
+            return_json=True
+        )
+        
+        logger.info(f"✅ Informe generado exitosamente usando generador centralizado")
+        logger.info(f"  - Markdown generado: {len(md)} caracteres")
+        logger.info(f"  - JSON response: {list(json_response.keys()) if isinstance(json_response, dict) else 'No es dict'}")
+        
+        # Si el JSON response tiene el formato esperado, usarlo; si no, crear uno básico
+        if json_response and isinstance(json_response, dict) and len(json_response) > 5:
+            return json_response
+        else:
+            # Crear reporte básico con la información disponible
+            logger.info("⚠️ JSON response incompleto, creando reporte básico")
+            return {
+                "summary": "Informe generado con análisis determinista del CV",
+                "personal_data": {
+                    "name": candidate_data.get("fullName", "No consta"),
+                    "location": candidate_data.get("location", "No consta"),
+                    "email": candidate_data.get("email", "No consta"),
+                    "phone": candidate_data.get("phone", "No consta"),
+                    "disability_certificate": "Sí" if candidate_data.get("hasDisabilityCertificate") else "No"
+                },
+                "profile_summary": f"Perfil profesional con nivel {level} y puntuación {employability_score}/100",
+                "cv_summary": "CV analizado con sistema determinista",
+                "strengths": [f"{skill.get('skill', '')} ({skill.get('score', 0)}/100)" for skill in soft_skills_data if skill.get('score', 0) >= 70],
+                "improvement_areas": [{"area": skill.get('skill', ''), "reason": f"Puntuación {skill.get('score', 0)}/100", "suggested_action": "Desarrollar mediante práctica y formación"} for skill in soft_skills_data if skill.get('score', 0) < 70],
+                "cv_analysis": cv_data.get("diagnostico_cv", {}),
+                "ideal_work_environment": "Entorno adaptado a las necesidades del candidato",
+                "suggested_roles": [],
+                "action_plan": {"short_term": [], "medium_term": [], "long_term": []},
+                "job_search_advice": {"cv_optimization": [], "letters_portfolio": "", "recommended_platforms": [], "networking": "", "interview_tips": ""},
+                "useful_tools": {"productivity": [], "job_search": [], "learning": [], "accessibility": []},
+                "completed_games": request.completedGames or [],
+                "final_message": "Informe generado automáticamente con análisis determinista del CV"
+            }
         
     except Exception as e:
         logger.error(f"Error generando informe mejorado con IA: {e}")

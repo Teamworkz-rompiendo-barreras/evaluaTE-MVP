@@ -16,9 +16,11 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
-import type { CvStars } from '../hooks/useCvRating';
 
 // Definir tipos locales para evitar importaciones problemáticas
+
+// Tipos del rating del CV
+type CvStars = 1|2|3|4|5;
 
 
 // Tipo para los datos del radar
@@ -83,6 +85,13 @@ function renderStars(score: number): string {
   const n = Math.max(0, Math.min(5, Math.round(score)));
   return '★'.repeat(n) + '☆'.repeat(5 - n);
 }
+
+// Componente para renderizar estrellas (sin regex/escapes que rompan el lint)
+// const Stars: React.FC<{ n: CvStars }> = ({ n }) => {
+//   const filled = "★".repeat(n);
+//   const empty = "☆".repeat(5 - n);
+//   return <span aria-label={`${n} de 5`}>{filled}{empty}</span>;
+// };
 
 // Sanea frases con sectores concretos no respaldados por el CV
 function sanitizeProfileSummary(text: string, cvData: unknown): string {
@@ -494,29 +503,41 @@ ${(() => {
 
 ## Análisis del CV (con puntuación 1–5 por apartado)
 ${(() => {
+  // CRÍTICO: Priorizar diagnóstico determinista del CV
+  const dxFromReport: any = (data?.report?.cvAnalysis as any)?.diagnostico_cv || undefined;
+  const dxFromRec: any = (rec && (rec as any).diagnostico_cv) || {};
+  const dx: any = dxFromReport || dxFromRec || {};
+  
+  // Si hay diagnóstico determinista, usarlo
+  if (dx && typeof dx === 'object' && (
+    dx.structure_score || dx.clarity_score || dx.coherence_score || 
+    dx.key_info_score || dx.spelling_style_score
+  )) {
+    const lines: string[] = [];
+    const push = (k: string, v: any) => {
+      if (v == null) return;
+      const n = Number(v);
+      if (!Number.isFinite(n)) return;
+      lines.push(`- ${k}: ${renderStars(n)} (${n}/5)`);
+    };
+    
+    push('Formato', dx.structure_score);
+    push('Claridad', dx.clarity_score);
+    push('Coherencia', dx.coherence_score);
+    push('Información clave', dx.key_info_score);
+    push('Ortografía', dx.spelling_style_score);
+    
+    const text = lines.join('\n');
+    if (text.trim()) return text;
+  }
+  
+  // Fallback a analysis_json si está disponible
   if (analysisJson && Array.isArray(analysisJson.dimensions)) {
     const dims = analysisJson.dimensions as Array<{ id?: string; label?: string; score: number }>;
     const name = (d: any) => (d.label || d.id || '').toString().trim();
     return dims.map(d => `- ${name(d) || 'Dimensión'}: ${renderStars(Number(d.score))} (${Number(d.score)}/5)`).join('\n');
   }
-  // Fallback diagnóstico
-  const dxFromReport: any = (data?.report?.cvAnalysis as any)?.diagnostico_cv || undefined;
-  const dxFromRec: any = (rec && (rec as any).diagnostico_cv) || {};
-  const dx: any = dxFromReport || dxFromRec || {};
-  const lines: string[] = [];
-  const push = (k: string, v: any) => {
-    if (v == null) return;
-    const n = Number(v);
-    if (!Number.isFinite(n)) return;
-    lines.push(`- ${k}: ${renderStars(n)} (${n}/5)`);
-  };
-  push('Estructura', dx.structure_score ?? dx.struct_score);
-  push('Coherencia', dx.coherence_score);
-  push('Información clave', dx.key_info_score);
-  push('Claridad', dx.clarity_score);
-  push('Ortografía y estilo', dx.spelling_style_score ?? dx.style_score);
-  const text = lines.join('\n');
-  if (text.trim()) return text;
+  
   // Último recurso: heurística local usando rateCv para evitar dejar el bloque vacío
   const cvLocal: any = (data?.report?.cvAnalysis || cvAnalysis || null);
   try {
