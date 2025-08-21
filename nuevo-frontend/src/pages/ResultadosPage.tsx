@@ -117,10 +117,9 @@ const renderDiagnosticoUI = (diag: CvDiagnostico) => (
   </div>
 );
 
-// Verificación de tipos para evitar warnings (función se usa en contextos donde se necesita)
-if (false) {
-  console.log(renderDiagnosticoUI);
-}
+// Función para usar en el futuro cuando se implemente la visualización del diagnóstico
+// Se mantiene para evitar warnings de TypeScript sobre tipos no utilizados
+void renderDiagnosticoUI;
 
 // Sanea frases con sectores concretos no respaldados por el CV
 function sanitizeProfileSummary(text: string, cvData: unknown): string {
