@@ -341,6 +341,16 @@ const ResultadosPage: React.FC = () => {
           console.log('🔍 DEBUG - Condition result:', res.ok && !!data?.summary);
         }
         // Relajar condición: con que exista summary mostramos el informe; el resto es opcional
+        // Preferir markdown determinista del backend si viene presente
+        const mdDeterministic = (data?.report && (data.report.markdown || data.report.ui?.markdown)) || (data as any)?.markdown;
+        if (res.ok && mdDeterministic) {
+          setIaReport(String(mdDeterministic));
+          setFinalPhrase('');
+          setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
+          setLoadingIa(false);
+          return;
+        }
+
         if (res.ok && data && data.summary) {
           // Generar informe profesional con el nuevo formato
           try {
