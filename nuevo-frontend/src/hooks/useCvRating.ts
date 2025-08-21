@@ -1,52 +1,41 @@
-import { useCallback, useState } from 'react';
+import { useState } from "react";
 
-type FeedbackPayload = {
-  userId: string;
-  reportId: string;
-  rating: number;
-  comment?: string;
-  createdAt?: string;
+export type CvStars = 1 | 2 | 3 | 4 | 5;
+
+type UseCvRatingReturn = {
+  rateCv: (stars: CvStars) => Promise<void>;
+  rating: number | null;
+  ratingSaving: boolean;
+  ratingError: string | null;
 };
 
-export default function useCvRating(userId?: string, reportId?: string) {
+export default function useCvRating(userId: string, reportId: string): UseCvRatingReturn {
   const [rating, setRating] = useState<number | null>(null);
-  const [ratingSaving, setRatingSaving] = useState(false);
+  const [ratingSaving, setRatingSaving] = useState<boolean>(false);
   const [ratingError, setRatingError] = useState<string | null>(null);
 
-  const rateCv = useCallback(
-    async (value: number, comment?: string) => {
-      if (!userId || !reportId) {
-        setRatingError('Falta userId o reportId');
-        return;
-      }
+  const rateCv = async (stars: CvStars) => {
+    try {
       setRatingSaving(true);
       setRatingError(null);
-      setRating(value);
-      try {
-        const payload: FeedbackPayload = {
-          userId,
-          reportId,
-          rating: value,
-          comment,
-          createdAt: new Date().toISOString(),
-        };
-        const base = (import.meta as any).env?.VITE_API_URL || '';
-        const url = `${base}/api/report/feedback`;
-        const res = await fetch(url, {
-          method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(payload),
-        });
-        if (!res.ok) throw new Error(`HTTP ${res.status}`);
-      } catch (e: any) {
-        setRatingError(e?.message || 'Error al guardar la valoración');
-        setRating(null);
-      } finally {
-        setRatingSaving(false);
-      }
-    },
-    [userId, reportId]
-  );
+
+      const res = await fetch("/api/report/feedback", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ userId, reportId, rating: stars }),
+      });
+
+      const data: unknown = await res.json();
+      if (!res.ok) throw new Error((data as { message?: string })?.message || "Error guardando la valoración");
+
+      const newRating = (data as { rating?: number })?.rating;
+      if (typeof newRating === "number") setRating(newRating);
+    } catch (err: unknown) {
+      setRatingError(err instanceof Error ? err.message : "Error desconocido");
+    } finally {
+      setRatingSaving(false);
+    }
+  };
 
   return { rateCv, rating, ratingSaving, ratingError };
 }

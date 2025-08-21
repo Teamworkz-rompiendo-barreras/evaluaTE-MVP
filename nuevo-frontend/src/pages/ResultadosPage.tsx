@@ -461,8 +461,8 @@ ${(() => {
 ${(() => {
   // Render simplificado de estrellas; cada click invoca el hook real
   const disabledAttr = ratingSaving ? ' disabled' : '';
-  const stars = [1,2,3,4,5].map(v => `\n<button${disabledAttr} aria-label=\"Valorar ${v}\" onClick=\"(window.__rateCv)&&window.__rateCv(${v})\" style=\"background:none;border:none;cursor:pointer;font-size:22px;line-height:1;\" title=\"Valorar con ${v} estrellas\">${(rating ?? 0) >= v ? '★' : '☆'}</button>`).join('');
-  return `<div style=\"display:flex;align-items:center;gap:8px;\">${stars}${ratingSaving ? ' Guardando…' : ''}${rating ? ' ¡Gracias!' : ''}${ratingError ? ` <span style=\\\"color:crimson\\\">${ratingError}</span>` : ''}</div>`;
+  const stars = [1,2,3,4,5].map(v => `\n<button${disabledAttr} aria-label="Valorar ${v}" onClick="(window.__rateCv)&&window.__rateCv(${v})" style="background:none;border:none;cursor:pointer;font-size:22px;line-height:1;" title="Valorar con ${v} estrellas">${(rating ?? 0) >= v ? '★' : '☆'}</button>`).join('');
+  return `<div style="display:flex;align-items:center;gap:8px;">${stars}${ratingSaving ? ' Guardando…' : ''}${rating ? ' ¡Gracias!' : ''}${ratingError ? ` <span style="color:crimson">${ratingError}</span>` : ''}</div>`;
 })()}
 
 ## Fortalezas
