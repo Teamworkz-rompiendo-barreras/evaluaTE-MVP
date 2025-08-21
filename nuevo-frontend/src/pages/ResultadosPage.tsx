@@ -16,6 +16,7 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
+import type { CvStars } from '../hooks/useCvRating';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -201,6 +202,8 @@ const ResultadosPage: React.FC = () => {
   const rid = (report as any)?.id ?? '';
   const { rateCv: submitRating, rating, ratingSaving, ratingError } = useCvRating(uid, rid);
 
+  const asStars = (n: number): CvStars => (n < 1 ? 1 : n > 5 ? 5 : Math.round(n)) as CvStars;
+
   // Debug logging usando la utilidad (comentado para producción)
   // debugState(state, 'ResultadosPage');
 
@@ -213,7 +216,7 @@ const ResultadosPage: React.FC = () => {
 
   // Exponer submitRating (v:number) para el bloque embebido del informe
   useEffect(() => {
-    (window as any).__rateCv = (v: number) => submitRating(v);
+    (window as any).__rateCv = (v: number) => submitRating(asStars(v));
     return () => { try { delete (window as any).__rateCv; } catch { /* no-op */ } };
   }, [submitRating]);
 
