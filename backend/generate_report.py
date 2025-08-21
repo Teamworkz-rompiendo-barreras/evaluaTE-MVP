@@ -601,11 +601,22 @@ def generar_informe(
         
         content = response.choices[0].message.content
 
-        # Si la respuesta es JSON válido, lo convertimos; si no, o si falta contenido clave, renderizamos determinista
+        # Si la respuesta es JSON válido, lo convertimos a markdown usando la función centralizada
         try:
             json_response = json.loads(content) if (content and content.strip().startswith('{')) else {}
         except Exception:
             json_response = {}
+
+        # Convertir JSON a markdown usando la función centralizada
+        if json_response and isinstance(json_response, dict):
+            try:
+                md_from_json = PromptConfig.convert_json_to_markdown_report(json_response)
+                logger.info("✅ Informe generado desde JSON del modelo")
+                return (md_from_json, json_response) if return_json else md_from_json
+            except Exception as e:
+                logger.warning(f"⚠️ Error convirtiendo JSON a markdown: {e}")
+                # Fallback al render determinista
+                pass
 
         # Render determinista basado 100% en datos reales disponibles
         md_deterministic = render_real_report_markdown(

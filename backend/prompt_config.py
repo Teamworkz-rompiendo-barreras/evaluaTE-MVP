@@ -98,6 +98,21 @@ class PromptConfig:
         games_text = ", ".join(completed_games) if completed_games else "No consta"
         
         # Si se proporcionó analysis_json en cv_data, añadir reglas estrictas
+        
+        # CRÍTICO: Bloque de análisis del CV con estrellas deterministas
+        analysis_block = ""
+        if cv_data.get("diagnostico_cv"):
+            diag = cv_data["diagnostico_cv"]
+            ev = (diag.get("evidence") or {})
+            analysis_block = f"""
+### DIAGNÓSTICO DEL CV (ANALIZADOR DETERMINISTA)
+- Formato: {diag.get('structure_score','No')}/5
+- Claridad: {diag.get('clarity_score','No')}/5
+- Coherencia: {diag.get('coherence_score','No')}/5
+- Información clave: {diag.get('key_info_score','No')}/5
+- Ortografía: {diag.get('spelling_style_score','No')}/5
+Evidencia breve: {ev.get('structure','')}
+"""
         analysis_json = cv_data.get('analysis_json') if isinstance(cv_data, dict) else None
         instr_block = ""
         analysis_json_block = ""
