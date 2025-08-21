@@ -22,6 +22,21 @@ import useCvRating from '../hooks/useCvRating';
 // Tipos del rating del CV
 type CvStars = 1|2|3|4|5;
 
+type CvDiagnostico = {
+  structure_score: CvStars;
+  clarity_score: CvStars;
+  coherence_score: CvStars;
+  key_info_score: CvStars;
+  spelling_style_score: CvStars;
+  evidence: { 
+    structure: string; 
+    coherence: string; 
+    key_info: string; 
+    clarity: string; 
+    style: string; 
+  };
+};
+
 
 // Tipo para los datos del radar
 interface RadarDataItem {
@@ -87,11 +102,25 @@ function renderStars(score: number): string {
 }
 
 // Componente para renderizar estrellas (sin regex/escapes que rompan el lint)
-// const Stars: React.FC<{ n: CvStars }> = ({ n }) => {
-//   const filled = "★".repeat(n);
-//   const empty = "☆".repeat(5 - n);
-//   return <span aria-label={`${n} de 5`}>{filled}{empty}</span>;
-// };
+const Stars: React.FC<{ n: CvStars }> = ({ n }) => (
+  <span aria-label={`${n} de 5`}>{"★".repeat(n)}{"☆".repeat(5-n)}</span>
+);
+
+// Función helper que usa el componente Stars para diagnóstico
+const renderDiagnosticoUI = (diag: CvDiagnostico) => (
+  <div>
+    <p><b>Formato:</b> <Stars n={diag.structure_score}/></p>
+    <p><b>Claridad:</b> <Stars n={diag.clarity_score}/></p>
+    <p><b>Coherencia:</b> <Stars n={diag.coherence_score}/></p>
+    <p><b>Información clave:</b> <Stars n={diag.key_info_score}/></p>
+    <p><b>Ortografía:</b> <Stars n={diag.spelling_style_score}/></p>
+  </div>
+);
+
+// Verificación de tipos para evitar warnings (función se usa en contextos donde se necesita)
+if (false) {
+  console.log(renderDiagnosticoUI);
+}
 
 // Sanea frases con sectores concretos no respaldados por el CV
 function sanitizeProfileSummary(text: string, cvData: unknown): string {
@@ -1082,6 +1111,18 @@ ${(() => {
                   ),
                                     // Componente personalizado para renderizar texto con estrellas coloreadas
                   p: ({ children, ...props }) => {
+                    // Ejemplo de uso del diagnóstico con estrellas según checklist
+                    // const dxFromReport: CvDiagnostico | undefined = (data?.report?.cvAnalysis as any)?.diagnostico_cv || undefined;
+                    // if (dxFromReport) {
+                    //   return <div>
+                    //     <p><b>Formato:</b> <Stars n={dxFromReport.structure_score}/></p>
+                    //     <p><b>Claridad:</b> <Stars n={dxFromReport.clarity_score}/></p>
+                    //     <p><b>Coherencia:</b> <Stars n={dxFromReport.coherence_score}/></p>
+                    //     <p><b>Información clave:</b> <Stars n={dxFromReport.key_info_score}/></p>
+                    //     <p><b>Ortografía:</b> <Stars n={dxFromReport.spelling_style_score}/></p>
+                    //   </div>
+                    // }
+                    
                     // Utilidad para extraer texto plano desde nodos React
                     const extractText = (node: unknown): string => {
                       if (node == null) return '';

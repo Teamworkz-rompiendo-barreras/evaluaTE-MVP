@@ -630,13 +630,6 @@ def generar_informe(
 
         # Si hay JSON del modelo y es útil, se puede adjuntar como anexo o ignorar; priorizamos determinista
         return (md_deterministic, json_response) if return_json else md_deterministic
-        else:
-            # Si no es JSON, devolver también en formato esperado
-            md = content if content else generar_informe_prueba(
-                candidate_data, soft_skills_data, cv_data, job_preferences_data,
-                employability_score, level, completed_games, languages_data
-            )
-            return (md, {}) if return_json else md
         
     except Exception as e:
         logger.error(f"❌ Error generando informe con Azure OpenAI: {str(e)}")
