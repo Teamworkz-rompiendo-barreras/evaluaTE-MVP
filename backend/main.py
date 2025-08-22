@@ -1,5 +1,5 @@
 # main.py  (versión limpia)
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException
+from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 from pydantic import BaseModel, Field
 from typing import List, Dict, Any, Optional
@@ -152,3 +152,49 @@ async def generar_informe_sync(
         "createdAt": datetime.now().isoformat()
     }
     return resp
+
+# Endpoint de compatibilidad para mantener la API del frontend
+@app.post("/api/informe-ia", response_model=ReportResponse)
+async def generar_informe_ia_sync(
+    request: Request,
+    cv: UploadFile | None = File(None)
+):
+    """
+    Endpoint de compatibilidad que acepta tanto JSON como Form data
+    """
+    try:
+        # Intentar leer como JSON primero
+        content_type = request.headers.get("content-type", "")
+        if "application/json" in content_type:
+            body = await request.json()
+            payload = json.dumps(body)
+        else:
+            # Fallback a Form data
+            form_data = await request.form()
+            payload = form_data.get("payload", "")
+            if not payload:
+                raise HTTPException(status_code=400, detail="Campo 'payload' requerido")
+        
+        return await generar_informe_sync(payload, cv)
+    except Exception as e:
+        raise HTTPException(status_code=400, detail=f"Error procesando request: {e}")
+
+# Endpoint de feedback para estadísticas
+@app.get("/api/informe-ia/feedback/stats")
+async def get_feedback_stats():
+    """
+    Endpoint para obtener estadísticas de feedback
+    """
+    try:
+        # Por ahora devolvemos estadísticas básicas
+        # En el futuro se pueden conectar a una base de datos
+        stats = {
+            "total_feedback": 0,
+            "positive_feedback": 0,
+            "negative_feedback": 0,
+            "average_rating": 0.0,
+            "recent_feedback": []
+        }
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener estadísticas: {e}")
