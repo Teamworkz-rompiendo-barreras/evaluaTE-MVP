@@ -158,7 +158,7 @@ async def generar_informe_sync(
             "cvImprovements": ["Cuantificar logros", "Añadir enlaces"],
             "nextSteps": ["Actualizar CV y LinkedIn", "Preparar portfolio ligero"]
         },
-        "summary": f"{data.fullName}, tu informe profesional está listo.",
+        "summary": informe_texto,  # Enviar el informe completo en summary para compatibilidad con frontend
         "employabilityScore": score,
         "level": level,
         "createdAt": datetime.now().isoformat()
