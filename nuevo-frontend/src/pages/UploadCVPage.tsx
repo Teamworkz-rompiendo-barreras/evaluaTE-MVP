@@ -96,15 +96,20 @@ export default function UploadCVPage() {
           throw new Error('El servidor devolvió un análisis de CV inválido');
         }
         
-                  // Guardar el análisis en el estado de Redux
-          dispatch(saveCvAnalysis(cvAnalysis));
-                  // Análisis de CV guardado en Redux
+        // DEBUG: Log del análisis recibido
+        console.log('🔍 DEBUG - Análisis de CV recibido del backend:', cvAnalysis);
+        
+        // Guardar el análisis en el estado de Redux
+        dispatch(saveCvAnalysis(cvAnalysis));
+        console.log('🔍 DEBUG - Análisis de CV guardado en Redux');
         
         // Verificar que se guardó correctamente
         if (cvAnalysis && (cvAnalysis.strengths?.length > 0 || cvAnalysis.skills?.length > 0 || cvAnalysis.weaknesses?.length > 0)) {
+          console.log('🔍 DEBUG - CV analizado con datos reales');
           // CV analizado con datos reales
         } else {
-                      // CV analizado pero sin datos significativos
+          console.log('🔍 DEBUG - CV analizado pero sin datos significativos');
+          // CV analizado pero sin datos significativos
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
