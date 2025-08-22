@@ -42,3 +42,5 @@ npm run dev
 El proyecto está configurado para desplegarse en Azure.
 # Deploy trigger - Fri Aug  8 12:23:05 CEST 2025
 
+gunicorn==22.0.0
+

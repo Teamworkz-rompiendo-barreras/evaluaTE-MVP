@@ -17,7 +17,8 @@ echo "📦 Creando archivo de despliegue del backend..."
 cd backend
 
 # Crear archivo ZIP con todos los archivos necesarios
-zip -r ../backend-deploy.zip . -x "venv/*" "__pycache__/*" "*.pyc" ".git/*" "uploads/*"
+# Excluir rutas del Node.js runtime para evitar que Azure detecte incorrectamente el runtime
+zip -r ../backend-deploy.zip . -x "venv/*" "__pycache__/*" "*.pyc" ".git/*" "uploads/*" "dist/*" "node_modules/*" "src/*" "package.json" "tsconfig.json" "package-lock.json"
 
 cd ..
 

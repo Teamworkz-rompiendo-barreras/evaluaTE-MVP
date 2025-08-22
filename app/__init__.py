@@ -1,3 +1,1 @@
-"""Top-level package for application modules (cv pipeline, etc.)."""
-
-
+# Permite importar 'backend.main:app'

@@ -1,110 +1,224 @@
-# backend/generate_report.py
-import os
-import json
-import httpx
-import logging
-from typing import Any, Dict
+# generate_report.py
+# Deterministic report builder that parses the composed prompt (string) and produces
+# a structured dictionary the frontend expects. No external AI calls here.
 
-logger = logging.getLogger("evaluador-backend")
+from __future__ import annotations
+import re
+from typing import Dict, Any, List, Tuple, Optional
 
-AZURE_OPENAI_ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")  # p.ej. https://<tu-recurso>.openai.azure.com
-AZURE_OPENAI_API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-AZURE_OPENAI_DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT", "gpt-4.1")  # tu deployment name
-AZURE_OPENAI_API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION", "2024-10-21")
+STAR_FULL = "★"
+STAR_EMPTY = "☆"
 
-if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_API_KEY:
-    logger.warning("⚠️ Falta configuración de Azure OpenAI (AZURE_OPENAI_ENDPOINT / AZURE_OPENAI_API_KEY)")
+def _extract_section(text: str, title: str) -> str:
+    pattern = rf"(?mi)^\s*{re.escape(title)}\s*$"
+    m = re.search(pattern, text)
+    if not m:
+        pat2 = rf"(?mi)^\s*\d+\)\s*{re.escape(title)}\s*$"
+        m = re.search(pat2, text)
+    if not m:
+        return ""
+    start = m.end()
+    nxt = re.search(r"(?m)^\s*\d+\)\s*[A-ZÁÉÍÓÚÜÑ].*$", text[start:])
+    end = start + (nxt.start() if nxt else len(text[start:]))
+    return text[start:end].strip()
 
-# Instrucciones al modelo para devolver JSON estructurado estable
-SYSTEM_PROMPT = """Eres un analista de empleabilidad. Devuelve SIEMPRE un JSON estricto con las siguientes claves:
-{
-  "summary": string,
-  "personal_data": { "name": string|null, "location": string|null, "email": string|null, "phone": string|null, "linkedin": string|null },
-  "profile_summary": string,
-  "cv_summary": string,
-  "strengths": [string],
-  "improvement_areas": [string],
-  "cv_analysis": {
-    "format": string,
-    "clarity": string,
-    "coherence": string,
-    "key_info": string,
-    "spelling": string,
-    "stars": { "formato": number, "claridad": number, "coherencia": number, "informacion_clave": number, "ortografia": number }
-  },
-  "ideal_work_environment": [string],
-  "suggested_roles": [ { "role": string, "reason": string, "seniority": string, "remote_viable": boolean } ],
-  "action_plan": { "short_term": [string], "mid_term": [string], "long_term": [string] },
-  "job_search_advice": [string],
-  "useful_tools": { "productivity": [string], "job_search": [string], "learning": [string], "accessibility": [string] },
-  "completed_games": [string],
-  "final_message": string
-}
-Nada de texto fuera del JSON. Asegúrate de que los valores de 'stars' estén entre 1 y 5. Si falta información del CV, indícalo, pero no inventes datos.
-"""
+def _get_name(text: str) -> Optional[str]:
+    m = re.search(r"(?mi)^\s*Nombre:\s*(.+)$", text)
+    return m.group(1).strip() if m else None
+
+def _parse_softskills(section: str) -> List[Dict[str, Any]]:
+    out=[]
+    for line in section.splitlines():
+        line=line.strip(" -•\t")
+        m = re.match(r"(.+?):\s*(\d{1,3})/100(?:\s*\((.+?)\))?", line)
+        if m:
+            skill=m.group(1).strip()
+            score=int(m.group(2))
+            level=(m.group(3) or "").strip() or None
+            out.append({"skill":skill,"score":score,"level":level})
+    return out
+
+def _stars_to_int(stars: str) -> int:
+    full = stars.count(STAR_FULL)
+    empty = stars.count(STAR_EMPTY)
+    if full+empty==0:
+        m = re.search(r"(\d)\s*/\s*5", stars)
+        if m:
+            return int(m.group(1))
+    return max(0, min(5, full))
+
+def _parse_cv_analizado(section: str) -> Dict[str, Any]:
+    res = {"summary": None, "strengths": [], "weaknesses": [], "feedback": None, "stars": None}
+    m = re.search(r"(?mi)^Resumen:\s*(.+)$", section)
+    if m:
+        res["summary"]=m.group(1).strip()
+    stars={}
+    for key in [("formato","Formato"),("claridad","Claridad"),("coherencia","Coherencia"),("informacion_clave","Información clave"),("ortografia","Ortografía")]:
+        m = re.search(rf"(?mi)^{re.escape(key[1])}:\s*(.+)$", section)
+        if m:
+            stars[key[0]]=_stars_to_int(m.group(1))
+    if stars:
+        res["stars"]=stars
+    if re.search(r"(?mi)^Fortalezas:\s*$", section):
+        body = section[re.search(r"(?mi)^Fortalezas:\s*$", section).end():]
+        stop = re.search(r"(?mi)^(Áreas de mejora|Correcciones/Acciones):", body)
+        body = body[:stop.start()] if stop else body
+        for line in body.splitlines():
+            line=line.strip()
+            if line.startswith("-"):
+                res["strengths"].append(line[1:].strip())
+    if re.search(r"(?mi)^Áreas de mejora:\s*$", section):
+        body = section[re.search(r"(?mi)^Áreas de mejora:\s*$", section).end():]
+        stop = re.search(r"(?mi)^Correcciones/Acciones:", body)
+        body = body[:stop.start()] if stop else body
+        for line in body.splitlines():
+            line=line.strip()
+            if line.startswith("-"):
+                res["weaknesses"].append(line[1:].strip())
+    if re.search(r"(?mi)^Correcciones/Acciones:\s*$", section):
+        body = section[re.search(r"(?mi)^Correcciones/Acciones:\s*$", section).end():]
+        lines=[]
+        for line in body.splitlines():
+            line=line.strip(" -")
+            if line:
+                lines.append("• "+line)
+        if lines:
+            res["feedback"]="\n".join(lines)
+    return res
+
+def _parse_prefs(section: str) -> Dict[str, Any]:
+    prefs={}
+    def grab(label, key):
+        m = re.search(rf"(?mi)^\s*-\s*{re.escape(label)}:\s*(.+)$", section)
+        if m:
+            prefs[key]=m.group(1).strip()
+    grab("Roles/Sectores","areas")
+    grab("Modalidad","workMode")
+    grab("Disponibilidad","availability")
+    grab("Relocalización","willingToRelocate")
+    grab("Certificado de discapacidad","hasDisabilityCert")
+    m = re.search(r"(?mi)^\s*-\s*Necesidades:\s*(.+)$", section)
+    if m:
+        prefs["needs"]=[x.strip() for x in re.split(r",|;|·", m.group(1)) if x.strip()]
+    return prefs
+
+def _parse_juegos(section: str) -> List[str]:
+    items=[]
+    for line in section.splitlines():
+        t=line.strip(" -•\t")
+        if not t: 
+            continue
+        if "," in t and not re.search(r"\s", t.split(",")[0].strip()):
+            items.extend([x.strip() for x in t.split(",") if x.strip()])
+        else:
+            items.append(t)
+    seen=set(); out=[]
+    for it in items:
+        if it not in seen:
+            out.append(it); seen.add(it)
+    return out
+
+def _build_resumen_ejecutivo(name: Optional[str], soft: List[Dict[str,Any]], cv: Dict[str,Any], prefs: Dict[str,Any]) -> str:
+    texto=[]
+    if soft:
+        top = sorted(soft, key=lambda s:s["score"], reverse=True)[:2]
+        low = sorted(soft, key=lambda s:s["score"])[:2]
+        if top:
+            texto.append(f"Perfil con fortaleza principal en {top[0]['skill']} ({top[0]['score']}/100).")
+            if len(top)>1:
+                texto.append(f"También destaca en {top[1]['skill']} ({top[1]['score']}/100).")
+        if low:
+            texto.append(f"Áreas a potenciar: {', '.join([f\"{x['skill']} ({x['score']}/100)\" for x in low])}.")
+    if prefs:
+        pref_bits=[]
+        if prefs.get('workMode'):
+            pref_bits.append(f"preferencia por trabajo {prefs['workMode']}")
+        if prefs.get('availability'):
+            pref_bits.append(f"disponibilidad {prefs['availability']}")
+        if 'willingToRelocate' in prefs:
+            pref_bits.append(f"relocalización: {prefs['willingToRelocate']}")
+        if pref_bits:
+            texto.append("Preferencias: " + ", ".join(pref_bits) + ".")
+    if cv.get("summary"):
+        texto.append(cv["summary"])
+    return " ".join(texto) or "Resumen no disponible."
 
 def generar_informe(prompt: str) -> Dict[str, Any]:
-    """
-    Llama a Azure OpenAI (Chat Completions) y devuelve un dict con el informe JSON.
-    """
-    if not AZURE_OPENAI_ENDPOINT or not AZURE_OPENAI_API_KEY:
-        # Fallback seguro: informe mínimo
-        logger.warning("Azure OpenAI no configurado. Se devuelve informe mínimo.")
-        return {
-            "summary": "No hay configuración de OpenAI. Informe mínimo.",
-            "personal_data": {},
-            "profile_summary": "",
-            "cv_summary": "CV no analizado.",
-            "strengths": [],
-            "improvement_areas": [],
-            "cv_analysis": {
-                "format": "",
-                "clarity": "",
-                "coherence": "",
-                "key_info": "",
-                "spelling": "",
-                "stars": {"formato":3,"claridad":3,"coherencia":3,"informacion_clave":2,"ortografia":3}
-            },
-            "ideal_work_environment": [],
-            "suggested_roles": [],
-            "action_plan": {"short_term":[],"mid_term":[],"long_term":[]},
-            "job_search_advice": [],
-            "useful_tools": {"productivity":[],"job_search":[],"learning":[],"accessibility":[]},
-            "completed_games": [],
-            "final_message": ""
-        }
+    name = _get_name(prompt)
+    soft = _parse_softskills(_extract_section(prompt, "SOFT SKILLS"))
+    cv_section = _extract_section(prompt, "CV ANALIZADO")
+    cv = _parse_cv_analizado(cv_section) if cv_section else {}
+    prefs = _parse_prefs(_extract_section(prompt, "PREFERENCIAS LABORALES"))
+    juegos = _parse_juegos(_extract_section(prompt, "JUEGOS COMPLETADOS"))
 
-    url = f"{AZURE_OPENAI_ENDPOINT.rstrip('/')}/openai/deployments/{AZURE_OPENAI_DEPLOYMENT}/chat/completions"
-    params = {"api-version": AZURE_OPENAI_API_VERSION}
+    resumen_ejecutivo = _build_resumen_ejecutivo(name, soft, cv, prefs)
 
-    payload = {
-        "messages": [
-            {"role": "system", "content": SYSTEM_PROMPT},
-            {"role": "user", "content": prompt}
-        ],
-        "temperature": 0.2,
-        "max_tokens": 1800,
-        "response_format": { "type": "json_object" }
+    report: Dict[str, Any] = {
+        "datos_personales": {
+            "nombre": name or "No consta",
+            "ubicacion": None,
+            "email": None,
+            "telefono": None,
+            "discapacidad": prefs.get("hasDisabilityCert", None),
+        },
+        "resumen_perfil": cv.get("summary") or "No consta",
+        "resumen_cv": {
+            "experiencia": [],
+            "formacion": [],
+            "idiomas": [],
+            "software": [],
+            "observaciones": ""
+        },
+        "fortalezas_clave": [f"{s}" for s in cv.get("strengths", [])] or [],
+        "areas_mejora": [f"{w}" for w in cv.get("weaknesses", [])] or [],
+        "diagnostico_cv": {
+            "formato": cv.get("stars",{}).get("formato"),
+            "claridad": cv.get("stars",{}).get("claridad"),
+            "coherencia": cv.get("stars",{}).get("coherencia"),
+            "informacion_clave": cv.get("stars",{}).get("informacion_clave"),
+            "ortografia": cv.get("stars",{}).get("ortografia"),
+            "feedback": cv.get("feedback")
+        },
+        "entornos_ideales": "Tareas con métricas claras y comunicación asincrónica.",
+        "roles_sugeridos": [],
+        "plan_accion": {
+            "corto_plazo": [],
+            "medio_plazo": [],
+            "largo_plazo": []
+        },
+        "consejos_busqueda": [],
+        "herramientas_utiles": [],
+        "juegos_completados": juegos,
+        "frase_final": "Sigue consolidando evidencia cuantificable y mantén un ritmo de candidaturas sostenido.",
+        "resumen_ejecutivo": resumen_ejecutivo,
+        "analisis_perfil": {"soft_skills": soft},
+        "evaluacion_cv": cv,
     }
 
-    headers = {
-        "Content-Type": "application/json",
-        "api-key": AZURE_OPENAI_API_KEY,
-    }
+    if soft:
+        names=[s["skill"].lower() for s in soft]
+        if "data" in " ".join(names) or "analítico" in " ".join(names):
+            report["roles_sugeridos"].append("Data Entry / Etiquetado de datos — Remoto")
+        report["roles_sugeridos"] += ["Asistente administrativo remoto", "Gestión de cuentas junior"]
 
-    logger.info("cv: openai_request")
-    with httpx.Client(timeout=60) as client:
-        r = client.post(url, params=params, headers=headers, json=payload)
-        r.raise_for_status()
-        data = r.json()
-    logger.info("cv: openai_response")
+    report["plan_accion"]["corto_plazo"] = [
+        "Actualizar CV con logros cuantificados y enlaces.",
+        "Optimizar LinkedIn y preparar portfolio ligero (2–3 muestras).",
+        "Ejecutar 10 candidaturas/semana a roles alineados."
+    ]
+    report["plan_accion"]["medio_plazo"] = [
+        "Mejorar habilidades clave detectadas (p. ej., análisis de datos, influencia).",
+        "Ampliar red de contactos con mensajes breves de valor."
+    ]
+    report["plan_accion"]["largo_plazo"] = [
+        "Especializarse en un flujo (p. ej., QA de datos) y documentar SOPs."
+    ]
+    report["consejos_busqueda"] = [
+        "Usa palabras clave del rol objetivo para superar ATS.",
+        "Personaliza 1 párrafo por candidatura con prueba de valor adjunta."
+    ]
+    report["herramientas_utiles"] = [
+        "Excel/Sheets", "Airtable/Notion", "OCR básico", "Trello/Asana", "Slack/Teams"
+    ]
 
-    # Extraer el JSON del contenido del primer choice
-    content = data["choices"][0]["message"]["content"]
-    try:
-        parsed = json.loads(content)
-    except Exception:
-        # Si por algún motivo no viene JSON puro, encapsúlalo
-        parsed = {"summary": content}
-
-    return parsed
+    return report
