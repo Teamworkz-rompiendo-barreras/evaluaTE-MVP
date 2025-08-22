@@ -1,18 +1,29 @@
 #!/usr/bin/env python3
+"""
+Archivo de inicio optimizado para Azure Web App
+Este archivo maneja la configuración específica de Azure y el arranque de la aplicación
+"""
 import os
-import subprocess
 import sys
 import time
-import shutil
+import logging
+from pathlib import Path
 
+# Configurar logging
+logging.basicConfig(
+    level=logging.INFO,
+    format='%(asctime)s - %(name)s - %(levelname)s - %(message)s'
+)
+logger = logging.getLogger(__name__)
 
 def log(level: str, msg: str) -> None:
+    """Función de logging con timestamp"""
     ts = time.strftime("%Y-%m-%d %H:%M:%S")
     print(f"{ts} - {level} - {msg}")
     sys.stdout.flush()
 
-
 def ensure_utf8() -> None:
+    """Asegurar configuración UTF-8"""
     os.environ.setdefault("PYTHONIOENCODING", "utf-8")
     os.environ.setdefault("LC_ALL", "C.UTF-8")
     os.environ.setdefault("LANG", "C.UTF-8")
@@ -24,85 +35,64 @@ def ensure_utf8() -> None:
     except Exception:
         pass
 
-
-VENV_DIR = os.environ.get("PERSISTENT_VENV_DIR", "/home/venv-evaluate")
-VENV_BIN = os.path.join(VENV_DIR, "Scripts" if os.name == "nt" else "bin")
-VENV_PY = os.path.join(VENV_BIN, "python")
-DEPS_MARKER = os.path.join(os.getcwd(), ".venv_ready")
-
-def _detect_requirements_path() -> str | None:
-    candidates = [
-        os.path.join(os.getcwd(), "requirements-azure.txt"),
-        os.path.join(os.getcwd(), "requirements.txt"),
-    ]
-    return next((p for p in candidates if os.path.exists(p)), None)
-
-def install_requirements() -> None:
-    if os.environ.get("SKIP_PIP_ON_START", "").lower() in ("1", "true", "yes"):
-        log("INFO", "⏭️  SKIP_PIP_ON_START=1, saltando instalación de dependencias")
-        return
-
-    # Si el build ocurre durante despliegue (Oryx/Kudu), no instalar en runtime
-    if os.environ.get("SCM_DO_BUILD_DURING_DEPLOYMENT", "").lower() in ("1", "true", "yes"):
-        log("INFO", "🛠️  SCM_DO_BUILD_DURING_DEPLOYMENT=1, omitiendo pip en runtime (Oryx instalará).")
-        return
-
-    req_file = _detect_requirements_path()
-    if not req_file:
-        log("WARN", "No se encontró requirements*.txt; se continúa sin instalar dependencias")
-        return
-
-    # Si ya existe un entorno y marcador, no reinstalar
-    if os.path.exists(VENV_PY) and os.path.exists(DEPS_MARKER):
-        log("INFO", f"🔁 Reutilizando entorno virtual en {VENV_DIR}")
-        return
-
-    try:
-        if not os.path.exists(VENV_PY):
-            log("INFO", f"🧰 Creando entorno virtual persistente en {VENV_DIR}...")
-            # Crear directorio contenedor si no existe
-            os.makedirs(VENV_DIR, exist_ok=True)
-            subprocess.check_call([sys.executable, "-m", "venv", VENV_DIR])
-        # Actualizar pip e instalar deps
-        log("INFO", f"📦 Instalando dependencias desde: {os.path.basename(req_file)}")
-        subprocess.check_call([VENV_PY, "-m", "pip", "install", "--upgrade", "pip", "setuptools", "wheel"])  # pragma: no cover
-        subprocess.check_call([VENV_PY, "-m", "pip", "install", "--disable-pip-version-check", "-r", req_file])
-        # Crear marcador
-        try:
-            with open(DEPS_MARKER, "w", encoding="utf-8") as f:
-                f.write(time.strftime("%Y-%m-%d %H:%M:%S"))
-        except Exception:
-            pass
-        log("INFO", "✅ Dependencias instaladas/reutilizadas correctamente")
-    except subprocess.CalledProcessError as e:
-        log("ERROR", f"Falló la instalación de dependencias: {e}")
-        # Continuar para permitir arranque si ya estaban instaladas
-
-
-def run_uvicorn() -> None:
-    host = os.getenv("HOST", "0.0.0.0")
-    port = os.getenv("PORT", "8080")
-    app_path = os.getenv("APP", "main:app")
-    # Si existe venv, usar su intérprete para cargar dependencias persistidas
-    python_exec = VENV_PY if os.path.exists(VENV_PY) else sys.executable
-    if python_exec != sys.executable:
-        log("INFO", f"🚀 Iniciando con entorno virtual: {python_exec}")
-    log("INFO", f"🚀 Iniciando Uvicorn {app_path} en {host}:{port}")
-    os.execvp(python_exec, [python_exec, "-m", "uvicorn", app_path, "--host", host, "--port", port])
-
-
-def main() -> None:
-    log("INFO", "🚀 Iniciando EvaluaTE Backend en Azure...")
-    ensure_utf8()
-    # Limpia posibles proxies heredados
+def setup_environment() -> None:
+    """Configurar variables de entorno para Azure"""
+    # Variables de entorno por defecto
+    os.environ.setdefault("HOST", "0.0.0.0")
+    os.environ.setdefault("PORT", "8000")
+    os.environ.setdefault("LOG_LEVEL", "INFO")
+    
+    # Limpiar proxies heredados
     for var in ("HTTP_PROXY", "HTTPS_PROXY", "ALL_PROXY"):
         if var in os.environ:
             del os.environ[var]
-    log("INFO", "🔧 Verificando/instalando dependencias...")
-    install_requirements()
-    log("INFO", "✅ Configuración verificada")
-    run_uvicorn()
+    
+    # Configurar encoding
+    ensure_utf8()
 
+def run_application() -> None:
+    """Ejecutar la aplicación FastAPI"""
+    try:
+        # Agregar el directorio actual al path
+        current_dir = Path(__file__).parent
+        sys.path.insert(0, str(current_dir))
+        
+        # Importar la aplicación
+        from main import app
+        
+        # Configurar host y puerto
+        host = os.getenv("HOST", "0.0.0.0")
+        port = int(os.getenv("PORT", "8000"))
+        
+        logger.info(f"🚀 Iniciando EvaluaTE Backend en {host}:{port}")
+        
+        # Importar uvicorn y ejecutar
+        import uvicorn
+        uvicorn.run(
+            app,
+            host=host,
+            port=port,
+            log_level=os.getenv("LOG_LEVEL", "info").lower(),
+            access_log=True
+        )
+        
+    except ImportError as e:
+        logger.error(f"❌ Error importando la aplicación: {e}")
+        sys.exit(1)
+    except Exception as e:
+        logger.error(f"❌ Error ejecutando la aplicación: {e}")
+        sys.exit(1)
+
+def main() -> None:
+    """Función principal"""
+    log("INFO", "🚀 Iniciando EvaluaTE Backend en Azure...")
+    
+    # Configurar entorno
+    setup_environment()
+    log("INFO", "✅ Configuración del entorno completada")
+    
+    # Ejecutar aplicación
+    run_application()
 
 if __name__ == "__main__":
     main()
