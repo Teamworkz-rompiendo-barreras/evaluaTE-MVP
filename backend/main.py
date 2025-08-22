@@ -1,212 +1,414 @@
-# main.py  (versión limpia)
-from fastapi import FastAPI, UploadFile, File, Form, HTTPException, Request
-from fastapi.middleware.cors import CORSMiddleware
-from pydantic import BaseModel, Field
-from typing import List, Dict, Any, Optional
-from datetime import datetime
+# main.py
+import io
 import json
 import logging
+import os
+from typing import Any, Dict, List, Optional
 
-from document_intelligence import analyze_cv_with_improved_intelligence
-from report_generator import render_informe_estructurado
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException
+from fastapi.middleware.cors import CORSMiddleware
+from fastapi.responses import JSONResponse, StreamingResponse
+from pydantic import BaseModel, Field, validator
 
-logger = logging.getLogger("uvicorn")
-logger.setLevel(logging.INFO)
+# ==========
+# Integraciones propias (deben existir en tu repo)
+# ==========
+try:
+    from document_intelligence import DocumentIntelligenceService
+except Exception as e:  # pragma: no cover
+    DocumentIntelligenceService = None
+    logging.warning("DocumentIntelligenceService no disponible: %s", e)
 
-app = FastAPI(title="EvaluaTE Backend", version="2.0.0")
+try:
+    from generate_report import generar_informe  # debe devolver JSON (str o dict)
+except Exception as e:  # pragma: no cover
+    generar_informe = None
+    logging.warning("generar_informe no disponible: %s", e)
+
+try:
+    from pdf_service import create_employability_pdf  # debe devolver bytes o ruta
+except Exception as e:  # pragma: no cover
+    create_employability_pdf = None
+    logging.warning("create_employability_pdf no disponible: %s", e)
+
+# ==========
+# Configuración y app única
+# ==========
+LOG_LEVEL = os.getenv("LOG_LEVEL", "INFO").upper()
+logging.basicConfig(level=LOG_LEVEL, format="%(asctime)s %(levelname)s - %(message)s")
+logger = logging.getLogger("evaluador-backend")
+
+app = FastAPI(title="EvaluaTE Backend", version="1.0.0")
+
+ALLOWED_ORIGINS = os.getenv("CORS_ORIGINS", "*")
+origins = [o.strip() for o in ALLOWED_ORIGINS.split(",")] if ALLOWED_ORIGINS else ["*"]
 
 app.add_middleware(
     CORSMiddleware,
-    allow_origins=[
-        "http://localhost:3005", "http://localhost:3006", "http://localhost:5173",
-        "https://yellow-mud-0b6281c1e.6.azurestaticapps.net", "https://*.azurestaticapps.net",
-        "https://*.azurewebsites.net"
-    ],
+    allow_origins=origins,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
 )
 
+# ==========
+# Modelos (única definición)
+# ==========
 class SoftSkillResult(BaseModel):
     skill: str
-    score: int
-    level: str
-    confidence: int
+    score: int = Field(ge=0, le=100)
+    level: Optional[str] = None
+    confidence: Optional[int] = Field(default=None, ge=0, le=100)
+
+
+class CvStars(BaseModel):
+    formato: Optional[int] = Field(default=None, ge=1, le=5)
+    claridad: Optional[int] = Field(default=None, ge=1, le=5)
+    coherencia: Optional[int] = Field(default=None, ge=1, le=5)
+    informacion_clave: Optional[int] = Field(default=None, ge=1, le=5)
+    ortografia: Optional[int] = Field(default=None, ge=1, le=5)
+
 
 class CvAnalysis(BaseModel):
     strengths: List[str] = []
     weaknesses: List[str] = []
     feedback: Optional[str] = None
-    structure: Optional[str] = None
-    coherence: Optional[str] = None
-    experience: Optional[str] = None
-    skills: Optional[List[str]] = []
-    education: Optional[List[str]] = []
-    alerts: Optional[List[str]] = []
+    summary: Optional[str] = None
+    stars: Optional[CvStars] = None  # para el bloque de estrellas
+    raw_text: Optional[str] = None   # texto extraído
+    # campos flexibles para experiencia/formación mínimos
+    experience: Optional[List[Dict[str, Any]]] = None
+    education: Optional[List[Dict[str, Any]]] = None
+    languages: Optional[List[Dict[str, Any]]] = None
+    software: Optional[List[str]] = None
+    contact: Optional[Dict[str, Any]] = None
+
 
 class JobPreference(BaseModel):
     areas: List[str] = []
     needs: List[str] = []
-    workMode: Optional[str] = "remoto"
-    availability: Optional[str] = "completa"
-    willingToRelocate: bool = False
-    hasDisabilityCert: bool = False
+    workMode: Optional[str] = None
+    availability: Optional[str] = None
+    willingToRelocate: Optional[bool] = None
+    hasDisabilityCert: Optional[bool] = None
+
 
 class EmployabilityReportRequest(BaseModel):
-    userId: str
-    fullName: str
-    softSkills: List[SoftSkillResult]
+    userId: Optional[str] = None
+    fullName: Optional[str] = None
+    softSkills: List[SoftSkillResult] = []
     cvAnalysis: Optional[CvAnalysis] = None
     jobPreferences: Optional[JobPreference] = None
-    completedGames: List[str] = []
-    logs: List[Dict[str, Any]] = []
+    completedGames: Optional[List[str]] = None
+    logs: Optional[List[Dict[str, Any]]] = None
+
 
 class ReportResponse(BaseModel):
-    report: Dict[str, Any]
-    recommendations: Dict[str, List[str]]
-    employabilityScore: int
-    level: str
-    summary: str
-    createdAt: str
+    report: Dict[str, Any] = {}
+    recommendations: Optional[List[str]] = None
+    level: Optional[str] = None
+    employabilityScore: Optional[int] = Field(default=None, ge=0, le=100)
 
-@app.get("/")
-async def root():
-    return {"message": "Bienvenida/o a EvaluaTE", "status": "running"}
 
+# ==========
+# Utilidades (únicas)
+# ==========
+def _safe_json_loads(maybe_json: Optional[str]) -> Any:
+    if not maybe_json:
+        return None
+    try:
+        return json.loads(maybe_json)
+    except Exception:
+        # Si viene como array/objeto ya parseado (poco probable por Form), devuélvelo
+        return maybe_json
+
+
+def format_cv_analysis(cv: Optional[CvAnalysis]) -> str:
+    """
+    Construye el bloque 'CV ANALIZADO' que esperan las plantillas largas,
+    incluyendo estrellas (1–5) si están disponibles.
+    """
+    if not cv:
+        return (
+            "CV ANALIZADO\n"
+            "- No se ha podido analizar el CV. Aporta logros, responsabilidades, fechas y enlaces.\n"
+        )
+
+    lines = ["CV ANALIZADO"]
+    if cv.summary:
+        lines.append(f"Resumen: {cv.summary}")
+
+    if cv.stars:
+        def stars(n: Optional[int]) -> str:
+            return "★" * int(n or 0) + "☆" * (5 - int(n or 0))
+        lines.extend(
+            [
+                f"Formato: {stars(cv.stars.formato)}",
+                f"Claridad: {stars(cv.stars.claridad)}",
+                f"Coherencia: {stars(cv.stars.coherencia)}",
+                f"Información clave: {stars(cv.stars.informacion_clave)}",
+                f"Ortografía: {stars(cv.stars.ortografia)}",
+            ]
+        )
+
+    if cv.strengths:
+        lines.append("Fortalezas:")
+        for s in cv.strengths:
+            lines.append(f"- {s}")
+
+    if cv.weaknesses:
+        lines.append("Áreas de mejora:")
+        for w in cv.weaknesses:
+            lines.append(f"- {w}")
+
+    if cv.feedback:
+        lines.append("Correcciones/Acciones:")
+        for line in cv.feedback.split("\n"):
+            line = line.strip()
+            if line:
+                lines.append(f"- {line}")
+
+    return "\n".join(lines)
+
+
+def format_job_preferences(prefs: Optional[JobPreference]) -> str:
+    if not prefs:
+        return "PREFERENCIAS LABORALES\n- No especificadas."
+    parts = ["PREFERENCIAS LABORALES"]
+    if prefs.areas:
+        parts.append(f"- Roles/Sectores: {', '.join(prefs.areas)}")
+    if prefs.workMode:
+        parts.append(f"- Modalidad: {prefs.workMode}")
+    if prefs.availability:
+        parts.append(f"- Disponibilidad: {prefs.availability}")
+    if prefs.willingToRelocate is not None:
+        parts.append(f"- Relocalización: {prefs.willingToRelocate}")
+    if prefs.hasDisabilityCert is not None:
+        parts.append(f"- Certificado de discapacidad: {prefs.hasDisabilityCert}")
+    if prefs.needs:
+        parts.append(f"- Necesidades: {', '.join(prefs.needs)}")
+    return "\n".join(parts)
+
+
+def build_prompt(req: EmployabilityReportRequest) -> str:
+    """
+    Prompt largo con los marcadores que comprobabas en logs:
+    incluye 'CV ANALIZADO', 'JUEGOS COMPLETADOS', 'PREFERENCIAS LABORALES' y '13) FRASE FINAL'.
+    """
+    lines = []
+    lines.append("1) RESUMEN EJECUTIVO")
+    if req.fullName:
+        lines.append(f"Nombre: {req.fullName}")
+
+    lines.append("\n2) SOFT SKILLS")
+    if req.softSkills:
+        for s in req.softSkills:
+            lines.append(f"- {s.skill}: {s.score}/100 ({s.level or 'NA'})")
+    else:
+        lines.append("- No disponibles")
+
+    lines.append("\n3) " + format_cv_analysis(req.cvAnalysis))
+
+    lines.append("\n4) " + format_job_preferences(req.jobPreferences))
+
+    lines.append("\n5) JUEGOS COMPLETADOS")
+    if req.completedGames:
+        lines.append("- " + ", ".join(req.completedGames))
+    else:
+        lines.append("- No consta")
+
+    # Espacio para otras 6–12 secciones si tu plantilla las usa
+    lines.append("\n13) FRASE FINAL")
+    lines.append("Cierra con un consejo accionable y motivador en 2–3 frases.")
+
+    prompt = "\n".join(lines)
+    logger.info("Prompt generado (longitud %s). Contiene marcadores: CV ANALIZADO=%s, JUEGOS COMPLETADOS=%s, PREFERENCIAS LABORALES=%s, 13) FRASE FINAL=%s",
+                len(prompt),
+                "CV ANALIZADO" in prompt,
+                "JUEGOS COMPLETADOS" in prompt,
+                "PREFERENCIAS LABORALES" in prompt,
+                "13) FRASE FINAL" in prompt)
+    return prompt
+
+
+def normalize_ai_response(raw: Any) -> Dict[str, Any]:
+    """
+    Acepta dict o str (JSON) y devuelve dict con claves base.
+    """
+    if raw is None:
+        return {}
+    if isinstance(raw, str):
+        try:
+            return json.loads(raw)
+        except Exception:
+            return {"summary": raw}
+    if isinstance(raw, dict):
+        return raw
+    return {"summary": str(raw)}
+
+
+# ==========
+# Endpoints
+# ==========
 @app.get("/health")
-async def health_check():
-    """
-    Endpoint de health check para monitoreo
-    """
-    return {
-        "status": "healthy",
-        "timestamp": datetime.now().isoformat(),
-        "service": "EvaluaTE Backend",
-        "version": "2.0.0"
-    }
+def health():
+    return {"ok": True, "status": "healthy"}
 
-def _map_di_to_cvinfo(di: Dict[str, Any]) -> Dict[str, Any]:
-    # Asegura claves esperadas por el renderizador
-    return {
-        "contacto": di.get("contact", {}) or di.get("contacto", {}),
-        "software": di.get("skills", []) or di.get("software", []),
-        "idiomas": di.get("languages", []) or di.get("idiomas", []),
-        "perfil": di.get("raw_text") or di.get("perfil") or "",
-        "experiencia": di.get("experience", []) or di.get("experiencia", []),
-        "educacion": di.get("education", []) or di.get("educacion", []),
-        "proyectos": di.get("projects", []) or di.get("proyectos", []),
-    }
 
-def _level_from_score(score: int) -> str:
-    return "Alta empleabilidad" if score >= 80 else ("Empleabilidad media" if score >= 50 else "Baja empleabilidad")
-
-@app.post("/api/informe", response_model=ReportResponse)
-async def generar_informe_sync(
-    payload: str = Form(...),
-    cv: UploadFile | None = File(None)
+@app.post("/api/pdf/analyze-cv")
+async def analyze_cv(
+    file: UploadFile = File(...),
+    softSkillsJson: Optional[str] = Form(None),
+    jobPreferencesJson: Optional[str] = Form(None),
+    completedGamesJson: Optional[str] = Form(None),
+    logsJson: Optional[str] = Form(None),
 ):
     """
-    Endpoint ÚNICO: recibe el JSON (campo 'payload') y opcionalmente un PDF 'cv'.
-    - Si no viene cvAnalysis en el JSON y recibimos 'cv', ejecuta Azure DI y lo inyecta.
-    - Genera SIEMPRE el informe con tu estructura.
+    1) Analiza el CV (Azure Document Intelligence si está disponible).
+    Devuelve un bloque 'cvAnalysis' preparado para el siguiente paso.
     """
-    try:
-        data = EmployabilityReportRequest(**json.loads(payload))
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Payload inválido: {e}")
+    logger.info("Analizando CV PDF: %s", file.filename)
 
-    cv_info: Dict[str, Any] = {}
-    if data.cvAnalysis:
-        # Si ya viene análisis, úsalo tal cual
-        cv_info = _map_di_to_cvinfo(data.cvAnalysis.dict())
-    elif cv is not None:
-        # Analiza PDF y mapea
-        pdf_bytes = await cv.read()
-        di_raw = analyze_cv_with_improved_intelligence(pdf_bytes)  # espera resultado
-        cv_info = _map_di_to_cvinfo(di_raw)
+    content = await file.read()
+    if not content:
+        raise HTTPException(status_code=400, detail="Archivo vacío")
 
-    # Construir informe con estructura exacta
-    soft_skills = [s.dict() for s in data.softSkills]
-    job_prefs = data.jobPreferences.dict() if data.jobPreferences else {}
-    profile = {"fullName": data.fullName, "userId": data.userId}
-    informe_texto = render_informe_estructurado(profile, cv_info, soft_skills, job_prefs, data.completedGames)
-
-    # Puntuación simple y estable
-    high = sum(1 for s in soft_skills if (s.get("score", 0) >= 70))
-    med = sum(1 for s in soft_skills if (50 <= s.get("score", 0) < 70))
-    low = sum(1 for s in soft_skills if (s.get("score", 0) < 50))
-    total = len(soft_skills) or 1
-    score = (high*100 + med*65 + low*30)//total
-    level = _level_from_score(score)
-
-    resp = {
-        "report": {
-            "userId": data.userId,
-            "fullName": data.fullName,
-            "softSkills": soft_skills,
-            "employabilityScore": score,
-            "jobPreferences": job_prefs,
-            "cvAnalysis": cv_info,  # ahora SIEMPRE viaja
-            "createdAt": datetime.now().isoformat(),
-            "completedGames": data.completedGames,
-            "level": level,
-            "informeProfesional": informe_texto
-        },
-        "recommendations": {
-            "roles": ["Data Entry", "Back-office", "Data QA"],
-            "resources": ["Coursera", "LinkedIn Learning"],
-            "cvImprovements": ["Cuantificar logros", "Añadir enlaces"],
-            "nextSteps": ["Actualizar CV y LinkedIn", "Preparar portfolio ligero"]
-        },
-        "summary": informe_texto,  # Enviar el informe completo en summary para compatibilidad con frontend
-        "employabilityScore": score,
-        "level": level,
-        "createdAt": datetime.now().isoformat()
-    }
-    return resp
-
-# Endpoint de compatibilidad para mantener la API del frontend
-@app.post("/api/informe-ia", response_model=ReportResponse)
-async def generar_informe_ia_sync(
-    request: Request,
-    cv: UploadFile | None = File(None)
-):
-    """
-    Endpoint de compatibilidad que acepta tanto JSON como Form data
-    """
-    try:
-        # Intentar leer como JSON primero
-        content_type = request.headers.get("content-type", "")
-        if "application/json" in content_type:
-            body = await request.json()
-            payload = json.dumps(body)
-        else:
-            # Fallback a Form data
-            form_data = await request.form()
-            payload = form_data.get("payload", "")
-            if not payload:
-                raise HTTPException(status_code=400, detail="Campo 'payload' requerido")
-        
-        return await generar_informe_sync(payload, cv)
-    except Exception as e:
-        raise HTTPException(status_code=400, detail=f"Error procesando request: {e}")
-
-# Endpoint de feedback para estadísticas
-@app.get("/api/informe-ia/feedback/stats")
-async def get_feedback_stats():
-    """
-    Endpoint para obtener estadísticas de feedback
-    """
-    try:
-        # Por ahora devolvemos estadísticas básicas
-        # En el futuro se pueden conectar a una base de datos
-        stats = {
-            "total_feedback": 0,
-            "positive_feedback": 0,
-            "negative_feedback": 0,
-            "average_rating": 0.0,
-            "recent_feedback": []
+    # Analizador principal
+    cv_data: Dict[str, Any] = {}
+    if DocumentIntelligenceService is None:
+        logger.warning("DocumentIntelligenceService no configurado. Se devolverá análisis mínimo.")
+        cv_data = {
+            "summary": "No disponible",
+            "strengths": [],
+            "weaknesses": [],
+            "feedback": "No se pudo procesar el CV en este entorno.",
+            "stars": None,
+            "raw_text": None,
         }
-        return stats
+    else:
+        try:
+            model_id = os.getenv("AZURE_DI_MODEL_ID", "prebuilt-document")
+            di = DocumentIntelligenceService(model_id=model_id)
+            result = di.analyze_cv_with_document_intelligence(content)
+            # Normaliza campos esperados por la app
+            cv_data = {
+                "summary": result.get("summary") or result.get("cv_summary"),
+                "strengths": result.get("strengths", []),
+                "weaknesses": result.get("weaknesses", []),
+                "feedback": result.get("feedback") or result.get("recommendations"),
+                "stars": result.get("stars"),
+                "raw_text": result.get("raw_text") or result.get("text"),
+                "experience": result.get("experience"),
+                "education": result.get("education"),
+                "languages": result.get("languages"),
+                "software": result.get("software"),
+                "contact": result.get("contact"),
+            }
+        except Exception as e:
+            logger.exception("Fallo analizando CV con Document Intelligence: %s", e)
+            raise HTTPException(status_code=500, detail=f"Error analizando CV: {e}")
+
+    # empaquetar respuesta
+    payload = {
+        "ok": True,
+        "cvAnalysis": cv_data,
+        "softSkills": _safe_json_loads(softSkillsJson) or [],
+        "jobPreferences": _safe_json_loads(jobPreferencesJson) or {},
+        "completedGames": _safe_json_loads(completedGamesJson) or [],
+        "logs": _safe_json_loads(logsJson) or [],
+    }
+    return JSONResponse(payload)
+
+
+@app.post("/api/informe-ia", response_model=ReportResponse)
+def informe_ia(req: EmployabilityReportRequest):
+    """
+    2) Genera el informe IA a partir del análisis del CV (si existe) + soft skills + preferencias.
+    """
+    logger.info("Generando informe profesional para usuario: %s", req.userId or "desconocido")
+
+    if generar_informe is None:
+        raise HTTPException(status_code=500, detail="Módulo de generación de informe no disponible")
+
+    prompt = build_prompt(req)
+
+    try:
+        raw = generar_informe(prompt)  # puede devolver str (JSON) o dict
+        data = normalize_ai_response(raw)
     except Exception as e:
-        raise HTTPException(status_code=500, detail=f"Error al obtener estadísticas: {e}")
+        logger.exception("Error generando informe con IA: %s", e)
+        raise HTTPException(status_code=500, detail=f"Error generando informe con IA: {e}")
+
+    # Normalización de claves esperadas en la UI
+    report = data.get("report") or data  # si ya viene formateado como report
+    recommendations = data.get("recommendations") or report.get("consejos_busqueda") or []
+    level = data.get("level") or report.get("nivel") or None
+    score = data.get("employabilityScore") or report.get("puntuacion") or None
+
+    return ReportResponse(
+        report=report,
+        recommendations=recommendations,
+        level=level,
+        employabilityScore=score,
+    )
+
+
+@app.post("/api/pdf/generate-report")
+def generate_report_pdf(req: EmployabilityReportRequest):
+    """
+    3) Genera el PDF final. Requiere el resultado del paso 2 (informe IA) embebido
+       o, en su defecto, volverá a invocar a la IA con el prompt.
+    """
+    if create_employability_pdf is None:
+        raise HTTPException(status_code=500, detail="Servicio de PDF no disponible")
+
+    # Asegurar que tenemos contenido de informe
+    if generar_informe is None:
+        raise HTTPException(status_code=500, detail="Módulo de generación de informe no disponible")
+
+    # Si el cliente no pasó el informe ya estructurado, lo generamos
+    prompt = build_prompt(req)
+    ai_raw = generar_informe(prompt)
+    ai_data = normalize_ai_response(ai_raw)
+
+    try:
+        pdf_bytes_or_path = create_employability_pdf({
+            "userId": req.userId,
+            "fullName": req.fullName,
+            "softSkills": [s.dict() for s in req.softSkills],
+            "cvAnalysis": req.cvAnalysis.dict() if req.cvAnalysis else None,
+            "jobPreferences": req.jobPreferences.dict() if req.jobPreferences else None,
+            "completedGames": req.completedGames or [],
+            "report": ai_data,  # pasa todo el informe IA
+        })
+    except Exception as e:
+        logger.exception("Error creando PDF: %s", e)
+        raise HTTPException(status_code=500, detail=f"Error creando PDF: {e}")
+
+    # Soporta función que devuelva bytes o una ruta
+    if isinstance(pdf_bytes_or_path, (bytes, bytearray)):
+        return StreamingResponse(
+            io.BytesIO(pdf_bytes_or_path),
+            media_type="application/pdf",
+            headers={"Content-Disposition": 'attachment; filename="informe_empleabilidad.pdf"'},
+        )
+    elif isinstance(pdf_bytes_or_path, str) and os.path.exists(pdf_bytes_or_path):
+        with open(pdf_bytes_or_path, "rb") as f:
+            return StreamingResponse(
+                io.BytesIO(f.read()),
+                media_type="application/pdf",
+                headers={"Content-Disposition": 'attachment; filename="informe_empleabilidad.pdf"'},
+            )
+    else:
+        # Por si el servicio devuelve una URL firmada u otra estructura
+        return JSONResponse({"ok": True, "resource": pdf_bytes_or_path})
+
+# --- Punto de arranque (local / Azure App Service sin Docker) ---
+if __name__ == "__main__":
+    import os, uvicorn
+    uvicorn.run(
+        "main:app",                 # <- instancia FastAPI definida arriba
+        host="0.0.0.0",
+        port=int(os.getenv("PORT", "8080")),  # Azure expone PORT; por defecto 8080
+        log_level="info",
+    )
