@@ -1,5 +1,0 @@
-[33mbb883e4[m[33m ([m[1;36mHEAD[m[33m -> [m[1;32mfix/contrast-improvement[m[33m, [m[1;31morigin/fix/contrast-improvement[m[33m)[m Agregar workflow de despliegue para rama fix/contrast-improvement
-[33m55b3aed[m Mejoras en contraste y accesibilidad, scripts de despliegue y documentación
-[33mb3d3e0e[m[33m ([m[1;31morigin/main[m[33m, [m[1;32mmain[m[33m)[m fix: corregir contraste del texto de opciones en modo claro - cambiar de text-gray-800 a text-gray-900 para mejor legibilidad
-[33ma293ed6[m fix: mejorar contraste del texto de opciones de respuesta en modo claro para mejor legibilidad
-[33m4e1d33f[m Merge branch 'fix/choice-text-contrast'
