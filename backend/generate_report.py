@@ -156,6 +156,11 @@ def generar_informe(prompt: str) -> Dict[str, Any]:
 
     resumen_ejecutivo = _build_resumen_ejecutivo(name, soft, cv, prefs)
 
+    # Arreglar el bug: asegurar que stars sea un diccionario antes de acceder a .get()
+    stars = cv.get("stars") or {}
+    if not isinstance(stars, dict):
+        stars = {}
+
     report: Dict[str, Any] = {
         "datos_personales": {
             "nombre": name or "No consta",
@@ -175,11 +180,11 @@ def generar_informe(prompt: str) -> Dict[str, Any]:
         "fortalezas_clave": [f"{s}" for s in cv.get("strengths", [])] or [],
         "areas_mejora": [f"{w}" for w in cv.get("weaknesses", [])] or [],
         "diagnostico_cv": {
-            "formato": cv.get("stars",{}).get("formato"),
-            "claridad": cv.get("stars",{}).get("claridad"),
-            "coherencia": cv.get("stars",{}).get("coherencia"),
-            "informacion_clave": cv.get("stars",{}).get("informacion_clave"),
-            "ortografia": cv.get("stars",{}).get("ortografia"),
+            "formato": stars.get("formato"),
+            "claridad": stars.get("claridad"),
+            "coherencia": stars.get("coherencia"),
+            "informacion_clave": stars.get("informacion_clave"),
+            "ortografia": stars.get("ortografia"),
             "feedback": cv.get("feedback")
         },
         "entornos_ideales": "Tareas con métricas claras y comunicación asincrónica.",
