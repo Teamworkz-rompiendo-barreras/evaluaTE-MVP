@@ -1,14 +1,15 @@
 # main.py
+from __future__ import annotations
 import io
 import json
 import logging
 import os
 from typing import Any, Dict, List, Optional
 
-from fastapi import FastAPI, File, Form, UploadFile, HTTPException
+from fastapi import FastAPI, File, Form, UploadFile, HTTPException, Body
 from fastapi.middleware.cors import CORSMiddleware
 from fastapi.responses import JSONResponse, StreamingResponse
-from pydantic import BaseModel, Field, validator
+from pydantic import BaseModel, Field
 
 # ==========
 # Integraciones propias (deben existir en tu repo)
@@ -20,13 +21,13 @@ except Exception as e:  # pragma: no cover
     logging.warning("DocumentIntelligenceService no disponible: %s", e)
 
 try:
-    from generate_report import generar_informe  # debe devolver JSON (str o dict)
+    from generate_report import generar_informe  # devuelve dict estructurado
 except Exception as e:  # pragma: no cover
     generar_informe = None
     logging.warning("generar_informe no disponible: %s", e)
 
 try:
-    from pdf_service import create_employability_pdf  # debe devolver bytes o ruta
+    from pdf_service import create_employability_pdf  # devuelve bytes o ruta
 except Exception as e:  # pragma: no cover
     create_employability_pdf = None
     logging.warning("create_employability_pdf no disponible: %s", e)
@@ -52,16 +53,22 @@ app.add_middleware(
 )
 
 # ==========
-# Modelos (única definición)
+# Modelos permisivos
 # ==========
-class SoftSkillResult(BaseModel):
+class LooseModel(BaseModel):
+    class Config:
+        allow_population_by_field_name = True
+        extra = "allow"  # ignorar/guardar campos desconocidos en .__dict__
+
+
+class SoftSkillResult(LooseModel):
     skill: str
     score: int = Field(ge=0, le=100)
     level: Optional[str] = None
     confidence: Optional[int] = Field(default=None, ge=0, le=100)
 
 
-class CvStars(BaseModel):
+class CvStars(LooseModel):
     formato: Optional[int] = Field(default=None, ge=1, le=5)
     claridad: Optional[int] = Field(default=None, ge=1, le=5)
     coherencia: Optional[int] = Field(default=None, ge=1, le=5)
@@ -69,14 +76,13 @@ class CvStars(BaseModel):
     ortografia: Optional[int] = Field(default=None, ge=1, le=5)
 
 
-class CvAnalysis(BaseModel):
+class CvAnalysis(LooseModel):
     strengths: List[str] = []
     weaknesses: List[str] = []
     feedback: Optional[str] = None
     summary: Optional[str] = None
-    stars: Optional[CvStars] = None  # para el bloque de estrellas
-    raw_text: Optional[str] = None   # texto extraído
-    # campos flexibles para experiencia/formación mínimos
+    stars: Optional[CvStars] = None  # estrellas 1–5
+    raw_text: Optional[str] = None
     experience: Optional[List[Dict[str, Any]]] = None
     education: Optional[List[Dict[str, Any]]] = None
     languages: Optional[List[Dict[str, Any]]] = None
@@ -84,8 +90,8 @@ class CvAnalysis(BaseModel):
     contact: Optional[Dict[str, Any]] = None
 
 
-class JobPreference(BaseModel):
-    areas: List[str] = []
+class JobPreference(LooseModel):
+    areas: List[str] = []          # también mapearemos roles/sectores
     needs: List[str] = []
     workMode: Optional[str] = None
     availability: Optional[str] = None
@@ -93,7 +99,7 @@ class JobPreference(BaseModel):
     hasDisabilityCert: Optional[bool] = None
 
 
-class EmployabilityReportRequest(BaseModel):
+class EmployabilityReportRequest(LooseModel):
     userId: Optional[str] = None
     fullName: Optional[str] = None
     softSkills: List[SoftSkillResult] = []
@@ -103,7 +109,7 @@ class EmployabilityReportRequest(BaseModel):
     logs: Optional[List[Dict[str, Any]]] = None
 
 
-class ReportResponse(BaseModel):
+class ReportResponse(LooseModel):
     report: Dict[str, Any] = {}
     recommendations: Optional[List[str]] = None
     level: Optional[str] = None
@@ -111,7 +117,7 @@ class ReportResponse(BaseModel):
 
 
 # ==========
-# Utilidades (únicas)
+# Utilidades
 # ==========
 def _safe_json_loads(maybe_json: Optional[str]) -> Any:
     if not maybe_json:
@@ -119,15 +125,14 @@ def _safe_json_loads(maybe_json: Optional[str]) -> Any:
     try:
         return json.loads(maybe_json)
     except Exception:
-        # Si viene como array/objeto ya parseado (poco probable por Form), devuélvelo
         return maybe_json
 
 
+def _stars(n: Optional[int]) -> str:
+    return "★" * int(n or 0) + "☆" * (5 - int(n or 0))
+
+
 def format_cv_analysis(cv: Optional[CvAnalysis]) -> str:
-    """
-    Construye el bloque 'CV ANALIZADO' que esperan las plantillas largas,
-    incluyendo estrellas (1–5) si están disponibles.
-    """
     if not cv:
         return (
             "CV ANALIZADO\n"
@@ -139,15 +144,13 @@ def format_cv_analysis(cv: Optional[CvAnalysis]) -> str:
         lines.append(f"Resumen: {cv.summary}")
 
     if cv.stars:
-        def stars(n: Optional[int]) -> str:
-            return "★" * int(n or 0) + "☆" * (5 - int(n or 0))
         lines.extend(
             [
-                f"Formato: {stars(cv.stars.formato)}",
-                f"Claridad: {stars(cv.stars.claridad)}",
-                f"Coherencia: {stars(cv.stars.coherencia)}",
-                f"Información clave: {stars(cv.stars.informacion_clave)}",
-                f"Ortografía: {stars(cv.stars.ortografia)}",
+                f"Formato: {_stars(cv.stars.formato)}",
+                f"Claridad: {_stars(cv.stars.claridad)}",
+                f"Coherencia: {_stars(cv.stars.coherencia)}",
+                f"Información clave: {_stars(cv.stars.informacion_clave)}",
+                f"Ortografía: {_stars(cv.stars.ortografia)}",
             ]
         )
 
@@ -164,7 +167,7 @@ def format_cv_analysis(cv: Optional[CvAnalysis]) -> str:
     if cv.feedback:
         lines.append("Correcciones/Acciones:")
         for line in cv.feedback.split("\n"):
-            line = line.strip()
+            line = line.strip("• ").strip()
             if line:
                 lines.append(f"- {line}")
 
@@ -191,10 +194,6 @@ def format_job_preferences(prefs: Optional[JobPreference]) -> str:
 
 
 def build_prompt(req: EmployabilityReportRequest) -> str:
-    """
-    Prompt largo con los marcadores que comprobabas en logs:
-    incluye 'CV ANALIZADO', 'JUEGOS COMPLETADOS', 'PREFERENCIAS LABORALES' y '13) FRASE FINAL'.
-    """
     lines = []
     lines.append("1) RESUMEN EJECUTIVO")
     if req.fullName:
@@ -208,7 +207,6 @@ def build_prompt(req: EmployabilityReportRequest) -> str:
         lines.append("- No disponibles")
 
     lines.append("\n3) " + format_cv_analysis(req.cvAnalysis))
-
     lines.append("\n4) " + format_job_preferences(req.jobPreferences))
 
     lines.append("\n5) JUEGOS COMPLETADOS")
@@ -217,24 +215,22 @@ def build_prompt(req: EmployabilityReportRequest) -> str:
     else:
         lines.append("- No consta")
 
-    # Espacio para otras 6–12 secciones si tu plantilla las usa
     lines.append("\n13) FRASE FINAL")
     lines.append("Cierra con un consejo accionable y motivador en 2–3 frases.")
 
     prompt = "\n".join(lines)
-    logger.info("Prompt generado (longitud %s). Contiene marcadores: CV ANALIZADO=%s, JUEGOS COMPLETADOS=%s, PREFERENCIAS LABORALES=%s, 13) FRASE FINAL=%s",
-                len(prompt),
-                "CV ANALIZADO" in prompt,
-                "JUEGOS COMPLETADOS" in prompt,
-                "PREFERENCIAS LABORALES" in prompt,
-                "13) FRASE FINAL" in prompt)
+    logger.info(
+        "Prompt generado (len=%s) | Marcadores: CV ANALIZADO=%s, JUEGOS COMPLETADOS=%s, PREFERENCIAS LABORALES=%s, 13) FRASE FINAL=%s",
+        len(prompt),
+        "CV ANALIZADO" in prompt,
+        "JUEGOS COMPLETADOS" in prompt,
+        "PREFERENCIAS LABORALES" in prompt,
+        "13) FRASE FINAL" in prompt,
+    )
     return prompt
 
 
 def normalize_ai_response(raw: Any) -> Dict[str, Any]:
-    """
-    Acepta dict o str (JSON) y devuelve dict con claves base.
-    """
     if raw is None:
         return {}
     if isinstance(raw, str):
@@ -245,6 +241,94 @@ def normalize_ai_response(raw: Any) -> Dict[str, Any]:
     if isinstance(raw, dict):
         return raw
     return {"summary": str(raw)}
+
+
+# ---------- Adaptadores de entrada (evitan 422) ----------
+def _norm_bool(v: Any) -> Optional[bool]:
+    if isinstance(v, bool):
+        return v
+    if v in (None, "", "null"):
+        return None
+    s = str(v).strip().lower()
+    if s in ("true", "1", "yes", "si", "sí"):
+        return True
+    if s in ("false", "0", "no"):
+        return False
+    return None
+
+def _normalize_softskills(raw: Any) -> List[SoftSkillResult]:
+    out: List[SoftSkillResult] = []
+    if not raw:
+        return out
+    for item in list(raw):
+        if not isinstance(item, dict):
+            continue
+        skill = item.get("skill") or item.get("name") or item.get("nombre")
+        score = item.get("score", item.get("value", item.get("puntuacion", 0)))
+        level = item.get("level") or item.get("nivel")
+        conf = item.get("confidence") or item.get("confianza")
+        try:
+            out.append(SoftSkillResult(skill=str(skill), score=int(score), level=level, confidence=None if conf is None else int(conf)))
+        except Exception:
+            # Si un ítem viene mal formado, lo ignoramos para no romper la petición
+            continue
+    return out
+
+def _normalize_prefs(raw: Any) -> JobPreference:
+    if not isinstance(raw, dict):
+        return JobPreference()
+    areas = raw.get("areas") or raw.get("roles") or raw.get("sectores") or []
+    if isinstance(areas, str):
+        areas = [a.strip() for a in areas.split(",") if a.strip()]
+    needs = raw.get("needs") or raw.get("necesidades") or []
+    if isinstance(needs, str):
+        needs = [n.strip() for n in needs.split(",") if n.strip()]
+    return JobPreference(
+        areas=list(areas),
+        needs=list(needs),
+        workMode=raw.get("workMode") or raw.get("modalidad"),
+        availability=raw.get("availability") or raw.get("disponibilidad"),
+        willingToRelocate=_norm_bool(raw.get("willingToRelocate") or raw.get("relocalizacion") or raw.get("relocalización")),
+        hasDisabilityCert=_norm_bool(raw.get("hasDisabilityCert") or raw.get("certificadoDiscapacidad")),
+    )
+
+def _normalize_cv(raw: Any) -> Optional[CvAnalysis]:
+    if not isinstance(raw, dict):
+        return None
+    stars = raw.get("stars") or raw.get("estrellas")
+    cv_stars = None
+    if isinstance(stars, dict):
+        cv_stars = CvStars(
+            formato=stars.get("formato") or stars.get("format"),
+            claridad=stars.get("claridad") or stars.get("clarity"),
+            coherencia=stars.get("coherencia") or stars.get("coherence"),
+            informacion_clave=stars.get("informacion_clave") or stars.get("informacionClave") or stars.get("key_info"),
+            ortografia=stars.get("ortografia") or stars.get("orthography") or stars.get("spelling"),
+        )
+    return CvAnalysis(
+        strengths=raw.get("strengths") or raw.get("fortalezas") or [],
+        weaknesses=raw.get("weaknesses") or raw.get("areas_mejora") or raw.get("areasDeMejora") or [],
+        feedback=raw.get("feedback") or raw.get("correcciones"),
+        summary=raw.get("summary") or raw.get("resumen"),
+        stars=cv_stars,
+        raw_text=raw.get("raw_text") or raw.get("texto"),
+        experience=raw.get("experience"),
+        education=raw.get("education"),
+        languages=raw.get("languages"),
+        software=raw.get("software"),
+        contact=raw.get("contact"),
+    )
+
+def _coerce_request(body: Dict[str, Any]) -> EmployabilityReportRequest:
+    return EmployabilityReportRequest(
+        userId=body.get("userId") or body.get("usuarioId"),
+        fullName=body.get("fullName") or body.get("nombre"),
+        softSkills=_normalize_softskills(body.get("softSkills") or body.get("soft_skills")),
+        cvAnalysis=_normalize_cv(body.get("cvAnalysis") or body.get("cv")),
+        jobPreferences=_normalize_prefs(body.get("jobPreferences") or body.get("preferencias")),
+        completedGames=body.get("completedGames") or body.get("juegos") or [],
+        logs=body.get("logs") or [],
+    )
 
 
 # ==========
@@ -263,17 +347,12 @@ async def analyze_cv(
     completedGamesJson: Optional[str] = Form(None),
     logsJson: Optional[str] = Form(None),
 ):
-    """
-    1) Analiza el CV (Azure Document Intelligence si está disponible).
-    Devuelve un bloque 'cvAnalysis' preparado para el siguiente paso.
-    """
     logger.info("Analizando CV PDF: %s", file.filename)
 
     content = await file.read()
     if not content:
         raise HTTPException(status_code=400, detail="Archivo vacío")
 
-    # Analizador principal
     cv_data: Dict[str, Any] = {}
     if DocumentIntelligenceService is None:
         logger.warning("DocumentIntelligenceService no configurado. Se devolverá análisis mínimo.")
@@ -290,7 +369,6 @@ async def analyze_cv(
             model_id = os.getenv("AZURE_DI_MODEL_ID", "prebuilt-document")
             di = DocumentIntelligenceService(model_id=model_id)
             result = di.analyze_cv_with_document_intelligence(content)
-            # Normaliza campos esperados por la app
             cv_data = {
                 "summary": result.get("summary") or result.get("cv_summary"),
                 "strengths": result.get("strengths", []),
@@ -308,7 +386,6 @@ async def analyze_cv(
             logger.exception("Fallo analizando CV con Document Intelligence: %s", e)
             raise HTTPException(status_code=500, detail=f"Error analizando CV: {e}")
 
-    # empaquetar respuesta
     payload = {
         "ok": True,
         "cvAnalysis": cv_data,
@@ -321,26 +398,25 @@ async def analyze_cv(
 
 
 @app.post("/api/informe-ia", response_model=ReportResponse)
-def informe_ia(req: EmployabilityReportRequest):
+def informe_ia(req_body: Dict[str, Any] = Body(...)):
     """
-    2) Genera el informe IA a partir del análisis del CV (si existe) + soft skills + preferencias.
+    Endpoint permisivo: acepta cualquier payload "razonable" del frontend,
+    lo normaliza y genera un informe estructurado.
     """
+    req = _coerce_request(req_body)
     logger.info("Generando informe profesional para usuario: %s", req.userId or "desconocido")
 
     if generar_informe is None:
         raise HTTPException(status_code=500, detail="Módulo de generación de informe no disponible")
 
     prompt = build_prompt(req)
-
     try:
-        raw = generar_informe(prompt)  # puede devolver str (JSON) o dict
-        data = normalize_ai_response(raw)
+        data = normalize_ai_response(generar_informe(prompt))
     except Exception as e:
         logger.exception("Error generando informe con IA: %s", e)
         raise HTTPException(status_code=500, detail=f"Error generando informe con IA: {e}")
 
-    # Normalización de claves esperadas en la UI
-    report = data.get("report") or data  # si ya viene formateado como report
+    report = data.get("report") or data
     recommendations = data.get("recommendations") or report.get("consejos_busqueda") or []
     level = data.get("level") or report.get("nivel") or None
     score = data.get("employabilityScore") or report.get("puntuacion") or None
@@ -354,22 +430,18 @@ def informe_ia(req: EmployabilityReportRequest):
 
 
 @app.post("/api/pdf/generate-report")
-def generate_report_pdf(req: EmployabilityReportRequest):
+def generate_report_pdf(req_body: Dict[str, Any] = Body(...)):
     """
-    3) Genera el PDF final. Requiere el resultado del paso 2 (informe IA) embebido
-       o, en su defecto, volverá a invocar a la IA con el prompt.
+    Genera el PDF final a partir del informe IA (que vuelve a generarse aquí).
     """
     if create_employability_pdf is None:
         raise HTTPException(status_code=500, detail="Servicio de PDF no disponible")
-
-    # Asegurar que tenemos contenido de informe
     if generar_informe is None:
         raise HTTPException(status_code=500, detail="Módulo de generación de informe no disponible")
 
-    # Si el cliente no pasó el informe ya estructurado, lo generamos
+    req = _coerce_request(req_body)
     prompt = build_prompt(req)
-    ai_raw = generar_informe(prompt)
-    ai_data = normalize_ai_response(ai_raw)
+    ai_data = normalize_ai_response(generar_informe(prompt))
 
     try:
         pdf_bytes_or_path = create_employability_pdf({
@@ -379,13 +451,12 @@ def generate_report_pdf(req: EmployabilityReportRequest):
             "cvAnalysis": req.cvAnalysis.dict() if req.cvAnalysis else None,
             "jobPreferences": req.jobPreferences.dict() if req.jobPreferences else None,
             "completedGames": req.completedGames or [],
-            "report": ai_data,  # pasa todo el informe IA
+            "report": ai_data,
         })
     except Exception as e:
         logger.exception("Error creando PDF: %s", e)
         raise HTTPException(status_code=500, detail=f"Error creando PDF: {e}")
 
-    # Soporta función que devuelva bytes o una ruta
     if isinstance(pdf_bytes_or_path, (bytes, bytearray)):
         return StreamingResponse(
             io.BytesIO(pdf_bytes_or_path),
@@ -400,15 +471,4 @@ def generate_report_pdf(req: EmployabilityReportRequest):
                 headers={"Content-Disposition": 'attachment; filename="informe_empleabilidad.pdf"'},
             )
     else:
-        # Por si el servicio devuelve una URL firmada u otra estructura
         return JSONResponse({"ok": True, "resource": pdf_bytes_or_path})
-
-# --- Punto de arranque (local / Azure App Service sin Docker) ---
-if __name__ == "__main__":
-    import os, uvicorn
-    uvicorn.run(
-        "main:app",                 # <- instancia FastAPI definida arriba
-        host="0.0.0.0",
-        port=int(os.getenv("PORT", "8080")),  # Azure expone PORT; por defecto 8080
-        log_level="info",
-    )
