@@ -44,3 +44,4 @@ El proyecto está configurado para desplegarse en Azure.
 
 gunicorn==22.0.0
 
+# Verificando despliegue - Sat Aug 23 00:19:59 CEST 2025
