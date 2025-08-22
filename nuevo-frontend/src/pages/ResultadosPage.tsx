@@ -374,6 +374,12 @@ const ResultadosPage: React.FC = () => {
           body: JSON.stringify(requestBody),
           signal: AbortSignal.timeout(180000), // Timeout de 3 minutos
         });
+        
+        if (import.meta.env.MODE !== 'production') {
+          console.log('🔍 DEBUG - Response status:', res.status);
+          console.log('🔍 DEBUG - Response headers:', Object.fromEntries(res.headers.entries()));
+        }
+        
         const data = await res.json();
         if (import.meta.env.MODE !== 'production') {
           // eslint-disable-next-line no-console
@@ -406,7 +412,27 @@ const ResultadosPage: React.FC = () => {
 
         // SOLUCIÓN: Cambiar la condición para usar los campos correctos del backend
         // El backend devuelve data.report.resumen_ejecutivo, no data.summary
-        if (res.ok && data && (data.report?.resumen_ejecutivo || data.employabilityScore || data.level)) {
+        if (import.meta.env.MODE !== 'production') {
+          console.log('🔍 DEBUG - Validando respuesta del backend:');
+          console.log('  - res.ok:', res.ok);
+          console.log('  - data exists:', !!data);
+          console.log('  - data.report:', data?.report);
+          console.log('  - data.report?.resumen_ejecutivo:', data?.report?.resumen_ejecutivo);
+          console.log('  - data.employabilityScore:', data?.employabilityScore);
+          console.log('  - data.level:', data?.level);
+          console.log('  - data.recommendations:', data?.recommendations);
+        }
+        
+        // NUEVA LÓGICA: Validar que la respuesta tenga la estructura esperada del backend
+        const hasValidReport = res.ok && data && (
+          // Verificar que exista al menos uno de estos campos requeridos
+          (data.report && typeof data.report === 'object') ||
+          (typeof data.employabilityScore === 'number') ||
+          (typeof data.level === 'string') ||
+          (Array.isArray(data.recommendations))
+        );
+        
+        if (hasValidReport) {
           // Generar informe profesional con el nuevo formato
           try {
             const candidateName = String(data?.report?.fullName || userFullName);
@@ -710,11 +736,26 @@ ${(() => {
             // eslint-disable-next-line no-console
             console.log('  - data:', !!data);
             // eslint-disable-next-line no-console
-            console.log('  - data.summary:', !!data?.summary);
+            console.log('  - data.report:', !!data?.report);
             // eslint-disable-next-line no-console
-            console.log('  - data.recommendations:', !!data?.recommendations);
+            console.log('  - data.report?.resumen_ejecutivo:', !!data?.report?.resumen_ejecutivo);
+            // eslint-disable-next-line no-console
+            console.log('  - data.employabilityScore:', data?.employabilityScore);
+            // eslint-disable-next-line no-console
+            console.log('  - data.level:', data?.level);
+            console.log('  - data completo:', data);
           }
-          setErrorIa('No se pudo generar el informe IA.');
+          
+          // NUEVO: Mensaje de error más específico basado en la respuesta
+          if (!res.ok) {
+            setErrorIa(`Error del servidor: ${res.status} ${res.statusText}`);
+          } else if (!data) {
+            setErrorIa('No se recibieron datos del servidor');
+          } else if (!data.report && !data.employabilityScore && !data.level && !data.recommendations) {
+            setErrorIa('La respuesta del servidor no tiene el formato esperado');
+          } else {
+            setErrorIa('No se pudo generar el informe IA.');
+          }
         }
       } catch (err) {
         // console.error('Error en fetchIaReport:', err);
