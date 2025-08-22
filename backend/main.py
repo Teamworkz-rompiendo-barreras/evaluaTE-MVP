@@ -73,6 +73,18 @@ class ReportResponse(BaseModel):
 async def root():
     return {"message": "Bienvenida/o a EvaluaTE", "status": "running"}
 
+@app.get("/health")
+async def health_check():
+    """
+    Endpoint de health check para monitoreo
+    """
+    return {
+        "status": "healthy",
+        "timestamp": datetime.now().isoformat(),
+        "service": "EvaluaTE Backend",
+        "version": "2.0.0"
+    }
+
 def _map_di_to_cvinfo(di: Dict[str, Any]) -> Dict[str, Any]:
     # Asegura claves esperadas por el renderizador
     return {
