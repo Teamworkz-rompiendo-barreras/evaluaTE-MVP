@@ -7,7 +7,7 @@ from datetime import datetime
 import json
 import logging
 
-from document_intelligence import analyze_cv_with_document_intelligence
+from document_intelligence import analyze_cv_with_improved_intelligence
 from report_generator import render_informe_estructurado
 
 logger = logging.getLogger("uvicorn")
@@ -110,7 +110,7 @@ async def generar_informe_sync(
     elif cv is not None:
         # Analiza PDF y mapea
         pdf_bytes = await cv.read()
-        di_raw = analyze_cv_with_document_intelligence(pdf_bytes)  # espera resultado
+        di_raw = analyze_cv_with_improved_intelligence(pdf_bytes)  # espera resultado
         cv_info = _map_di_to_cvinfo(di_raw)
 
     # Construir informe con estructura exacta
