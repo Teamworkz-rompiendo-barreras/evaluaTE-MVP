@@ -27,12 +27,12 @@ def _default_stars() -> Dict[str, int]:
 class DocumentIntelligenceService:
     def __init__(self, model_id: str = "prebuilt-document"):
         self.model_id = model_id
-        endpoint = os.getenv("AZURE_DI_ENDPOINT")
-        key = os.getenv("AZURE_DI_KEY")
+        endpoint = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT")
+        key = os.getenv("AZURE_DOCUMENT_INTELLIGENCE_KEY")
 
         if not endpoint or not key:
             raise RuntimeError(
-                "Faltan variables AZURE_DI_ENDPOINT y/o AZURE_DI_KEY para Document Intelligence."
+                "Faltan variables AZURE_DOCUMENT_INTELLIGENCE_ENDPOINT y/o AZURE_DOCUMENT_INTELLIGENCE_KEY para Document Intelligence."
             )
 
         self.client = DocumentAnalysisClient(

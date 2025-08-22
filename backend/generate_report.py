@@ -128,7 +128,10 @@ def _build_resumen_ejecutivo(name: Optional[str], soft: List[Dict[str,Any]], cv:
             if len(top)>1:
                 texto.append(f"También destaca en {top[1]['skill']} ({top[1]['score']}/100).")
         if low:
-            texto.append(f"Áreas a potenciar: {', '.join([f\"{x['skill']} ({x['score']}/100)\" for x in low])}.")
+            areas_text = []
+            for x in low:
+                areas_text.append(f"{x['skill']} ({x['score']}/100)")
+            texto.append(f"Áreas a potenciar: {', '.join(areas_text)}.")
     if prefs:
         pref_bits=[]
         if prefs.get('workMode'):
