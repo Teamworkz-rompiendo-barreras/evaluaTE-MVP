@@ -44,7 +44,7 @@ export interface PersonalState {
   completed: boolean;
 }
 
-// Estado inicial
+// Estado inicial del slice
 const initialState: PersonalState = {
   firstName: '',
   lastName: '',
@@ -79,6 +79,9 @@ const initialState: PersonalState = {
   // Inicialmente los datos personales no están completos
   completed: false,
 };
+
+// DEBUG: Log del estado inicial
+console.log('🔍 DEBUG - Estado inicial del personalSlice:', initialState);
 
 // Definición del slice
 export const personalSlice = createSlice({
@@ -147,11 +150,14 @@ export const personalSlice = createSlice({
 
     // Guarda análisis del CV
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
-      return {
+      console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', action.payload);
+      const newState = {
         ...state,
         cvAnalysis: action.payload,
         unlockedGames: Math.min(10, state.unlockedGames + 1),
       };
+      console.log('🔍 DEBUG - Nuevo estado después de saveCvAnalysis:', newState);
+      return newState;
     },
 
     // Desbloquea siguiente minijuego

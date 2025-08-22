@@ -271,9 +271,16 @@ const ResultadosPage: React.FC = () => {
       setLoadingIa(true);
       setErrorIa('');
       
+      // DEBUG: Agregar logs para entender el estado
+      console.log('🔍 DEBUG - Estado personal completo:', personal);
+      console.log('🔍 DEBUG - cvAnalysis del estado:', personal?.cvAnalysis);
+      console.log('🔍 DEBUG - cvFile del estado:', personal?.cvFile);
+      console.log('🔍 DEBUG - report del estado:', personal?.report);
+      
       // Esperar a tener el análisis del CV si ya hay un archivo cargado
       // Evita lanzar el informe sin datos del CV recién subido
       if (personal?.cvFile && !personal?.cvAnalysis) {
+        console.log('🔍 DEBUG - Hay CV pero no análisis, esperando...');
         setLoadingIa(false);
         return;
       }
@@ -282,6 +289,11 @@ const ResultadosPage: React.FC = () => {
         // SOLUCIÓN: Asegurar que siempre hay datos mínimos para el informe
         const userFullName = `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario';
         const validSoftSkills = filterValidSoftSkills(personal.softSkills || []);
+        
+        // DEBUG: Log del requestBody antes de enviarlo
+        console.log('🔍 DEBUG - userFullName:', userFullName);
+        console.log('🔍 DEBUG - validSoftSkills:', validSoftSkills);
+        console.log('🔍 DEBUG - cvAnalysis antes del request:', cvAnalysis);
         
         // Si no hay softSkills, proporcionar datos básicos para que el informe se genere
         const normalizeLevel = (value: unknown): 'bajo' | 'medio' | 'alto' => {
@@ -351,6 +363,10 @@ const ResultadosPage: React.FC = () => {
           completedGames: game?.completedGames || [],
           logs: []
         };
+
+        // DEBUG: Log del requestBody completo
+        console.log('🔍 DEBUG - requestBody completo:', requestBody);
+        console.log('🔍 DEBUG - cvAnalysis en requestBody:', requestBody.cvAnalysis);
 
         const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT), {
           method: 'POST',
