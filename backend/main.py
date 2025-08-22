@@ -152,3 +152,34 @@ async def generar_informe_sync(
         "createdAt": datetime.now().isoformat()
     }
     return resp
+
+# Endpoint de compatibilidad para mantener la API del frontend
+@app.post("/api/informe-ia", response_model=ReportResponse)
+async def generar_informe_ia_sync(
+    payload: str = Form(...),
+    cv: UploadFile | None = File(None)
+):
+    """
+    Endpoint de compatibilidad que redirige a /api/informe
+    """
+    return await generar_informe_sync(payload, cv)
+
+# Endpoint de feedback para estadísticas
+@app.get("/api/informe-ia/feedback/stats")
+async def get_feedback_stats():
+    """
+    Endpoint para obtener estadísticas de feedback
+    """
+    try:
+        # Por ahora devolvemos estadísticas básicas
+        # En el futuro se pueden conectar a una base de datos
+        stats = {
+            "total_feedback": 0,
+            "positive_feedback": 0,
+            "negative_feedback": 0,
+            "average_rating": 0.0,
+            "recent_feedback": []
+        }
+        return stats
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"Error al obtener estadísticas: {e}")
