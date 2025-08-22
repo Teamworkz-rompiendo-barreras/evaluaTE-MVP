@@ -46,3 +46,4 @@ gunicorn==22.0.0
 
 # Verificando despliegue - Sat Aug 23 00:19:59 CEST 2025
 # Forzando despliegue - 00:34:48
+# Forzando despliegue final - 00:49:14
