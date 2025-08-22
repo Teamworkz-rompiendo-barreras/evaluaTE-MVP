@@ -404,12 +404,16 @@ const ResultadosPage: React.FC = () => {
           return;
         }
 
-        if (res.ok && data && data.summary) {
+        // SOLUCIÓN: Cambiar la condición para usar los campos correctos del backend
+        // El backend devuelve data.report.resumen_ejecutivo, no data.summary
+        if (res.ok && data && (data.report?.resumen_ejecutivo || data.employabilityScore || data.level)) {
           // Generar informe profesional con el nuevo formato
           try {
             const candidateName = String(data?.report?.fullName || userFullName);
+            // Usar resumen_ejecutivo en lugar de summary
+            const summaryText = data?.report?.resumen_ejecutivo || 'Resumen no disponible';
             const cleanedSummary = formatListsForAccessibility(
-              removeLeadingName(String(data.summary || ''), candidateName)
+              removeLeadingName(String(summaryText), candidateName)
             );
             // Datos personales: preferir recomendaciones, luego report.ui y por último contact del CV
             const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
