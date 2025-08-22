@@ -119,6 +119,52 @@ class ReportResponse(LooseModel):
 # ==========
 # Utilidades
 # ==========
+def _to_int(v: Any) -> Optional[int]:
+    try:
+        return None if v is None or v == "" else int(v)
+    except Exception:
+        return None
+
+
+def _as_list_str(val: Any) -> Optional[List[str]]:
+    if val is None:
+        return None
+    if isinstance(val, list):
+        return [str(x) for x in val]
+    if isinstance(val, str):
+        parts = [p.strip() for p in val.replace(";", ",").split(",") if p.strip()]
+        return parts or None
+    return [str(val)]
+
+
+def _as_list_dict(val: Any) -> Optional[List[Dict[str, Any]]]:
+    """
+    Convierte:
+      - dict -> [dict]
+      - "texto" -> [{"text": "texto"}]
+      - [ "a", {"k":"v"} ] -> [{"text":"a"}, {"k":"v"}]
+      - None -> None
+    """
+    if val is None:
+        return None
+    if isinstance(val, list):
+        out: List[Dict[str, Any]] = []
+        for it in val:
+            if isinstance(it, dict):
+                out.append(it)
+            elif isinstance(it, str):
+                if it.strip():
+                    out.append({"text": it.strip()})
+            else:
+                out.append({"value": it})
+        return out
+    if isinstance(val, dict):
+        return [val]
+    if isinstance(val, str) and val.strip():
+        return [{"text": val.strip()}]
+    return None
+
+
 def _safe_json_loads(maybe_json: Optional[str]) -> Any:
     if not maybe_json:
         return None
@@ -295,16 +341,40 @@ def _normalize_prefs(raw: Any) -> JobPreference:
 def _normalize_cv(raw: Any) -> Optional[CvAnalysis]:
     if not isinstance(raw, dict):
         return None
-    stars = raw.get("stars") or raw.get("estrellas")
+
+    stars = raw.get("stars") or raw.get("estrellas") or {}
     cv_stars = None
     if isinstance(stars, dict):
         cv_stars = CvStars(
-            formato=stars.get("formato") or stars.get("format"),
-            claridad=stars.get("claridad") or stars.get("clarity"),
-            coherencia=stars.get("coherencia") or stars.get("coherence"),
-            informacion_clave=stars.get("informacion_clave") or stars.get("informacionClave") or stars.get("key_info"),
-            ortografia=stars.get("ortografia") or stars.get("orthography") or stars.get("spelling"),
+            formato=_to_int(stars.get("formato") or stars.get("format")),
+            claridad=_to_int(stars.get("claridad") or stars.get("clarity")),
+            coherencia=_to_int(stars.get("coherencia") or stars.get("coherence")),
+            informacion_clave=_to_int(
+                stars.get("informacion_clave")
+                or stars.get("informacionClave")
+                or stars.get("key_info")
+            ),
+            ortografia=_to_int(
+                stars.get("ortografia") or stars.get("orthography") or stars.get("spelling")
+            ),
         )
+
+    # ⚠️ Coerciones que evitan el error: si llega "regular" u otro texto,
+    # lo convertimos a [{"text":"regular"}] en vez de romper la validación.
+    experience = _as_list_dict(raw.get("experience") or raw.get("experiencia"))
+    education = _as_list_dict(raw.get("education") or raw.get("formacion") or raw.get("formación"))
+    languages = _as_list_dict(raw.get("languages") or raw.get("idiomas"))
+    software = _as_list_str(raw.get("software") or raw.get("tools"))
+
+    contact_raw = raw.get("contact")
+    contact: Optional[Dict[str, Any]]
+    if isinstance(contact_raw, dict):
+        contact = contact_raw
+    elif isinstance(contact_raw, str) and contact_raw.strip():
+        contact = {"text": contact_raw.strip()}
+    else:
+        contact = None
+
     return CvAnalysis(
         strengths=raw.get("strengths") or raw.get("fortalezas") or [],
         weaknesses=raw.get("weaknesses") or raw.get("areas_mejora") or raw.get("areasDeMejora") or [],
@@ -312,11 +382,11 @@ def _normalize_cv(raw: Any) -> Optional[CvAnalysis]:
         summary=raw.get("summary") or raw.get("resumen"),
         stars=cv_stars,
         raw_text=raw.get("raw_text") or raw.get("texto"),
-        experience=raw.get("experience"),
-        education=raw.get("education"),
-        languages=raw.get("languages"),
-        software=raw.get("software"),
-        contact=raw.get("contact"),
+        experience=experience,
+        education=education,
+        languages=languages,
+        software=software,
+        contact=contact,
     )
 
 def _coerce_request(body: Dict[str, Any]) -> EmployabilityReportRequest:
@@ -334,6 +404,11 @@ def _coerce_request(body: Dict[str, Any]) -> EmployabilityReportRequest:
 # ==========
 # Endpoints
 # ==========
+@app.get("/")
+def root():
+    return {"ok": True, "service": "evaluador-backend"}
+
+
 @app.get("/health")
 def health():
     return {"ok": True, "status": "healthy"}
