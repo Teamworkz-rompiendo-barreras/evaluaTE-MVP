@@ -1,0 +1,5 @@
+# Configuración de despliegue para Azure Web App
+# Este archivo es leído por Azure durante el despliegue
+
+[config]
+command = python azure-app-service-config.py
