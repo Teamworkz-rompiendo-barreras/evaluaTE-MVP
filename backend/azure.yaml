@@ -1,0 +1,4 @@
+language: python
+buildCommands:
+  - pip install -r requirements-azure.txt
+startupCommand: python azure-app-service-config.py
