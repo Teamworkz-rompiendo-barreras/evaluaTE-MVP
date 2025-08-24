@@ -48,6 +48,10 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
       "report": {...}  # salida de la IA (generate_report)
     }
     """
+    # Validar payload
+    if not isinstance(payload, dict):
+        raise ValueError("Payload debe ser un diccionario")
+    
     buf = BytesIO()
     c = canvas.Canvas(buf, pagesize=A4)
     width, height = A4
@@ -61,13 +65,28 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     c.drawString(margin_x, y, title)
     y -= 16
 
-    full_name = payload.get("fullName") or payload.get("userId") or ""
+    # Extraer nombre de forma segura
+    full_name = ""
+    if isinstance(payload, dict):
+        full_name = str(payload.get("fullName") or payload.get("userId") or "Usuario")
+    
     c.setFont("Helvetica", 11)
     y = _draw_wrapped_text(c, margin_x, y, f"Nombre: {full_name}", line_w, leading=14)
     y -= 4
 
-    report: Dict[str, Any] = payload.get("report") or {}
-    cv: Dict[str, Any] = payload.get("cvAnalysis") or {}
+    # Extraer report y cv de forma segura
+    report: Dict[str, Any] = {}
+    cv: Dict[str, Any] = {}
+    
+    if isinstance(payload, dict):
+        report = payload.get("report") or {}
+        cv = payload.get("cvAnalysis") or {}
+    
+    # Validar que sean diccionarios
+    if not isinstance(report, dict):
+        report = {}
+    if not isinstance(cv, dict):
+        cv = {}
 
     # Resumen
     c.setFont("Helvetica-Bold", 12)
