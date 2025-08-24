@@ -52,7 +52,6 @@
   font-weight: bold !important;
   font-size: 1.25rem !important;
   text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
-  color: #f2d680 !important; /* Amarillo solicitado para estrellas llenas */
 }
 
 .star-empty {
@@ -74,6 +73,51 @@
   
   .quality-indicators {
     padding: 0.75rem !important;
+  }
+}
+
+/* Estilos para el bloque de estrellas del CV */
+.cv-stars {
+  background-color: #f9fafb !important;
+  border-left: 4px solid #3b82f6 !important;
+  border-radius: 0.5rem !important;
+  padding: 1rem !important;
+  margin-bottom: 1rem !important;
+}
+
+.cv-stars .stars-list {
+  list-style: none !important;
+  padding: 0 !important;
+  margin: 0 !important;
+}
+
+.cv-stars .stars-list li {
+  display: flex !important;
+  justify-content: space-between !important;
+  align-items: center !important;
+  padding: 0.5rem 0 !important;
+  border-bottom: 1px solid #e5e7eb !important;
+}
+
+.cv-stars .stars-list li:last-child {
+  border-bottom: none !important;
+}
+
+.cv-stars .stars {
+  font-weight: bold !important;
+  font-size: 1.25rem !important;
+  text-shadow: 0 1px 2px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* Estilos para modo oscuro */
+@media (prefers-color-scheme: dark) {
+  .cv-stars {
+    background-color: #1f2937 !important;
+    border-left-color: #60a5fa !important;
+  }
+  
+  .cv-stars .stars-list li {
+    border-bottom-color: #374151 !important;
   }
 }
 

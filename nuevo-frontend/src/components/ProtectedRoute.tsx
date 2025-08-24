@@ -1,5 +1,5 @@
 // src/components/ProtectedRoute.tsx
-import React from 'react';
+import React, { useMemo } from 'react';
 import { useSelector } from 'react-redux';
 import { Navigate, useLocation } from 'react-router-dom';
 import type { RootState } from '@/app/store';
@@ -16,84 +16,90 @@ export default function ProtectedRoute({ step, children }: Props) {
   const game = useSelector((state: RootState) => state.game);
   const { captureMessage, addContext } = useSentry();
 
-  // Verificaciones robustas y tolerantes a formatos
-  const hasContactData = Boolean(personal.firstName && personal.lastName);
-  const hasPreferences = Boolean(
-    personal.jobPreferences &&
-    (
-      typeof personal.jobPreferences === 'string'
-        ? personal.jobPreferences.trim() !== ''
-        : Array.isArray(personal.jobPreferences?.areas)
-? personal.jobPreferences?.areas?.length > 0 && personal.jobPreferences?.areas?.[0]?.trim() !== ''
-          : false
-    )
-  );
-  // Usar el flag completed para la protección
-  const hasPersonalData = personal.completed;
-  const hasCompletedAllGames = game.completedGames && game.completedGames.length >= 10;
-  const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
+  // Memoizar las verificaciones para evitar recálculos innecesarios
+  const routeChecks = useMemo(() => {
+    const hasContactData = Boolean(personal.firstName && personal.lastName);
+    const hasPreferences = Boolean(
+      personal.jobPreferences &&
+      (
+        typeof personal.jobPreferences === 'string'
+          ? personal.jobPreferences.trim() !== ''
+          : Array.isArray(personal.jobPreferences?.areas)
+            ? personal.jobPreferences?.areas?.length > 0 && personal.jobPreferences?.areas?.[0]?.trim() !== ''
+            : false
+      )
+    );
+    const hasPersonalData = personal.completed;
+    const hasCompletedAllGames = game.completedGames && game.completedGames.length >= 10;
+    const hasCV = Boolean(personal.cvFile && personal.cvFile.fileName);
 
-  // Agregar contexto a Sentry
-  addContext('protectedRoute', {
-    step,
-    pathname: location.pathname,
-    hasContactData,
-    hasPreferences,
-    hasPersonalData,
-    hasCompletedAllGames,
-    hasCV,
-    completedGames: game.completedGames.length,
-  });
+    return {
+      hasContactData,
+      hasPreferences,
+      hasPersonalData,
+      hasCompletedAllGames,
+      hasCV,
+      completedGames: game.completedGames.length,
+    };
+  }, [personal, game]);
 
-  // (console.log eliminado para evitar advertencias de lint)
+  // Agregar contexto a Sentry solo cuando sea necesario
+  React.useEffect(() => {
+    if (import.meta.env.PROD) {
+      addContext('protectedRoute', {
+        step,
+        pathname: location.pathname,
+        ...routeChecks,
+      });
+    }
+  }, [step, location.pathname, routeChecks, addContext]);
 
-  // Función de redirección
-  const redirectTo = (path: string) => {
-    captureMessage(`Redirección de acceso: ${step} → ${path}`, 'info');
+  // Función de redirección optimizada
+  const redirectTo = React.useCallback((path: string) => {
+    // Solo reportar redirecciones importantes en producción
+    if (import.meta.env.PROD) {
+      captureMessage(`Redirección de acceso: ${step} → ${path}`, 'info');
+    }
     return <Navigate to={path} replace state={{ from: location }} />;
-  };
+  }, [step, location, captureMessage]);
 
   // Lógica de protección por paso
   switch (step) {
     case 'contact':
-      // Siempre permitir acceso a contact
       return <>{children}</>;
 
     case 'preferences':
-      // Solo redirigir si realmente faltan datos de contacto
-      if (!hasContactData) {
+      if (!routeChecks.hasContactData) {
         return redirectTo('/register/contact');
       }
       return <>{children}</>;
 
     case 'games':
-      if (!hasPersonalData) {
+      if (!routeChecks.hasPersonalData) {
         return redirectTo('/register/contact');
       }
       return <>{children}</>;
 
     case 'uploadCV':
-      // Solo redirigir si realmente faltan datos personales completos o juegos
-      if (!hasPersonalData) {
+      if (!routeChecks.hasPersonalData) {
         return redirectTo('/register/contact');
       }
-      if (!hasCompletedAllGames) {
+      if (!routeChecks.hasCompletedAllGames) {
         return redirectTo('/games');
       }
-      if (hasCV) {
+      if (routeChecks.hasCV) {
         return redirectTo('/resultados');
       }
       return <>{children}</>;
 
     case 'resultados':
-      // Solo redirigir si realmente falta algo
-      if (!hasPersonalData) {
+      if (!routeChecks.hasPersonalData) {
         return redirectTo('/register/contact');
       }
-      if (!hasCompletedAllGames) {
+      if (!routeChecks.hasCompletedAllGames) {
         return redirectTo('/games');
       }
-      if (!hasCV) {
+      if (!routeChecks.hasCV) {
         return redirectTo('/upload-cv');
       }
       return <>{children}</>;

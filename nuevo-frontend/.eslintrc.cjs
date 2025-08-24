@@ -4,6 +4,9 @@ module.exports = {
   parserOptions: {
     ecmaVersion: 'latest',
     sourceType: 'module',
+    ecmaFeatures: {
+      jsx: true,
+    },
   },
   env: {
     browser: true,
@@ -28,14 +31,25 @@ module.exports = {
     'react-hooks/exhaustive-deps': 'warn',
     '@typescript-eslint/no-unused-vars': ['error', { argsIgnorePattern: '^_' }],
     '@typescript-eslint/no-explicit-any': 'warn',
+    '@typescript-eslint/no-non-null-assertion': 'warn',
     'no-console': process.env.NODE_ENV === 'production' ? 'error' : 'warn',
     'prefer-const': 'error',
     'no-var': 'error',
     'no-undef': 'off',
+    'no-unused-vars': 'off', // Usar la regla de TypeScript en su lugar
   },
   settings: {
     react: {
       version: 'detect',
     },
   },
+  overrides: [
+    {
+      files: ['*.ts', '*.tsx'],
+      rules: {
+        '@typescript-eslint/explicit-function-return-type': 'off',
+        '@typescript-eslint/explicit-module-boundary-types': 'off',
+      },
+    },
+  ],
 }; 

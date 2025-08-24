@@ -134,7 +134,7 @@ export const personalSlice = createSlice({
         (
           typeof state.jobPreferences === 'string'
             ? state.jobPreferences.trim() !== ''
-            : Array.isArray(state.jobPreferences.areas) && state.jobPreferences.areas.length > 0 && state.jobPreferences.areas[0].trim() !== ''
+            : Array.isArray(state.jobPreferences.areas) && state.jobPreferences.areas.length > 0 && (state.jobPreferences.areas[0]?.trim() || '') !== ''
         )
       );
     },
@@ -150,13 +150,22 @@ export const personalSlice = createSlice({
 
     // Guarda análisis del CV
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
-      console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', action.payload);
+      // Solo log en desarrollo para debugging
+      if (import.meta.env.DEV) {
+        console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', action.payload);
+      }
+      
       const newState = {
         ...state,
         cvAnalysis: action.payload,
         unlockedGames: Math.min(10, state.unlockedGames + 1),
       };
-      console.log('🔍 DEBUG - Nuevo estado después de saveCvAnalysis:', newState);
+      
+      // Solo log en desarrollo para debugging
+      if (import.meta.env.DEV) {
+        console.log('🔍 DEBUG - Nuevo estado después de saveCvAnalysis:', newState);
+      }
+      
       return newState;
     },
 
@@ -202,7 +211,10 @@ export const personalSlice = createSlice({
       const existingIndex: number = logs.findIndex((log: SceneLog) => log.sceneId === String(sceneId));
 
       if (existingIndex > -1) {
-        logs[existingIndex].decisions.push(action.payload);
+        const existingLog = logs[existingIndex];
+        if (existingLog) {
+          existingLog.decisions.push(action.payload);
+        }
         state.report = {
           ...((state.report ?? {}) as EmployabilityReport),
         } as EmployabilityReport;
@@ -239,7 +251,7 @@ export const personalSlice = createSlice({
       const validSkills = filterValidSoftSkills(state.softSkills);
       
       if (validSkills.length === 0) {
-        if (process.env.NODE_ENV !== 'production') {
+        if (import.meta.env.MODE !== 'production') {
           // eslint-disable-next-line no-console
           console.warn('generateFinalReport: No hay softSkills válidos para generar el informe');
         }
@@ -340,7 +352,7 @@ function getRecommendationsFromProfile(params: {
   const validSkills = filterValidSoftSkills(params.softSkills);
   
   if (validSkills.length === 0) {
-    if (process.env.NODE_ENV !== 'production') {
+    if (import.meta.env.MODE !== 'production') {
       // eslint-disable-next-line no-console
       console.warn('getRecommendationsFromProfile: No hay softSkills válidos');
     }

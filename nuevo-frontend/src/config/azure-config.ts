@@ -28,13 +28,13 @@ export const AZURE_CONFIG = {
       // eslint-disable-next-line no-console
       console.log('🔍 DEBUG - import.meta.env.PROD:', import.meta.env.PROD);
       // eslint-disable-next-line no-console
-      console.log('🔍 DEBUG - import.meta.env.VITE_API_URL:', import.meta.env.VITE_API_URL);
+      console.log('🔍 DEBUG - import.meta.env.VITE_API_URL:', import.meta.env['VITE_API_URL']);
     }
     
     // Si hay una variable de entorno configurada, usarla
-    if (import.meta.env.VITE_API_URL) {
+    if (import.meta.env['VITE_API_URL']) {
       // Evitar log en producción
-      return import.meta.env.VITE_API_URL;
+      return import.meta.env['VITE_API_URL'];
     }
     
     // Si estamos en Azure, usar el backend de Azure

@@ -1,1 +1,1 @@
-python azure-app-service-config.py
+python startup.py

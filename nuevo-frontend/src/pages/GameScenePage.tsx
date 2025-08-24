@@ -86,7 +86,7 @@ const GameScenePage: React.FC = () => {
   }
 
   // Detectar si es la primera escena
-  const isFirstScene = currentGame && currentScene && currentGame.scenes[0].id === currentScene.id;
+  const isFirstScene = currentGame && currentScene && currentGame.scenes[0]?.id === currentScene.id;
 
   if (!currentGame) {
     return (

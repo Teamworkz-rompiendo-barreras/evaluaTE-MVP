@@ -131,6 +131,7 @@ export const useGameController = () => {
     const gameIndex = games.findIndex(game => game.id === gameId);
     if (gameIndex === 0) return true;
     const previousGame = games[gameIndex - 1];
+    if (!previousGame) return false;
     const completedGames = gameState?.completedGames || [];
     return completedGames.includes(previousGame.id);
   }, [gameState?.completedGames]);

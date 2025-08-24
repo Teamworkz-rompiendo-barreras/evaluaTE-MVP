@@ -1,14 +1,39 @@
-import { useCallback } from 'react';
+import { useCallback, useRef } from 'react';
 import { reportError, reportMessage, setUserContext, clearUserContext } from '../sentry';
 
 export const useSentry = () => {
+  // Ref para evitar eventos duplicados
+  const lastEventRef = useRef<{ message: string; timestamp: number } | null>(null);
+  const throttleTime = 2000; // 2 segundos entre eventos similares
+
   // Función para reportar errores
   const captureError = useCallback((error: Error, context?: Record<string, unknown>) => {
     reportError(error, context);
   }, []);
 
-  // Función para reportar mensajes
+  // Función para reportar mensajes con throttling inteligente
   const captureMessage = useCallback((message: string, level: 'info' | 'warning' | 'error' = 'info') => {
+    const now = Date.now();
+    const lastEvent = lastEventRef.current;
+    
+    // Evitar mensajes duplicados en un corto período
+    if (lastEvent && 
+        lastEvent.message === message && 
+        now - lastEvent.timestamp < throttleTime) {
+      return;
+    }
+    
+    // Actualizar referencia del último evento
+    lastEventRef.current = { message, timestamp: now };
+    
+    // Solo reportar mensajes importantes en desarrollo
+    if (import.meta.env.DEV && level === 'info') {
+      // En desarrollo, solo reportar warnings y errores
+      if (message.includes('Redirección de acceso')) {
+        return; // No reportar redirecciones en desarrollo
+      }
+    }
+    
     reportMessage(message, level);
   }, []);
 
@@ -29,9 +54,6 @@ export const useSentry = () => {
       import('@sentry/react').then(({ setContext }) => {
         setContext(key, value as Record<string, unknown>);
       });
-    } else {
-      // Aquí podrías agregar un log para desarrollo si lo necesitas
-      // console.log('addContext:', key, value);
     }
   }, []);
 
