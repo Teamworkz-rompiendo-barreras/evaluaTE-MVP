@@ -16,6 +16,7 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
+import { convertBackendResponseToNewFormat, generateNewFormatReport } from '../config/reportConfig';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -51,11 +52,9 @@ function extractRadarData(markdown: string): RadarDataItem[] {
   const matches = [...markdown.matchAll(regex)];
   for (const match of matches) {
     try {
-      if (match[1]) {
-        const json = JSON.parse(match[1]);
-        if (json && Array.isArray(json.radarData)) {
-          return json.radarData;
-        }
+      const json = JSON.parse(match[1]);
+      if (json && Array.isArray(json.radarData)) {
+        return json.radarData;
       }
     } catch (e) {
       // Ignorar errores de parseo
@@ -69,17 +68,39 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 
 // Eliminada: helper no usado tras la remaquetación del informe
 
+// Utilidades para limpiar duplicaciones de nombre en el resumen
+function escapeRegExp(text: string): string {
+  return text.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+}
 
+function removeLeadingName(summary: string, candidate: string): string {
+  if (!summary || !candidate) return summary;
+  const pattern = new RegExp(`^${escapeRegExp(candidate)}[\\s,.:;-]*`, 'i');
+  return summary.replace(pattern, '').trimStart();
+}
 
+// Convierte enumeraciones en línea ("1) ...; 2) ...") en listas Markdown accesibles
+function formatListsForAccessibility(text: string): string {
+  if (!text || typeof text !== 'string') return '';
+  let s = text.trim();
+  // Reemplazar patrones tipo "1) ", "2. " por "- " con salto de línea, manteniendo separadores previos
+  s = s.replace(/(^|[\s;(])\d+[).]\s+/g, '$1\n- ');
+  // Quitar ";" antes de saltos de línea de lista
+  s = s.replace(/;\s*\n- /g, '\n- ');
+  // Dejar un salto adicional tras ":" para separar párrafos y lista
+  s = s.replace(/:\s*\n- /g, ':\n\n- ');
+  // Eliminar puntuación terminal sobrante de cada item
+  s = s.replace(/(- [^\n]+)[;.,]\s*$/gm, '$1');
+  // Compactar saltos múltiples
+  s = s.replace(/\n{3,}/g, '\n\n');
+  return s;
+}
 
-
-// Helper para renderizar estrellas del CV de manera simplificada
-const stars = (n?: number) => {
-  const v = Math.max(0, Math.min(5, n ?? 0));
-  return '★'.repeat(v) + '☆'.repeat(5 - v);
-};
-
-
+// Genera estrellas de 1-5 para lectura fácil
+function renderStars(score: number): string {
+  const n = Math.max(0, Math.min(5, Math.round(score)));
+  return '★'.repeat(n) + '☆'.repeat(5 - n);
+}
 
 // Componente para renderizar estrellas (sin regex/escapes que rompan el lint)
 const Stars: React.FC<{ n: CvStars }> = ({ n }) => (
@@ -101,183 +122,109 @@ const renderDiagnosticoUI = (diag: CvDiagnostico) => (
 // Se mantiene para evitar warnings de TypeScript sobre tipos no utilizados
 void renderDiagnosticoUI;
 
+// Sanea frases con sectores concretos no respaldados por el CV
+function sanitizeProfileSummary(text: string, cvData: unknown): string {
+  try {
+    const summary = String(text || '');
+    const haystack = JSON.stringify(cvData || {}).toLowerCase();
+    // Reemplazar "experiencia en el sector de X" si X no aparece en el CV
+    return summary.replace(/experiencia en el sector de ([^,.;\n]+)/gi, (_m, sector) => {
+      const token = String(sector || '').trim().toLowerCase();
+      if (!token) return 'experiencia relevante';
+      return haystack.includes(token) ? _m : 'experiencia relevante';
+    });
+  } catch {
+    return String(text || '');
+  }
+}
 
+// Limpia frases como "Puntuación baja (35/100)" dejando solo la puntuación
+function sanitizeImprovementText(text: string): string {
+  try {
+    let s = String(text || '').trim();
+    // Normaliza espacios no separables
+    s = s.replace(/\u00A0/g, ' ');
+    // Mantener únicamente el valor numérico si viene como "Puntuación baja (35/100)"
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*\((\d+\s*\/\s*\d+)\)/giu, '($1)');
+    // O como "Puntuación baja: 35/100" o "Puntuación baja 35/100"
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)\s*:?\s*(\d+\s*\/\s*\d+)/giu, '$1');
+    // Eliminar etiquetas de calificación si no tienen número detrás
+    s = s.replace(/Puntuación\s+(?:muy\s+)?(?:baja|media|alta)/giu, '').replace(/\s{2,}/g, ' ').trim();
+    // Quitar guiones directamente antes de la puntuación para que quede como en "Fortalezas"
+    s = s.replace(/\s*[-–—]\s*\((\d+\s*\/\s*\d+)\)/gu, ' ($1)');
+    // Y si viniera sin paréntesis: "- 35/100" -> " 35/100"
+    s = s.replace(/\s*[-–—]\s*(\d+\s*\/\s*\d+)\b/gu, ' $1');
+    // Caso extra: em dash justo antes de paréntesis
+    s = s.replace(/([^\s])\s*[–—]\s*\(/gu, '$1 (');
+    s = s.replace(/\s{2,}/g, ' ').trim();
+    return s;
+  } catch {
+    return String(text || '');
+  }
+}
 
+  // Heurísticas simples para evaluar un CV sin IA (formato, claridad, coherencia, información clave, ortografía)
+type CvHeuristicInput = Partial<{
+  strengths: string[];
+  weaknesses: string[];
+  skills: string[];
+  education: string[];
+  feedback: string;
+    alerts: string[];
+}> | null;
 
+  function rateCvHeuristic(cv: CvHeuristicInput): { formato: number; claridad: number; coherencia: number; infoClave: number; ortografia: number; razones: string[] } {
+  if (!cv || typeof cv !== 'object') {
+    return { formato: 3, claridad: 3, coherencia: 3, infoClave: 3, ortografia: 3, razones: ['No se encontraron datos del CV.'] };
+  }
+  const strengths = Array.isArray(cv.strengths) ? cv.strengths : [];
+  const weaknesses = Array.isArray(cv.weaknesses) ? cv.weaknesses : [];
+  const skills = Array.isArray(cv.skills) ? cv.skills : [];
+  const education = Array.isArray(cv.education) ? cv.education : [];
+  const feedback = typeof cv.feedback === 'string' ? cv.feedback : '';
 
+  // Formato: presencia de secciones y longitud moderada del feedback
+  const formato = (education.length > 0 && skills.length > 3 ? 4 : 3) + (feedback.length > 120 ? 1 : 0);
 
+  // Claridad: cantidad de fortalezas y que el feedback exista
+  const claridad = (strengths.length >= 3 ? 4 : 3) + (feedback.length > 80 ? 1 : 0);
 
-// --- Helpers para construir el markdown deseado ---
-function buildDesiredMarkdown(payload: any, userFullName: string): string {
-  const r = payload?.report ?? payload ?? {};
+  // Coherencia: si aparecen puntos de mejora y fortalezas equilibrados
+  const coherencia = (weaknesses.length > 0 && strengths.length > 0) ? 4 : 3;
 
-  const fullName = userFullName || r?.personal_data?.name || 'Usuario/a';
-  const location = r?.personal_data?.location || 'No especificado';
-  const email = r?.personal_data?.email || 'No proporcionado';
-  const phone = r?.personal_data?.phone || 'No proporcionado';
-  const linkedin = r?.personal_data?.linkedin || '(no especificado; recomendado crear/actualizar)';
+  // Información clave: número de skills y educación
+  const infoClave = (skills.length >= 5 ? 4 : 3) + (education.length >= 1 ? 1 : 0);
 
-  const softSkills = Array.isArray(r?.soft_skills) ? r.soft_skills : [];
-  const cv = r?.cv_analysis ?? {};
-  const cvExp = Array.isArray(cv?.experience) ? cv.experience : [];
-  const cvEdu = Array.isArray(cv?.education) ? cv.education : [];
-  const cvLang = Array.isArray(cv?.languages) ? cv.languages : [];
-  const cvSoft = Array.isArray(cv?.software) ? cv.software : [];
+  // Ortografía: heurística básica (dobles espacios, signos mal cerrados, exceso de mayúsculas)
+    const doubleSpaces = /\s{2,}/.test(feedback);
+    const longAllCaps = /\b[A-ZÁÉÍÓÚÜÑ]{6,}\b/.test(feedback);
+    const punctuationIssues = /\s[,;:.]/.test(feedback);
+    const spellingHint = Array.isArray(cv.alerts) && cv.alerts.join(' ').toLowerCase().includes('faltas de ortografía');
+  let ortografiaBase = 4;
+  if (doubleSpaces) ortografiaBase -= 1;
+  if (longAllCaps) ortografiaBase -= 1;
+  if (punctuationIssues) ortografiaBase -= 1;
+    if (spellingHint) ortografiaBase -= 1;
+  const ortografia = Math.max(2, Math.min(5, ortografiaBase));
 
-  const improvement = Array.isArray(r?.improvement_areas) ? r.improvement_areas : [];
-  const environments = Array.isArray(r?.environments) ? r.environments : [];
-  const roles = Array.isArray(r?.suggested_roles) ? r.suggested_roles : [];
-  const plan = r?.action_plan ?? {};
-  const tips = (r?.job_search_advice?.tips ?? r?.consejos_busqueda ?? []) as string[];
-  const tools = r?.tools ?? {};
-  const completed = Array.isArray(r?.completed_games) ? r.completed_games : [];
-  const closing = r?.frase_final || '';
+  const razones: string[] = [];
+  if (skills.length > 0) razones.push(`Incluye ${skills.length} habilidades identificadas.`);
+  if (education.length > 0) razones.push(`Formación registrada (${education.length} entradas).`);
+  if (strengths.length > 0) razones.push(`Fortalezas destacadas (${strengths.length}).`);
+  if (weaknesses.length > 0) razones.push(`Áreas de mejora detectadas (${weaknesses.length}).`);
+  if (doubleSpaces) razones.push('Se detectaron dobles espacios.');
+  if (longAllCaps) razones.push('Uso excesivo de mayúsculas en palabras largas.');
+    if (punctuationIssues) razones.push('Espacios antes de signos de puntuación.');
+    if (spellingHint) razones.push('Se detectaron posibles faltas de ortografía.');
 
-  // Utilidades
-  const ssTop = [...softSkills].sort((a:any,b:any)=> (b?.score??0) - (a?.score??0));
-  const top = ssTop[0] ? `${ssTop[0].skill} (${ssTop[0].score}/100)` : 'competencias clave';
-  const secondary = ssTop.slice(1,4).map((s:any)=> s.skill).join(', ') || 'habilidades complementarias';
-
-  const bullets = (arr: any[], formatter: (x:any)=>string) =>
-    arr.length ? arr.map(formatter).map(s=>`* ${s}`).join('\n') : '* (no especificado)';
-
-  const expBullets = bullets(cvExp, (e:any) =>
-    `**${e.title || e.text || 'Experiencia'}${e.company ? `, ${e.company}` : ''}**${e.dates ? ` (${e.dates})` : ''}: ${e.summary || e.text || ''}`
-  );
-
-  const eduBullets = bullets(cvEdu, (e:any) =>
-    `${e.degree || e.text || 'Formación'}${e.center ? ` – ${e.center}` : ''}${e.year ? ` (${e.year})` : ''}`
-  );
-
-  const langs = cvLang.length ? cvLang.map((l:any)=> l.text || l.name || l).join(', ') : 'no especificado';
-  const softw = cvSoft.length ? cvSoft.join(', ') : 'Microsoft Office; Google Workspace';
-
-  const fortalezas = softSkills.length
-    ? softSkills.map((s:any)=> `* **${s.skill}** (${s.score || 0}/100)`).join('\n')
-    : '* (pendiente de evaluación)';
-
-  const areasMejora = improvement.length
-    ? improvement.map((a:any, i:number)=> `${i+1}. **${a.area || a.name}**${a.score ? ` (${a.score}/100)` : ''}${a.reason ? `: ${a.reason}` : ''}`).join('\n')
-    : '1. **Toma de decisiones** (35/100): definir criterios y checklists.\n2. **Influencia social** (35/100): preparar pitch corto con prueba de valor.';
-
-  const diagRapido = [
-    '**Logros cuantificados**: añade cifras y métricas específicas.',
-    `**Palabras clave** para ATS: ${(r?.job_search_advice?.ats_keywords ?? []).join(', ') || 'data entry, data quality, OCR, Excel, QA'}.`,
-    '**Estructura**: prioriza la experiencia más relevante.',
-    '**LinkedIn**: crear/optimizar y enlazar en el CV.'
-  ].map(s=>`* ${s}`).join('\n');
-
-  const entornoBullets = bullets(environments, (e:any)=> e);
-
-  const rolesBullets = roles.length
-    ? roles.map((role:any) => `* **${role.role}** — *${role.seniority || 'Junior'}* — **${role.remote_viable ? '100% remoto' : 'Remoto viable'}**.\n\n  *Razón:* ${role.reason || 'alineación competencial'}`).join('\n')
-    : '* **Data Entry / Back-office** — *Junior–Mid* — **100% remoto**.\n\n  *Razón:* experiencia directa en captura/transcripción y foco en precisión.';
-
-  const plan030 = Array.isArray(plan.short_term) ? plan.short_term.map((x:string)=>`* ${x}`).join('\n')
-    : '* Reescribir CV con métricas; crear LinkedIn.\n* Portafolio ligero con 2–3 pruebas de valor.\n* Acreditar tecleo e inglés funcional.';
-  const plan60  = Array.isArray(plan.medium_term) ? plan.medium_term.map((x:string)=>`* ${x}`).join('\n')
-    : '* 10–15 candidaturas/semana y 3 mensajes a reclutadores.\n* Aprender OCR/Airtable/Notion.\n* SOPs personales y checklist de calidad.';
-  const plan90  = Array.isArray(plan.long_term) ? plan.long_term.map((x:string)=>`* ${x}`).join('\n')
-    : '* 2–3 clientes/proyectos activos o 1 contrato estable.\n* Automatización ligera (macros/fórmulas).\n* Documentar KPIs (precisión, TAT).';
-
-  const tipsBullets = tips.length ? tips.map(t=>`* ${t}`).join('\n')
-    : '* Filtrar por **"remoto/teletrabajo"** y keywords relevantes.\n* Preparar **mensaje corto** para candidaturas.\n* Mantener un **registro** y hacer seguimientos.';
-
-  const toolsSec = [
-    `* **${(tools.productivity||['Excel','Google Sheets','Notion/Airtable']).join(', ')}**`,
-    `* **${(tools.job_search||['LinkedIn','Indeed']).join(', ')}**`,
-    `* **${(tools.learning||['Coursera','Udemy']).join(', ')}**`
-  ].join('\n');
-
-  const juegos = completed.length
-    ? completed.map((g:any)=> `* **${g}**: capitaliza la competencia en tus entregables.`).join('\n')
-    : '* **Liderazgo / Pensamiento analítico / Creatividad / Resiliencia**: refleja estas competencias con ejemplos y métricas.';
-
-  const miniplan = [
-    '**Decisiones:** usa una matriz rápida (Impacto × Esfuerzo) y límites de tiempo (10 min).',
-    '**Influencia:** prepara un **pitch** de 3 líneas + 1 prueba de valor (antes/después).'
-  ].map(s=>`* ${s}`).join('\n');
-
-  const frasesListas = [
-    '**Titular:** *Data Entry | QA de Datos | Back-office (100% remoto)*',
-    '**Acerca de (3 líneas):**',
-    '"Capturo y depuro datos con precisión y tiempos de entrega fiables. Experiencia en proyectos internacionales (Excel/Sheets, OCR, QA). Busco aportar orden y métricas claras a equipos remotos de operaciones y contenido."',
-    '**Mensaje corto a reclutador/cliente:**',
-    `"Hola, soy ${fullName.split(' ')[0] || '…'}. He realizado data entry y transcripción para clientes internacionales, con foco en precisión y SLA. Puedo enviar una muestra (hoja con limpieza + checklist de QA) y empezar de inmediato."`
-  ].join('\n');
-
-  const mensajeFinal = closing || `${fullName}, tienes una base excelente para **datos y operaciones remotas**. Con un CV cuantificado, un LinkedIn claro y 2–3 pruebas de valor, puedes convertir tu experiencia en **contratos estables** en 8–12 semanas.`;
-
-  // === Markdown EXACTO ===
-  return [
-`# Resumen ejecutivo
-
-Perfil con alta **${top}** y base sólida en **${secondary}**. Preferencia por **trabajo remoto** (si aplica), disponibilidad **completa** y apertura a **relocalización** (si aplica). ${cv?.summary ? cv.summary : 'Experiencia relevante en operaciones y gestión de datos.'} Áreas a potenciar: **${improvement.slice(0,2).map((a:any)=>a.area || a.name).join(' e ') || 'toma de decisiones e influencia social'}**.`,
-
-`# Datos personales
-
-* **Nombre:** ${fullName}
-* **Ubicación:** ${location}
-* **Email:** ${email}
-* **Teléfono:** ${phone}
-* **LinkedIn:** ${linkedin}`,
-
-`# Resumen del CV
-
-* **Experiencia (selección)**
-${expBullets}
-
-* **Formación** (selección)
-${eduBullets}
-
-* **Idiomas:** ${langs}
-* **Software:** ${softw}`,
-
-`# Fortalezas clave
-${fortalezas}`,
-
-`# Áreas de mejora priorizadas
-${areasMejora}`,
-
-`# Diagnóstico del CV (mejoras rápidas)
-${diagRapido}`,
-
-`# Entornos de trabajo ideales
-${entornoBullets}`,
-
-`# Roles sugeridos
-${rolesBullets}`,
-
-`# Plan de acción (30–60–90 días)
-
-**0–30 días (bases)**
-${plan030}
-
-**31–60 días (tracción)**
-${plan60}
-
-**61–90 días (consolidación)**
-${plan90}`,
-
-`# Consejos prácticos de búsqueda
-${tipsBullets}`,
-
-`# Herramientas útiles
-${toolsSec}`,
-
-`# Juegos completados y cómo capitalizarlos
-${juegos}`,
-
-`# Miniplan para mejorar "toma de decisiones" e "influencia social"
-${miniplan}`,
-
-`# Frases listas (para propuestas y LinkedIn)
-${frasesListas}`,
-
-`# Mensaje final
-
-${mensajeFinal}`
-  ].join('\n\n');
+  return {
+    formato: Math.max(1, Math.min(5, formato)),
+    claridad: Math.max(1, Math.min(5, claridad)),
+    coherencia: Math.max(1, Math.min(5, coherencia)),
+    infoClave: Math.max(1, Math.min(5, infoClave)),
+    ortografia,
+    razones,
+  };
 }
 
 const ResultadosPage: React.FC = () => {
@@ -291,28 +238,9 @@ const ResultadosPage: React.FC = () => {
   // Hook de valoración (alias para evitar choque de nombres)
   const uid = report?.userId ?? '';
   const rid = (report as any)?.id ?? '';
-  const { rateCv: submitRating } = useCvRating(uid, rid);
+  const { rateCv: submitRating, rating, ratingSaving, ratingError } = useCvRating(uid, rid);
 
   const asStars = (n: number): CvStars => (n < 1 ? 1 : n > 5 ? 5 : Math.round(n)) as CvStars;
-
-  // === NUEVO: estado local para estrellas del CV procedentes del backend ===
-  const [cvStarsLocal, setCvStarsLocal] = useState<CvDiagnostico | null>(null);
-  // Helpers robustos para mapear diversas respuestas del backend
-  const firstNum = (...vals: any[]) => {
-    for (const v of vals) {
-      const n = Number(v);
-      if (!Number.isNaN(n)) return n;
-    }
-    return undefined;
-  };
-  const toStarsScale = (v: unknown): CvStars => {
-    const n = Number(v);
-    if (Number.isNaN(n)) return 3 as CvStars;
-    let s = n;
-    if (s <= 1) s *= 5;       // 0–1 → 0–5
-    else if (s > 5) s /= 20;  // 0–100 → 0–5
-    return asStars(s);
-  };
 
   // Debug logging usando la utilidad (comentado para producción)
   // debugState(state, 'ResultadosPage');
@@ -337,22 +265,6 @@ const ResultadosPage: React.FC = () => {
   const [errorIa, setErrorIa] = useState<string>('');
   const fetchedRef = useRef(false);
   const [finalPhrase, setFinalPhrase] = useState<string>('');
-
-  // === NUEVO: fallback de impresión del radar (SVG → IMG) ===
-  const radarBoxRef = useRef<HTMLDivElement>(null);
-  const [radarImg, setRadarImg] = useState<string>('');
-  useEffect(() => {
-    const beforePrint = () => {
-      const svg = radarBoxRef.current?.querySelector('svg');
-      if (!svg) return;
-      const xml = new XMLSerializer().serializeToString(svg);
-      const blob = new Blob([xml], { type: 'image/svg+xml;charset=utf-8' });
-      const url = URL.createObjectURL(blob);
-      setRadarImg(url);
-    };
-    window.addEventListener('beforeprint', beforePrint);
-    return () => window.removeEventListener('beforeprint', beforePrint);
-  }, []);
 
   // Llamar al endpoint de IA al cargar la página
   useEffect(() => {
@@ -488,39 +400,11 @@ const ResultadosPage: React.FC = () => {
           // eslint-disable-next-line no-console
           console.log('🔍 DEBUG - Condition result:', res.ok && !!data?.summary);
         }
-
-        // === NUEVO: capturar estrellas del backend (analysis_json / stars) ===
-        try {
-          const aj =
-            (data?.report?.cvAnalysis as any)?.analysis_json ||
-            (data?.report?.cvAnalysis as any)?.stars ||
-            (data?.cvAnalysis as any)?.analysis_json ||
-            (data?.cvAnalysis as any)?.stars ||
-            null;
-          if (aj) {
-            const diag: CvDiagnostico = {
-              structure_score: toStarsScale(firstNum(aj?.structure?.score, aj?.structure_score, aj?.formato, aj?.formato_score)),
-              clarity_score: toStarsScale(firstNum(aj?.clarity?.score, aj?.clarity_score, aj?.claridad, aj?.claridad_score)),
-              coherence_score: toStarsScale(firstNum(aj?.coherence?.score, aj?.coherence_score, aj?.coherencia, aj?.coherencia_score)),
-              key_info_score: toStarsScale(firstNum(aj?.key_info?.score, aj?.key_info_score, aj?.informacion_clave, aj?.keyInfo_score)),
-              spelling_style_score: toStarsScale(firstNum(aj?.spelling?.score, aj?.spelling_style_score, aj?.ortografia, aj?.estilo)),
-              evidence: { structure: '', coherence: '', key_info: '', clarity: '', style: '' }
-            };
-            setCvStarsLocal(diag);
-          }
-        } catch { /* no-op */ }
-
         // Relajar condición: con que exista summary mostramos el informe; el resto es opcional
         // Preferir markdown determinista del backend si viene presente
         const mdDeterministic = (data?.report && (data.report.markdown || data.report.ui?.markdown)) || (data as any)?.markdown;
         if (res.ok && mdDeterministic) {
-          // === NUEVO: inyectar radarData si el markdown no lo trae ===
-          const hasRadar = /```json[\s\S]*"radarData"\s*:/.test(mdDeterministic);
-          const radarJson = { radarData: (softSkillsToSend || []).map(s => ({ skill: s.skill, score: s.score })) };
-          const mdWithRadar = hasRadar
-            ? mdDeterministic
-            : `${mdDeterministic}\n\n\`\`\`json\n${JSON.stringify(radarJson)}\n\`\`\`\n`;
-          setIaReport(String(mdWithRadar));
+          setIaReport(String(mdDeterministic));
           setFinalPhrase('');
           setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
           setLoadingIa(false);
@@ -540,66 +424,250 @@ const ResultadosPage: React.FC = () => {
           console.log('  - data.recommendations:', data?.recommendations);
         }
         
-        // NUEVA LÓGICA: Validar que la respuesta tenga la estructura esperada del backend
+        // NUEVA LÓGICA: Validar que la respuesta tenga la estructura esperada del NUEVO formato
         const hasValidReport = res.ok && data && (
-          // Verificar que exista al menos uno de estos campos requeridos
-          (data.report && typeof data.report === 'object') ||
-          (typeof data.employabilityScore === 'number') ||
-          (typeof data.level === 'string') ||
-          (Array.isArray(data.recommendations))
+          // Verificar que exista al menos uno de estos campos requeridos del nuevo esquema
+          (data.personal_data && typeof data.personal_data === 'object') ||
+          (data.profile_summary && typeof data.profile_summary === 'string') ||
+          (data.cv_summary && typeof data.cv_summary === 'string') ||
+          (Array.isArray(data.strengths)) ||
+          (Array.isArray(data.improvement_areas)) ||
+          (data.cv_analysis && typeof data.cv_analysis === 'object')
         );
         
         if (hasValidReport) {
-          // Generar informe profesional con el nuevo formato
+          // Generar informe profesional con el NUEVO formato estructurado
           try {
-            const candidateName = String(data?.report?.fullName || userFullName);
-
-
-            // Datos personales: preferir recomendaciones, luego report.ui y por último contact del CV
-            const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
-              || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
-              || {} as Record<string, unknown>;
-            const ca = (data?.report?.cvAnalysis || cvAnalysis || {}) as any;
-            const contactDirect = (ca && ca.contact) || {};
-            const candidateObj = (ca && (ca.cv_structured || ca.cv_analysis_structured || {}).candidate) || {};
-            const contact = (contactDirect && (contactDirect.emails || contactDirect.phones || contactDirect.location) ? contactDirect : {
-              emails: Array.isArray(candidateObj.emails) ? candidateObj.emails : [],
-              phones: Array.isArray(candidateObj.phones) ? candidateObj.phones : [],
-              location: candidateObj.location
-            }) as { emails?: string[]; phones?: string[]; location?: string };
-            const dp = {
-              name: (dpSrc?.['name'] as string) || candidateName,
-              location: (dpSrc?.['location'] as string) || contact?.location || 'No consta',
-              email: (dpSrc?.['email'] as string) || (Array.isArray(contact?.emails) ? contact.emails[0] : '') || 'No consta',
-              phone: (dpSrc?.['phone'] as string) || (Array.isArray(contact?.phones) ? contact.phones[0] : '') || 'No especificado',
-              disability_certificate: (dpSrc?.['disability_certificate'] != null)
-                ? (dpSrc['disability_certificate'] as string)
-                : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
-            };
-
-
-            const rec = ((data as { recommendations?: Record<string, unknown> })?.recommendations) || {} as Record<string, unknown>;
-
-            // Preferir analysis_json (persistido por backend) como fuente única de verdad para puntuaciones 1–5
-            const analysisJson: any = (data?.report?.cvAnalysis as any)?.analysis_json || null;
-            if (analysisJson && (!analysisJson.overall || analysisJson.overall.score == null)) {
-              throw new Error('Falta overall.score en analysis_json');
+            // Convertir la respuesta del backend al nuevo formato estructurado
+            const newFormatData = convertBackendResponseToNewFormat(data);
+            
+            if (!newFormatData) {
+              throw new Error('No se pudo convertir la respuesta del backend al nuevo formato');
             }
 
-            // Construir SIEMPRE el informe con tu formato deseado
-            let markdown = buildDesiredMarkdown(data, String(dp.name || candidateName));
-            // === NUEVO: añadir siempre bloque radarData para el extractor ===
-            const radarJson = { radarData: (softSkillsToSend || []).map(s => ({ skill: s.skill, score: s.score })) };
-            markdown += `\n\n\`\`\`json\n${JSON.stringify(radarJson)}\n\`\`\`\n`;
-            setIaReport(markdown);
+            // Generar el informe usando el nuevo formato estructurado
+            const informe = generateNewFormatReport(newFormatData);
+
+## Datos personales básicos
+- **Nombre**: ${dp.name || candidateName}
+- **Ubicación**: ${dp.location || 'No consta'}
+- **Email | Tel.**: ${(dp.email || 'No consta')} | ${(dp.phone || 'No consta')}
+- **Certificado de discapacidad**: ${(String(dp.disability_certificate || '').toLowerCase().includes('sí') ? 'Sí' : 'No')}
+
+## Resumen del perfil
+${formatListsForAccessibility(String(profileSummary || 'Resumen no disponible.'))}
+
+## Resumen del CV
+${(() => {
+  const txt = String(rec.resumen_cv || '');
+  const cvx = (data?.report?.cvAnalysis || cvAnalysis || {}) as { cv_structured?: any; cv_analysis_structured?: any };
+  const structured = (cvx.cv_structured || cvx.cv_analysis_structured || {}) as Record<string, any>;
+  const hasStructured = structured && (
+    Array.isArray(structured.experience) ||
+    Array.isArray(structured.education) ||
+    !!structured.candidate
+  );
+  // 1) Si hay datos estructurados, siempre los mostramos (con o sin texto adicional)
+  if (hasStructured) {
+    const fmtRange = (e: { start_date?: string; end_date?: string; current?: boolean }) => {
+      const s = String(e?.start_date || '').trim();
+      const end = (e?.current ? 'actualidad' : String(e?.end_date || '').trim());
+      const both = [s, end].filter(Boolean).join(' – ');
+      return both ? ` (${both})` : '';
+    };
+    const take = <T,>(arr: T[] | undefined, n = 4): T[] => Array.isArray(arr) ? arr.slice(0, n) : [];
+    const expLines = take(structured.experience as Array<{ position?: string; title?: string; company?: string; organization?: string; organisation?: string; start_date?: string; end_date?: string; current?: boolean }>, 4).map((e) => {
+      const role = String(e?.position || e?.title || 'Puesto').trim();
+      const company = String(e?.company || e?.organization || e?.organisation || '').trim();
+      const at = company ? ` en ${company}` : '';
+      return `- ${role}${at}${fmtRange(e)}`;
+    });
+    const eduLines = take(structured.education as Array<{ degree?: string; title?: string; institution?: string; school?: string; start_date?: string; end_date?: string }>, 4).map((it) => {
+      const degree = String(it?.degree || it?.title || 'Estudios').trim();
+      const inst = String(it?.institution || it?.school || '').trim();
+      const years = [it?.start_date, it?.end_date].filter(Boolean).join(' – ');
+      const tail = [inst, years].filter(Boolean).join(', ');
+      return `- ${degree}${tail ? ` — ${tail}` : ''}`;
+    });
+    const langLines = take(structured.languages as Array<{ language?: string; name?: string; level?: string }>, 5).map((l) => `- ${String(l?.language || l?.name || 'Idioma')} — ${String(l?.level || '').trim() || 'nivel no indicado'}`);
+    const rawSkills = structured?.skills as any;
+    let skillsArr: Array<{ name?: string; tool?: string } | string> = [];
+    if (Array.isArray(rawSkills)) {
+      skillsArr = rawSkills;
+    } else if (rawSkills && typeof rawSkills === 'object') {
+      const hard = Array.isArray(rawSkills.hard) ? rawSkills.hard : [];
+      const soft = Array.isArray(rawSkills.soft) ? rawSkills.soft : [];
+      skillsArr = [...hard, ...soft];
+    } else if (Array.isArray((structured as any)?.software)) {
+      skillsArr = (structured as any).software;
+    }
+    const skillLines = take(skillsArr, 8).map((s) => `- ${String((s as { name?: string }).name || (s as { tool?: string }).tool || s || '')}`);
+
+    const blocks: string[] = [];
+    if (expLines.length) blocks.push(`### Experiencia destacada\n${expLines.join('\n')}`);
+    if (eduLines.length) blocks.push(`### Formación\n${eduLines.join('\n')}`);
+    if (langLines.length) blocks.push(`### Idiomas\n${langLines.join('\n')}`);
+    if (skillLines.length) blocks.push(`### Herramientas/Software\n${skillLines.join('\n')}`);
+
+    const header = `Se ha extraído información estructurada del CV:`;
+    const textExtra = (txt && !/no hay información del cv/i.test(txt) && !/información.*limitad/i.test(txt))
+      ? `\n\n${formatListsForAccessibility(txt)}`
+      : '';
+    return `${header}\n\n${blocks.join('\n\n')}${textExtra}`;
+  }
+  // 2) Si no hay estructurado, usar el texto si es útil
+  if (txt && !/no hay información del cv/i.test(txt)) {
+    return formatListsForAccessibility(txt);
+  }
+  return 'Resumen del CV no disponible.';
+})()}
+
+### Valora este informe
+${(() => {
+  // Render simplificado de estrellas; cada click invoca el hook real
+  const disabledAttr = ratingSaving ? ' disabled' : '';
+  const stars = [1,2,3,4,5].map(v => `\n<button${disabledAttr} aria-label="Valorar ${v}" onClick="(window.__rateCv)&&window.__rateCv(${v})" style="background:none;border:none;cursor:pointer;font-size:22px;line-height:1;" title="Valorar con ${v} estrellas">${(rating ?? 0) >= v ? '★' : '☆'}</button>`).join('');
+  return `<div style="display:flex;align-items:center;gap:8px;">${stars}${ratingSaving ? ' Guardando…' : ''}${rating ? ' ¡Gracias!' : ''}${ratingError ? ` <span style="color:crimson">${ratingError}</span>` : ''}</div>`;
+})()}
+
+## Fortalezas
+${(() => {
+  const arr = Array.isArray(rec.fortalezas_clave) ? rec.fortalezas_clave : [];
+  return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
+})()}
+
+## Áreas de mejora y consejos
+${(() => {
+  const arr = Array.isArray((rec as { areas_mejora?: unknown[] }).areas_mejora) ? (rec as { areas_mejora?: unknown[] }).areas_mejora as unknown[] : [];
+  return arr.length > 0
+    ? arr.map((x: unknown) => `- ${sanitizeImprovementText(String(x))}`).join('\n')
+    : '- Información no disponible.';
+})()}
+
+## Análisis del CV (con puntuación 1–5 por apartado)
+${(() => {
+  // CRÍTICO: Priorizar diagnóstico determinista del CV
+  const dxFromReport: any = (data?.report?.cvAnalysis as any)?.diagnostico_cv || undefined;
+  const dxFromRec: any = (rec && (rec as any).diagnostico_cv) || {};
+  const dx: any = dxFromReport || dxFromRec || {};
+  
+  // Si hay diagnóstico determinista, usarlo
+  if (dx && typeof dx === 'object' && (
+    dx.structure_score || dx.clarity_score || dx.coherence_score || 
+    dx.key_info_score || dx.spelling_style_score
+  )) {
+    const lines: string[] = [];
+    const push = (k: string, v: any) => {
+      if (v == null) return;
+      const n = Number(v);
+      if (!Number.isFinite(n)) return;
+      lines.push(`- ${k}: ${renderStars(n)} (${n}/5)`);
+    };
+    
+    push('Formato', dx.structure_score);
+    push('Claridad', dx.clarity_score);
+    push('Coherencia', dx.coherence_score);
+    push('Información clave', dx.key_info_score);
+    push('Ortografía', dx.spelling_style_score);
+    
+    const text = lines.join('\n');
+    if (text.trim()) return text;
+  }
+  
+  // Fallback a analysis_json si está disponible
+  if (analysisJson && Array.isArray(analysisJson.dimensions)) {
+    const dims = analysisJson.dimensions as Array<{ id?: string; label?: string; score: number }>;
+    const name = (d: any) => (d.label || d.id || '').toString().trim();
+    return dims.map(d => `- ${name(d) || 'Dimensión'}: ${renderStars(Number(d.score))} (${Number(d.score)}/5)`).join('\n');
+  }
+  
+  // Último recurso: heurística local usando rateCv para evitar dejar el bloque vacío
+  const cvLocal: any = (data?.report?.cvAnalysis || cvAnalysis || null);
+  try {
+    const r = rateCvHeuristic(cvLocal);
+    return [
+      `- Formato: ${renderStars(r.formato)} (${r.formato}/5)`,
+      `- Claridad: ${renderStars(r.claridad)} (${r.claridad}/5)`,
+      `- Coherencia: ${renderStars(r.coherencia)} (${r.coherencia}/5)`,
+      `- Información clave: ${renderStars(r.infoClave)} (${r.infoClave}/5)`,
+      `- Ortografía: ${renderStars(r.ortografia)} (${r.ortografia}/5)`
+    ].join('\n');
+  } catch {
+    return 'no consta';
+  }
+})()}
+## Entornos de trabajo ideales
+${formatListsForAccessibility(String(rec.entornos_ideales || 'Información no disponible.'))}
+
+## Roles profesionales sugeridos
+${(() => {
+  const arr = Array.isArray(rec.roles_sugeridos) ? rec.roles_sugeridos : [];
+  return arr.length > 0 ? arr.map((x: unknown) => `- ${String(x)}`).join('\n') : '- Información no disponible.';
+})()}
+
+## Plan de acción
+### Corto plazo (0–30 días)
+${(() => { const steps = (rec as { plan_accion?: { corto_plazo?: unknown[] } })?.plan_accion?.corto_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Actualizar CV\n- Crear perfil en LinkedIn'; })()}
+
+### Medio plazo (1–3 meses)
+${(() => { const steps = (rec as { plan_accion?: { medio_plazo?: unknown[] } })?.plan_accion?.medio_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Completar formación específica\n- Ampliar red profesional'; })()}
+
+### Largo plazo (3–6+ meses)
+${(() => { const steps = (rec as { plan_accion?: { largo_plazo?: unknown[] } })?.plan_accion?.largo_plazo || []; return Array.isArray(steps) && steps.length > 0 ? steps.map((s: unknown) => `- ${String(s)}`).join('\n') : '- Desarrollar especialización\n- Buscar oportunidades de liderazgo'; })()}
+
+## Consejos de búsqueda de empleo
+${(() => {
+  try {
+    const adv: any = rec.consejos_busqueda || {};
+    const secciones: string[] = [];
+    const cvOpt = Array.isArray(adv.cv_optimization) ? adv.cv_optimization : [];
+    if (cvOpt.length > 0) secciones.push(`### Optimización del CV\n${cvOpt.map((x: unknown) => `- ${String(x)}`).join('\n')}`);
+    if (adv.letters_portfolio) secciones.push(`### Cartas y portfolio/casos\n${String(adv.letters_portfolio)}`);
+    const plats = Array.isArray(adv.recommended_platforms) ? adv.recommended_platforms : [];
+    if (plats.length > 0) secciones.push(`### Plataformas\n${plats.map((x: unknown) => `- ${String(x)}`).join('\n')}`);
+    if (adv.networking) secciones.push(`### Networking dirigido\n${String(adv.networking)}`);
+    if (adv.interview_tips) secciones.push(`### Entrevistas (método STAR)\n${String(adv.interview_tips)}`);
+    return secciones.length > 0 ? secciones.join('\n\n') : 'Consejos no disponibles.';
+  } catch {
+    return 'Consejos no disponibles.';
+  }
+})()}
+
+## Herramientas útiles y tecnología
+${(() => {
+  const tools: any = rec.herramientas_utiles || {};
+  const renderCat = (title: string, items: any[]) => {
+    if (!Array.isArray(items) || items.length === 0) return '';
+    return `### ${title}\n${items.map((it: any) => {
+      if (it && typeof it === 'object') {
+        const title = String(it.name || it.title || 'Recurso');
+        const desc = it.description ? `\n${String(it.description)}` : '';
+        const link = it.url ? `\n[${title}](${it.url})` : '';
+        return `- ${title}${desc}${link}`;
+      }
+      return `- ${String(it)}`;
+    }).join('\n')}`;
+  };
+  const parts = [
+    renderCat('Productividad/organización', tools.productividad || []),
+    renderCat('Búsqueda de empleo y alertas', tools.busqueda || []),
+    renderCat('Aprendizaje/certificación', tools.aprendizaje || []),
+    renderCat('Accesibilidad/neuroinclusión', tools.accesibilidad || []),
+  ].filter(Boolean);
+  return parts.length > 0 ? parts.join('\n\n') : 'Sin recomendaciones específicas. Prueba con LinkedIn Learning, InfoJobs y Platzi.';
+})()}
+
+---
+*Informe profesional generado el ${data.createdAt ? new Date(data.createdAt).toLocaleDateString('es-ES') : new Date().toLocaleDateString('es-ES')}*`;
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console
-              console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', markdown.length);
+              console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', informe.length);
               // eslint-disable-next-line no-console
-              console.log('✅ DEBUG - Primeros 200 caracteres:', markdown.substring(0, 200));
+              console.log('✅ DEBUG - Primeros 200 caracteres:', informe.substring(0, 200));
             }
+            setIaReport(informe);
             // Frase motivacional final destacada (fuera del markdown principal)
-            const frase = String((rec as any)['frase_final'] || '').trim();
+            const frase = String(rec.frase_final || '').trim();
             const prefix = 'Este informe ha sido elaborado en base a tus preferencias laborales, los resultados de los minijuegos y tu CV. ';
             const composed = (frase && !frase.toLowerCase().startsWith('este informe')) ? prefix + frase : (frase || prefix + 'Aprovecha tus fortalezas y confía en tu potencial. ¡Mucha suerte!');
             setFinalPhrase(composed);
@@ -858,45 +926,40 @@ const ResultadosPage: React.FC = () => {
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
-        <div className="w-full md:w-1/2 h-96" ref={radarBoxRef}>
-          <div className="screen-only h-full">
-            {radarData.length > 0 ? (
-              <ResponsiveRadar
-                data={radarData}
-                keys={["score"]}
-                indexBy="softskill"
-                margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
-                theme={{
-                  text: { fill: radarLabelColor, fontSize: 12 },
-                  grid: { line: { stroke: '#6B7280', strokeWidth: 1 } },
-                  axis: {
-                    ticks: { text: { fill: radarLabelColor } },
-                    domain: { line: { stroke: '#9CA3AF' } },
-                    legend: { text: { fill: radarLabelColor } },
-                  },
-                  crosshair: { line: { stroke: '#F3F4F6' } },
-                }}
-                borderColor="#3B82F6"
-                gridLabelOffset={20}
-                dotSize={12}
-                dotColor="#3B82F6"
-                dotBorderWidth={2}
-                dotBorderColor={{ theme: 'background' }}
-                colors={['#3B82F6']}
-                fillOpacity={0.35}
-                blendMode="multiply"
-                animate={true}
-                isInteractive={false}
-                legends={[]}
-              />
-            ) : (
-              <div className="flex items-center justify-center h-full text-gray-500">
-                <p>No hay datos suficientes para mostrar el gráfico de habilidades</p>
-              </div>
-            )}
-          </div>
-          {radarImg && (
-            <img src={radarImg} alt="Mapa de habilidades" className="print-only w-full h-96 object-contain" />
+        <div className="w-full md:w-1/2 h-96">
+          {radarData.length > 0 ? (
+            <ResponsiveRadar
+              data={radarData}
+              keys={["score"]}
+              indexBy="softskill"
+              margin={{ top: 40, right: 80, bottom: 40, left: 80 }}
+              theme={{
+                text: { fill: radarLabelColor, fontSize: 12 },
+                grid: { line: { stroke: '#6B7280', strokeWidth: 1 } },
+                axis: {
+                  ticks: { text: { fill: radarLabelColor } },
+                  domain: { line: { stroke: '#9CA3AF' } },
+                  legend: { text: { fill: radarLabelColor } },
+                },
+                crosshair: { line: { stroke: '#F3F4F6' } },
+              }}
+              borderColor="#3B82F6"
+              gridLabelOffset={20}
+              dotSize={12}
+              dotColor="#3B82F6"
+              dotBorderWidth={2}
+              dotBorderColor={{ theme: 'background' }}
+              colors={['#3B82F6']}
+              fillOpacity={0.35}
+              blendMode="multiply"
+              animate={true}
+              isInteractive={false}
+              legends={[]}
+            />
+          ) : (
+            <div className="flex items-center justify-center h-full text-gray-500">
+              <p>No hay datos suficientes para mostrar el gráfico de habilidades</p>
+            </div>
           )}
         </div>
         <div className="w-full md:w-1/2">
@@ -985,33 +1048,6 @@ const ResultadosPage: React.FC = () => {
         <>
           <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none">
             <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none">
-              
-              {/* --- Bloque de estrellas del CV --- */}
-              {(cvStarsLocal || (cvAnalysis as any)?.stars) && (
-                <div className="cv-stars print-page-break-inside-avoid mb-6 p-4 bg-gray-50 dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-600">
-                  <h3 className="text-lg font-semibold mb-3 text-gray-900 dark:text-gray-100">Diagnóstico del CV</h3>
-                  <ul className="stars-list space-y-2">
-                    {cvStarsLocal ? (
-                      <>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Formato:</span><span className="stars text-lg">{stars(cvStarsLocal.structure_score)}</span></li>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Claridad:</span><span className="stars text-lg">{stars(cvStarsLocal.clarity_score)}</span></li>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Coherencia:</span><span className="stars text-lg">{stars(cvStarsLocal.coherence_score)}</span></li>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Información clave:</span><span className="stars text-lg">{stars(cvStarsLocal.key_info_score)}</span></li>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Ortografía:</span><span className="stars text-lg">{stars(cvStarsLocal.spelling_style_score)}</span></li>
-                      </>
-                    ) : (
-                      <>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Formato:</span><span className="stars text-lg">{stars((cvAnalysis as any).stars?.formato)}</span></li>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Claridad:</span><span className="stars text-lg">{stars((cvAnalysis as any).stars?.claridad)}</span></li>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Coherencia:</span><span className="stars text-lg">{stars((cvAnalysis as any).stars?.coherencia)}</span></li>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Información clave:</span><span className="stars text-lg">{stars((cvAnalysis as any).stars?.informacion_clave)}</span></li>
-                        <li className="flex items-center justify-between"><span className="font-medium text-gray-700 dark:text-gray-300">Ortografía:</span><span className="stars text-lg">{stars((cvAnalysis as any).stars?.ortografia)}</span></li>
-                      </>
-                    )}
-                  </ul>
-                </div>
-              )}
-
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
                 components={{
@@ -1140,10 +1176,8 @@ const ResultadosPage: React.FC = () => {
                         // eslint-disable-next-line no-cond-assign
                         while ((m = re.exec(text)) !== null) {
                           const rawLabel = m[1];
-                          if (rawLabel && m[2]) {
-                            const normLabel = rawLabel.startsWith('Ortografía') ? 'Ortografía' : rawLabel;
-                            indicators.push({ label: normLabel, stars: m[2] });
-                          }
+                          const normLabel = rawLabel.startsWith('Ortografía') ? 'Ortografía' : rawLabel;
+                          indicators.push({ label: normLabel, stars: m[2] });
                         }
                         return (
                           <div {...props} className="quality-indicators">
@@ -1157,9 +1191,7 @@ const ResultadosPage: React.FC = () => {
                                     <span className="font-semibold">{it.label}:</span>
                                     <span>
                                       <span className="star-filled">{filledStars}</span>
-                                      <span className="star-empty">
-                                        {emptyStars}
-                                      </span>
+                                      <span className="star-empty">{emptyStars}</span>
                                     </span>
                                   </li>
                                 );
@@ -1173,43 +1205,41 @@ const ResultadosPage: React.FC = () => {
                         // Para otras estrellas en el texto, usar el renderizado normal
                         const parts = text.split(/((?:★+)(?:☆*))/g);
                         
-                        return (
-                          <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">
-                            {parts.map((part, index) => {
-                              const starMatch = part.match(/(★+)(☆*)/);
-                              if (starMatch) {
-                                const [, filledStars, emptyStars] = starMatch;
-                                if (filledStars && emptyStars) {
-                                  const filledCount = filledStars.length;
-                                  const totalCount = filledCount + emptyStars.length;
-                                  const percentage = (filledCount / totalCount) * 100;
-                                  
-                                  let colorClass = 'star-very-poor'; // Por defecto
-                                  if (percentage >= 90) colorClass = 'star-excellent'; // Verde esmeralda para excepcional
-                                  else if (percentage >= 80) colorClass = 'star-very-good'; // Verde para excelente
-                                  else if (percentage >= 70) colorClass = 'star-good'; // Verde lima para muy bueno
-                                  else if (percentage >= 60) colorClass = 'star-average'; // Amarillo para bueno
-                                  else if (percentage >= 50) colorClass = 'star-regular'; // Naranja para regular
-                                  else if (percentage >= 40) colorClass = 'star-below-average'; // Naranja para regular-bajo
-                                  else if (percentage >= 30) colorClass = 'star-poor'; // Rojo claro para bajo
-                                  else colorClass = 'star-very-poor'; // Rojo para muy bajo
-                                  
-                                  return (
-                                    <span key={index}>
-                                      <span className={`${colorClass} star-filled`}>
-                                        {filledStars}
-                                      </span>
-                                      <span className="star-empty">
-                                        {emptyStars}
-                                      </span>
-                                    </span>
-                                  );
-                                }
-                              }
-                              return part;
-                            })}
-                          </p>
-                        );
+                                                 return (
+                           <p {...props} className="text-gray-700 leading-relaxed mb-4 text-justify">
+                             {parts.map((part, index) => {
+                               const starMatch = part.match(/(★+)(☆*)/);
+                               if (starMatch) {
+                                 const [, filledStars, emptyStars] = starMatch;
+                                 const filledCount = filledStars.length;
+                                 const totalCount = filledCount + emptyStars.length;
+                                 const percentage = (filledCount / totalCount) * 100;
+                                 
+                                 let colorClass = 'star-very-poor'; // Por defecto
+                                 if (percentage >= 90) colorClass = 'star-excellent'; // Verde esmeralda para excepcional
+                                 else if (percentage >= 80) colorClass = 'star-very-good'; // Verde para excelente
+                                 else if (percentage >= 70) colorClass = 'star-good'; // Verde lima para muy bueno
+                                 else if (percentage >= 60) colorClass = 'star-average'; // Amarillo para bueno
+                                 else if (percentage >= 50) colorClass = 'star-regular'; // Naranja para regular
+                                 else if (percentage >= 40) colorClass = 'star-below-average'; // Naranja para regular-bajo
+                                 else if (percentage >= 30) colorClass = 'star-poor'; // Rojo claro para bajo
+                                 else colorClass = 'star-very-poor'; // Rojo para muy bajo
+                                 
+                                 return (
+                                   <span key={index}>
+                                     <span className={`${colorClass} star-filled`}>
+                                       {filledStars}
+                                     </span>
+                                     <span className="star-empty">
+                                       {emptyStars}
+                                     </span>
+                                   </span>
+                                 );
+                               }
+                               return part;
+                             })}
+                           </p>
+                         );
                       }
                     }
                     return (

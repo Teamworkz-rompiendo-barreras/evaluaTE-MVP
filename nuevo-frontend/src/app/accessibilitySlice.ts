@@ -45,7 +45,10 @@ export const accessibilitySlice = createSlice({
       const levels: ('normal' | 'alto' | 'muy-alto')[] = ['normal', 'alto', 'muy-alto'];
       const currentIndex = levels.indexOf(state.contrastLevel);
       const nextIndex = (currentIndex + 1) % levels.length;
-      state.contrastLevel = levels[nextIndex];
+      const nextLevel = levels[nextIndex];
+      if (nextLevel) {
+        state.contrastLevel = nextLevel;
+      }
     },
   },
 });

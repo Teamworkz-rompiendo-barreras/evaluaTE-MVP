@@ -15,7 +15,7 @@ export const verifyAndFixGames = () => {
     
     // Verificar que la última escena sea game-complete
     const lastScene = game.scenes[game.scenes.length - 1];
-    if (lastScene.id !== 'game-complete') {
+    if (lastScene && lastScene.id !== 'game-complete') {
       issues.push(`${game.title}: No tiene escena game-complete al final`);
     }
     

@@ -22,7 +22,10 @@ export const fixGameScenes = (games: Game[]): Game[] => {
     
     if (feedbackFinalIndex !== -1) {
       // Agregar nextSceneId a feedback-final
-      game.scenes[feedbackFinalIndex].nextSceneId = 'game-complete';
+      const feedbackScene = game.scenes[feedbackFinalIndex];
+      if (feedbackScene) {
+        feedbackScene.nextSceneId = 'game-complete';
+      }
       
       // Agregar escena game-complete al final
       game.scenes.push({

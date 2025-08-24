@@ -97,18 +97,27 @@ export default function UploadCVPage() {
         }
         
         // DEBUG: Log del análisis recibido
-        console.log('🔍 DEBUG - Análisis de CV recibido del backend:', cvAnalysis);
+        if (import.meta.env.DEV) {
+          console.log('🔍 DEBUG - Análisis de CV recibido del backend:', cvAnalysis);
+        }
         
         // Guardar el análisis en el estado de Redux
         dispatch(saveCvAnalysis(cvAnalysis));
-        console.log('🔍 DEBUG - Análisis de CV guardado en Redux');
+        
+        if (import.meta.env.DEV) {
+          console.log('🔍 DEBUG - Análisis de CV guardado en Redux');
+        }
         
         // Verificar que se guardó correctamente
         if (cvAnalysis && (cvAnalysis.strengths?.length > 0 || cvAnalysis.skills?.length > 0 || cvAnalysis.weaknesses?.length > 0)) {
-          console.log('🔍 DEBUG - CV analizado con datos reales');
+          if (import.meta.env.DEV) {
+            console.log('🔍 DEBUG - CV analizado con datos reales');
+          }
           // CV analizado con datos reales
         } else {
-          console.log('🔍 DEBUG - CV analizado pero sin datos significativos');
+          if (import.meta.env.DEV) {
+            console.log('🔍 DEBUG - CV analizado pero sin datos significativos');
+          }
           // CV analizado pero sin datos significativos
         }
       } else {
