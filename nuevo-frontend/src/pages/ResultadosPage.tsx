@@ -946,11 +946,11 @@ const ResultadosPage: React.FC = () => {
         </div>
       )}
 
-      {/* Mensaje de error */}
-      {errorIa && (
+      {/* Mensaje de error (solo si no hay informe generado) */}
+      {errorIa && !iaReport && (
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
-          <strong className="font-bold">Error de conexión.</strong>
-          <span className="block sm:inline"> No se pudo generar el informe en este momento. Por favor, inténtalo de nuevo más tarde.</span>
+          <strong className="font-bold">Aviso.</strong>
+          <span className="block sm:inline"> {errorIa}</span>
         </div>
       )}
 
