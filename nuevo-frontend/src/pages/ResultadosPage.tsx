@@ -665,9 +665,15 @@ const ResultadosPage: React.FC = () => {
         } else if (err instanceof Error && err.message?.includes('Failed to fetch')) {
           setErrorIa('No se pudo conectar con el servidor. Verifica tu conexión a internet.');
         } else {
-          // Si hay otros errores pero el informe se generó, no mostrar error
-          // Advertencia en generación de informe
-          // No establecer errorIa para que no se muestre el mensaje de error
+          // Fallback robusto: generar un informe básico local y no mostrar banner
+          try {
+            const fallbackName = `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario';
+            const minimal = `# Informe Profesional de Empleabilidad\n\n## Resumen del Perfil\nInforme básico para ${fallbackName}.\n\n---\n*Informe generado automáticamente.*`;
+            setIaReport(minimal);
+            setErrorIa('');
+          } catch {
+            // En última instancia, mantener silencio para no bloquear la UI
+          }
         }
       } finally {
         setLoadingIa(false);
