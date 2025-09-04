@@ -31,6 +31,7 @@ import json
 import sys
 import io
 import os
+from datetime import datetime
 from typing import Dict, List, Any, Optional
 
 try:
@@ -173,7 +174,7 @@ INSTRUCCIONES DETALLADAS:
 1. **Información Personal**: Extrae nombre completo, email, teléfono, ubicación, LinkedIn, portfolio
 2. **Experiencia Laboral**: Identifica empresas, cargos, fechas (inicio-fin), responsabilidades, logros cuantificables, tecnologías utilizadas
 3. **Formación Académica**: Títulos, instituciones, fechas, calificaciones, proyectos destacados
-4. **Habilidades Técnicas**: Lenguajes de programación, frameworks, herramientas, bases de datos, metodologías
+4. **Habilidades Técnicas**: Lenguajes de programación, frameworks, herramientas, bases de datos, metodologías. Para cada herramienta, identifica el nivel de competencia (avanzado, intermedio, básico, experto, etc.) basándote en indicadores visuales como puntos, barras, estrellas o texto descriptivo
 5. **Habilidades Blandas**: Comunicación, liderazgo, trabajo en equipo, resolución de problemas, adaptabilidad
 6. **Idiomas**: Idiomas y niveles (nativo, avanzado, intermedio, básico)
 7. **Certificaciones**: Certificaciones profesionales, cursos, acreditaciones
@@ -221,7 +222,12 @@ Devuelve SOLO un JSON válido con esta estructura exacta:
       "proyectos": ["string"]
     }}
   ],
-  "habilidades_tecnicas": ["string"],
+  "habilidades_tecnicas": [
+    {{
+      "herramienta": "string",
+      "nivel": "string"
+    }}
+  ],
   "habilidades_blandas": ["string"],
   "idiomas": [
     {{
@@ -352,9 +358,89 @@ def extract_contact_info_enhanced(text: str) -> Dict[str, str]:
 
 def analyze_cv_structure_ai(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     """
-    Analiza la estructura del CV usando los datos extraídos por IA
+    Analiza la estructura del CV usando los datos extraídos por IA.
+
+    Backward compatible: mantiene las claves históricas
+    - structure, coherence, experience, skills, softSkills, languages, education,
+      strengths, weaknesses, feedback, alerts, total_years_experience, *_count
+
+    Nuevos campos (para análisis real, no heurístico):
+    - observations: Lista de hallazgos específicos basados en evidencia
+    - direct_scores: Puntuaciones 0–100
+        - overall, dates_completeness, chronology, sections_coverage,
+          metrics_and_achievements, skills_depth, languages_coverage, education_depth
+    - structured: Análisis estructurado
+        - dates: métricas de fechas y rangos
+        - chronology: verificación de orden por fecha de inicio
+        - sections: presentes y faltantes
+        - achievements: conteo de logros con métricas y ejemplos
+        - skills, languages, education: métricas detalladas
     """
-    # Calcular métricas
+    # Helpers locales para fechas y normalización ----------------------------
+    def _normalize_str(value: Any) -> str:
+        return (value or "").strip() if isinstance(value, str) else ""
+
+    def _parse_year_month(date_str: Any) -> Optional[tuple[int, int]]:
+        """Parsea una fecha flexible (ES/EN) devolviendo (año, mes) aproximados.
+        Devuelve None cuando no se puede inferir.
+        """
+        s = _normalize_str(date_str).lower()
+        if not s:
+            return None
+
+        # Ongoing roles
+        if any(k in s for k in ["actual", "actualidad", "presente", "present", "now", "hoy"]):
+            return (datetime.utcnow().year, datetime.utcnow().month)
+
+        # Meses ES/EN
+        month_map = {
+            "enero": 1, "febrero": 2, "marzo": 3, "abril": 4, "mayo": 5, "junio": 6,
+            "julio": 7, "agosto": 8, "septiembre": 9, "setiembre": 9, "octubre": 10,
+            "noviembre": 11, "diciembre": 12,
+            "january": 1, "february": 2, "march": 3, "april": 4, "may": 5, "june": 6,
+            "july": 7, "august": 8, "september": 9, "october": 10, "november": 11, "december": 12,
+            "ene": 1, "feb": 2, "mar": 3, "abr": 4, "may": 5, "jun": 6, "jul": 7, "ago": 8, "sep": 9, "oct": 10, "nov": 11, "dic": 12,
+            "jan": 1, "feb": 2, "mar": 3, "apr": 4, "may": 5, "jun": 6, "jul": 7, "aug": 8, "sep": 9, "oct": 10, "nov": 11, "dec": 12,
+        }
+
+        # Buscar año
+        year_match = re.search(r"(19|20)\d{2}", s)
+        year = int(year_match.group()) if year_match else None
+
+        # Buscar mes por nombre o número
+        month = None
+        for name, num in month_map.items():
+            if re.search(rf"\b{name}\b", s):
+                month = num
+                break
+        if month is None:
+            # Formatos 2021-05, 05/2021, 2021/5, etc.
+            m = re.search(r"(?:(?:^|[^\d])(\d{4})[-/\.](\d{1,2}))|(?:(\d{1,2})[-/\.]((?:19|20)\d{2}))", s)
+            if m:
+                try:
+                    if m.group(1) and m.group(2):
+                        year = int(m.group(1))
+                        month = int(m.group(2))
+                    elif m.group(3) and m.group(4):
+                        month = int(m.group(3))
+                        year = int(m.group(4))
+                except Exception:
+                    pass
+
+        if year is None:
+            return None
+        if month is None or month < 1 or month > 12:
+            month = 1
+        return (year, month)
+
+    def _months_between(start: Optional[tuple[int, int]], end: Optional[tuple[int, int]]) -> int:
+        if not start or not end:
+            return 0
+        sy, sm = start
+        ey, em = end
+        return max(0, (ey - sy) * 12 + (em - sm))
+
+    # Calcular métricas básicas de presencia ---------------------------------
     has_contact = bool(cv_data.get("contacto", {}))
     has_experience = len(cv_data.get("experiencia_laboral", [])) > 0
     has_education = len(cv_data.get("formacion_academica", [])) > 0
@@ -383,36 +469,60 @@ def analyze_cv_structure_ai(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     else:
         structure = "mejorable"
     
-    # Analizar experiencia
+    # Analizar experiencia: fechas, cronología y duración ---------------------
     experience = cv_data.get("experiencia_laboral", [])
-    total_years = 0
-    
-    for exp in experience:
-        fecha_inicio = exp.get("fecha_inicio", "")
-        fecha_fin = exp.get("fecha_fin", "")
-        
-        if fecha_inicio and fecha_fin:
-            try:
-                # Extraer año de inicio
-                start_year_match = re.search(r'\d{4}', fecha_inicio)
-                if start_year_match:
-                    start_year = int(start_year_match.group())
-                    
-                    # Calcular año de fin
-                    if fecha_fin.lower() in ["actualidad", "presente", "hoy", "now"]:
-                        end_year = 2024
-                    else:
-                        end_year_match = re.search(r'\d{4}', fecha_fin)
-                        if end_year_match:
-                            end_year = int(end_year_match.group())
-                        else:
-                            end_year = start_year + 1
-                    
-                    total_years += max(0, end_year - start_year)
-            except:
+    total_months_experience = 0
+    missing_start_date_items: List[Dict[str, Any]] = []
+    missing_end_date_items: List[Dict[str, Any]] = []
+    inconsistent_ranges: List[Dict[str, Any]] = []
+    ongoing_roles_count = 0
+
+    parsed_experience: List[Dict[str, Any]] = []
+    for idx, exp in enumerate(experience):
+        empresa = _normalize_str(exp.get("empresa")) or _normalize_str(exp.get("company"))
+        cargo = _normalize_str(exp.get("cargo")) or _normalize_str(exp.get("role"))
+        s_raw = exp.get("fecha_inicio") or exp.get("start_date")
+        e_raw = exp.get("fecha_fin") or exp.get("end_date")
+        s_parsed = _parse_year_month(s_raw)
+        e_parsed = _parse_year_month(e_raw)
+
+        if s_parsed is None:
+            missing_start_date_items.append({"index": idx, "empresa": empresa, "cargo": cargo})
+        if e_parsed is None:
+            missing_end_date_items.append({"index": idx, "empresa": empresa, "cargo": cargo})
+        else:
+            # Si el texto indica presente/actualidad, lo contamos como en curso
+            if isinstance(e_raw, str) and e_raw.strip().lower() in ["actualidad", "presente", "present", "now", "hoy", "actual"]:
+                ongoing_roles_count += 1
+
+        if s_parsed and e_parsed:
+            total_months_experience += _months_between(s_parsed, e_parsed)
+            if (e_parsed[0], e_parsed[1]) < (s_parsed[0], s_parsed[1]):
+                # Fin anterior a inicio → inconsistencia real
+                inconsistent_ranges.append({
+                    "index": idx,
+                    "empresa": empresa,
+                    "cargo": cargo,
+                    "inicio": s_raw,
+                    "fin": e_raw,
+                })
+            elif (e_parsed[0], e_parsed[1]) == (s_parsed[0], s_parsed[1]):
+                # mismo mes permitido; no inconsistencia
                 pass
+            else:
+                # fin posterior a inicio → correcto
+                pass
+
+        parsed_experience.append({
+            "index": idx,
+            "empresa": empresa,
+            "cargo": cargo,
+            "start": s_parsed,
+            "end": e_parsed,
+        })
     
     # Evaluar nivel de experiencia
+    total_years = total_months_experience / 12.0
     if total_years > 5:
         experience_level = "excelente"
     elif total_years > 2:
@@ -422,6 +532,16 @@ def analyze_cv_structure_ai(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     else:
         experience_level = "mejorable"
     
+    # Comprobar orden cronológico (descendente por fecha de inicio)
+    misordered_pairs = 0
+    for i in range(len(parsed_experience) - 1):
+        a = parsed_experience[i].get("start")
+        b = parsed_experience[i + 1].get("start")
+        if a and b:
+            if (a[0], a[1]) < (b[0], b[1]):
+                misordered_pairs += 1
+    is_descending = misordered_pairs == 0
+
     # Generar fortalezas y debilidades
     strengths = []
     weaknesses = []
@@ -482,6 +602,184 @@ def analyze_cv_structure_ai(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     if not cv_data.get("resumen_profesional"):
         alerts.append("Considera agregar un resumen profesional")
     
+    # Observaciones específicas basadas en evidencia
+    observations: List[str] = []
+    if missing_start_date_items:
+        observations.append(
+            f"Faltan fechas de inicio en {len(missing_start_date_items)} experiencias."
+        )
+    if missing_end_date_items:
+        observations.append(
+            f"Faltan fechas de fin en {len(missing_end_date_items)} experiencias."
+        )
+    if inconsistent_ranges:
+        observations.append(
+            f"Se detectaron {len(inconsistent_ranges)} rangos de fechas inconsistentes (fin anterior o igual al inicio)."
+        )
+    if has_experience and not is_descending:
+        observations.append(
+            f"El orden cronológico no es descendente en {misordered_pairs} caso(s)."
+        )
+
+    # Métricas y logros cuantificables
+    roles_with_logros = 0
+    roles_with_metric_logros = 0
+    metric_examples: List[str] = []
+    metric_pattern = re.compile(r"(\d+\s?%|\b\d{2,}\b)")
+    for exp in experience:
+        logros = exp.get("logros") or exp.get("achievements") or []
+        responsabilidades = exp.get("responsabilidades") or exp.get("responsibilities") or []
+        text_items: List[str] = []
+        if isinstance(logros, list):
+            text_items.extend([_normalize_str(x) for x in logros if isinstance(x, str)])
+        if isinstance(responsabilidades, list):
+            text_items.extend([_normalize_str(x) for x in responsabilidades if isinstance(x, str)])
+        if text_items:
+            roles_with_logros += 1
+            if any(metric_pattern.search(t) for t in text_items):
+                roles_with_metric_logros += 1
+                # Guardar hasta 3 ejemplos
+                for t in text_items:
+                    if metric_pattern.search(t) and len(metric_examples) < 3:
+                        metric_examples.append(t)
+
+    # Direct scores (0-100) ---------------------------------------------------
+    total_roles = len(experience)
+    with_both_dates = total_roles - len(missing_start_date_items) - len(missing_end_date_items)
+    dates_completeness = 100.0 * with_both_dates / total_roles if total_roles else 0.0
+    chronology_score = 100.0 if is_descending else max(0.0, 100.0 - (misordered_pairs * 25.0))
+
+    # Cobertura de secciones ponderada a 100
+    section_weights = {
+        "contact": 10,
+        "experience": 35,
+        "education": 20,
+        "skills": 20,
+        "soft_skills": 5,
+        "languages": 5,
+        "projects": 5,
+    }
+    sections_coverage = 0.0
+    if has_contact:
+        sections_coverage += section_weights["contact"]
+    if has_experience:
+        sections_coverage += section_weights["experience"]
+    if has_education:
+        sections_coverage += section_weights["education"]
+    if has_skills:
+        sections_coverage += section_weights["skills"]
+    if has_soft_skills:
+        sections_coverage += section_weights["soft_skills"]
+    if has_languages:
+        sections_coverage += section_weights["languages"]
+    if has_projects:
+        sections_coverage += section_weights["projects"]
+
+    metrics_achievements_score = 100.0 * roles_with_metric_logros / total_roles if total_roles else 0.0
+    skills_count = len(cv_data.get("habilidades_tecnicas", []) or [])
+    skills_depth_score = min(100.0, float(skills_count * 5))  # satura en 20 skills → 100
+    languages_count = len(cv_data.get("idiomas", []) or [])
+    languages_coverage_score = 100.0 if languages_count >= 2 else (60.0 if languages_count == 1 else 0.0)
+
+    # Educación: entradas con título, institución y al menos una fecha
+    education_entries = cv_data.get("formacion_academica", []) or []
+    rich_edu = 0
+    for edu in education_entries:
+        titulo = _normalize_str(edu.get("titulo") or edu.get("degree") or edu.get("title"))
+        inst = _normalize_str(edu.get("institucion") or edu.get("institution"))
+        fs = _parse_year_month(edu.get("fecha_inicio") or edu.get("start_date"))
+        fe = _parse_year_month(edu.get("fecha_fin") or edu.get("end_date"))
+        if titulo and inst and (fs or fe):
+            rich_edu += 1
+    education_depth_score = 100.0 * rich_edu / len(education_entries) if education_entries else (100.0 if has_education else 0.0)
+
+    # Score global ponderado
+    overall_score = (
+        dates_completeness * 0.2
+        + chronology_score * 0.2
+        + sections_coverage * 0.2
+        + metrics_achievements_score * 0.2
+        + skills_depth_score * 0.1
+        + education_depth_score * 0.05
+        + languages_coverage_score * 0.05
+    )
+
+    direct_scores = {
+        "overall": round(overall_score, 1),
+        "dates_completeness": round(dates_completeness, 1),
+        "chronology": round(chronology_score, 1),
+        "sections_coverage": round(sections_coverage, 1),
+        "metrics_and_achievements": round(metrics_achievements_score, 1),
+        "skills_depth": round(skills_depth_score, 1),
+        "languages_coverage": round(languages_coverage_score, 1),
+        "education_depth": round(education_depth_score, 1),
+    }
+
+    # Structured analysis -----------------------------------------------------
+    structured = {
+        "dates": {
+            "total_experiences": total_roles,
+            "with_start_date": total_roles - len(missing_start_date_items),
+            "with_end_date": total_roles - len(missing_end_date_items),
+            "missing_start_date": missing_start_date_items,
+            "missing_end_date": missing_end_date_items,
+            "ongoing_roles_count": ongoing_roles_count,
+            "inconsistent_ranges": inconsistent_ranges,
+        },
+        "chronology": {
+            "descending_by_start_date": is_descending,
+            "misordered_pairs": misordered_pairs,
+        },
+        "sections": {
+            "present": {
+                "contact": has_contact,
+                "experience": has_experience,
+                "education": has_education,
+                "skills": has_skills,
+                "soft_skills": has_soft_skills,
+                "languages": has_languages,
+                "projects": has_projects,
+                "summary": bool(cv_data.get("resumen_profesional")),
+                "certifications": len(cv_data.get("certificaciones", [])) > 0,
+            },
+            "missing": [
+                name
+                for name, present in [
+                    ("contact", has_contact),
+                    ("experience", has_experience),
+                    ("education", has_education),
+                    ("skills", has_skills),
+                    ("soft_skills", has_soft_skills),
+                    ("languages", has_languages),
+                    ("projects", has_projects),
+                    ("summary", bool(cv_data.get("resumen_profesional"))),
+                    ("certifications", len(cv_data.get("certificaciones", [])) > 0),
+                ]
+                if not present
+            ],
+        },
+        "achievements": {
+            "roles_with_logros": roles_with_logros,
+            "roles_with_metric_logros": roles_with_metric_logros,
+            "examples": metric_examples,
+        },
+        "skills": {
+            "technologies_count": skills_count,
+            "top_technologies": (cv_data.get("habilidades_tecnicas", []) or [])[:10],
+        },
+        "languages": {
+            "count": languages_count,
+            "items": [
+                {"name": l.get("idioma") or l.get("name"), "level": l.get("nivel") or l.get("level")}
+                for l in (cv_data.get("idiomas") or []) if isinstance(l, dict)
+            ],
+        },
+        "education": {
+            "count": len(education_entries),
+            "entries_with_dates": rich_edu,
+        },
+    }
+
     return {
         "structure": structure,
         "coherence": "bueno" if len(experience) > 0 else "mejorable",
@@ -494,6 +792,10 @@ def analyze_cv_structure_ai(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         "weaknesses": weaknesses,
         "feedback": feedback,
         "alerts": alerts,
+        "observations": observations,
+        # Puntuaciones directas y análisis estructurado
+        "direct_scores": direct_scores,
+        "structured": structured,
         "total_years_experience": total_years,
         "technologies_count": len(cv_data.get("habilidades_tecnicas", [])),
         "soft_skills_count": len(cv_data.get("habilidades_blandas", [])),
@@ -607,7 +909,7 @@ def extract_basic_cv_data_from_text(text: str) -> Dict[str, Any]:
 
 # Importar Document Intelligence
 try:
-    from document_intelligence import analyze_cv_with_document_intelligence
+    from document_intelligence import analyze_cv_with_improved_intelligence as analyze_cv_with_document_intelligence
     DOCUMENT_INTELLIGENCE_AVAILABLE = True
 except ImportError:
     DOCUMENT_INTELLIGENCE_AVAILABLE = False
@@ -684,7 +986,14 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         # Construir resultado compatible
         cv_info = {
             "contacto": cv_data.get("contacto", {}),
-            "software": cv_data.get("habilidades_tecnicas", []),
+            "software": [
+                {
+                    "name": skill.get("herramienta", ""),
+                    "level": skill.get("nivel", "No especificado")
+                }
+                for skill in cv_data.get("habilidades_tecnicas", [])
+                if isinstance(skill, dict) and skill.get("herramienta")
+            ],
             "idiomas": [f"{lang.get('idioma', '')} ({lang.get('nivel', '')})" for lang in cv_data.get("idiomas", [])],
             "perfil": cv_data.get("resumen_profesional", ""),
             "experiencia": cv_data.get("experiencia_laboral", []),
