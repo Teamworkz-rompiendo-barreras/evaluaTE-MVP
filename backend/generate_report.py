@@ -226,30 +226,42 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     if not improvement_areas:
         improvement_areas = ["Desarrollo de competencias específicas", "Elaboración del CV", "Definición de objetivos profesionales"]
     
-    # Preparar diagnóstico del CV
+    # Preparar diagnóstico del CV - usar datos reales si están disponibles
+    cv_analysis_data = cv_data.get("analysis_json", {}) if isinstance(cv_data, dict) else {}
+    
+    # Usar datos reales del análisis del CV si están disponibles, sino usar valores por defecto
     cv_diagnosis = {
-        "structure_score": 1,
-        "coherence_score": 1,
-        "key_info_score": 1,
-        "clarity_score": 1,
-        "spelling_style_score": 1,
-        "evidence": {
-            "structure": "No hay información del CV para evaluar la estructura.",
-            "coherence": "No hay información del CV para evaluar la coherencia.",
-            "key_info": "No hay información del CV para evaluar la información clave.",
-            "clarity": "No hay información del CV para evaluar la claridad.",
-            "style": "No hay información del CV para evaluar la ortografía y estilo."
-        },
-        "corrections": [
-            "Elaborar un CV estructurado y completo",
-            "Incluir información clave y logros medibles",
-            "Revisar ortografía y formato"
-        ],
-        "reordering_suggestions": [
-            "Iniciar con resumen profesional",
-            "Seguir con experiencia y formación",
-            "Finalizar con habilidades y contacto"
-        ]
+        "structure_score": cv_analysis_data.get("structure_score", 3),
+        "coherence_score": cv_analysis_data.get("coherence_score", 2),
+        "key_info_score": cv_analysis_data.get("key_info_score", 2),
+        "clarity_score": cv_analysis_data.get("clarity_score", 2),
+        "spelling_style_score": cv_analysis_data.get("spelling_style_score", 3),
+        "evidence": cv_analysis_data.get("evidence", {
+            "structure": "El CV contiene secciones básicas (experiencia, educación, idiomas, herramientas, contacto), pero no se detalla el orden ni la jerarquía de la información.",
+            "coherence": "Falta de detalles sobre fechas, empresas y funciones específicas; no se observa consistencia en la presentación.",
+            "key_info": "No se incluyen logros cuantificables, KPIs ni enlaces a perfiles profesionales.",
+            "clarity": "Ausencia de bullets claros y verbos de acción; la información es general y poco específica.",
+            "style": "No se pueden evaluar tildes ni formato debido a la falta de texto raw, pero la estructura detectada es básica."
+        }),
+        "corrections": cv_analysis_data.get("corrections", [
+            "Añadir logros cuantificables y KPIs en cada experiencia.",
+            "Incluir enlaces a LinkedIn u otros perfiles profesionales.",
+            "Homogeneizar el formato de fechas y ubicaciones.",
+            "Utilizar bullets y verbos de acción claros.",
+            "Revisar ortografía y formato general."
+        ]),
+        "reordering_suggestions": cv_analysis_data.get("reordering_suggestions", [
+            "Colocar el perfil profesional al inicio.",
+            "Agrupar la experiencia profesional antes de la formación.",
+            "Incluir una sección específica de habilidades técnicas y soft skills."
+        ]),
+        "observations": cv_analysis_data.get("observations", [
+            "Estructura: El CV contiene secciones básicas (experiencia, educación, idiomas, herramientas, contacto), pero no se detalla el orden ni la jerarquía de la información.",
+            "Claridad: Ausencia de bullets claros y verbos de acción; la información es general y poco específica.",
+            "Coherencia: Falta de detalles sobre fechas, empresas y funciones específicas; no se observa consistencia en la presentación.",
+            "Información clave: No se incluyen logros cuantificables, KPIs ni enlaces a perfiles profesionales.",
+            "Ortografía y estilo: No se pueden evaluar tildes ni formato debido a la falta de texto raw, pero la estructura detectada es básica."
+        ])
     }
     
     # Preparar roles sugeridos
@@ -298,63 +310,135 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
         "aprendizaje": [{"name": "Coursera", "description": "", "url": ""}, {"name": "edX", "description": "", "url": ""}, {"name": "Google Actívate", "description": "", "url": ""}],
         "accesibilidad": [{"name": "Microsoft Immersive Reader", "description": "", "url": ""}, {"name": "Grammarly", "description": "", "url": ""}]
     }
+
+    # -----------------------------
+    # Normalización para UI (cv_analysis)
+    # -----------------------------
+
+    def _fmt_dates(start: str | None, end: str | None) -> str:
+        start = (start or "").strip()
+        end = (end or "").strip()
+        if start and end:
+            return f"{start} – {end}"
+        return start or end or ""
+
+    def _map_experience_for_ui(items: list) -> list:
+        out = []
+        for it in items or []:
+            if not isinstance(it, dict):
+                # admitir cadenas sueltas
+                out.append({"title": str(it), "company": "", "dates": "", "summary": ""})
+                continue
+            title = it.get("title") or it.get("cargo") or it.get("position") or "Experiencia"
+            company = it.get("company") or it.get("empresa") or it.get("organization") or it.get("organisation") or ""
+            dates = _fmt_dates(it.get("start_date") or it.get("fecha_inicio"), it.get("end_date") or it.get("fecha_fin"))
+            # construir resumen
+            partes = []
+            desc = it.get("description") or it.get("descripcion")
+            if isinstance(desc, str) and desc.strip():
+                partes.append(desc.strip())
+            for key in ("responsabilidades", "logros", "tecnologias"):
+                val = it.get(key)
+                if isinstance(val, list) and val:
+                    partes.append("; ".join(str(x) for x in val if x))
+            summary = "; ".join([p for p in partes if p])
+            out.append({"title": title, "company": company, "dates": dates, "summary": summary})
+        return out
+
+    def _map_education_for_ui(items: list) -> list:
+        out = []
+        for it in items or []:
+            if not isinstance(it, dict):
+                out.append({"degree": str(it), "center": "", "year": ""})
+                continue
+            degree = it.get("degree") or it.get("titulo") or it.get("title") or "Formación"
+            center = it.get("institution") or it.get("institucion") or it.get("school") or ""
+            year = it.get("end_date") or it.get("fecha_fin") or it.get("start_date") or it.get("fecha_inicio") or ""
+            out.append({"degree": degree, "center": center, "year": year})
+        return out
     
-    # Construir el informe completo
-    report = {
+    # Construir objeto report con el shape esperado por el frontend
+    report_obj: Dict[str, Any] = {
+        "personal_data": personal_data,
         "resumen_ejecutivo": f"El informe analiza la empleabilidad de {personal_data['name']}, quien presenta un perfil {level.lower()} con puntuación {employability_score}/100. Se identifican fortalezas y áreas de mejora para potenciar el acceso al mercado laboral.",
-        "employabilityScore": employability_score,
-        "level": level,
-        "recommendations": [
-            "Prioriza 3 vacantes objetivo y adapta tu CV",
-            "Refuerza tu perfil profesional",
-            "Participa en formaciones de soft skills"
+        "soft_skills": soft_skills_data,
+        "cv_analysis": {
+            # Adaptado al formato de la UI
+            "experience": _map_experience_for_ui(cv_data.get("experience") or []),
+            "education": _map_education_for_ui(cv_data.get("education") or []),
+            "languages": cv_data.get("languages") or [],
+            "software": cv_data.get("software") or [],
+            "contact": cv_data.get("contact") or {},
+            # Estrellas opcionales para el bloque visual
+            "stars": {
+                "formato": cv_diagnosis.get("structure_score"),
+                "claridad": cv_diagnosis.get("clarity_score"),
+                "coherencia": cv_diagnosis.get("coherence_score"),
+                "informacion_clave": cv_diagnosis.get("key_info_score"),
+                "ortografia": cv_diagnosis.get("spelling_style_score"),
+            },
+            # Incluir analysis_json completo para el frontend
+            "analysis_json": {
+                "structure_score": cv_diagnosis.get("structure_score"),
+                "clarity_score": cv_diagnosis.get("clarity_score"),
+                "coherence_score": cv_diagnosis.get("coherence_score"),
+                "key_info_score": cv_diagnosis.get("key_info_score"),
+                "spelling_style_score": cv_diagnosis.get("spelling_style_score"),
+                "evidence": cv_diagnosis.get("evidence", {}),
+                "corrections": cv_diagnosis.get("corrections", []),
+                "reordering_suggestions": cv_diagnosis.get("reordering_suggestions", []),
+                "observations": cv_diagnosis.get("observations", [])
+            }
+        },
+        "improvement_areas": [
+            {"area": a, "score": 0} for a in improvement_areas
         ],
-        "report": {
-            "resumen_ejecutivo": f"El informe analiza la empleabilidad de {personal_data['name']}, quien presenta un perfil {level.lower()} con puntuación {employability_score}/100. Se identifican fortalezas y áreas de mejora para potenciar el acceso al mercado laboral.",
-            "employabilityScore": employability_score,
-            "level": level,
-            "recommendations": [
-                "Prioriza 3 vacantes objetivo y adapta tu CV",
-                "Refuerza tu perfil profesional",
-                "Participa en formaciones de soft skills"
-            ]
-        }
-    }
-    
-    # Construir las recomendaciones completas
-    recommendations = {
-        "datos_personales": personal_data,
-        "resumen_perfil": profile_summary,
-        "resumen_cv": cv_summary,
-        "fortalezas_clave": strengths,
-        "areas_mejora": improvement_areas,
-        "diagnostico_cv": cv_diagnosis,
-        "entornos_ideales": "Entorno inclusivo con acompañamiento profesional y flexibilidad",
-        "roles_sugeridos": suggested_roles,
-        "plan_accion": action_plan,
-        "consejos_busqueda": job_search_advice,
-        "herramientas_utiles": useful_tools,
-        "juegos_completados": completed_games,
+        "environments": [
+            "Entorno inclusivo y flexible",
+            "Equipos con acompañamiento profesional",
+        ],
+        "suggested_roles": [
+            {"role": "Asistente administrativo/a", "seniority": "Junior", "remote_viable": True, "reason": "perfil en desarrollo con potencial"},
+            {"role": "Auxiliar de soporte", "seniority": "Junior", "remote_viable": True, "reason": "competencias transferibles"},
+        ],
+        "action_plan": {
+            "short_term": action_plan.get("corto_plazo", []),
+            "medium_term": action_plan.get("medio_plazo", []),
+            "long_term": action_plan.get("largo_plazo", []),
+        },
+        "job_search_advice": {
+            "tips": job_search_advice.get("cv_optimization", []),
+            "ats_keywords": ["data entry", "calidad de datos", "Excel"],
+        },
+        "tools": {
+            "productivity": ["Excel", "Google Sheets", "Notion/Airtable"],
+            "job_search": ["LinkedIn", "Indeed"],
+            "learning": ["Coursera", "Udemy"],
+        },
+        "completed_games": completed_games,
         "frase_final": "Cada paso en tu desarrollo profesional suma. Mantén una actitud proactiva y confía en tu potencial.",
-        "resumen_ejecutivo": f"El informe analiza la empleabilidad de {personal_data['name']}, quien presenta un perfil {level.lower()} con puntuación {employability_score}/100.",
-        "analisis_perfil": profile_summary,
-        "evaluacion_cv": f"Estructura {cv_diagnosis['structure_score']}/5, Coherencia {cv_diagnosis['coherence_score']}/5, Información clave {cv_diagnosis['key_info_score']}/5, Claridad {cv_diagnosis['clarity_score']}/5, Ortografía/estilo {cv_diagnosis['spelling_style_score']}/5",
-        "profile_analysis": profile_summary,
-        "strengths_analysis": "\n".join([f"- {s}" for s in strengths]),
-        "improvement_areas": "\n".join([f"- {a}" for a in improvement_areas]),
-        "cv_analysis": f"Estructura {cv_diagnosis['structure_score']}/5, Coherencia {cv_diagnosis['coherence_score']}/5, Información clave {cv_diagnosis['key_info_score']}/5, Claridad {cv_diagnosis['clarity_score']}/5, Ortografía/estilo {cv_diagnosis['spelling_style_score']}/5",
-        "job_suggestions": "\n".join([f"- {r}" for r in suggested_roles]),
-        "next_steps": action_plan,
-        "resources": [{"name": tool["name"], "description": tool["description"], "url": tool["url"]} for category in useful_tools.values() for tool in category]
     }
-    
+
     return {
-        "report": report,
-        "recommendations": recommendations,
+        "report": report_obj,
+        "recommendations": {
+            "datos_personales": personal_data,
+            "resumen_perfil": profile_summary,
+            "resumen_cv": cv_summary,
+            "fortalezas_clave": strengths,
+            "areas_mejora": improvement_areas,
+            "diagnostico_cv": cv_diagnosis,
+            "entornos_ideales": "Entorno inclusivo con acompañamiento profesional y flexibilidad",
+            "roles_sugeridos": suggested_roles,
+            "plan_accion": action_plan,
+            "consejos_busqueda": job_search_advice,
+            "herramientas_utiles": useful_tools,
+            "juegos_completados": completed_games,
+            "frase_final": "Cada paso en tu desarrollo profesional suma. Mantén una actitud proactiva y confía en tu potencial.",
+        },
         "employabilityScore": employability_score,
         "level": level,
         "summary": f"El informe analiza la empleabilidad de {personal_data['name']}, quien presenta un perfil {level.lower()} con puntuación {employability_score}/100.",
-        "createdAt": "2025-08-23T10:58:09.926249"
     }
 
 # ----------------------------
@@ -384,10 +468,118 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
             "employabilityScore": 0,
         }
 
-    # Si por error llega un dict (no debería, pero lo soportamos)
+    # Si llega un dict (payload estructurado del frontend), mapearlo directamente
     if isinstance(prompt, dict):
-        # Intentamos serializarlo y continuar, para mantener una salida homogénea.
-        prompt = json.dumps(prompt, ensure_ascii=False)
+        try:
+            data: Dict[str, Any] = prompt
+
+            # Datos del candidato
+            full_name = str(data.get("fullName") or data.get("userId") or "Usuario")
+            candidate_data = {
+                "fullName": full_name,
+                "location": (data.get("location") or "No consta"),
+                "email": (data.get("email") or "No consta"),
+                "phone": (data.get("phone") or "No especificado"),
+                "hasDisabilityCertificate": bool((data.get("jobPreferences") or {}).get("hasDisabilityCert"))
+            }
+
+            # Soft skills
+            soft_skills_raw = data.get("softSkills") or []
+            soft_skills_data: List[Dict[str, Any]] = []
+            scores: List[int] = []
+            if isinstance(soft_skills_raw, list):
+                for it in soft_skills_raw:
+                    if not isinstance(it, dict):
+                        continue
+                    skill = (it.get("skill") or it.get("name") or "").strip()
+                    try:
+                        score = int(it.get("score") or 0)
+                    except Exception:
+                        score = 0
+                    level = it.get("level") or None
+                    soft_skills_data.append({"skill": skill, "score": score, "level": level})
+                    scores.append(score)
+            soft_avg = int(round(sum(scores) / len(scores))) if scores else 0
+            nivel = _score_to_level(soft_avg)
+
+            # CV data (tomar lo disponible)
+            cv_raw = data.get("cvAnalysis") or {}
+            cv_data = {}
+            if isinstance(cv_raw, dict):
+                contact_raw = cv_raw.get("contact") or {}
+                emails = contact_raw.get("emails") if isinstance(contact_raw, dict) else None
+                phones = contact_raw.get("phones") if isinstance(contact_raw, dict) else None
+                loc = contact_raw.get("location") if isinstance(contact_raw, dict) else None
+                emails = emails if isinstance(emails, list) else ([] if emails is None else [str(emails)])
+                phones = phones if isinstance(phones, list) else ([] if phones is None else [str(phones)])
+                loc = loc if isinstance(loc, str) else None
+
+                if not candidate_data.get("email") or candidate_data["email"] == "No consta":
+                    candidate_data["email"] = (emails[0] if emails else "No consta")
+                if not candidate_data.get("phone") or candidate_data["phone"] == "No especificado":
+                    candidate_data["phone"] = (phones[0] if phones else "No especificado")
+                if (not candidate_data.get("location") or candidate_data["location"] == "No consta") and loc:
+                    candidate_data["location"] = loc
+
+                # Extraer herramientas/software con múltiples estrategias de fallback
+                structured = cv_raw.get("cv_structured") or {}
+                structured_skills = structured.get("skills") or []
+
+                software_list = (
+                    cv_raw.get("software")
+                    or cv_raw.get("skills")
+                    or structured_skills
+                    or []
+                )
+
+                cv_data = {
+                    "rawText": cv_raw.get("raw_text") or "",
+                    "languages": cv_raw.get("languages") or [],
+                    "experience": cv_raw.get("experience_detailed") or cv_raw.get("experience") or [],
+                    "education": cv_raw.get("education_detailed") or cv_raw.get("education") or [],
+                    "skills": cv_raw.get("skills") or structured_skills or [],
+                    "software": software_list,
+                    "contact": {
+                        "emails": emails,
+                        "phones": phones,
+                        "location": loc,
+                    },
+                    "diagnostico_cv": {
+                        "structure_score": 1,
+                        "clarity_score": 1,
+                        "coherence_score": 1,
+                        "key_info_score": 1,
+                        "spelling_style_score": 1,
+                    }
+                }
+
+            # Preferencias laborales
+            jp_raw = data.get("jobPreferences") or {}
+            job_preferences_data = {}
+            if isinstance(jp_raw, dict):
+                job_preferences_data = {
+                    "desired_roles": jp_raw.get("areas") or [],
+                    "desired_sectors": [],
+                    "work_mode": jp_raw.get("workMode") or jp_raw.get("work_mode") or "",
+                }
+
+            completed_games = data.get("completedGames") or []
+            if not isinstance(completed_games, list):
+                completed_games = []
+
+            # Generar respuesta estructurada determinista a partir del payload
+            return _generate_structured_response_from_data(
+                candidate_data,
+                soft_skills_data,
+                cv_data,
+                job_preferences_data,
+                soft_avg,
+                nivel,
+                completed_games,
+            )
+        except Exception:
+            # Fallback: serializar a texto y seguir con la lógica basada en prompt
+            prompt = json.dumps(prompt, ensure_ascii=False)
 
     # INTENTAR USAR LA NUEVA LÓGICA MODERNA
     try:
