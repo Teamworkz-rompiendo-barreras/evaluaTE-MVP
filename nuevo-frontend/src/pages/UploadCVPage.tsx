@@ -1,3 +1,4 @@
+/* eslint-disable no-console */
 // src/pages/UploadCVPage.tsx
 import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';

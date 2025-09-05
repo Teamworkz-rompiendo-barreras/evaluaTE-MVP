@@ -1,3 +1,5 @@
+/* eslint-disable no-console */
+/* eslint-disable @typescript-eslint/no-explicit-any */
 // src/pages/ResultadosPage.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import { useAppSelector } from '../app/hooks';
@@ -475,7 +477,7 @@ function buildDesiredMarkdown(payload: any, userFullName: string): string {
   const ensureDot = (t?: string) => {
     const s = String(t || '').trim();
     if (!s) return '';
-    return /[\.\!\?]$/.test(s) ? s : s + '.';
+    return /[.!?]$/.test(s) ? s : s + '.';
   };
   const capitalizeFirst = (t?: string) => {
     const s = String(t || '').trim();
@@ -1827,7 +1829,7 @@ const ResultadosPage: React.FC = () => {
         const re = typeof wrong === 'string' ? new RegExp(`\\b${wrong.toLowerCase()}\\b`, 'i') : wrong;
         if (re.test(corpus)) {
           // Extraer solo la palabra incorrecta sin el formato de regex
-          const wrongWord = typeof wrong === 'string' ? wrong : wrong.source.replace(/[\/\\^$*+?.()|[\]{}]/g, '');
+          const wrongWord = typeof wrong === 'string' ? wrong : wrong.source.replace(/[\\^$*+?.()|[\]{}]/g, '');
           detected.push(`${wrongWord} → ${correct}`);
         }
       };
