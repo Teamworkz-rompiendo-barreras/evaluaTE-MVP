@@ -10,7 +10,7 @@
 
 /* Estilos específicos para el renderizado profesional con accesibilidad cognitiva */
 .professional-report {
-  font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', 'Verdana', 'Arial', sans-serif;
+  font-family: 'OpenDyslexic', 'Verdana', 'Arial', 'Helvetica', system-ui, sans-serif;
   line-height: 1.8; /* Espaciado de línea más amplio para mejor legibilidad */
   color: #374151;
   overflow-wrap: break-word;
@@ -39,7 +39,7 @@
 .professional-report h2 {
   font-size: clamp(1.5rem, 3vw, 2rem); /* Tamaño responsivo */
   font-weight: 600;
-  color: var(--heading-color, #0B1220);
+  color: #374151;
   margin: 2rem 0 1.25rem 0;
   break-after: avoid;
   letter-spacing: 0.025em; /* Espaciado de letras aumentado */
@@ -49,7 +49,7 @@
 .professional-report h3 {
   font-size: 1.5rem;
   font-weight: 600;
-  color: var(--heading-color, #0B1220);
+  color: #4b5563;
   margin: 1.75rem 0 1rem 0;
   break-after: avoid;
   letter-spacing: 0.02em; /* Espaciado de letras aumentado */
@@ -59,7 +59,7 @@
 .professional-report h4 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--heading-color, #0B1220);
+  color: #6b7280;
   margin: 1.5rem 0 0.75rem 0;
   break-after: avoid;
   letter-spacing: 0.02em; /* Espaciado de letras aumentado */
@@ -88,7 +88,7 @@
 }
 
 .professional-report li {
-  margin-bottom: 0.5rem; /* Espaciado uniforme entre elementos */
+  margin-bottom: 1rem; /* Más espaciado entre elementos */
   line-height: 1.8; /* Espaciado de línea más amplio */
   text-align: left;
   color: #374151;
@@ -98,12 +98,23 @@
 
 .professional-report ul li {
   list-style-type: disc;
-  color: #374151;
+  color: #6b7280;
 }
 
 .professional-report ol li {
   list-style-type: decimal;
-  color: #374151;
+  color: #6b7280;
+}
+
+/* Corregir espaciado del primer bullet point en listas profesionales */
+.professional-report ul li:first-child,
+.professional-report ol li:first-child {
+  margin-top: 0 !important;
+}
+
+.professional-report ul li:not(:first-child),
+.professional-report ol li:not(:first-child) {
+  margin-top: 0.5rem !important;
 }
 
 /* Listas anidadas con accesibilidad cognitiva */
@@ -115,18 +126,18 @@
   padding-left: 2rem; /* Sangría más amplia */
 }
 
-/* Corregir espaciado en listas anidadas profesionales */
-.professional-report ul ul > li:first-child,
-.professional-report ol ol > li:first-child,
-.professional-report ul ol > li:first-child,
-.professional-report ol ul > li:first-child {
+/* Corregir espaciado del primer bullet point en listas anidadas profesionales */
+.professional-report ul ul li:first-child,
+.professional-report ol ol li:first-child,
+.professional-report ul ol li:first-child,
+.professional-report ol ul li:first-child {
   margin-top: 0 !important;
 }
 
-.professional-report ul ul > li:not(:first-child),
-.professional-report ol ol > li:not(:first-child),
-.professional-report ul ol > li:not(:first-child),
-.professional-report ol ul > li:not(:first-child) {
+.professional-report ul ul li:not(:first-child),
+.professional-report ol ol li:not(:first-child),
+.professional-report ul ol li:not(:first-child),
+.professional-report ol ul li:not(:first-child) {
   margin-top: 0.5rem !important;
 }
 
@@ -188,7 +199,7 @@
   padding: 1.5rem 2rem; /* Padding más generoso */
   margin: 2rem 0; /* Más espaciado */
   font-style: italic;
-  color: #374151;
+  color: #4b5563;
   background-color: #eff6ff;
   border-radius: 0 0.5rem 0.5rem 0;
   box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
@@ -261,12 +272,12 @@
 
 .professional-report em {
   font-style: italic;
-  color: #374151;
+  color: #4b5563;
 }
 
 /* Estilos para el contenido del markdown con accesibilidad cognitiva */
 .report-content {
-  font-family: 'Atkinson Hyperlegible', 'OpenDyslexic', 'Verdana', 'Arial', sans-serif;
+  font-family: 'OpenDyslexic', 'Verdana', 'Arial', 'Helvetica', system-ui, sans-serif;
   line-height: 1.8; /* Espaciado de línea más amplio */
   color: #374151;
   overflow-wrap: break-word;
@@ -295,7 +306,7 @@
 .report-content h2 {
   font-size: clamp(1.25rem, 2.5vw, 1.75rem); /* Tamaño responsivo */
   font-weight: 600;
-  color: var(--heading-color, #0B1220);
+  color: #374151;
   margin: 1.5rem 0 1rem 0;
   break-after: avoid;
   letter-spacing: 0.02em; /* Espaciado de letras aumentado */
@@ -305,7 +316,7 @@
 .report-content h3 {
   font-size: 1.25rem;
   font-weight: 600;
-  color: var(--heading-color, #0B1220);
+  color: #4b5563;
   margin: 1.25rem 0 0.75rem 0;
   break-after: avoid;
   letter-spacing: 0.02em; /* Espaciado de letras aumentado */
@@ -315,7 +326,7 @@
 .report-content h4 {
   font-size: 1.125rem;
   font-weight: 600;
-  color: var(--heading-color, #0B1220);
+  color: #6b7280;
   margin: 1rem 0 0.5rem 0;
   break-after: avoid;
   letter-spacing: 0.02em; /* Espaciado de letras aumentado */
@@ -340,41 +351,8 @@
   line-height: 1.8; /* Espaciado de línea más amplio */
 }
 
-/* Corregir espaciado del primer elemento en listas con space-y */
-.report-content ul.space-y-1 > li:first-child,
-.report-content ol.space-y-1 > li:first-child {
-  margin-top: 0 !important;
-}
-
-.report-content ul.space-y-1 > li:not(:first-child),
-.report-content ol.space-y-1 > li:not(:first-child) {
-  margin-top: 0.25rem !important;
-}
-
-/* Corregir espaciado uniforme en todas las listas del informe */
-.report-content ul > li:first-child,
-.report-content ol > li:first-child {
-  margin-top: 0 !important;
-}
-
-.report-content ul > li:not(:first-child),
-.report-content ol > li:not(:first-child) {
-  margin-top: 0.5rem !important;
-}
-
-/* Aplicar la misma corrección a las listas profesionales */
-.professional-report ul > li:first-child,
-.professional-report ol > li:first-child {
-  margin-top: 0 !important;
-}
-
-.professional-report ul > li:not(:first-child),
-.professional-report ol > li:not(:first-child) {
-  margin-top: 0.5rem !important;
-}
-
 .report-content li {
-  margin-bottom: 0.5rem; /* Espaciado uniforme entre elementos */
+  margin-bottom: 0.75rem; /* Más espaciado entre elementos */
   line-height: 1.8; /* Espaciado de línea más amplio */
   text-align: left;
   font-size: 1.125rem; /* Tamaño más grande */
@@ -389,6 +367,17 @@
   list-style-type: decimal;
 }
 
+/* Corregir espaciado del primer bullet point en listas generales */
+.report-content ul li:first-child,
+.report-content ol li:first-child {
+  margin-top: 0 !important;
+}
+
+.report-content ul li:not(:first-child),
+.report-content ol li:not(:first-child) {
+  margin-top: 0.5rem !important;
+}
+
 /* Listas anidadas con accesibilidad cognitiva */
 .report-content ul ul,
 .report-content ol ol,
@@ -398,18 +387,18 @@
   padding-left: 1.75rem; /* Sangría más amplia */
 }
 
-/* Corregir espaciado en listas anidadas */
-.report-content ul ul > li:first-child,
-.report-content ol ol > li:first-child,
-.report-content ul ol > li:first-child,
-.report-content ol ul > li:first-child {
+/* Corregir espaciado del primer bullet point en listas anidadas */
+.report-content ul ul li:first-child,
+.report-content ol ol li:first-child,
+.report-content ul ol li:first-child,
+.report-content ol ul li:first-child {
   margin-top: 0 !important;
 }
 
-.report-content ul ul > li:not(:first-child),
-.report-content ol ol > li:not(:first-child),
-.report-content ul ol > li:not(:first-child),
-.report-content ol ul > li:not(:first-child) {
+.report-content ul ul li:not(:first-child),
+.report-content ol ol li:not(:first-child),
+.report-content ul ol li:not(:first-child),
+.report-content ol ul li:not(:first-child) {
   margin-top: 0.5rem !important;
 }
 
@@ -469,7 +458,7 @@
   padding: 1.25rem 1.5rem; /* Padding más generoso */
   margin: 1.5rem 0; /* Más espaciado */
   font-style: italic;
-  color: #374151;
+  color: #6b7280;
   background-color: #f9fafb;
   border-radius: 0 0.5rem 0.5rem 0;
   font-size: 1.125rem; /* Tamaño más grande */
@@ -531,7 +520,7 @@
 
 .report-content em {
   font-style: italic;
-  color: #374151;
+  color: #4b5563;
 }
 
 /* Contenedores especiales con accesibilidad cognitiva */
@@ -566,6 +555,13 @@
   font-size: 1.125rem; /* Tamaño más grande */
   line-height: 1.8; /* Espaciado de línea más amplio */
   letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Modo oscuro específico: mejorar contraste del cajón destacado */
+.dark .report-highlight {
+  background-color: #1e3a8a !important; /* blue-800 */
+  border-color: #60a5fa !important;     /* blue-300 */
+  color: #ffffff !important;
 }
 
 /* Responsive design con accesibilidad cognitiva */
@@ -718,8 +714,6 @@
   margin-bottom: 2.5rem; /* Más espaciado */
   overflow: hidden;
   border: 2px solid #e5e7eb; /* Borde para mejor definición */
-  /* Variable de color para encabezados (alto contraste por defecto) */
-  --heading-color: #0B1220;
 }
 
 /* Mejoras para el texto largo con accesibilidad cognitiva */
@@ -747,14 +741,14 @@
   letter-spacing: 0.02em; /* Espaciado de letras aumentado */
 }
 
-/* Corregir espaciado del primer elemento en listas del informe de empleabilidad */
-.informe-empleabilidad .report-content ul > li:first-child,
-.informe-empleabilidad .report-content ol > li:first-child {
+/* Corregir espaciado del primer bullet point en listas del informe de empleabilidad */
+.informe-empleabilidad .report-content ul li:first-child,
+.informe-empleabilidad .report-content ol li:first-child {
   margin-top: 0 !important;
 }
 
-.informe-empleabilidad .report-content ul > li:not(:first-child),
-.informe-empleabilidad .report-content ol > li:not(:first-child) {
+.informe-empleabilidad .report-content ul li:not(:first-child),
+.informe-empleabilidad .report-content ol li:not(:first-child) {
   margin-top: 1rem !important;
 }
 
@@ -789,196 +783,26 @@
   padding: 1rem; /* Padding más generoso */
 }
 
-/* Estilos para el modo oscuro con accesibilidad cognitiva */
-@media (prefers-color-scheme: dark) {
-  .report-content {
-    color: #e5e7eb;
-  }
-  
-  .report-content h1,
-  .report-content h2,
-  .report-content h3,
-  .report-content h4 {
-    color: #f9fafb;
-  }
-  
-  .report-content strong {
-    color: #f9fafb;
-  }
-  
-  .report-content code {
-    background-color: #374151;
-    color: #e5e7eb;
-    border-color: #4b5563;
-  }
-  
-  .report-content pre {
-    background-color: #1f2937;
-    border-color: #4b5563;
-  }
-  
-  .report-content table th,
-  .report-content table td {
-    border-color: #4b5563;
-    color: #e5e7eb;
-  }
-  
-  .report-content table th {
-    background-color: #374151;
-    color: #f9fafb;
-  }
-  
-  .professional-report ul li,
-  .professional-report ol li {
-    color: #e5e7eb;
-  }
-  
-  .report-content blockquote {
-    color: #e5e7eb;
-  }
-  
-  .professional-report em,
-  .report-content em {
-    color: #e5e7eb;
-  }
-  
-  .professional-report blockquote {
-    color: #e5e7eb;
-  }
-}
-
-/* Ajuste de variable en modo oscuro si la app usa la clase .dark */
-.dark .informe-empleabilidad {
-  --heading-color: #f9fafb;
-}
-
-.dark .professional-report ul li,
-.dark .professional-report ol li {
-  color: #e5e7eb;
-}
-
-.dark .report-content blockquote {
-  color: #e5e7eb;
-}
-
-.dark .professional-report em,
-.dark .report-content em {
-  color: #e5e7eb;
-}
-
-.dark .professional-report blockquote {
-  color: #e5e7eb;
-}
-
-/* Contraste forzado en modo claro aunque el SO esté en oscuro */
-html:not(.dark) .informe-empleabilidad .report-content,
-html:not(.dark) .informe-empleabilidad .report-content p,
-html:not(.dark) .informe-empleabilidad .report-content li {
-  color: #1f2937 !important; /* gray-900 para máximo contraste */
-}
-
-/* Forzar color oscuro también para elementos generados por ReactMarkdown */
-.informe-empleabilidad .report-content p,
-.informe-empleabilidad .report-content li {
-  color: #1f2937 !important;
-}
-
-/* Solo forzar color oscuro para elementos strong (etiquetas) en modo oscuro */
-.dark .informe-empleabilidad .report-content strong {
+/* Modo oscuro: forzar el mismo esquema visual que en modo claro dentro del informe */
+.dark .informe-empleabilidad,
+.dark .informe-empleabilidad .report-content {
+  background-color: #ffffff !important;
   color: #374151 !important;
 }
 
-/* Asegurar que todo el texto de contenido sea oscuro en modo oscuro, excluyendo estrellas */
-.dark .informe-empleabilidad .report-content p:not(.star-filled):not(.star-empty),
-.dark .informe-empleabilidad .report-content li:not(.star-filled):not(.star-empty),
-.dark .informe-empleabilidad .report-content span:not(.star-filled):not(.star-empty):not([class*="star-"]),
-.dark .informe-empleabilidad .report-content div:not([class*="star-"]),
-.dark .informe-empleabilidad .report-content em:not([class*="star-"]),
-.dark .informe-empleabilidad .report-content i:not([class*="star-"]) {
-  color: #374151 !important;
-}
-
-/* NUEVO: Asegurar títulos oscuros en modo claro incluso si el SO está en oscuro */
-html:not(.dark) .informe-empleabilidad .report-content h1,
-html:not(.dark) .informe-empleabilidad .report-content h2,
-html:not(.dark) .informe-empleabilidad .report-content h3,
-html:not(.dark) .informe-empleabilidad .report-content h4 {
-  color: #1f2937 !important; /* Forzar contraste alto para encabezados */
-}
-
-/* NUEVO: Asegurar títulos con color oscuro en modo oscuro */
-.dark .informe-empleabilidad .report-content h1,
-.dark .informe-empleabilidad .report-content h2,
-.dark .informe-empleabilidad .report-content h3,
-.dark .informe-empleabilidad .report-content h4 {
-  color: #374151 !important; /* Color gris oscuro para modo oscuro */
-}
-
-/* Asegurar que las estrellas mantengan sus colores originales en modo oscuro */
-.dark .informe-empleabilidad .report-content .star-filled,
-.dark .informe-empleabilidad .report-content .star-empty,
-.dark .informe-empleabilidad .report-content [class*="star-"] {
-  color: inherit !important;
-}
-
-/* Excepción: las estrellas del componente StarsGold deben mantener el color amarillo */
-.dark .informe-empleabilidad .report-content .star-filled:not([class*="star-excellent"]):not([class*="star-very-good"]):not([class*="star-good"]):not([class*="star-average"]):not([class*="star-regular"]):not([class*="star-below-average"]):not([class*="star-poor"]):not([class*="star-very-poor"]) {
-  color: #fbbf24 !important; /* text-yellow-400 para estrellas del CV */
-}
-
-/* Forzar colores específicos para las estrellas en modo oscuro */
-.dark .informe-empleabilidad .report-content .star-excellent {
-  color: #059669 !important; /* Verde esmeralda */
-}
-
-.dark .informe-empleabilidad .report-content .star-very-good {
-  color: #10b981 !important; /* Verde */
-}
-
-.dark .informe-empleabilidad .report-content .star-good {
-  color: #84cc16 !important; /* Lima */
-}
-
-.dark .informe-empleabilidad .report-content .star-average {
-  color: #eab308 !important; /* Amarillo */
-}
-
-.dark .informe-empleabilidad .report-content .star-regular {
-  color: #fb923c !important; /* Naranja claro */
-}
-
-.dark .informe-empleabilidad .report-content .star-below-average {
-  color: #f97316 !important; /* Naranja */
-}
-
-.dark .informe-empleabilidad .report-content .star-poor {
-  color: #f87171 !important; /* Rojo claro */
-}
-
-.dark .informe-empleabilidad .report-content .star-very-poor {
-  color: #dc2626 !important; /* Rojo */
-}
-
-.dark .informe-empleabilidad .report-content .star-empty {
-  color: #d1d5db !important; /* Gris claro para estrellas vacías */
-}
-
-/* Excepción: las estrellas vacías del componente StarsGold deben mantener el color gris apropiado */
-.dark .informe-empleabilidad .report-content .star-empty:not([class*="star-excellent"]):not([class*="star-very-good"]):not([class*="star-good"]):not([class*="star-average"]):not([class*="star-regular"]):not([class*="star-below-average"]):not([class*="star-poor"]):not([class*="star-very-poor"]) {
-  color: #9ca3af !important; /* text-gray-400 para estrellas vacías del CV */
-}
-
-/* NUEVO: Asegurar títulos con contraste adecuado en todos los contextos del informe */
-.informe-empleabilidad .report-content h1,
-.informe-empleabilidad .report-content h2,
-.informe-empleabilidad .report-content h3,
-.informe-empleabilidad .report-content h4 {
-  color: #1f2937 !important; /* Color oscuro para modo claro */
-}
-
-.dark .informe-empleabilidad .report-content h1,
-.dark .informe-empleabilidad .report-content h2,
-.dark .informe-empleabilidad .report-content h3,
-.dark .informe-empleabilidad .report-content h4 {
-  color: #374151 !important; /* Color gris oscuro para modo oscuro */
-}
+.dark .informe-empleabilidad .report-content h1 { color: #1f2937 !important; }
+.dark .informe-empleabilidad .report-content h2 { color: #374151 !important; }
+.dark .informe-empleabilidad .report-content h3 { color: #4b5563 !important; }
+.dark .informe-empleabilidad .report-content h4 { color: #6b7280 !important; }
+.dark .informe-empleabilidad .report-content p,
+.dark .informe-empleabilidad .report-content li,
+.dark .informe-empleabilidad .report-content td { color: #374151 !important; }
+.dark .informe-empleabilidad .report-content strong { color: #1f2937 !important; }
+.dark .informe-empleabilidad .report-content em { color: #1f2937 !important; }
+.dark .informe-empleabilidad .report-content a { color: #2563eb !important; }
+.dark .informe-empleabilidad .report-content code { background-color: #f3f4f6 !important; color: #1f2937 !important; border-color: #e5e7eb !important; }
+.dark .informe-empleabilidad .report-content pre { background-color: #f9fafb !important; border-color: #e5e7eb !important; }
+.dark .informe-empleabilidad .report-content table th,
+.dark .informe-empleabilidad .report-content table td { border-color: #d1d5db !important; color: #374151 !important; }
+.dark .informe-empleabilidad .report-content table th { background-color: #f8fafc !important; color: #1f2937 !important; }
+.dark .informe-empleabilidad blockquote { background-color: #eff6ff !important; color: #4b5563 !important; }
