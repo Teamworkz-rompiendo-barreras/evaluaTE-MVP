@@ -9,14 +9,11 @@ export interface GenerateReportPayload {
 }
 
 // Función para generar el informe completo
-export async function generarInforme(payload: GenerateReportPayload, cvFile?: File) {
-  const fd = new FormData();
-  fd.append("payload", JSON.stringify(payload));
-  if (cvFile) fd.append("cv", cvFile); // opcional
-
+export async function generarInforme(payload: GenerateReportPayload) {
   const res = await fetch(`${API_CONFIG.BASE_URL}${API_CONFIG.ENDPOINTS.INFORME}`, {
     method: "POST",
-    body: fd,
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify(payload),
   });
   if (!res.ok) throw new Error(`Error ${res.status}`);
   return res.json();

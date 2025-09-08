@@ -7,7 +7,7 @@ export const API_CONFIG = {
   
   // Endpoints específicos
   ENDPOINTS: {
-    INFORME: '/api/informe',
+    INFORME: '/api/informe-ia',
     // Mantener compatibilidad con endpoints existentes si es necesario
     IA_REPORT: '/api/informe-ia',
     IA_FEEDBACK: '/api/informe-ia/feedback',
