@@ -16,13 +16,14 @@ from main import app
 
 # Configurar variables de entorno para Azure
 os.environ.setdefault("HOST", "0.0.0.0")
-os.environ.setdefault("PORT", "8000")
+os.environ.setdefault("PORT", "8080")
 
 if __name__ == "__main__":
     import uvicorn
     uvicorn.run(
         "main:app",
         host=os.getenv("HOST", "0.0.0.0"),
-        port=int(os.getenv("PORT", "8000")),
-        reload=False
+        port=int(os.getenv("PORT", "8080")),
+        reload=False,
+        log_level="info"
     )

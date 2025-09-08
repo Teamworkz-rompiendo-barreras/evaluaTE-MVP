@@ -16,9 +16,36 @@ fi
 echo "📦 Creando archivo de despliegue del backend..."
 cd backend
 
+# Instalar dependencias dentro del paquete para evitar errores de build en Azure
+echo "🧩 Empaquetando dependencias en .python_packages ..."
+mkdir -p .python_packages/lib/site-packages
+python3 -m pip install --upgrade pip >/dev/null 2>&1 || true
+python3 -m pip install -r requirements.txt -t .python_packages/lib/site-packages
+
 # Crear archivo ZIP con todos los archivos necesarios
-# Excluir rutas del Node.js runtime para evitar que Azure detecte incorrectamente el runtime
-zip -r ../backend-deploy.zip . -x "venv/*" "__pycache__/*" "*.pyc" ".git/*" "uploads/*" "dist/*" "node_modules/*" "src/*" "package.json" "tsconfig.json" "package-lock.json"
+# Excluir entornos virtuales y artefactos que no deben ir al servidor
+zip -r ../backend-deploy.zip . \
+  -x \
+  ".venv/*" \
+  "venv/*" \
+  "__pycache__/*" \
+  "*.pyc" \
+  ".git/*" \
+  "uploads/*" \
+  "dist/*" \
+  "node_modules/*" \
+  "src/*" \
+  "package.json" \
+  "tsconfig.json" \
+  "package-lock.json" \
+  ".deployment" \
+  ".azure-deployment" \
+  "web.config" \
+  ".env" \
+  ".env.*" \
+  "*.log" \
+  "*.pid" \
+  "*.pdf"
 
 cd ..
 
@@ -31,12 +58,16 @@ echo "✅ Archivo ZIP del backend creado correctamente"
 
 # Desplegar usando Azure CLI
 echo "🚀 Desplegando a Azure Web App..."
-# Asegurar configuración para build en despliegue y Always On
-az webapp config appsettings set --resource-group ${RESOURCE_GROUP} --name ${WEB_APP} --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true ENABLE_ORYX_BUILD=true > /dev/null
+# Evitar build en Azure (usamos dependencias vendorizadas) y Always On
+az webapp config appsettings set --resource-group ${RESOURCE_GROUP} --name ${WEB_APP} --settings SCM_DO_BUILD_DURING_DEPLOYMENT=false ENABLE_ORYX_BUILD=false PYTHONPATH="/home/site/wwwroot/.python_packages/lib/site-packages" > /dev/null
 az webapp config set --resource-group ${RESOURCE_GROUP} --name ${WEB_APP} --always-on true > /dev/null
-# Definir startup command robusto (Linux) si no está configurado
-az webapp config set --resource-group ${RESOURCE_GROUP} --name ${WEB_APP} --startup-file "python -m gunicorn -k uvicorn.workers.UvicornWorker main:app --workers 1 --timeout 600 --bind=0.0.0.0:8080" > /dev/null
-az webapp deploy --resource-group ${RESOURCE_GROUP} --name ${WEB_APP} --src-path backend-deploy.zip --type zip
+# Definir startup command usando el script específico de Azure
+az webapp config set --resource-group ${RESOURCE_GROUP} --name ${WEB_APP} --startup-file "python azure_startup.py" > /dev/null
+# Preferir config-zip (ZipDeploy) por estabilidad
+if ! az webapp deployment source config-zip --resource-group ${RESOURCE_GROUP} --name ${WEB_APP} --src backend-deploy.zip; then
+    echo "⚠️  Fallback a onedeploy (menos estable)"
+    az webapp deploy --resource-group ${RESOURCE_GROUP} --name ${WEB_APP} --src-path backend-deploy.zip --type zip
+fi
 
 if [ $? -eq 0 ]; then
     echo "✅ Backend desplegado correctamente"
