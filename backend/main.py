@@ -7,6 +7,7 @@ EvaluaTE Backend - FastAPI entrypoint
 """
 
 import os
+import logging
 from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form
@@ -25,6 +26,8 @@ except ImportError:  # fallback a imports relativos al directorio actual
 
 APP_TITLE = os.getenv("APP_TITLE", "EvaluaTE Backend")
 APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
+
+logger = logging.getLogger("evaluador-backend")
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 
@@ -107,9 +110,15 @@ async def api_pdf_generate(req: Request) -> Response:
 async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
     try:
         pdf_bytes = await file.read()
+        size = len(pdf_bytes) if pdf_bytes else 0
+        logger.info("Recibido archivo '%s' (%d bytes)", file.filename, size)
         if not pdf_bytes:
             raise HTTPException(status_code=400, detail="Archivo vacío")
         result = extract_pdf_info(pdf_bytes)
+        if result.get("error"):
+            logger.warning("Fallo en análisis de '%s': %s", file.filename, result.get("error"))
+            raise HTTPException(status_code=400, detail=result["error"])
+        logger.info("Análisis de '%s' completado", file.filename)
 
         # Normalizar al shape esperado por el frontend (CvAnalysis)
         cv_info: Dict[str, Any] = result.get("cv_info") or {}
@@ -185,9 +194,11 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
         }
 
         return normalized
-    except HTTPException:
+    except HTTPException as e:
+        logger.warning("Error de cliente al analizar '%s': %s", getattr(file, "filename", "desconocido"), getattr(e, "detail", ""))
         raise
     except Exception as e:
+        logger.exception("Error inesperado al analizar '%s'", getattr(file, "filename", "desconocido"))
         raise HTTPException(status_code=500, detail=f"Error analizando CV: {e}")
 
 

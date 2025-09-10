@@ -31,8 +31,11 @@ import json
 import sys
 import io
 import os
+import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
+
+logger = logging.getLogger("evaluador-backend")
 
 try:
     # La carga de variables de entorno es opcional. Si python-dotenv no está
@@ -920,6 +923,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     Extrae y analiza información de un CV en PDF usando Azure AI Document Intelligence
     como método principal, con fallback al método tradicional
     """
+    logger.info("🚀 Iniciando análisis de CV (tamaño=%d bytes)", len(pdf_buffer))
     try:
         print("🚀 Iniciando análisis de CV...")
         
@@ -1004,7 +1008,8 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         
         print("✅ Análisis completado exitosamente")
         print(f"📊 Resumen: {len(cv_info['software'])} habilidades técnicas, {len(cv_info['experiencia'])} experiencias, {len(cv_info['educacion'])} formación")
-        
+        logger.info("✅ Análisis de CV completado")
+
         return {
             "cv_info": cv_info,
             "analysis": analysis,
@@ -1012,8 +1017,8 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "full_cv_data": cv_data,  # Datos completos extraídos por IA
             "document_intelligence_used": False
         }
-        
     except Exception as e:
+        logger.exception("Error al procesar el PDF")
         print(f"❌ Error en análisis: {str(e)}")
         import traceback
         print(f"🔍 Traceback completo: {traceback.format_exc()}")
