@@ -42,6 +42,9 @@ if [ $? -eq 0 ]; then
     echo "✅ Backend desplegado correctamente"
 else
     echo "❌ Error en el despliegue del backend"
+    az webapp log deployment show \
+        --resource-group ${RESOURCE_GROUP} \
+        --name ${WEB_APP} -o json
     exit 1
 fi
 
