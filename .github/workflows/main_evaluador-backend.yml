@@ -7,7 +7,14 @@ on:
   push:
     branches:
       - main
+    paths:
+      - 'backend/**'
+      - '.github/workflows/main_evaluador-backend.yml'
   workflow_dispatch:
+
+concurrency:
+  group: backend-${{ github.ref }}
+  cancel-in-progress: true
 
 jobs:
   build:
@@ -18,10 +25,12 @@ jobs:
     steps:
       - uses: actions/checkout@v4
 
-      - name: Set up Python
+      - name: Set up Python 3.11 with pip cache
         uses: actions/setup-python@v4
         with:
-          python-version: '3.12'
+          python-version: '3.11'
+          cache: 'pip'
+          cache-dependency-path: 'backend/requirements.txt'
 
       - name: Install dependencies
         working-directory: ./backend
@@ -47,9 +56,24 @@ jobs:
           python -c "import main; print('✅ FastAPI app imported successfully')"
           echo "Python application verification completed"
 
-      - name: Zip artifact for deployment
+      - name: Create minimal deploy artifact (whitelist)
         working-directory: ./backend
-        run: zip release.zip ./* -r
+        run: |
+          rm -rf ../backend_dist
+          mkdir -p ../backend_dist
+          rsync -a --prune-empty-dirs \
+            --include="*/" \
+            --include="*.py" \
+            --include="requirements.txt" \
+            --include="requirements-azure.txt" \
+            --include="startup.py" \
+            --include="startup.txt" \
+            --exclude="*" \
+            ./ ../backend_dist/
+          cd ../backend_dist
+          zip -r ../backend/release.zip .
+          cd ../backend
+          echo "Artifact size:" && du -h release.zip
 
       - name: Upload artifact for deployment job
         uses: actions/upload-artifact@v4
@@ -71,9 +95,7 @@ jobs:
         uses: actions/download-artifact@v4
         with:
           name: python-app
-
-      - name: Unzip artifact for deployment
-        run: unzip release.zip
+          path: backend
       
       - name: Login to Azure
         uses: azure/login@v2
@@ -82,11 +104,25 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4130893AEC1849D7ADD562F76883DF6C }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5B6BEDFF0DDF405CA801DE036686441D }}
 
+      - name: Ensure Oryx remote build settings
+        run: |
+          az webapp config appsettings set \
+            --name evaluador-backend \
+            --resource-group evaluador-backend_group \
+            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true ENABLE_ORYX_BUILD=true | cat
+
+      - name: Configure startup command
+        run: |
+          az webapp config set \
+            --resource-group evaluador-backend_group \
+            --name evaluador-backend \
+            --startup-file "python startup.py" | cat
+
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
         with:
           app-name: 'evaluador-backend'
           slot-name: 'Production'
-          package: .
+          package: backend/release.zip
           
