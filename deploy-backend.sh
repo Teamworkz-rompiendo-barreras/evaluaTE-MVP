@@ -18,7 +18,11 @@ cd backend
 
 # Crear archivo ZIP con todos los archivos necesarios
 # Excluir rutas del Node.js runtime para evitar que Azure detecte incorrectamente el runtime
-zip -r ../backend-deploy.zip . -x "venv/*" "__pycache__/*" "*.pyc" ".git/*" "uploads/*" "dist/*" "node_modules/*" "src/*" "package.json" "tsconfig.json" "package-lock.json"
+zip -r ../backend-deploy.zip . \
+    -x "venv/*" "__pycache__/*" "*.pyc" ".git/*" "uploads/*" "dist/*" \
+       "node_modules/*" "src/*" "package.json" "tsconfig.json" \
+       "package-lock.json" ".env*" ".pytest_cache/*" ".deployment" \
+       ".azure-deployment"
 
 cd ..
 
