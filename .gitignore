@@ -1,47 +1,57 @@
-# Ignorar carpetas de entorno y datos sensibles
-.env
-venv/
+# Python
 __pycache__/
-
-# Ignorar dependencias Python
-*.pyc
-__pycache__/
-*.sqlite3
-
-# Ignorar archivos subidos
-uploads/
-
-# Node modules, caches, logs, etc.
-node_modules/
-*.log
-
-# Entorno de VSCode
-.vscode/
-
-# Servidor local
-*.db
-
-# Ignorar compilaciones / caches front-end
-*.cache
+*.py[cod]
+*$py.class
+*.so
+.Python
+build/
+develop-eggs/
 dist/
-# Local venv
-.venv/
-venv/
+downloads/
+eggs/
+.eggs/
+lib/
+lib64/
+parts/
+sdist/
+var/
+wheels/
+*.egg-info/
+.installed.cfg
+*.egg
+MANIFEST
 
-# Python cache
-__pycache__/
-*.pyc
+# Virtual environments
+venv/
+.venv/
+env/
+.env/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Logs
+*.log
+*.pid
+
+# Dependencies
+.python_packages/
+node_modules/
 
 # Build artifacts
-backend-appservice-*.zip
-backend-fixed-*.zip
-nuevo-frontend/frontend-*.zip
-*.log
+*.zip
+*.tar.gz
+*.rar
 
-# Node
-node_modules/
-dist/
-
-# Env files
-*.env
-*.env.*
+# Azure
+.azure/
+backend/uploads/
+nuevo-frontend/.env
+backend/*.pdf
