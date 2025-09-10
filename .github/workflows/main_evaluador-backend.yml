@@ -104,25 +104,28 @@ jobs:
           tenant-id: ${{ secrets.AZUREAPPSERVICE_TENANTID_4130893AEC1849D7ADD562F76883DF6C }}
           subscription-id: ${{ secrets.AZUREAPPSERVICE_SUBSCRIPTIONID_5B6BEDFF0DDF405CA801DE036686441D }}
 
-      - name: Ensure Oryx remote build settings
-        run: |
-          az webapp config appsettings set \
-            --name evaluador-backend \
-            --resource-group evaluador-backend_group \
-            --settings SCM_DO_BUILD_DURING_DEPLOYMENT=true ENABLE_ORYX_BUILD=true | cat
-
-      - name: Configure startup command
-        run: |
-          az webapp config set \
-            --resource-group evaluador-backend_group \
-            --name evaluador-backend \
-            --startup-file "python startup.py" | cat
+      - name: Wait to avoid SCM restart conflict
+        run: sleep 20
 
       - name: 'Deploy to Azure Web App'
         id: deploy-to-webapp
         uses: azure/webapps-deploy@v3
+        continue-on-error: true
         with:
           app-name: 'evaluador-backend'
           slot-name: 'Production'
           package: backend/release.zip
+          startup-command: "gunicorn -w 1 -k uvicorn.workers.UvicornWorker -b 0.0.0.0:8080 main:app"
+
+      - name: Retry deploy once via CLI if previous failed
+        if: steps.deploy-to-webapp.outcome == 'failure'
+        run: |
+          echo "Retrying deploy after possible SCM restart..."
+          sleep 30
+          az webapp deploy \
+            --resource-group evaluador-backend_group \
+            --name evaluador-backend \
+            --src-path backend/release.zip \
+            --type zip \
+            --async false | cat
           
