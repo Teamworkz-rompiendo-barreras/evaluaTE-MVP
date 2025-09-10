@@ -31,9 +31,20 @@ app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 # CORS configuration
 allowed_origins_env = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080",
+    "http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net",
 )
 ALLOWED_ORIGINS = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
+
+# En producción, permitir también dominios de Azure Static Web Apps
+if os.getenv("PRODUCTION", "false").lower() == "true":
+    # Agregar dominios de Azure Static Web Apps si no están ya incluidos
+    azure_domains = [
+        "https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net",
+        "https://*.azurestaticapps.net",  # Patrón para cualquier Azure Static Web App
+    ]
+    for domain in azure_domains:
+        if domain not in ALLOWED_ORIGINS:
+            ALLOWED_ORIGINS.append(domain)
 
 app.add_middleware(
     CORSMiddleware,
