@@ -20,26 +20,13 @@ import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
 import { convertBackendResponseToNewFormat, generateNewFormatReport } from '../config/reportConfig';
+import type { CvAnalysis } from '@/types/report';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
 // Tipos del rating del CV
 type CvStars = 1|2|3|4|5;
 
-type CvDiagnostico = {
-  structure_score: CvStars;
-  clarity_score: CvStars;
-  coherence_score: CvStars;
-  key_info_score: CvStars;
-  spelling_style_score: CvStars;
-  evidence: { 
-    structure: string; 
-    coherence: string; 
-    key_info: string; 
-    clarity: string; 
-    style: string; 
-  };
-};
 
 
 // Tipo para los datos del radar
@@ -82,17 +69,6 @@ function extractRadarData(markdown: string): RadarDataItem[] {
 
 
 // Componente para renderizar estrellas (sin regex/escapes que rompan el lint)
-const Stars: React.FC<{ n: CvStars }> = ({ n }) => {
-  const filled = "★".repeat(n);
-  const empty = "☆".repeat(5 - n);
-  return (
-    <span aria-label={`${n} de 5`}>
-      <span style={{ color: '#fbbf24', fontWeight: 'bold' }}>{filled}</span>
-      <span style={{ color: '#fbbf24', opacity: '0.3' }}>{empty}</span>
-    </span>
-  );
-};
-
 // Variante para diagnóstico con estilo dorado uniforme
 const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
   const filled = "★".repeat(n);
@@ -124,20 +100,6 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
   );
 };
 
-// Función helper que usa el componente Stars para diagnóstico
-const renderDiagnosticoUI = (diag: CvDiagnostico) => (
-  <div>
-    <p><b>Formato:</b> <Stars n={diag.structure_score}/></p>
-    <p><b>Claridad:</b> <Stars n={diag.clarity_score}/></p>
-    <p><b>Coherencia:</b> <Stars n={diag.coherence_score}/></p>
-    <p><b>Información clave:</b> <Stars n={diag.key_info_score}/></p>
-    <p><b>Ortografía:</b> <Stars n={diag.spelling_style_score}/></p>
-  </div>
-);
-
-// Función para usar en el futuro cuando se implemente la visualización del diagnóstico
-// Se mantiene para evitar warnings de TypeScript sobre tipos no utilizados
-void renderDiagnosticoUI;
 
 
 
@@ -148,7 +110,7 @@ void renderDiagnosticoUI;
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
-  const cvAnalysis = personal?.cvAnalysis;
+  const cvAnalysis = personal?.cvAnalysis as unknown as CvAnalysis | undefined;
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
@@ -160,24 +122,6 @@ const ResultadosPage: React.FC = () => {
 
   const asStars = (n: number): CvStars => (n < 1 ? 1 : n > 5 ? 5 : Math.round(n)) as CvStars;
 
-  // === NUEVO: estado local para estrellas del CV procedentes del backend ===
-  const [, setCvStarsLocal] = useState<CvDiagnostico | null>(null);
-  // Helpers robustos para mapear diversas respuestas del backend
-  const firstNum = (...vals: any[]) => {
-    for (const v of vals) {
-      const n = Number(v);
-      if (!Number.isNaN(n)) return n;
-    }
-    return undefined;
-  };
-  const toStarsScale = (v: unknown): CvStars => {
-    const n = Number(v);
-    if (Number.isNaN(n)) return 3 as CvStars;
-    let s = n;
-    if (s <= 1) s *= 5;       // 0–1 → 0–5
-    else if (s > 5) s /= 20;  // 0–100 → 0–5
-    return asStars(s);
-  };
 
   // Debug logging usando la utilidad (comentado para producción)
   // debugState(state, 'ResultadosPage');
@@ -248,11 +192,8 @@ const ResultadosPage: React.FC = () => {
       console.log('🔍 DEBUG - cvFile del estado:', personal?.cvFile);
       console.log('🔍 DEBUG - report del estado:', personal?.report);
       
-      // Asegurar análisis del CV si existe un archivo subido pero no hay análisis útil
-      if (personal?.cvFile && (!personal?.cvAnalysis || (
-          (!Array.isArray(personal.cvAnalysis.strengths) || personal.cvAnalysis.strengths.length === 0) &&
-          (!Array.isArray(personal.cvAnalysis.skills) || personal.cvAnalysis.skills.length === 0)
-        ))) {
+      // Asegurar análisis del CV si existe un archivo subido pero no hay análisis
+      if (personal?.cvFile && !personal?.cvAnalysis) {
         try {
           console.log('🔍 DEBUG - Hay CV pero no análisis útil. Lanzando análisis automático...');
           const dataUrl = personal.cvFile.fileContent;
@@ -324,35 +265,14 @@ const ResultadosPage: React.FC = () => {
           email: personal.email || undefined,
           phone: personal.whatsapp || undefined,
           cvAnalysis: cvAnalysis ? {
-            // Campos básicos del análisis
-            strengths: cvAnalysis.strengths ?? [],
-            weaknesses: cvAnalysis.weaknesses ?? [],
-            feedback: cvAnalysis.feedback ?? '',
-            structure: cvAnalysis.structure ?? 'regular',
-            coherence: cvAnalysis.coherence ?? 'regular',
-            experience: cvAnalysis.experience ?? 'regular',
-            skills: cvAnalysis.skills ?? [],
-            education: cvAnalysis.education ?? [],
-            alerts: cvAnalysis.alerts ?? [],
-            
-            // CRÍTICO: Incluir TODOS los datos estructurados del CV extraídos por IA
-            cv_structured: cvAnalysis.cv_structured ?? null,
-            candidate: cvAnalysis.candidate ?? null,
-            contact: cvAnalysis.contact ?? null,
-            experience_detailed: cvAnalysis.experience_detailed ?? null,
-            education_detailed: cvAnalysis.education_detailed ?? null,
-            languages: cvAnalysis.languages ?? null,
-            periods: cvAnalysis.periods ?? null,
-            highlights: cvAnalysis.highlights ?? null,
-            volunteering: cvAnalysis.volunteering ?? null,
-            cv_analysis_structured: cvAnalysis.cv_analysis_structured ?? null,
-            
-            // Campos adicionales que pueden estar disponibles
-            raw_text: cvAnalysis.raw_text ?? null,
-            layout_sections: cvAnalysis.layout_sections ?? null,
-            ai_analysis: cvAnalysis.ai_analysis ?? null,
-            basic_hints: cvAnalysis.basic_hints ?? null,
-            provenance: cvAnalysis.provenance ?? null,
+            structure_score: cvAnalysis.structure_score,
+            coherence_score: cvAnalysis.coherence_score,
+            key_info_score: cvAnalysis.key_info_score,
+            clarity_score: cvAnalysis.clarity_score,
+            style_score: cvAnalysis.style_score,
+            evidence: cvAnalysis.evidence,
+            corrections: cvAnalysis.corrections ?? [],
+            reordering_suggestions: cvAnalysis.reordering_suggestions ?? [],
           } : null,
           jobPreferences: personal.jobPreferences || report?.jobPreferences || null,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
@@ -416,26 +336,6 @@ const ResultadosPage: React.FC = () => {
           console.log('🔍 DEBUG - Condition result:', res.ok && !!data?.summary);
         }
 
-        // === NUEVO: capturar estrellas del backend (analysis_json / stars) ===
-        try {
-          const aj =
-            (data?.report?.cvAnalysis as any)?.analysis_json ||
-            (data?.report?.cvAnalysis as any)?.stars ||
-            (data?.cvAnalysis as any)?.analysis_json ||
-            (data?.cvAnalysis as any)?.stars ||
-            null;
-          if (aj) {
-            const diag: CvDiagnostico = {
-              structure_score: toStarsScale(firstNum(aj?.structure?.score, aj?.structure_score, aj?.formato, aj?.formato_score)),
-              clarity_score: toStarsScale(firstNum(aj?.clarity?.score, aj?.clarity_score, aj?.claridad, aj?.claridad_score)),
-              coherence_score: toStarsScale(firstNum(aj?.coherence?.score, aj?.coherence_score, aj?.coherencia, aj?.coherencia_score)),
-              key_info_score: toStarsScale(firstNum(aj?.key_info?.score, aj?.key_info_score, aj?.informacion_clave, aj?.keyInfo_score)),
-              spelling_style_score: toStarsScale(firstNum(aj?.spelling?.score, aj?.spelling_style_score, aj?.ortografia, aj?.estilo)),
-              evidence: { structure: '', coherence: '', key_info: '', clarity: '', style: '' }
-            };
-            setCvStarsLocal(diag);
-          }
-        } catch { /* no-op */ }
 
         // Relajar condición: con que exista summary mostramos el informe; el resto es opcional
         // Preferir markdown determinista del backend si viene presente
@@ -487,32 +387,15 @@ const ResultadosPage: React.FC = () => {
             const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
               || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
               || {} as Record<string, unknown>;
-            const ca = (data?.report?.cvAnalysis || cvAnalysis || {}) as any;
-            const contactDirect = (ca && ca.contact) || {};
-            const candidateObj = (ca && (ca.cv_structured || ca.cv_analysis_structured || {}).candidate) || {};
-            const contact = (contactDirect && (contactDirect.emails || contactDirect.phones || contactDirect.location) ? contactDirect : {
-              emails: Array.isArray(candidateObj.emails) ? candidateObj.emails : [],
-              phones: Array.isArray(candidateObj.phones) ? candidateObj.phones : [],
-              location: candidateObj.location
-            }) as { emails?: string[]; phones?: string[]; location?: string };
             const dp = {
               name: (dpSrc?.['name'] as string) || candidateName,
-              location: (dpSrc?.['location'] as string) || contact?.location || 'No consta',
-              email: (dpSrc?.['email'] as string) || (Array.isArray(contact?.emails) ? contact.emails[0] : '') || 'No consta',
-              phone: (dpSrc?.['phone'] as string) || (Array.isArray(contact?.phones) ? contact.phones[0] : '') || 'No especificado',
+              location: (dpSrc?.['location'] as string) || 'No consta',
+              email: (dpSrc?.['email'] as string) || '',
+              phone: (dpSrc?.['phone'] as string) || 'No especificado',
               disability_certificate: (dpSrc?.['disability_certificate'] != null)
                 ? (dpSrc['disability_certificate'] as string)
                 : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
             };
-
-
-            // const rec = ((data as { recommendations?: Record<string, unknown> })?.recommendations) || {} as Record<string, unknown>;
-
-            // Preferir analysis_json (persistido por backend) como fuente única de verdad para puntuaciones 1–5
-            const analysisJson: any = (data?.report?.cvAnalysis as any)?.analysis_json || null;
-            if (analysisJson && (!analysisJson.overall || analysisJson.overall.score == null)) {
-              throw new Error('Falta overall.score en analysis_json');
-            }
 
             // Construir SIEMPRE el informe con tu formato deseado
             const normalized = convertBackendResponseToNewFormat(data);
@@ -931,190 +814,20 @@ const ResultadosPage: React.FC = () => {
 
   // === NUEVO: función para renderizar el bloque "Análisis del Currículum" ===
   const renderCvAnalysisSection = () => {
-    const ca: any = cvAnalysis || (typeof (personal as any)?.cvAnalysis === 'object' ? (personal as any).cvAnalysis : null);
-    
-    // Verificar si hay datos del análisis del CV
-    if (!ca) return null;
+    if (!cvAnalysis) return null;
 
-    // Obtener datos del backend - priorizar analysis_json si está disponible
-    const analysisJson = (ca as any)?.analysis_json || {};
-    const starsFromBackend = (ca as any)?.stars || {};
-    
-    // Función para obtener puntuaciones con fallbacks
-    const getScore = (field: string, fallback = 3): CvStars => {
-      const score = analysisJson[field] || starsFromBackend[field] || fallback;
-      return Math.max(1, Math.min(5, Number(score) || fallback)) as CvStars;
-    };
+    const formatScore = asStars(cvAnalysis.structure_score);
+    const clarityScore = asStars(cvAnalysis.clarity_score);
+    const coherenceScore = asStars(cvAnalysis.coherence_score);
+    const keyInfoScore = asStars(cvAnalysis.key_info_score);
+    const styleScore = asStars(cvAnalysis.style_score);
 
-    // Obtener puntuaciones reales del backend
-    const formatScore = getScore('structure_score', 3);
-    const clarityScore = getScore('clarity_score', 2);
-    // Coherencia: ajustar a 3/5 mínimo si la cronología detectada es correcta
-    const experienceItems: any[] = Array.isArray(ca?.experience_detailed)
-      ? ca.experience_detailed
-      : (Array.isArray(ca?.cv_structured?.experience) ? ca.cv_structured.experience : []);
-    const parseYear = (v: unknown): number | null => {
-      const s = String(v || '').match(/(19|20)\d{2}/);
-      return s ? Number(s[0]) : null;
-    };
-    const chronologyOk = (() => {
-      try {
-        const years: number[] = [];
-        for (const it of experienceItems) {
-          const ys = parseYear((it as any)?.start_date || (it as any)?.fecha_inicio || (it as any)?.dates);
-          const ye = parseYear((it as any)?.end_date || (it as any)?.fecha_fin || (it as any)?.dates);
-          const y = ye ?? ys;
-          if (y != null) years.push(y);
-        }
-        if (years.length < 2) return false;
-        let asc = true;
-        for (let i = 1; i < years.length; i++) {
-          const current = years[i] as number;
-          const previous = years[i - 1] as number;
-          if (current < previous) { asc = false; break; }
-        }
-        let desc = true;
-        for (let i = 1; i < years.length; i++) {
-          const current = years[i] as number;
-          const previous = years[i - 1] as number;
-          if (current > previous) { desc = false; break; }
-        }
-        return asc || desc;
-      } catch {
-        return false;
-      }
-    })();
-    const coherenceRaw = getScore('coherence_score', 2);
-    const coherenceScore = (chronologyOk && (coherenceRaw as number) < 3 ? 3 : coherenceRaw) as CvStars;
-    const keyInfoScore = getScore('key_info_score', 2);
-    const spellingScore = getScore('spelling_style_score', 3);
-
-    // Obtener evidencia y observaciones del backend
-    const observations = analysisJson.observations || [];
-    const corrections = analysisJson.corrections || [];
-    const reorderingSuggestions = analysisJson.reordering_suggestions || [];
-
-    // Generar observaciones basadas en los datos del CV si no hay observaciones del backend
-    const generateObservations = (): string[] => {
-      if (observations.length > 0) return observations;
-
-      const obs: string[] = [];
-
-      // Análisis de estructura
-      const cvStruct = (ca?.cv_structured ?? {}) as any;
-      const exp = Array.isArray(ca?.experience_detailed) ? ca.experience_detailed : 
-                  (Array.isArray(cvStruct?.experience) ? cvStruct.experience : []);
-      const edu = Array.isArray(ca?.education_detailed) ? ca.education_detailed : 
-                  (Array.isArray(cvStruct?.education) ? cvStruct.education : []);
-      const skills = Array.isArray(ca?.skills) ? ca.skills : 
-                     (Array.isArray(cvStruct?.skills) ? cvStruct.skills : []);
-
-      if (exp.length > 0 || edu.length > 0 || skills.length > 0) {
-        const parts: string[] = [];
-        if (exp.length) parts.push(`${exp.length} experiencias`);
-        if (edu.length) parts.push(`${edu.length} formaciones`);
-        if (skills.length) parts.push(`${skills.length} herramientas/skills`);
-        obs.push(`**Estructura:** se observan secciones básicas (${parts.join(', ')}), pero la jerarquía visual es limitada.`);
-      }
-
-      // Análisis de claridad
-      obs.push(`**Claridad:** ausencia de bullets y verbos de acción; la redacción es general y sin foco en logros/impacto.`);
-
-      // Análisis de coherencia
-      if (chronologyOk) {
-        obs.push(`**Coherencia:** las fechas y el orden temporal son consistentes; persisten incoherencias de formato (ubicaciones, uso de 'Teletrabajo', puntuación).`);
-      } else {
-        obs.push(`**Coherencia:** faltan detalles de fechas u orden temporal; además hay variaciones de formato entre entradas.`);
-      }
-
-      // Análisis de información clave
-      const hasLinks = /https?:\/\//i.test(String(ca?.raw_text || '')) || /linkedin\.com/i.test(String(ca?.raw_text || ''));
-      obs.push(`**Información clave:** ${hasLinks ? 'Hay enlaces, pero' : 'No hay enlaces y'} no se incluyen KPIs/métricas cuantificables.`);
-
-      // Análisis de ortografía: detectar errores comunes
-      const corpusParts: string[] = [];
-      try {
-        const pushIf = (v: unknown) => { if (typeof v === 'string') corpusParts.push(v); };
-        pushIf(ca?.raw_text);
-        for (const it of exp as any[]) pushIf((it as any)?.description || (it as any)?.summary || (it as any)?.title);
-        for (const it of edu as any[]) pushIf((it as any)?.degree || (it as any)?.center);
-        for (const it of skills as any[]) pushIf(typeof it === 'string' ? it : (it as any)?.name);
-      } catch { /* no-op */ }
-      const corpus = corpusParts.join(' \n ').toLowerCase();
-      const detected: string[] = [];
-      const typo = (wrong: string | RegExp, correct: string) => {
-        const re = typeof wrong === 'string' ? new RegExp(`\\b${wrong.toLowerCase()}\\b`, 'i') : wrong;
-        if (re.test(corpus)) {
-          // Extraer solo la palabra incorrecta sin el formato de regex
-          const wrongWord = typeof wrong === 'string' ? wrong : wrong.source.replace(/[\\^$*+?.()|[\]{}]/g, '');
-          detected.push(`${wrongWord} → ${correct}`);
-        }
-      };
-      typo(/indesing/i, 'InDesign');
-      typo(/ilustrator/i, 'Illustrator');
-      typo(/l[ée]on/i, 'León');
-      typo(/teamwokz/i, 'Teamworkz');
-      if (detected.length > 0) {
-        obs.push(`**Ortografía y estilo:** se detectan errores menores: ${detected.join(', ')}.`);
-      } else {
-        obs.push('**Ortografía y estilo:** sin fallos graves detectados.');
-      }
-
-      return obs;
-    };
-
-    // Generar correcciones/acciones si no hay del backend
-    const generateCorrections = (): string[] => {
-      if (corrections.length > 0) return corrections;
-
-      const out = [
-        'Añadir logros cuantificables y KPIs en cada experiencia.',
-        'Incluir enlaces a LinkedIn u otros perfiles profesionales.',
-        'Homogeneizar el formato de fechas y ubicaciones.',
-        'Utilizar bullets y verbos de acción claros.'
-      ] as string[];
-      // Añadir corrección ortográfica específica si se detectaron errores
-      const obsLocal = generateObservations();
-      const orto = obsLocal.find(t => t.toLowerCase().startsWith('ortografía'));
-      if (orto && /se detectan errores menores/i.test(orto)) {
-        out.push('Corregir las palabras detectadas (InDesign, Illustrator, León, Teamworkz) y revisar el estilo.');
-      } else {
-        out.push('Revisar ortografía y formato general.');
-      }
-      return out;
-    };
-
-    // Generar sugerencias de reordenación si no hay del backend
-    const generateReorderingSuggestions = (): string[] => {
-      if (reorderingSuggestions.length > 0) return reorderingSuggestions;
-
-      const suggestions: string[] = [];
-      const hasProfile = Boolean(ca?.cv_structured?.summary || (ca as any)?.summary);
-      const layout = ca?.layout_sections as any[] | undefined;
-      let experienceBeforeEducation: boolean | undefined;
-      try {
-        if (Array.isArray(layout)) {
-          const norm = (s: string) => String(s || '').toLowerCase();
-          const expIdx = layout.findIndex(s => /experien/.test(norm(String((s as any)))));
-          const eduIdx = layout.findIndex(s => /edu(caci|cation|ación)/i.test(norm(String((s as any)))));
-          if (expIdx >= 0 && eduIdx >= 0) experienceBeforeEducation = expIdx < eduIdx;
-        }
-      } catch { /* no-op */ }
-
-      if (!hasProfile) suggestions.push('Colocar el perfil profesional al inicio.');
-      if (experienceBeforeEducation === false) suggestions.push('Agrupar la experiencia profesional antes de la formación.');
-      suggestions.push('Incluir una sección específica de habilidades técnicas y soft skills.');
-      return suggestions;
-    };
-
-    const finalObservations = generateObservations();
-    const finalCorrections = generateCorrections();
-    const finalReorderingSuggestions = generateReorderingSuggestions();
+    const { evidence, corrections = [], reordering_suggestions = [] } = cvAnalysis;
 
     return (
       <div className="print-page-break-inside-avoid mb-6">
         <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Análisis del CV (con puntuación 1–5 por apartado)</h2>
-        
+
         {/* Sección de puntuaciones con estrellas */}
         <div className="mb-4">
           <div className="border-l-4 border-blue-500 pl-4 rounded-md" style={{ backgroundColor: '#F9FAFB' }}>
@@ -1136,44 +849,33 @@ const ResultadosPage: React.FC = () => {
                 <span className="text-lg"><StarsGold n={keyInfoScore} /></span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900 dark:text-gray-800">Ortografía:</span>
-                <span className="text-lg"><StarsGold n={spellingScore} /></span>
+                <span className="font-semibold text-gray-900 dark:text-gray-800">Estilo:</span>
+                <span className="text-lg"><StarsGold n={styleScore} /></span>
               </div>
             </div>
           </div>
         </div>
 
         {/* Observaciones del análisis */}
-        {finalObservations.length > 0 && (
+        {evidence && (
           <div className="mb-4">
             <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Observaciones del análisis:</p>
             <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              {finalObservations.map((obs, i) => (
-                <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>
-                  <ReactMarkdown
-                    remarkPlugins={[remarkGfm]}
-                    components={{
-                      p: ({ children }) => <span>{children}</span>,
-                      strong: ({ children }) => <strong className="font-semibold">{children}</strong>,
-                      ul: ({ children }) => <ul className="list-disc list-inside space-y-1">{children}</ul>,
-                      ol: ({ children }) => <ol className="list-decimal list-inside space-y-1">{children}</ol>,
-                      li: ({ children, ...props }) => <li className="leading-relaxed" {...props}>{children}</li>,
-                    }}
-                  >
-                    {obs}
-                  </ReactMarkdown>
-                </li>
-              ))}
+              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Formato:</strong> {evidence.structure}</li>
+              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Coherencia:</strong> {evidence.coherence}</li>
+              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Información clave:</strong> {evidence.key_info}</li>
+              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Claridad:</strong> {evidence.clarity}</li>
+              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Estilo:</strong> {evidence.style}</li>
             </ul>
           </div>
         )}
 
         {/* Correcciones/Acciones sugeridas */}
-        {finalCorrections.length > 0 && (
+        {corrections.length > 0 && (
           <div className="mb-4">
             <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Correcciones/Acciones:</p>
             <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              {finalCorrections.map((correction, i) => (
+              {corrections.map((correction, i) => (
                 <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{correction}</li>
               ))}
             </ul>
@@ -1181,18 +883,16 @@ const ResultadosPage: React.FC = () => {
         )}
 
         {/* Reordenación sugerida */}
-        {finalReorderingSuggestions.length > 0 && (
+        {reordering_suggestions.length > 0 && (
           <div className="mb-4">
             <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Reordenación sugerida:</p>
             <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              {finalReorderingSuggestions.map((suggestion, i) => (
+              {reordering_suggestions.map((suggestion, i) => (
                 <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{suggestion}</li>
               ))}
             </ul>
           </div>
         )}
-
-
       </div>
     );
   };
