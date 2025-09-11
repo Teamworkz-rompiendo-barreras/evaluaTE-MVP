@@ -1,7 +1,7 @@
 # backend/new_report_schema.py
 # Nuevo esquema de informe estructurado para el backend
 
-from typing import List, Optional, Dict, Any
+from typing import List, Dict, Any
 from pydantic import BaseModel, Field
 
 
