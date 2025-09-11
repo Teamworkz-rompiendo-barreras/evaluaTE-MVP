@@ -74,9 +74,9 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         summary: report.resumen_ejecutivo || '',
         personal_data: {
           name: report.fullName || 'Desconocido',
-          location: '',
-          email: '',
-          phone: '',
+          location: report.location || '',
+          email: report.email || '',
+          phone: report.phone || '',
           disability_certificate: ''
         },
         profile_summary: report.resumen_ejecutivo || '',
