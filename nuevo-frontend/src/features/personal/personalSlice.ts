@@ -32,7 +32,13 @@ export interface PersonalState {
   hasDisabilityCert: boolean;
 
   cvFile: { fileName: string; fileContent: string } | null;
-  cvAnalysis?: CvAnalysis;
+  /**
+   * Resultado estructurado del análisis de CV.
+   * Se tipa explícitamente con `CvAnalysis` para garantizar
+   * que todos los campos esperados (structure_score, evidence,
+   * corrections, etc.) estén presentes al almacenarlo.
+   */
+  cvAnalysis: CvAnalysis | undefined;
 
   softSkills: SoftSkillResult[];
   unlockedGames: number;
@@ -150,24 +156,25 @@ export const personalSlice = createSlice({
       };
     },
 
-    // Guarda análisis del CV
+    // Guarda análisis del CV en el estado usando la interfaz tipada
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
+      const analysis: CvAnalysis = { ...action.payload };
       // Solo log en desarrollo para debugging
-      if (import.meta.env.DEV) {
-        console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', action.payload);
+      if (import.meta?.env?.DEV) {
+        console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', analysis);
       }
-      
+
       const newState = {
         ...state,
-        cvAnalysis: action.payload,
+        cvAnalysis: analysis,
         unlockedGames: Math.min(10, state.unlockedGames + 1),
       };
-      
+
       // Solo log en desarrollo para debugging
-      if (import.meta.env.DEV) {
+      if (import.meta?.env?.DEV) {
         console.log('🔍 DEBUG - Nuevo estado después de saveCvAnalysis:', newState);
       }
-      
+
       return newState;
     },
 
@@ -253,7 +260,7 @@ export const personalSlice = createSlice({
       const validSkills = filterValidSoftSkills(state.softSkills);
       
       if (validSkills.length === 0) {
-        if (import.meta.env.MODE !== 'production') {
+        if (import.meta?.env?.MODE !== 'production') {
           // eslint-disable-next-line no-console
           console.warn('generateFinalReport: No hay softSkills válidos para generar el informe');
         }
@@ -360,7 +367,7 @@ function getRecommendationsFromProfile(params: {
   const validSkills = filterValidSoftSkills(params.softSkills);
   
   if (validSkills.length === 0) {
-    if (import.meta.env.MODE !== 'production') {
+    if (import.meta?.env?.MODE !== 'production') {
       // eslint-disable-next-line no-console
       console.warn('getRecommendationsFromProfile: No hay softSkills válidos');
     }

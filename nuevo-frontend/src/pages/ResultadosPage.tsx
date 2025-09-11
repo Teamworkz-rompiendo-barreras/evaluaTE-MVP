@@ -257,6 +257,17 @@ const ResultadosPage: React.FC = () => {
           confidence: 80,
         }];
 
+        const cvAnalysisPayload: CvAnalysis | null = cvAnalysis ? {
+          structure_score: cvAnalysis.structure_score,
+          coherence_score: cvAnalysis.coherence_score,
+          key_info_score: cvAnalysis.key_info_score,
+          clarity_score: cvAnalysis.clarity_score,
+          style_score: cvAnalysis.style_score,
+          evidence: cvAnalysis.evidence,
+          corrections: cvAnalysis.corrections ?? [],
+          reordering_suggestions: cvAnalysis.reordering_suggestions ?? [],
+        } : null;
+
         const requestBody = {
           userId: report?.userId || 'user',
           fullName: userFullName,
@@ -264,16 +275,7 @@ const ResultadosPage: React.FC = () => {
           // Incluir contacto básico desde estado si el CV no lo trae
           email: personal.email || undefined,
           phone: personal.whatsapp || undefined,
-          cvAnalysis: cvAnalysis ? {
-            structure_score: cvAnalysis.structure_score,
-            coherence_score: cvAnalysis.coherence_score,
-            key_info_score: cvAnalysis.key_info_score,
-            clarity_score: cvAnalysis.clarity_score,
-            style_score: cvAnalysis.style_score,
-            evidence: cvAnalysis.evidence,
-            corrections: cvAnalysis.corrections ?? [],
-            reordering_suggestions: cvAnalysis.reordering_suggestions ?? [],
-          } : null,
+          cvAnalysis: cvAnalysisPayload,
           jobPreferences: personal.jobPreferences || report?.jobPreferences || null,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
           completedGames: (Array.isArray(game?.completedGames) && game.completedGames.length > 0)
