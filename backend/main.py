@@ -7,10 +7,14 @@ EvaluaTE Backend - FastAPI entrypoint
 """
 
 import os
+import logging
 from typing import Any, Dict
 
 from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
+
+logging.basicConfig(level=logging.INFO)
+logger = logging.getLogger(__name__)
 
 # Import robusto compatible tanto si se ejecuta como paquete (backend.main)
 # como si se ejecuta directamente desde el directorio backend
@@ -107,9 +111,20 @@ async def api_pdf_generate(req: Request) -> Response:
 async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
     try:
         pdf_bytes = await file.read()
+        size = len(pdf_bytes) if pdf_bytes else 0
+        logger.info("Recibido archivo '%s' (%d bytes)", file.filename, size)
         if not pdf_bytes:
+            logger.warning("Archivo vacío recibido")
             raise HTTPException(status_code=400, detail="Archivo vacío")
-        result = extract_pdf_info(pdf_bytes)
+        try:
+            result = extract_pdf_info(pdf_bytes)
+            logger.info("extract_pdf_info ejecutado correctamente")
+        except Exception as e:
+            logger.exception("Fallo ejecutando extract_pdf_info")
+            raise HTTPException(status_code=500, detail=f"Error analizando CV: {e}")
+        if result.get("error"):
+            logger.error("extract_pdf_info devolvió error: %s", result["error"])
+            raise HTTPException(status_code=400, detail=result["error"])
 
         # Normalizar al shape esperado por el frontend (CvAnalysis)
         cv_info: Dict[str, Any] = result.get("cv_info") or {}
@@ -183,11 +198,12 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             "ai_analysis": result.get("full_cv_data") or {},
             "cv_analysis_structured": analysis,
         }
-
+        logger.info("CV analysis normalizado correctamente")
         return normalized
     except HTTPException:
         raise
     except Exception as e:
+        logger.exception("Error inesperado en api_analyze_cv")
         raise HTTPException(status_code=500, detail=f"Error analizando CV: {e}")
 
 
