@@ -107,10 +107,10 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
     # Crear datos personales básicos
     personal_data = PersonalData(
         name=full_name or "Usuario",
-        location=getattr(job_preferences, 'location', 'No especificado') if job_preferences else 'No especificado',
+        location=job_preferences.get('location', 'No especificado') if job_preferences else 'No especificado',
         email="No proporcionado",
         phone="No proporcionado",
-        disability_certificate="No" if not job_preferences or not getattr(job_preferences, 'hasDisabilityCert', False) else "Sí"
+        disability_certificate="Sí" if job_preferences and job_preferences.get('hasDisabilityCert', False) else "No"
     )
     
     # Crear análisis del CV por defecto
@@ -342,9 +342,9 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
     
     # Crear análisis del CV
     cv_analysis_data = {
-        'structure': getattr(cv_analysis, 'structure', 'regular') if cv_analysis else 'regular',
-        'coherence': getattr(cv_analysis, 'coherence', 'regular') if cv_analysis else 'regular',
-        'feedback': getattr(cv_analysis, 'feedback', 'CV analizado con limitaciones') if cv_analysis else 'CV analizado con limitaciones',
+        'structure': cv_analysis.get('structure', 'regular') if cv_analysis else 'regular',
+        'coherence': cv_analysis.get('coherence', 'regular') if cv_analysis else 'regular',
+        'feedback': cv_analysis.get('feedback', 'CV analizado con limitaciones') if cv_analysis else 'CV analizado con limitaciones',
         'summary': 'gestión y coordinación de proyectos',
         'experience': [
             {'title': 'Gestión de proyectos y coordinación'}
