@@ -4,21 +4,10 @@ import React, { useState } from 'react';
 import { useDispatch } from 'react-redux';
 import { Link, useNavigate } from 'react-router-dom';
 import { saveCV, saveCvAnalysis, generateFinalReport } from '../features/personal/personalSlice';
+import type { CvAnalysis } from '../features/personal/personalSlice';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { buildApiUrl, API_CONFIG } from '../config/api';
-
-interface CvAnalysis {
-  feedback: string;
-  strengths?: string[];
-  skills?: string[];
-  weaknesses?: string[];
-  structure?: string;
-  coherence?: string;
-  experience?: string;
-  education?: string[];
-  alerts?: string[];
-}
 
 export default function UploadCVPage() {
   const dispatch = useDispatch();
@@ -109,33 +98,38 @@ export default function UploadCVPage() {
           console.log('🔍 DEBUG - Análisis de CV guardado en Redux');
         }
         
-        // Verificar que se guardó correctamente
-        if (cvAnalysis && (cvAnalysis.strengths?.length > 0 || cvAnalysis.skills?.length > 0 || cvAnalysis.weaknesses?.length > 0)) {
-          if (import.meta.env.DEV) {
-            console.log('🔍 DEBUG - CV analizado con datos reales');
+          // Verificar que se guardó correctamente
+          if (cvAnalysis && Array.isArray(cvAnalysis.corrections) && cvAnalysis.corrections.length > 0) {
+            if (import.meta.env.DEV) {
+              console.log('🔍 DEBUG - CV analizado con datos reales');
+            }
+            // CV analizado con datos reales
+          } else {
+            if (import.meta.env.DEV) {
+              console.log('🔍 DEBUG - CV analizado pero sin datos significativos');
+            }
+            // CV analizado pero sin datos significativos
           }
-          // CV analizado con datos reales
-        } else {
-          if (import.meta.env.DEV) {
-            console.log('🔍 DEBUG - CV analizado pero sin datos significativos');
-          }
-          // CV analizado pero sin datos significativos
-        }
       } else {
         const errorData = await res.json().catch(() => ({}));
                   // Error del servidor en análisis de CV
         
         // Crear un análisis básico con información del error
-        const fallbackAnalysis = {
-          strengths: [],
-          weaknesses: [],
-          feedback: errorData.detail || errorData.error || 'No se pudo analizar completamente el CV',
-          structure: 'regular',
-          coherence: 'regular',
-          experience: 'regular',
-          skills: [],
-          education: [],
-          alerts: [errorData.detail || errorData.error || 'Error en el análisis del CV']
+        const fallbackAnalysis: CvAnalysis = {
+          structure_score: 3,
+          coherence_score: 3,
+          key_info_score: 3,
+          clarity_score: 3,
+          style_score: 3,
+          evidence: {
+            structure: 'No se pudo evaluar la estructura',
+            coherence: 'No se pudo evaluar la coherencia',
+            key_info: 'Información insuficiente',
+            clarity: 'Claridad no evaluada',
+            style: 'Estilo no evaluado',
+          },
+          corrections: [errorData.detail || errorData.error || 'No se pudo analizar completamente el CV'],
+          reordering_suggestions: [],
         };
         
         dispatch(saveCvAnalysis(fallbackAnalysis));
@@ -160,15 +154,20 @@ export default function UploadCVPage() {
       
       // Crear un análisis básico para errores de conexión
       dispatch(saveCvAnalysis({
-        feedback: 'No se pudo conectar con el servidor para analizar el CV',
-        strengths: [],
-        skills: [],
-        weaknesses: [],
-        structure: 'regular',
-        coherence: 'regular',
-        experience: 'regular',
-        education: [],
-        alerts: ['Error de conexión al analizar el CV']
+        structure_score: 3,
+        coherence_score: 3,
+        key_info_score: 3,
+        clarity_score: 3,
+        style_score: 3,
+        evidence: {
+          structure: 'No se pudo analizar la estructura',
+          coherence: 'No se pudo analizar la coherencia',
+          key_info: 'No se evaluó la información clave',
+          clarity: 'No se pudo analizar la claridad',
+          style: 'No se pudo evaluar el estilo'
+        },
+        corrections: ['No se pudo conectar con el servidor para analizar el CV'],
+        reordering_suggestions: []
       }));
       
       setIsLoading(false)
@@ -189,32 +188,33 @@ export default function UploadCVPage() {
         <p className="mb-4">Ya has subido un CV: {cvFile.fileName}</p>
 
         {/* Mostrar información del análisis si está disponible */}
-        {cvAnalysis && (
-          <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
-            <h3 className="font-semibold text-blue-800 mb-2">Análisis del CV:</h3>
-            <p className="text-blue-700">{cvAnalysis.feedback}</p>
-            {cvAnalysis.strengths && cvAnalysis.strengths.length > 0 && (
-              <div className="mt-2">
-                <strong className="text-green-700">Fortalezas:</strong>
-                <ul className="list-disc list-inside text-green-600">
-                  {(Array.isArray(cvAnalysis.strengths) ? cvAnalysis.strengths : []).map((strength: string, index: number) => (
-                    <li key={index}>{strength}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {cvAnalysis.skills && cvAnalysis.skills.length > 0 && (
-              <div className="mt-2">
-                <strong className="text-purple-700">Habilidades detectadas:</strong>
-                <ul className="list-disc list-inside text-purple-600">
-                  {(Array.isArray(cvAnalysis.skills) ? cvAnalysis.skills : []).map((skill: string, index: number) => (
-                    <li key={index}>{skill}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-          </div>
-        )}
+          {cvAnalysis && (
+            <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
+              <h3 className="font-semibold text-blue-800 mb-2">Análisis del CV:</h3>
+              {cvAnalysis.corrections && cvAnalysis.corrections.length > 0 && (
+                <div className="mb-2">
+                  <strong className="text-blue-700">Correcciones sugeridas:</strong>
+                  <ul className="list-disc list-inside text-blue-600">
+                    {cvAnalysis.corrections.map((c: string, index: number) => (
+                      <li key={index}>{c}</li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+              {cvAnalysis.evidence && (
+                <div className="mt-2">
+                  <strong className="text-blue-700">Evidencia:</strong>
+                  <ul className="list-disc list-inside text-blue-600">
+                    <li>Estructura: {cvAnalysis.evidence.structure}</li>
+                    <li>Coherencia: {cvAnalysis.evidence.coherence}</li>
+                    <li>Información clave: {cvAnalysis.evidence.key_info}</li>
+                    <li>Claridad: {cvAnalysis.evidence.clarity}</li>
+                    <li>Estilo: {cvAnalysis.evidence.style}</li>
+                  </ul>
+                </div>
+              )}
+            </div>
+          )}
 
         {/* Vista previa del PDF */}
         <object data={cvFile.fileContent} type="application/pdf" width="100%" height="600px">

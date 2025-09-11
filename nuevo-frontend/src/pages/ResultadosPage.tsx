@@ -1032,10 +1032,13 @@ const ResultadosPage: React.FC = () => {
       console.log('🔍 DEBUG - report del estado:', personal?.report);
       
       // Asegurar análisis del CV si existe un archivo subido pero no hay análisis útil
-      if (personal?.cvFile && (!personal?.cvAnalysis || (
-          (!Array.isArray(personal.cvAnalysis.strengths) || personal.cvAnalysis.strengths.length === 0) &&
-          (!Array.isArray(personal.cvAnalysis.skills) || personal.cvAnalysis.skills.length === 0)
-        ))) {
+      if (
+        personal?.cvFile &&
+        (!personal?.cvAnalysis || (
+          (!Array.isArray(personal.cvAnalysis.corrections) || personal.cvAnalysis.corrections.length === 0) &&
+          !personal.cvAnalysis.evidence
+        ))
+      ) {
         try {
           console.log('🔍 DEBUG - Hay CV pero no análisis útil. Lanzando análisis automático...');
           const dataUrl = personal.cvFile.fileContent;
@@ -1107,35 +1110,15 @@ const ResultadosPage: React.FC = () => {
           email: personal.email || undefined,
           phone: personal.whatsapp || undefined,
           cvAnalysis: cvAnalysis ? {
-            // Campos básicos del análisis
-            strengths: cvAnalysis.strengths ?? [],
-            weaknesses: cvAnalysis.weaknesses ?? [],
-            feedback: cvAnalysis.feedback ?? '',
-            structure: cvAnalysis.structure ?? 'regular',
-            coherence: cvAnalysis.coherence ?? 'regular',
-            experience: cvAnalysis.experience ?? 'regular',
-            skills: cvAnalysis.skills ?? [],
-            education: cvAnalysis.education ?? [],
-            alerts: cvAnalysis.alerts ?? [],
-            
-            // CRÍTICO: Incluir TODOS los datos estructurados del CV extraídos por IA
-            cv_structured: cvAnalysis.cv_structured ?? null,
-            candidate: cvAnalysis.candidate ?? null,
-            contact: cvAnalysis.contact ?? null,
-            experience_detailed: cvAnalysis.experience_detailed ?? null,
-            education_detailed: cvAnalysis.education_detailed ?? null,
-            languages: cvAnalysis.languages ?? null,
-            periods: cvAnalysis.periods ?? null,
-            highlights: cvAnalysis.highlights ?? null,
-            volunteering: cvAnalysis.volunteering ?? null,
-            cv_analysis_structured: cvAnalysis.cv_analysis_structured ?? null,
-            
-            // Campos adicionales que pueden estar disponibles
-            raw_text: cvAnalysis.raw_text ?? null,
-            layout_sections: cvAnalysis.layout_sections ?? null,
-            ai_analysis: cvAnalysis.ai_analysis ?? null,
-            basic_hints: cvAnalysis.basic_hints ?? null,
-            provenance: cvAnalysis.provenance ?? null,
+            structure_score: cvAnalysis.structure_score,
+            coherence_score: cvAnalysis.coherence_score,
+            key_info_score: cvAnalysis.key_info_score,
+            clarity_score: cvAnalysis.clarity_score,
+            style_score: cvAnalysis.style_score,
+            evidence: cvAnalysis.evidence,
+            corrections: cvAnalysis.corrections ?? [],
+            reordering_suggestions: cvAnalysis.reordering_suggestions ?? [],
+            observations: cvAnalysis.observations ?? [],
           } : null,
           jobPreferences: personal.jobPreferences || report?.jobPreferences || null,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback

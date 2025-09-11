@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { CvAnalysis, JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
+import type { JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
 import type { UserDecision } from '../../types/skills'; // Adjust the import path as needed
 import { filterValidSoftSkills } from '../../utils/data-validation';
 
@@ -15,6 +15,26 @@ export interface SceneLog {
   emotionalTrend: string[];
   accessibilityUsed: boolean;
   accessibilitySettings?: AccessibilitySettings;
+}
+
+export interface CvEvidence {
+  structure: string;
+  coherence: string;
+  key_info: string;
+  clarity: string;
+  style: string;
+}
+
+export interface CvAnalysis {
+  structure_score: number;
+  coherence_score: number;
+  key_info_score: number;
+  clarity_score: number;
+  style_score: number;
+  evidence: CvEvidence;
+  corrections?: string[];
+  reordering_suggestions?: string[];
+  observations?: string[];
 }
 
 export interface PersonalState {
@@ -271,12 +291,19 @@ export const personalSlice = createSlice({
         );
       }
 
-      // Ajuste según el CV
-      if (
-        typeof state.cvAnalysis === 'number' &&
-        state.cvAnalysis < 60
-      ) {
-        employabilityScore = Math.max(20, employabilityScore - 10);
+      // Ajuste según el CV: reducir puntuación si la media de puntuaciones del CV es baja
+      if (state.cvAnalysis) {
+        const scores = [
+          state.cvAnalysis.structure_score,
+          state.cvAnalysis.coherence_score,
+          state.cvAnalysis.key_info_score,
+          state.cvAnalysis.clarity_score,
+          state.cvAnalysis.style_score,
+        ];
+        const avgScore = scores.reduce((sum, s) => sum + s, 0) / scores.length;
+        if (avgScore < 3) {
+          employabilityScore = Math.max(20, employabilityScore - 10);
+        }
       }
 
       // Nivel de empleabilidad
@@ -300,6 +327,8 @@ export const personalSlice = createSlice({
         ...(recommendationsObj && Array.isArray(recommendationsObj.resources) ? recommendationsObj.resources.map(resource => `Recurso sugerido: ${resource}`) : []),
         ...(recommendationsObj && Array.isArray(recommendationsObj.cvImprovements) ? recommendationsObj.cvImprovements.map(improvement => `Mejora de CV: ${improvement}`) : []),
         ...(recommendationsObj && Array.isArray(recommendationsObj.nextSteps) ? recommendationsObj.nextSteps.map(step => `Próximo paso: ${step}`) : []),
+        ...(state.cvAnalysis?.corrections?.map(c => `Corrección de CV: ${c}`) ?? []),
+        ...(state.cvAnalysis?.reordering_suggestions?.map(r => `Sugerencia de orden: ${r}`) ?? []),
       ];
 
       // Actualiza el estado del informe
@@ -378,13 +407,29 @@ function getRecommendationsFromProfile(params: {
     resources.push('Microsoft Learn');
   }
 
-  // Validación segura de cvAnalysis
-  if (params.cvAnalysis && Array.isArray(params.cvAnalysis) && params.cvAnalysis.length > 0) {
-    // Filtrar elementos válidos antes de agregarlos
-    const validCvImprovements = params.cvAnalysis.filter(item => 
-      item && typeof item === 'string' && item.trim().length > 0
-    );
-    cvImprovements.push(...validCvImprovements);
+  // Extraer información del análisis del CV si está disponible
+  if (params.cvAnalysis) {
+    const { corrections, reordering_suggestions, evidence } = params.cvAnalysis;
+    if (Array.isArray(corrections)) {
+      cvImprovements.push(
+        ...corrections.filter(c => typeof c === 'string' && c.trim().length > 0)
+      );
+    }
+    if (Array.isArray(reordering_suggestions)) {
+      cvImprovements.push(
+        ...reordering_suggestions.filter(r => typeof r === 'string' && r.trim().length > 0)
+      );
+    }
+    if (evidence) {
+      const evidenceTexts = [
+        evidence.structure,
+        evidence.coherence,
+        evidence.key_info,
+        evidence.clarity,
+        evidence.style,
+      ].filter(t => typeof t === 'string' && t.trim().length > 0);
+      cvImprovements.push(...evidenceTexts);
+    }
   }
 
   // Siempre agregar pasos básicos
@@ -415,3 +460,6 @@ export const {
 
 // Exportamos el reducer
 export default personalSlice.reducer;
+
+// Exportamos tipos relacionados con el análisis del CV
+export type { CvEvidence, CvAnalysis };

@@ -123,7 +123,22 @@ const testBackendResponse = async () => {
       
       // Simular la función buildFallbackMarkdown
       const userFullName = "Usuario Test";
-      const cvAnalysis = { structure: "buena", coherence: "excelente", feedback: "CV bien estructurado" };
+      const cvAnalysis = {
+        structure_score: 4,
+        coherence_score: 4,
+        key_info_score: 3,
+        clarity_score: 4,
+        style_score: 3,
+        evidence: {
+          structure: 'Buena',
+          coherence: 'Excelente',
+          key_info: 'Información básica',
+          clarity: 'Clara',
+          style: 'Profesional'
+        },
+        corrections: [],
+        reordering_suggestions: []
+      };
       const completedGames = ["Evaluación de habilidades básicas"];
       
       const informeFallback = `# 📋 Informe de Empleabilidad Profesional
@@ -139,8 +154,8 @@ ${data.profile_summary || 'Análisis de empleabilidad basado en tu perfil y habi
 ## 💪 Fortalezas Identificadas
 ${data.strengths?.length > 0 ? data.strengths.map(s => `- ${s}`).join('\n') : '- Se están evaluando tus fortalezas'}
 
-## 📊 Análisis del CV
-${cvAnalysis ? `**Estructura:** ${cvAnalysis.structure || 'Regular'}\n**Coherencia:** ${cvAnalysis.coherence || 'Regular'}\n**Feedback:** ${cvAnalysis.feedback || 'Análisis en progreso'}` : 'CV en proceso de análisis'}
+  ## 📊 Análisis del CV
+  ${cvAnalysis ? `**Estructura:** ${cvAnalysis.evidence.structure || 'Regular'}\n**Coherencia:** ${cvAnalysis.evidence.coherence || 'Regular'}\n**Claridad:** ${cvAnalysis.evidence.clarity || 'Regular'}` : 'CV en proceso de análisis'}
 
 ## 🎮 Juegos Completados
 ${completedGames.length ? completedGames.map(g => `- ${g}`).join('\n') : '- Evaluación de habilidades básicas completada'}
