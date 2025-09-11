@@ -912,7 +912,7 @@ def extract_basic_cv_data_from_text(text: str) -> Dict[str, Any]:
 
 # Importar Document Intelligence
 try:
-    from document_intelligence import analyze_cv_with_improved_intelligence as analyze_cv_with_document_intelligence
+    from document_intelligence import analyze_cv_with_improved_intelligence
     DOCUMENT_INTELLIGENCE_AVAILABLE = True
 except ImportError:
     DOCUMENT_INTELLIGENCE_AVAILABLE = False
@@ -931,7 +931,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         # Intentar usar Document Intelligence primero
         if DOCUMENT_INTELLIGENCE_AVAILABLE:
             print("🤖 Intentando análisis con Azure AI Document Intelligence...")
-            result = analyze_cv_with_document_intelligence(pdf_buffer)
+            result = analyze_cv_with_improved_intelligence(pdf_buffer)
             
             if not result.get("error") and result.get("document_intelligence_used"):
                 print("✅ Análisis completado con Document Intelligence")
