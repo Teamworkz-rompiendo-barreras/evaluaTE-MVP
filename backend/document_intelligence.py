@@ -160,3 +160,16 @@ class DocumentIntelligenceService:
             "software": software or None,
             "contact": contact if any([contact.get("emails"), contact.get("phones"), contact.get("location"), contact.get("linkedin")]) else None,
         }
+
+
+def analyze_cv_with_improved_intelligence(
+    pdf_bytes: bytes, model_id: str = "prebuilt-document"
+) -> Dict[str, Any]:
+    """Wrapper que instancia el servicio y marca el uso de Document Intelligence."""
+    try:
+        service = DocumentIntelligenceService(model_id=model_id)
+        result = service.analyze_cv_with_document_intelligence(pdf_bytes)
+        result["document_intelligence_used"] = True
+        return result
+    except Exception as e:  # pragma: no cover - fallbacks
+        return {"error": str(e), "document_intelligence_used": False}
