@@ -1,9 +1,10 @@
 import { API_CONFIG } from '../config/api';
+import type { CvAnalysis } from '@/types/report';
 
 // Tipos mínimos para evitar any
 export interface GenerateReportPayload {
   fullName?: string;
-  cvAnalysis?: unknown;
+  cvAnalysis?: CvAnalysis;
   report?: unknown;
   [key: string]: unknown;
 }

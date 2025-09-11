@@ -1,6 +1,6 @@
 // src/types/preferences.ts
 
-
+import type { CvAnalysis } from './report';
 /**
  * Análisis del CV cargado (estructura legacy)
  */
@@ -210,7 +210,7 @@ export interface EmployabilityReport {
   /**
    * Análisis del CV cargado
    */
-  cvAnalysis?: LegacyCvAnalysis;
+  cvAnalysis?: CvAnalysis;
 
   /**
    * Fecha de generación del informe

@@ -7,7 +7,7 @@ import { saveCV, saveCvAnalysis, generateFinalReport } from '../features/persona
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { buildApiUrl, API_CONFIG } from '../config/api';
-import type { LegacyCvAnalysis } from '@/types/preferences';
+import type { CvAnalysis } from '@/types/report';
 
 
 export default function UploadCVPage() {
@@ -18,7 +18,7 @@ export default function UploadCVPage() {
   const [error, setError] = useState<string | null>(null);
 
   const cvFile = useAppSelector((state: RootState) => state.personal.cvFile);
-  const cvAnalysis = useAppSelector((state: RootState) => state.personal.cvAnalysis) as LegacyCvAnalysis | null;
+  const cvAnalysis = useAppSelector((state: RootState) => state.personal.cvAnalysis) as CvAnalysis | null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null) // Limpiar errores anteriores
@@ -100,34 +100,35 @@ export default function UploadCVPage() {
         }
         
         // Verificar que se guardó correctamente
-        if (cvAnalysis && (cvAnalysis.strengths?.length > 0 || cvAnalysis.skills?.length > 0 || cvAnalysis.weaknesses?.length > 0)) {
+        if (cvAnalysis && cvAnalysis.corrections?.length > 0) {
           if (import.meta.env.DEV) {
             console.log('🔍 DEBUG - CV analizado con datos reales');
           }
-          // CV analizado con datos reales
-        } else {
-          if (import.meta.env.DEV) {
-            console.log('🔍 DEBUG - CV analizado pero sin datos significativos');
-          }
-          // CV analizado pero sin datos significativos
+        } else if (import.meta.env.DEV) {
+          console.log('🔍 DEBUG - CV analizado pero sin correcciones');
         }
       } else {
         const errorData = await res.json().catch(() => ({}));
                   // Error del servidor en análisis de CV
         
         // Crear un análisis básico con información del error
-        const fallbackAnalysis = {
-          strengths: [],
-          weaknesses: [],
-          feedback: errorData.detail || errorData.error || 'No se pudo analizar completamente el CV',
-          structure: 'regular',
-          coherence: 'regular',
-          experience: 'regular',
-          skills: [],
-          education: [],
-          alerts: [errorData.detail || errorData.error || 'Error en el análisis del CV']
+        const fallbackAnalysis: CvAnalysis = {
+          structure_score: 0,
+          coherence_score: 0,
+          key_info_score: 0,
+          clarity_score: 0,
+          style_score: 0,
+          evidence: {
+            structure: errorData.detail || errorData.error || 'No se pudo analizar completamente el CV',
+            coherence: '',
+            key_info: '',
+            clarity: '',
+            style: ''
+          },
+          corrections: [errorData.detail || errorData.error || 'Error en el análisis del CV'],
+          reordering_suggestions: []
         };
-        
+
         dispatch(saveCvAnalysis(fallbackAnalysis));
                   // Usando análisis de fallback
         
@@ -150,15 +151,20 @@ export default function UploadCVPage() {
       
       // Crear un análisis básico para errores de conexión
       dispatch(saveCvAnalysis({
-        feedback: 'No se pudo conectar con el servidor para analizar el CV',
-        strengths: [],
-        skills: [],
-        weaknesses: [],
-        structure: 'regular',
-        coherence: 'regular',
-        experience: 'regular',
-        education: [],
-        alerts: ['Error de conexión al analizar el CV']
+        structure_score: 0,
+        coherence_score: 0,
+        key_info_score: 0,
+        clarity_score: 0,
+        style_score: 0,
+        evidence: {
+          structure: 'No se pudo conectar con el servidor para analizar el CV',
+          coherence: '',
+          key_info: '',
+          clarity: '',
+          style: ''
+        },
+        corrections: ['Error de conexión al analizar el CV'],
+        reordering_suggestions: []
       }));
       
       setIsLoading(false)
@@ -182,23 +188,19 @@ export default function UploadCVPage() {
         {cvAnalysis && (
           <div className="mb-4 p-4 bg-blue-50 border border-blue-200 rounded">
             <h3 className="font-semibold text-blue-800 mb-2">Análisis del CV:</h3>
-            <p className="text-blue-700">{cvAnalysis.feedback}</p>
-            {cvAnalysis.strengths && cvAnalysis.strengths.length > 0 && (
+            <ul className="list-disc list-inside text-blue-700">
+              <li>Estructura: {cvAnalysis.evidence.structure}</li>
+              <li>Coherencia: {cvAnalysis.evidence.coherence}</li>
+              <li>Información clave: {cvAnalysis.evidence.key_info}</li>
+              <li>Claridad: {cvAnalysis.evidence.clarity}</li>
+              <li>Estilo: {cvAnalysis.evidence.style}</li>
+            </ul>
+            {cvAnalysis.corrections && cvAnalysis.corrections.length > 0 && (
               <div className="mt-2">
-                <strong className="text-green-700">Fortalezas:</strong>
-                <ul className="list-disc list-inside text-green-600">
-                  {(Array.isArray(cvAnalysis.strengths) ? cvAnalysis.strengths : []).map((strength: string, index: number) => (
-                    <li key={index}>{strength}</li>
-                  ))}
-                </ul>
-              </div>
-            )}
-            {cvAnalysis.skills && cvAnalysis.skills.length > 0 && (
-              <div className="mt-2">
-                <strong className="text-purple-700">Habilidades detectadas:</strong>
+                <strong className="text-purple-700">Correcciones sugeridas:</strong>
                 <ul className="list-disc list-inside text-purple-600">
-                  {(Array.isArray(cvAnalysis.skills) ? cvAnalysis.skills : []).map((skill: string, index: number) => (
-                    <li key={index}>{skill}</li>
+                  {cvAnalysis.corrections.map((c: string, index: number) => (
+                    <li key={index}>{c}</li>
                   ))}
                 </ul>
               </div>
