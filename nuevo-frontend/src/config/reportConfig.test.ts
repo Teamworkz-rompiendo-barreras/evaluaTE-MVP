@@ -77,6 +77,9 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
   const oldFormat = {
     report: {
       fullName: 'María García',
+      location: 'Sevilla, España',
+      email: 'maria@example.com',
+      phone: '+34 123 456 789',
       resumen_ejecutivo: 'Candidata con experiencia en marketing digital',
       cvAnalysis: {
         structure: 'good',
@@ -87,6 +90,9 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
   };
   const result = convertBackendResponseToNewFormat(oldFormat);
   assert.equal(result.personal_data.name, 'María García');
+  assert.equal(result.personal_data.location, 'Sevilla, España');
+  assert.equal(result.personal_data.email, 'maria@example.com');
+  assert.equal(result.personal_data.phone, '+34 123 456 789');
   assert.deepEqual(result.strengths, ['Habilidades de comunicación', 'Capacidad analítica']);
 });
 
