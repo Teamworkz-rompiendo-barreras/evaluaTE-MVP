@@ -337,18 +337,6 @@ const ResultadosPage: React.FC = () => {
         }
 
 
-        // Relajar condición: con que exista summary mostramos el informe; el resto es opcional
-        // Preferir markdown determinista del backend si viene presente
-        const mdDeterministic = (data?.report && (data.report.markdown || data.report.ui?.markdown)) || (data as any)?.markdown;
-        if (res.ok && mdDeterministic) {
-          // Eliminado: ya no se inyecta radarData en el markdown
-          setIaReport(String(mdDeterministic));
-          setFinalPhrase('');
-          setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
-          setLoadingIa(false);
-          return;
-        }
-
         // SOLUCIÓN: Cambiar la condición para usar los campos correctos del backend
         // El backend devuelve data.report.resumen_ejecutivo, no data.summary
         if (import.meta.env.MODE !== 'production') {
@@ -454,12 +442,14 @@ const ResultadosPage: React.FC = () => {
                 : 'Tu informe personalizado está en proceso. A continuación tienes un resumen básico basado en tu evaluación.';
               const minimal = `# Informe Profesional de Empleabilidad\n\n## Resumen del Perfil\n${summaryText}\n\n---\n*Informe generado automáticamente.*`;
               setIaReport(minimal);
+              setFinalPhrase('');
               if (import.meta.env.MODE !== 'production') {
                 // eslint-disable-next-line no-console
                 console.log('✅ DEBUG - Fallback de informe básico establecido');
               }
             } catch (e) {
               setErrorIa('No se pudo generar el informe en este momento.');
+              setFinalPhrase('');
             }
           }
         } else {
@@ -494,6 +484,7 @@ const ResultadosPage: React.FC = () => {
         }
       } catch (err) {
         // console.error('Error en fetchIaReport:', err);
+        setFinalPhrase('');
         if (err instanceof Error && err.name === 'TimeoutError') {
           setErrorIa('El informe está tardando más de lo esperado. Se generará un informe básico automáticamente.');
         } else if (err instanceof Error && err.message?.includes('Failed to fetch')) {
