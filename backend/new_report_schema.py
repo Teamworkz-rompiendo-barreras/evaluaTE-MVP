@@ -107,39 +107,58 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
     # Crear datos personales básicos
     personal_data = PersonalData(
         name=full_name or "Usuario",
-        location=getattr(job_preferences, 'location', 'No especificado') if job_preferences else 'No especificado',
+        location=(job_preferences or {}).get('location', 'No especificado'),
         email="No proporcionado",
         phone="No proporcionado",
-        disability_certificate="No" if not job_preferences or not getattr(job_preferences, 'hasDisabilityCert', False) else "Sí"
+        disability_certificate="Sí" if (job_preferences or {}).get('hasDisabilityCert', False) else "No",
     )
     
-    # Crear análisis del CV por defecto
-    cv_evidence = CvEvidence(
-        structure="CV analizado con información limitada",
-        coherence="Se requiere más información para evaluar la coherencia",
-        key_info="Información básica disponible",
-        clarity="Formato estándar",
-        style="Presentación profesional"
-    )
-    
-    cv_analysis_data = CvAnalysis(
-        structure_score=3,
-        coherence_score=3,
-        key_info_score=3,
-        clarity_score=3,
-        style_score=3,
-        evidence=cv_evidence,
-        corrections=[
-            "Incluir más detalles sobre logros específicos",
-            "Añadir métricas cuantificables",
-            "Especificar tecnologías y herramientas utilizadas"
-        ],
-        reordering_suggestions=[
-            "Priorizar experiencia laboral más reciente",
-            "Destacar habilidades técnicas relevantes"
-        ]
-    )
-    
+
+    # Crear análisis del CV usando datos proporcionados o valores por defecto
+    if cv_analysis:
+        evidence_data = cv_analysis.get("evidence", {}) if isinstance(cv_analysis, dict) else {}
+        cv_evidence = CvEvidence(
+            structure=evidence_data.get("structure", ""),
+            coherence=evidence_data.get("coherence", ""),
+            key_info=evidence_data.get("key_info", ""),
+            clarity=evidence_data.get("clarity", ""),
+            style=evidence_data.get("style", ""),
+        )
+        cv_analysis_data = CvAnalysis(
+            structure_score=cv_analysis.get("structure_score", 3),
+            coherence_score=cv_analysis.get("coherence_score", 3),
+            key_info_score=cv_analysis.get("key_info_score", 3),
+            clarity_score=cv_analysis.get("clarity_score", 3),
+            style_score=cv_analysis.get("style_score", 3),
+            evidence=cv_evidence,
+            corrections=cv_analysis.get("corrections", []),
+            reordering_suggestions=cv_analysis.get("reordering_suggestions", []),
+        )
+    else:
+        cv_evidence = CvEvidence(
+            structure="CV analizado con información limitada",
+            coherence="Se requiere más información para evaluar la coherencia",
+            key_info="Información básica disponible",
+            clarity="Formato estándar",
+            style="Presentación profesional",
+        )
+        cv_analysis_data = CvAnalysis(
+            structure_score=3,
+            coherence_score=3,
+            key_info_score=3,
+            clarity_score=3,
+            style_score=3,
+            evidence=cv_evidence,
+            corrections=[
+                "Incluir más detalles sobre logros específicos",
+                "Añadir métricas cuantificables",
+                "Especificar tecnologías y herramientas utilizadas",
+            ],
+            reordering_suggestions=[
+                "Priorizar experiencia laboral más reciente",
+                "Destacar habilidades técnicas relevantes",
+            ],
+        )
     # Crear plan de acción por defecto
     action_plan = ActionPlan(
         short_term=[
@@ -190,6 +209,14 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         )
     ]
     
+
+    if job_preferences:
+        areas = job_preferences.get('areas') or job_preferences.get('desired_roles') or []
+        areas_text = ", ".join(areas) if isinstance(areas, list) and areas else 'No especificado'
+        work_mode = job_preferences.get('workMode', 'No especificado')
+        ideal_work_env = f"Áreas de interés: {areas_text}. Modalidad de trabajo: {work_mode}."
+    else:
+        ideal_work_env = "Entorno inclusivo con oportunidades de aprendizaje y crecimiento profesional. Preferencia por empresas que valoren el desarrollo continuo."
     return NewReportSchema(
         summary=f"Informe de empleabilidad para {full_name}",
         personal_data=personal_data,
@@ -209,7 +236,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
             )
         ],
         cv_analysis=cv_analysis_data,
-        ideal_work_environment="Entorno inclusivo con oportunidades de aprendizaje y crecimiento profesional. Preferencia por empresas que valoren el desarrollo continuo.",
+        ideal_work_environment=ideal_work_env,
         suggested_roles=suggested_roles,
         action_plan=action_plan,
         job_search_advice=job_search_advice,
@@ -340,21 +367,25 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         ]
     }
     
-    # Crear análisis del CV
-    cv_analysis_data = {
-        'structure': getattr(cv_analysis, 'structure', 'regular') if cv_analysis else 'regular',
-        'coherence': getattr(cv_analysis, 'coherence', 'regular') if cv_analysis else 'regular',
-        'feedback': getattr(cv_analysis, 'feedback', 'CV analizado con limitaciones') if cv_analysis else 'CV analizado con limitaciones',
-        'summary': 'gestión y coordinación de proyectos',
-        'experience': [
-            {'title': 'Gestión de proyectos y coordinación'}
-        ],
-        'education': [
-            {'degree': 'Formación en gestión y administración'}
-        ],
-        'software': ['Microsoft Office', 'herramientas de gestión']
-    }
     
+    # Crear análisis del CV con datos proporcionados
+    default_cv = {
+        'structure': 'regular',
+        'coherence': 'regular',
+        'feedback': 'CV analizado con limitaciones'
+    }
+    if cv_analysis:
+        if hasattr(cv_analysis, 'dict'):
+            cv_analysis_data = {**default_cv, **cv_analysis.dict()}
+        elif isinstance(cv_analysis, dict):
+            cv_analysis_data = {**default_cv, **cv_analysis}
+        else:
+            cv_analysis_data = default_cv.copy()
+    else:
+        cv_analysis_data = default_cv.copy()
+
+    # Mapear preferencias laborales
+    job_preferences_data = job_preferences or {}
     # Crear consejos de búsqueda
     job_search_advice = {
         'cv_optimization': ['gestión', 'coordinación', 'liderazgo']
@@ -385,6 +416,7 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         'improvement_areas': improvement_areas,
         'action_plan': action_plan,
         'cv_analysis': cv_analysis_data,
+        'job_preferences': job_preferences_data,
         'job_search_advice': job_search_advice,
         'useful_tools': useful_tools,
         'suggested_roles': suggested_roles,
