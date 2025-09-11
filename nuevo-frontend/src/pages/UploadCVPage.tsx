@@ -7,18 +7,8 @@ import { saveCV, saveCvAnalysis, generateFinalReport } from '../features/persona
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { buildApiUrl, API_CONFIG } from '../config/api';
+import type { LegacyCvAnalysis } from '@/types/preferences';
 
-interface CvAnalysis {
-  feedback: string;
-  strengths?: string[];
-  skills?: string[];
-  weaknesses?: string[];
-  structure?: string;
-  coherence?: string;
-  experience?: string;
-  education?: string[];
-  alerts?: string[];
-}
 
 export default function UploadCVPage() {
   const dispatch = useDispatch();
@@ -28,7 +18,7 @@ export default function UploadCVPage() {
   const [error, setError] = useState<string | null>(null);
 
   const cvFile = useAppSelector((state: RootState) => state.personal.cvFile);
-  const cvAnalysis = useAppSelector((state: RootState) => state.personal.cvAnalysis) as CvAnalysis | null;
+  const cvAnalysis = useAppSelector((state: RootState) => state.personal.cvAnalysis) as LegacyCvAnalysis | null;
 
   const handleChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     setError(null) // Limpiar errores anteriores

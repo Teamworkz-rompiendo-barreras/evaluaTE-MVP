@@ -2,9 +2,9 @@
 
 
 /**
- * Análisis del CV cargado
+ * Análisis del CV cargado (estructura legacy)
  */
-export interface CvAnalysis {
+export interface LegacyCvAnalysis {
   // Campos básicos del análisis
   strengths: string[];
   weaknesses: string[];
@@ -210,7 +210,7 @@ export interface EmployabilityReport {
   /**
    * Análisis del CV cargado
    */
-  cvAnalysis?: CvAnalysis;
+  cvAnalysis?: LegacyCvAnalysis;
 
   /**
    * Fecha de generación del informe
