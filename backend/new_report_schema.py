@@ -107,10 +107,10 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
     # Crear datos personales básicos
     personal_data = PersonalData(
         name=full_name or "Usuario",
-        location=job_preferences.get('location', 'No especificado') if job_preferences else 'No especificado',
+        location=(job_preferences or {}).get("location", "No especificado"),
         email="No proporcionado",
         phone="No proporcionado",
-        disability_certificate="Sí" if job_preferences and job_preferences.get('hasDisabilityCert', False) else "No"
+        disability_certificate="Sí" if (job_preferences or {}).get("hasDisabilityCert", False) else "No",
     )
     
     # Crear análisis del CV por defecto
