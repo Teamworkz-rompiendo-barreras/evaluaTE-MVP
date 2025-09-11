@@ -34,8 +34,8 @@ class CvAnalysis(BaseModel):
     clarity_score: int = Field(ge=1, le=5)
     style_score: int = Field(ge=1, le=5)
     evidence: CvEvidence
-    corrections: List[str] = []
-    reordering_suggestions: List[str] = []
+    corrections: List[str] = Field(default_factory=list)
+    reordering_suggestions: List[str] = Field(default_factory=list)
 
 
 class SuggestedRole(BaseModel):
