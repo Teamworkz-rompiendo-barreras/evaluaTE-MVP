@@ -72,25 +72,20 @@ def test_api_informe_ia():
             {"skill": "Adaptabilidad", "score": 82, "level": "Intermedio"}
         ],
         "cvAnalysis": {
-            "strengths": [
-                "Experiencia técnica sólida en desarrollo web",
-                "Formación académica en ingeniería informática",
-                "Portfolio de proyectos demostrable",
-                "Certificaciones técnicas relevantes"
-            ],
-            "weaknesses": [
-                "Falta de experiencia en gestión de equipos grandes",
-                "Limitada experiencia internacional"
-            ],
-            "feedback": "CV excelentemente estructurado con buenas fortalezas técnicas y proyectos demostrables. Se destaca la capacidad de aprendizaje y adaptación.",
-            "summary": "Desarrolladora full-stack con 3 años de experiencia en tecnologías web modernas",
-            "stars": {
-                "formato": 5,
-                "claridad": 5,
-                "coherencia": 4,
-                "informacion_clave": 5,
-                "ortografia": 5
-            }
+            "structure_score": 5,
+            "coherence_score": 4,
+            "key_info_score": 5,
+            "clarity_score": 5,
+            "style_score": 5,
+            "evidence": {
+                "structure": "Experiencia técnica sólida en desarrollo web",
+                "coherence": "CV excelentemente estructurado",
+                "key_info": "Portfolio de proyectos demostrable",
+                "clarity": "Información clara",
+                "style": "Presentación profesional"
+            },
+            "corrections": [],
+            "reordering_suggestions": []
         },
         "jobPreferences": {
             "areas": ["Desarrollo de software", "Tecnología", "Startups", "Empresas de producto"],
@@ -160,8 +155,20 @@ def test_api_pdf_generation():
             {"skill": "Trabajo en equipo", "score": 85, "level": "Avanzado"}
         ],
         "cvAnalysis": {
-            "strengths": ["Experiencia técnica sólida"],
-            "feedback": "CV bien estructurado"
+            "structure_score": 4,
+            "coherence_score": 4,
+            "key_info_score": 4,
+            "clarity_score": 4,
+            "style_score": 4,
+            "evidence": {
+                "structure": "CV bien estructurado",
+                "coherence": "",
+                "key_info": "Experiencia técnica sólida",
+                "clarity": "",
+                "style": ""
+            },
+            "corrections": [],
+            "reordering_suggestions": []
         },
         "jobPreferences": {
             "areas": ["Desarrollo de software"]
@@ -207,8 +214,20 @@ def test_frontend_backend_integration():
             {"skill": "Innovación", "score": 88, "level": "Avanzado"}
         ],
         "cvAnalysis": {
-            "strengths": ["Perfil creativo e innovador"],
-            "feedback": "Excelente perfil para roles creativos"
+            "structure_score": 4,
+            "coherence_score": 4,
+            "key_info_score": 4,
+            "clarity_score": 4,
+            "style_score": 4,
+            "evidence": {
+                "structure": "Excelente perfil para roles creativos",
+                "coherence": "",
+                "key_info": "Perfil creativo e innovador",
+                "clarity": "",
+                "style": ""
+            },
+            "corrections": [],
+            "reordering_suggestions": []
         },
         "jobPreferences": {
             "areas": ["Diseño", "Creatividad", "Innovación"]

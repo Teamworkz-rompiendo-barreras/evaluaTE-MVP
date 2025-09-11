@@ -29,25 +29,20 @@ def test_backend_data_structure():
             {"skill": "Creatividad", "score": 78, "level": "Intermedio"}
         ],
         "cvAnalysis": {
-            "strengths": [
-                "Perfil técnico sólido con experiencia demostrable",
-                "Formación académica en ingeniería de software",
-                "Portfolio de proyectos con tecnologías modernas",
-                "Experiencia en metodologías ágiles"
-            ],
-            "weaknesses": [
-                "Limitada experiencia en gestión de equipos grandes",
-                "Falta de experiencia internacional en empresas multinacionales"
-            ],
-            "feedback": "CV excelentemente estructurado con buenas fortalezas técnicas y proyectos demostrables. Se destaca la capacidad de aprendizaje y adaptación a nuevas tecnologías.",
-            "summary": "Desarrolladora senior con 5 años de experiencia en desarrollo full-stack y arquitectura de software",
-            "stars": {
-                "formato": 5,
-                "claridad": 5,
-                "coherencia": 5,
-                "informacion_clave": 5,
-                "ortografia": 5
-            }
+            "structure_score": 5,
+            "coherence_score": 5,
+            "key_info_score": 5,
+            "clarity_score": 5,
+            "style_score": 5,
+            "evidence": {
+                "structure": "Perfil técnico sólido con experiencia demostrable",
+                "coherence": "CV excelentemente estructurado",
+                "key_info": "Portfolio de proyectos con tecnologías modernas",
+                "clarity": "Información clara y ordenada",
+                "style": "Presentación profesional"
+            },
+            "corrections": [],
+            "reordering_suggestions": []
         },
         "jobPreferences": {
             "areas": ["Desarrollo de software", "Arquitectura de software", "Tecnología", "Startups", "Empresas de producto"],
@@ -148,8 +143,20 @@ def test_frontend_data_processing():
             {"skill": "Planificación", "score": 85, "level": "Intermedio"}
         ],
         "cvAnalysis": {
-            "strengths": ["Perfil analítico"],
-            "feedback": "CV bien estructurado"
+            "structure_score": 4,
+            "coherence_score": 4,
+            "key_info_score": 4,
+            "clarity_score": 4,
+            "style_score": 4,
+            "evidence": {
+                "structure": "CV bien estructurado",
+                "coherence": "",
+                "key_info": "Perfil analítico",
+                "clarity": "",
+                "style": ""
+            },
+            "corrections": [],
+            "reordering_suggestions": []
         },
         "jobPreferences": {
             "areas": ["Análisis de datos"]
@@ -229,8 +236,20 @@ def test_report_generation_flow():
             {"skill": "Comunicación", "score": 92, "level": "Avanzado"}
         ],
         "cvAnalysis": {
-            "strengths": ["Perfil directivo"],
-            "feedback": "CV de alto nivel"
+            "structure_score": 4,
+            "coherence_score": 4,
+            "key_info_score": 4,
+            "clarity_score": 4,
+            "style_score": 4,
+            "evidence": {
+                "structure": "CV de alto nivel",
+                "coherence": "",
+                "key_info": "Perfil directivo",
+                "clarity": "",
+                "style": ""
+            },
+            "corrections": [],
+            "reordering_suggestions": []
         },
         "jobPreferences": {
             "areas": ["Gestión", "Dirección"]

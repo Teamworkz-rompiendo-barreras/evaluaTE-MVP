@@ -26,11 +26,20 @@ const testRealIntegration = async () => {
         { skill: "Liderazgo", score: 72, level: "medio", confidence: 80 }
       ],
       cvAnalysis: {
-        structure: "excelente",
-        coherence: "buena",
-        feedback: "CV muy bien estructurado con información clara y organizada",
-        strengths: ["Formato profesional", "Información completa"],
-        weaknesses: ["Podría incluir más métricas"]
+        structure_score: 5,
+        coherence_score: 4,
+        key_info_score: 4,
+        clarity_score: 5,
+        style_score: 5,
+        evidence: {
+          structure: "CV muy bien estructurado con información clara y organizada",
+          coherence: "buena",
+          key_info: "Información completa",
+          clarity: "Formato profesional",
+          style: ""
+        },
+        corrections: [],
+        reordering_suggestions: []
       },
       jobPreferences: {
         areas: ["Desarrollo Web", "Frontend"],
