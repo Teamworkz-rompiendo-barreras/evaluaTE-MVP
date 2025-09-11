@@ -1,4 +1,5 @@
 // src/types/skills.ts
+import type { CvAnalysis } from './report';
 
 /**
  * Resultado de evaluación de habilidades blandas
@@ -151,36 +152,6 @@ export interface AccessibilitySettings {
 }
 
 /**
- * Análisis del CV cargado por el usuario (legacy)
- */
-export interface LegacyCvAnalysis {
-  /**
-   * Puntaje global del CV (0-100)
-   */
-  score: number;
-
-  /**
-   * Puntos fuertes identificados
-   */
-  strengths: string[];
-
-  /**
-   * Áreas a mejorar
-   */
-  weaknesses: string[];
-
-  /**
-   * Recomendaciones generales del análisis
-   */
-  feedback?: string;
-
-  /**
-   * Logs técnicos del análisis del CV
-   */
-  rawLog?: Record<string, unknown>;
-}
-
-/**
  * Preferencias laborales del candidato
  */
 export interface JobPreference {
@@ -262,7 +233,7 @@ export interface EmployabilityReport {
   /**
    * Análisis del CV cargado
    */
-  cvAnalysis?: LegacyCvAnalysis;
+  cvAnalysis?: CvAnalysis;
 
   /**
    * Fecha de creación del informe

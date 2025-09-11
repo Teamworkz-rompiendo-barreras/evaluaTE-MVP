@@ -11,6 +11,7 @@ import logo from '../assets/Logo_teamworkz.png';
 import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo } from 'react';
+import type { CvAnalysis } from '@/types/report';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
 import '../styles/stars.css'; // Importar estilos para estrellas
@@ -20,7 +21,6 @@ import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
 import { convertBackendResponseToNewFormat, generateNewFormatReport } from '../config/reportConfig';
-import type { CvAnalysis } from '@/types/report';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -110,7 +110,7 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
-  const cvAnalysis = personal?.cvAnalysis as unknown as CvAnalysis | undefined;
+  const cvAnalysis: CvAnalysis | undefined = personal?.cvAnalysis;
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);

@@ -1,7 +1,8 @@
 /* eslint-disable no-console */
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { LegacyCvAnalysis, JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
+import type { JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
+import type { CvAnalysis } from '@/types/report';
 import type { UserDecision } from '../../types/skills'; // Adjust the import path as needed
 import { filterValidSoftSkills } from '../../utils/data-validation';
 
@@ -31,7 +32,7 @@ export interface PersonalState {
   hasDisabilityCert: boolean;
 
   cvFile: { fileName: string; fileContent: string } | null;
-  cvAnalysis?: LegacyCvAnalysis;
+  cvAnalysis?: CvAnalysis;
 
   softSkills: SoftSkillResult[];
   unlockedGames: number;
@@ -150,7 +151,7 @@ export const personalSlice = createSlice({
     },
 
     // Guarda análisis del CV
-    saveCvAnalysis(state, action: PayloadAction<LegacyCvAnalysis>) {
+    saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
       // Solo log en desarrollo para debugging
       if (import.meta.env.DEV) {
         console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', action.payload);
@@ -272,10 +273,16 @@ export const personalSlice = createSlice({
       }
 
       // Ajuste según el CV
-      if (
-        typeof state.cvAnalysis === 'number' &&
-        state.cvAnalysis < 60
-      ) {
+      const cvScore = state.cvAnalysis
+        ? (
+            state.cvAnalysis.structure_score +
+            state.cvAnalysis.coherence_score +
+            state.cvAnalysis.key_info_score +
+            state.cvAnalysis.clarity_score +
+            state.cvAnalysis.style_score
+          ) / 5
+        : undefined;
+      if (typeof cvScore === 'number' && cvScore < 3) {
         employabilityScore = Math.max(20, employabilityScore - 10);
       }
 
@@ -345,7 +352,7 @@ export const personalSlice = createSlice({
 // Función auxiliar para generar recomendaciones
 function getRecommendationsFromProfile(params: {
   softSkills: SoftSkillResult[];
-  cvAnalysis?: LegacyCvAnalysis;
+  cvAnalysis?: CvAnalysis;
   preferences: JobPreference;
   hasDisabilityCert: boolean;
 }) {
@@ -379,10 +386,10 @@ function getRecommendationsFromProfile(params: {
   }
 
   // Validación segura de cvAnalysis
-  if (params.cvAnalysis && Array.isArray(params.cvAnalysis) && params.cvAnalysis.length > 0) {
-    // Filtrar elementos válidos antes de agregarlos
-    const validCvImprovements = params.cvAnalysis.filter(item => 
-      item && typeof item === 'string' && item.trim().length > 0
+  if (params.cvAnalysis) {
+    const { corrections = [], reordering_suggestions = [] } = params.cvAnalysis;
+    const validCvImprovements = [...corrections, ...reordering_suggestions].filter(
+      item => item && item.trim().length > 0
     );
     cvImprovements.push(...validCvImprovements);
   }
