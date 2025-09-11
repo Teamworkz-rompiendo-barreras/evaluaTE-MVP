@@ -35,6 +35,12 @@ import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional
 
+logging.basicConfig(
+    level=logging.INFO,
+    format="%(levelname)s:%(message)s",
+    encoding="utf-8",
+)
+
 logger = logging.getLogger(__name__)
 
 try:
@@ -70,7 +76,7 @@ try:
             )
 except Exception as e:
     # En caso de que el paquete openai no esté disponible o haya fallo
-    print(f"⚠️ Error configurando Azure OpenAI: {e}")
+    logger.warning("Error configurando Azure OpenAI: %s", e)
 
 # Importaciones para OCR (carga lazy)
 OCR_AVAILABLE = False
@@ -142,7 +148,7 @@ def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> str:
                         text += page_text + "\n"
                         
                 except Exception as e:
-                    print(f"⚠️ Error en OCR página {page_num}: {e}")
+                    logger.warning("Error en OCR pagina %s: %s", page_num, e)
                     text += page_text + "\n"
             else:
                 # Si no hay OCR, usar el texto disponible
@@ -152,7 +158,7 @@ def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> str:
         return text.strip()
         
     except Exception as e:
-        print(f"❌ Error extrayendo texto: {e}")
+        logger.error("Error extrayendo texto: %s", e)
         return ""
 
 def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
@@ -160,11 +166,11 @@ def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
     Analiza el CV usando IA para extraer información de manera inteligente
     """
     if not client:
-        print("⚠️ Azure OpenAI no configurado, usando análisis básico")
+        logger.warning("Azure OpenAI no configurado, usando analisis basico")
         return {"error": "Azure OpenAI no configurado"}
     
     try:
-        print("🤖 Iniciando análisis con Azure OpenAI...")
+        logger.info("Iniciando analisis con Azure OpenAI...")
         
         # Prompt profesional y completo para análisis de CV
         prompt = f"""
@@ -265,7 +271,7 @@ IMPORTANTE:
 - Asegúrate de que el JSON sea válido
 """
 
-        print("📤 Enviando solicitud a Azure OpenAI...")
+        logger.info("Enviando solicitud a Azure OpenAI...")
         # Verificar que DEPLOYMENT no sea None antes de usarlo
         if not DEPLOYMENT:
             raise ValueError("DEPLOYMENT no está configurado")
@@ -280,7 +286,7 @@ IMPORTANTE:
             max_tokens=2000
         )
         
-        print("📥 Respuesta recibida de Azure OpenAI")
+        logger.info("Respuesta recibida de Azure OpenAI")
         
         # Extraer el contenido de la respuesta
         content = response.choices[0].message.content
@@ -292,20 +298,20 @@ IMPORTANTE:
         try:
             import json
             cv_data = json.loads(content)
-            print("✅ JSON parseado correctamente")
+            logger.info("JSON parseado correctamente")
             return cv_data
         except json.JSONDecodeError as e:
-            print(f"⚠️ Error parseando JSON: {e}")
-            print(f"📝 Contenido recibido: {content[:200]}...")
+            logger.warning("Error parseando JSON: %s", e)
+            logger.debug("Contenido recibido: %s...", content[:200])
             
             # Fallback: intentar extraer información básica del texto
             return extract_basic_cv_data_from_text(text)
             
     except Exception as e:
-        print(f"❌ Error en análisis con Azure OpenAI: {str(e)}")
-        
-        # Fallback: usar análisis básico
-        print("🔄 Usando análisis básico como fallback...")
+        logger.error("Error en analisis con Azure OpenAI: %s", str(e))
+
+        # Fallback: usar analisis basico
+        logger.info("Usando analisis basico como fallback...")
         return extract_basic_cv_data_from_text(text)
 
 def extract_contact_info_enhanced(text: str) -> Dict[str, str]:
@@ -812,7 +818,7 @@ def extract_basic_cv_data_from_text(text: str) -> Dict[str, Any]:
     """
     Extrae información básica del CV cuando Azure OpenAI no está disponible
     """
-    print("📋 Extrayendo información básica del texto...")
+    logger.info("Extrayendo informacion basica del texto...")
     
     # Buscar información de contacto
     import re
@@ -916,7 +922,7 @@ try:
     DOCUMENT_INTELLIGENCE_AVAILABLE = True
 except ImportError:
     DOCUMENT_INTELLIGENCE_AVAILABLE = False
-    print("⚠️ Document Intelligence no disponible, usando método tradicional")
+    logger.warning("Document Intelligence no disponible, usando metodo tradicional")
 
 def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     """
@@ -924,30 +930,30 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     como método principal, con fallback al método tradicional
     """
     file_size = len(pdf_buffer) if pdf_buffer else 0
-    logger.info("Iniciando análisis de CV (%d bytes)", file_size)
+    logger.info("Iniciando analisis de CV (%d bytes)", file_size)
     try:
-        print("🚀 Iniciando análisis de CV...")
+        logger.info("Iniciando analisis de CV...")
         
         # Intentar usar Document Intelligence primero
         if DOCUMENT_INTELLIGENCE_AVAILABLE:
-            print("🤖 Intentando análisis con Azure AI Document Intelligence...")
+            logger.info("Intentando analisis con Azure AI Document Intelligence...")
             result = analyze_cv_with_document_intelligence(pdf_buffer)
-            
+
             if not result.get("error") and result.get("document_intelligence_used"):
-                print("✅ Análisis completado con Document Intelligence")
+                logger.info("Analisis completado con Document Intelligence")
                 return result
             else:
-                print("⚠️ Document Intelligence no disponible o falló, usando método tradicional")
+                logger.warning("Document Intelligence no disponible o fallo, usando metodo tradicional")
         
         # Fallback al método tradicional
-        print("📄 Usando método tradicional de extracción...")
+        logger.info("Usando metodo tradicional de extraccion...")
         
         # Extraer texto del PDF con OCR avanzado
-        print("📄 Extrayendo texto del PDF...")
+        logger.info("Extrayendo texto del PDF...")
         text = extract_text_with_advanced_ocr(pdf_buffer)
-        
+
         if not text.strip():
-            print("❌ No se pudo extraer texto del PDF")
+            logger.error("No se pudo extraer texto del PDF")
             return {
                 "error": "No se pudo extraer texto del PDF. El archivo puede estar corrupto o ser una imagen sin texto.",
                 "cv_info": {},
@@ -955,21 +961,21 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "raw_text": "",
                 "document_intelligence_used": False
             }
-        
-        print(f"✅ Texto extraído: {len(text)} caracteres")
-        print(f"📝 Primeros 200 caracteres: {text[:200]}...")
+
+        logger.info("Texto extraido: %s caracteres", len(text))
+        logger.debug("Primeros 200 caracteres: %s...", text[:200])
         
         # Extraer información de contacto mejorada
-        print("📞 Extrayendo información de contacto...")
+        logger.info("Extrayendo informacion de contacto...")
         contact = extract_contact_info_enhanced(text)
-        print(f"✅ Contacto extraído: {contact}")
+        logger.info("Contacto extraido: %s", contact)
         
         # Analizar CV con IA
-        print("🤖 Analizando CV con IA...")
+        logger.info("Analizando CV con IA...")
         cv_data = analyze_cv_with_ai(text)
-        
+
         if "error" in cv_data:
-            print(f"⚠️ Error en análisis con IA: {cv_data['error']}")
+            logger.warning("Error en analisis con IA: %s", cv_data['error'])
             # Fallback: usar solo información de contacto
             cv_data = {
                 "contacto": contact,
@@ -981,12 +987,12 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "proyectos": []
             }
         else:
-            print("✅ Análisis con IA completado exitosamente")
+            logger.info("Analisis con IA completado exitosamente")
         
         # Analizar estructura del CV
-        print("📊 Analizando estructura del CV...")
+        logger.info("Analizando estructura del CV...")
         analysis = analyze_cv_structure_ai(cv_data)
-        print(f"✅ Análisis de estructura completado: {len(analysis)} elementos")
+        logger.info("Analisis de estructura completado: %s elementos", len(analysis))
         
         # Construir resultado compatible
         cv_info = {
@@ -1007,9 +1013,14 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "proyectos": cv_data.get("proyectos", [])
         }
         
-        print("✅ Análisis completado exitosamente")
-        print(f"📊 Resumen: {len(cv_info['software'])} habilidades técnicas, {len(cv_info['experiencia'])} experiencias, {len(cv_info['educacion'])} formación")
-        logger.info("Análisis de CV completado correctamente")
+        logger.info("Analisis completado exitosamente")
+        logger.info(
+            "Resumen: %s habilidades tecnicas, %s experiencias, %s formacion",
+            len(cv_info['software']),
+            len(cv_info['experiencia']),
+            len(cv_info['educacion'])
+        )
+        logger.info("Analisis de CV completado correctamente")
 
         return {
             "cv_info": cv_info,
@@ -1020,9 +1031,9 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         }
 
     except Exception as e:
-        print(f"❌ Error en análisis: {str(e)}")
+        logger.error("Error en analisis: %s", str(e))
         import traceback
-        print(f"🔍 Traceback completo: {traceback.format_exc()}")
+        logger.error("Traceback completo: %s", traceback.format_exc())
         logger.exception("Error analizando CV")
         return {
             "error": f"Error al procesar el PDF: {str(e)}",
@@ -1039,6 +1050,6 @@ if __name__ == "__main__":
         with open(pdf_path, 'rb') as f:
             pdf_buffer = f.read()
         result = extract_pdf_info(pdf_buffer)
-        print(json.dumps(result, indent=2, ensure_ascii=False))
+        logger.info(json.dumps(result, indent=2, ensure_ascii=True))
     else:
-        print("Uso: python cv_analyzer.py <ruta_al_pdf>") 
+        logger.info("Uso: python cv_analyzer.py <ruta_al_pdf>")
