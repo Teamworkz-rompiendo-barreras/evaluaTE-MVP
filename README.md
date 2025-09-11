@@ -42,8 +42,13 @@ npm run dev
 Los scripts de prueba de Node utilizan archivos TypeScript. Para ejecutarlos sin compilar previamente, usa [tsx](https://github.com/esbuild-kit/tsx) que transpila en tiempo real:
 
 ```bash
+# Pruebas a nivel raíz
 npx tsx test_new_report_format.js
 npx tsx test_frontend_integration.js
+
+# Pruebas del módulo de configuración del reporte
+cd nuevo-frontend
+npm test
 ```
 
 ## Despliegue

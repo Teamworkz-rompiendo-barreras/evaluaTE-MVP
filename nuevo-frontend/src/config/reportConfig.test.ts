@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema } from './reportConfig.ts';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema } from './reportConfig';
 
 const mockNewFormat: NewReportSchema = {
   summary: 'Resumen ejecutivo del candidato',
