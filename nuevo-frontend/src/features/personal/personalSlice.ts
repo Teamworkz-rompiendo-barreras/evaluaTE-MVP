@@ -1,7 +1,7 @@
 /* eslint-disable no-console */
 // src/features/personal/personalSlice.ts
 import { createSlice, PayloadAction } from '@reduxjs/toolkit';
-import type { CvAnalysis, JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
+import type { LegacyCvAnalysis, JobPreference, AccessibilitySettings, EmployabilityReport, SoftSkillResult } from '@/types/preferences';
 import type { UserDecision } from '../../types/skills'; // Adjust the import path as needed
 import { filterValidSoftSkills } from '../../utils/data-validation';
 
@@ -31,7 +31,7 @@ export interface PersonalState {
   hasDisabilityCert: boolean;
 
   cvFile: { fileName: string; fileContent: string } | null;
-  cvAnalysis?: CvAnalysis;
+  cvAnalysis?: LegacyCvAnalysis;
 
   softSkills: SoftSkillResult[];
   unlockedGames: number;
@@ -150,7 +150,7 @@ export const personalSlice = createSlice({
     },
 
     // Guarda análisis del CV
-    saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
+    saveCvAnalysis(state, action: PayloadAction<LegacyCvAnalysis>) {
       // Solo log en desarrollo para debugging
       if (import.meta.env.DEV) {
         console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', action.payload);
@@ -345,7 +345,7 @@ export const personalSlice = createSlice({
 // Función auxiliar para generar recomendaciones
 function getRecommendationsFromProfile(params: {
   softSkills: SoftSkillResult[];
-  cvAnalysis?: CvAnalysis;
+  cvAnalysis?: LegacyCvAnalysis;
   preferences: JobPreference;
   hasDisabilityCert: boolean;
 }) {

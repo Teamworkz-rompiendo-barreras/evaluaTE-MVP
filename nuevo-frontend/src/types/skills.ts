@@ -151,9 +151,9 @@ export interface AccessibilitySettings {
 }
 
 /**
- * Análisis del CV cargado por el usuario
+ * Análisis del CV cargado por el usuario (legacy)
  */
-export interface CvAnalysis {
+export interface LegacyCvAnalysis {
   /**
    * Puntaje global del CV (0-100)
    */
@@ -262,7 +262,7 @@ export interface EmployabilityReport {
   /**
    * Análisis del CV cargado
    */
-  cvAnalysis?: CvAnalysis;
+  cvAnalysis?: LegacyCvAnalysis;
 
   /**
    * Fecha de creación del informe
