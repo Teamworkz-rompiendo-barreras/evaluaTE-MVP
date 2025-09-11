@@ -19,6 +19,7 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
+import { convertBackendResponseToNewFormat, generateNewFormatReport } from '../config/reportConfig';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -1297,8 +1298,12 @@ const ResultadosPage: React.FC = () => {
               throw new Error('Falta overall.score en analysis_json');
             }
 
-            // Construir SIEMPRE el informe con tu formato deseado
-            let markdown = buildDesiredMarkdown(data, String(dp.name || candidateName));
+            // Construir SIEMPRE el informe con el nuevo formato estructurado
+            const newFormatData = convertBackendResponseToNewFormat(data);
+            if (dp?.name && newFormatData?.personal_data && !newFormatData.personal_data.name) {
+              newFormatData.personal_data.name = dp.name;
+            }
+            let markdown = generateNewFormatReport(newFormatData);
             // Eliminado: ya no se añade el bloque JSON radarData al markdown
             setIaReport(markdown);
             if (import.meta.env.MODE !== 'production') {
