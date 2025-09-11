@@ -37,6 +37,15 @@ cd nuevo-frontend
 npm run dev
 ```
 
+## Pruebas
+
+Los scripts de prueba de Node utilizan archivos TypeScript. Para ejecutarlos sin compilar previamente, usa [tsx](https://github.com/esbuild-kit/tsx) que transpila en tiempo real:
+
+```bash
+npx tsx test_new_report_format.js
+npx tsx test_frontend_integration.js
+```
+
 ## Despliegue
 
 El proyecto está configurado para desplegarse en Azure.
