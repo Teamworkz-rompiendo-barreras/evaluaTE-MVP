@@ -48,8 +48,8 @@ echo ""
 print_status "Iniciando despliegue del FRONTEND..."
 echo "----------------------------------------"
 
-# Desplegar frontend
-if ./deploy-manual.sh; then
+# Desplegar frontend (build + zip manual)
+if ./deploy-frontend.sh; then
     print_success "Frontend desplegado correctamente"
 else
     print_error "Error en el despliegue del frontend"
