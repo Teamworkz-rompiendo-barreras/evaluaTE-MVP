@@ -145,6 +145,7 @@ const ResultadosPage: React.FC = () => {
   const [loadingIa, setLoadingIa] = useState<boolean>(false);
   const [errorIa, setErrorIa] = useState<string>('');
   const fetchedRef = useRef(false);
+  const fetchIaReportRef = useRef<() => Promise<void> | null>(null);
   const [finalPhrase, setFinalPhrase] = useState<string>('');
 
   // === NUEVO: fallback de impresión del radar (SVG → IMG) ===
@@ -369,93 +370,88 @@ const ResultadosPage: React.FC = () => {
         
         if (hasValidReport) {
           // Generar informe profesional con el nuevo formato
+          const candidateName = String(data?.report?.fullName || userFullName);
+
+          // Datos personales: preferir recomendaciones, luego report.ui y por último contact del CV
+          const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
+            || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
+            || {} as Record<string, unknown>;
+          const dp = {
+            name: (dpSrc?.['name'] as string) || candidateName,
+            location: (dpSrc?.['location'] as string) || 'No consta',
+            email: (dpSrc?.['email'] as string) || '',
+            phone: (dpSrc?.['phone'] as string) || 'No especificado',
+            disability_certificate: (dpSrc?.['disability_certificate'] != null)
+              ? (dpSrc['disability_certificate'] as string)
+              : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
+          };
+
+          let normalized;
           try {
-            const candidateName = String(data?.report?.fullName || userFullName);
-
-
-            // Datos personales: preferir recomendaciones, luego report.ui y por último contact del CV
-            const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
-              || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
-              || {} as Record<string, unknown>;
-            const dp = {
-              name: (dpSrc?.['name'] as string) || candidateName,
-              location: (dpSrc?.['location'] as string) || 'No consta',
-              email: (dpSrc?.['email'] as string) || '',
-              phone: (dpSrc?.['phone'] as string) || 'No especificado',
-              disability_certificate: (dpSrc?.['disability_certificate'] != null)
-                ? (dpSrc['disability_certificate'] as string)
-                : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
-            };
-
-            // Construir SIEMPRE el informe con tu formato deseado
-            const normalized = convertBackendResponseToNewFormat(data);
-            const markdown = generateNewFormatReport(normalized);
-            setIaReport(markdown);
-            if (import.meta.env.MODE !== 'production') {
-              // eslint-disable-next-line no-console
-              console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', markdown.length);
-              // eslint-disable-next-line no-console
-              console.log('✅ DEBUG - Primeros 200 caracteres:', markdown.substring(0, 200));
-            }
-            // Frase motivacional final destacada (fuera del markdown principal)
-            // Construimos SIEMPRE el mensaje final personalizado para la caja azul
-            const composed = ((): string => {
-              const firstName = (String(dp.name || candidateName).split(' ')[0] || 'Tu perfil').trim();
-              const normalize = (val: unknown): string => {
-                const n = String(val || '').toLowerCase().trim();
-                if (!n) return '';
-                if (/anal(í|i)tico/.test(n)) return 'pensamiento analítico';
-                if (/cr(í|i)tico/.test(n)) return 'pensamiento crítico';
-                if (/curiosidad|aprendizaje/.test(n)) return 'curiosidad y aprendizaje';
-                if (/resiliencia|flexibilidad/.test(n)) return 'resiliencia y flexibilidad';
-                if (/autoconciencia/.test(n)) return 'autoconciencia';
-                if (/influencia/.test(n)) return 'influencia social';
-                if (/decisiones/.test(n)) return 'toma de decisiones';
-                return String(val || 'fortalezas');
-              };
-              const sorted = [...(softSkillsToSend || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
-              const s1 = normalize(sorted[0]?.skill);
-              const s2 = normalize(sorted[1]?.skill);
-              const remotePref = (report?.jobPreferences as any)?.remoteWork ? 'el trabajo remoto' : 'los entornos presenciales';
-              const rolesArr: any[] = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
-              const roleName = (r:any)=> (r?.name||r?.title||r?.role||r?.label||r?.position||r?.jobTitle||'');
-              const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0,2).join(' y ') || 'roles administrativos';
-              const improv: any[] = Array.isArray((data as any)?.report?.improvement_areas) ? (data as any).report.improvement_areas : [];
-              const clean = (v:string)=> String(v||'').replace(/\s*\((?:\d+%?|\d+\s*\/\s*\d+)\)\s*/g,'').trim();
-              const improvementAreas = improv.map(a=> clean(a?.area||a?.name||'')).filter(Boolean).slice(0,2).join(' y ') || 'tus áreas de mejora';
-              const fortalezas = s1 && s2 ? `Aprovecha tu ${s1} y ${s2} para avanzar hacia tus objetivos profesionales.` : s1 ? `Aprovecha tu ${s1} para avanzar hacia tus objetivos profesionales.` : 'Aprovecha tus fortalezas para avanzar hacia tus objetivos profesionales.';
-              return `Este informe ha sido elaborado a partir de tus preferencias laborales, los resultados de los minijuegos y tu CV.\n\n${firstName}, tu perfil muestra una base sólida de habilidades y una clara orientación al crecimiento.\n\n${fortalezas} Además, ${remotePref} y ${roleHint} encajan con tus competencias. Continúa desarrollando ${improvementAreas} y mantén la motivación: tu potencial está en constante evolución.`;
-            })();
-            setFinalPhrase(composed);
-            setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
-            if (import.meta.env.MODE !== 'production') {
-              // eslint-disable-next-line no-console
-              console.log('✅ DEBUG - Estado iaReport actualizado');
-            }
+            normalized = convertBackendResponseToNewFormat(data);
           } catch (error) {
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console
-              console.error('❌ Error generando informe:', error);
+              console.warn('⚠️ Error generando informe:', error);
             }
-            // Fallback: construir un informe mínimo usando solo summary si está disponible
-            try {
-              const summaryText = typeof data?.summary === 'string' && data.summary.trim()
-                ? data.summary.trim()
-                : 'Tu informe personalizado está en proceso. A continuación tienes un resumen básico basado en tu evaluación.';
-              const minimal = `# Informe Profesional de Empleabilidad\n\n## Resumen del Perfil\n${summaryText}\n\n---\n*Informe generado automáticamente.*`;
-              setIaReport(minimal);
-              setFinalPhrase('');
-              if (import.meta.env.MODE !== 'production') {
-                // eslint-disable-next-line no-console
-                console.log('✅ DEBUG - Fallback de informe básico establecido');
-              }
-            } catch (e) {
-              setErrorIa('No se pudo generar el informe en este momento.');
-              setFinalPhrase('');
-            }
+            setErrorIa('No se pudo generar el informe IA. Intenta nuevamente.');
+            setFinalPhrase('');
+            return;
+          }
+
+          const essentialFilled = normalized.summary && normalized.profile_summary && normalized.personal_data;
+          if (!essentialFilled) {
+            console.warn('⚠️ Respuesta del backend con campos esenciales vacíos', normalized);
+            setErrorIa('El informe recibido está incompleto. Intenta nuevamente.');
+            setFinalPhrase('');
+            return;
+          }
+
+          const markdown = generateNewFormatReport(normalized);
+          setIaReport(markdown);
+          if (import.meta.env.MODE !== 'production') {
+            // eslint-disable-next-line no-console
+            console.log('✅ DEBUG - Informe generado exitosamente. Longitud:', markdown.length);
+            // eslint-disable-next-line no-console
+            console.log('✅ DEBUG - Primeros 200 caracteres:', markdown.substring(0, 200));
+          }
+          // Frase motivacional final destacada (fuera del markdown principal)
+          // Construimos SIEMPRE el mensaje final personalizado para la caja azul
+          const composed = ((): string => {
+            const firstName = (String(dp.name || candidateName).split(' ')[0] || 'Tu perfil').trim();
+            const normalize = (val: unknown): string => {
+              const n = String(val || '').toLowerCase().trim();
+              if (!n) return '';
+              if (/anal(í|i)tico/.test(n)) return 'pensamiento analítico';
+              if (/cr(í|i)tico/.test(n)) return 'pensamiento crítico';
+              if (/curiosidad|aprendizaje/.test(n)) return 'curiosidad y aprendizaje';
+              if (/resiliencia|flexibilidad/.test(n)) return 'resiliencia y flexibilidad';
+              if (/autoconciencia/.test(n)) return 'autoconciencia';
+              if (/influencia/.test(n)) return 'influencia social';
+              if (/decisiones/.test(n)) return 'toma de decisiones';
+              return String(val || 'fortalezas');
+            };
+            const sorted = [...(softSkillsToSend || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
+            const s1 = normalize(sorted[0]?.skill);
+            const s2 = normalize(sorted[1]?.skill);
+            const remotePref = (report?.jobPreferences as any)?.remoteWork ? 'el trabajo remoto' : 'los entornos presenciales';
+            const rolesArr: any[] = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
+            const roleName = (r:any)=> (r?.name||r?.title||r?.role||r?.label||r?.position||r?.jobTitle||'');
+            const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0,2).join(' y ') || 'roles administrativos';
+            const improv: any[] = Array.isArray((data as any)?.report?.improvement_areas) ? (data as any).report.improvement_areas : [];
+            const clean = (v:string)=> String(v||'').replace(/\s*\((?:\d+%?|\d+\s*\/\s*\d+)\)\s*/g,'').trim();
+            const improvementAreas = improv.map(a=> clean(a?.area||a?.name||'')).filter(Boolean).slice(0,2).join(' y ') || 'tus áreas de mejora';
+            const fortalezas = s1 && s2 ? `Aprovecha tu ${s1} y ${s2} para avanzar hacia tus objetivos profesionales.` : s1 ? `Aprovecha tu ${s1} para avanzar hacia tus objetivos profesionales.` : 'Aprovecha tus fortalezas para avanzar hacia tus objetivos profesionales.';
+            return `Este informe ha sido elaborado a partir de tus preferencias laborales, los resultados de los minijuegos y tu CV.\n\n${firstName}, tu perfil muestra una base sólida de habilidades y una clara orientación al crecimiento.\n\n${fortalezas} Además, ${remotePref} y ${roleHint} encajan con tus competencias. Continúa desarrollando ${improvementAreas} y mantén la motivación: tu potencial está en constante evolución.`;
+          })();
+          setFinalPhrase(composed);
+          setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
+          if (import.meta.env.MODE !== 'production') {
+            // eslint-disable-next-line no-console
+            console.log('✅ DEBUG - Estado iaReport actualizado');
           }
         } else {
-          if (import.meta.env.MODE !== 'production') {
+            if (import.meta.env.MODE !== 'production') {
             // eslint-disable-next-line no-console
             console.log('❌ DEBUG - Condición falló. Motivos:');
             // eslint-disable-next-line no-console
@@ -506,6 +502,7 @@ const ResultadosPage: React.FC = () => {
         setLoadingIa(false);
       }
     };
+    fetchIaReportRef.current = fetchIaReport;
     // SOLUCIÓN: Ejecutar siempre el informe si hay datos básicos del usuario
     // Verificar tanto personal.softSkills como report?.softSkills
     const hasPersonalSoftSkills = validateSoftSkills(personal.softSkills);
@@ -546,6 +543,12 @@ const ResultadosPage: React.FC = () => {
       }
     }
   }, [report?.jobPreferences, personal.softSkills, report?.softSkills, personal.jobPreferences, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
+
+  const handleRetry = () => {
+    if (loadingIa) return;
+    setErrorIa('');
+    fetchIaReportRef.current?.();
+  };
 
   // Estado para feedback
   const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
@@ -1126,6 +1129,14 @@ const ResultadosPage: React.FC = () => {
         <div className="bg-red-100 border border-red-400 text-red-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
           <strong className="font-bold text-gray-900 dark:text-gray-100">Aviso.</strong>
           <span className="block sm:inline text-gray-900 dark:text-gray-100"> {errorIa}</span>
+          <div className="mt-4">
+            <button
+              onClick={handleRetry}
+              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+            >
+              Reintentar
+            </button>
+          </div>
         </div>
       )}
 
