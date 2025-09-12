@@ -910,13 +910,17 @@ def extract_basic_cv_data_from_text(text: str) -> Dict[str, Any]:
         "voluntariado": []
     }
 
-# Importar Document Intelligence
+# Importar Document Intelligence (import robusto: paquete o módulo local)
 try:
-    from document_intelligence import analyze_cv_with_improved_intelligence
+    from backend.document_intelligence import analyze_cv_with_improved_intelligence  # type: ignore
     DOCUMENT_INTELLIGENCE_AVAILABLE = True
-except ImportError:
-    DOCUMENT_INTELLIGENCE_AVAILABLE = False
-    print("⚠️ Document Intelligence no disponible, usando método tradicional")
+except Exception:
+    try:
+        from document_intelligence import analyze_cv_with_improved_intelligence  # type: ignore
+        DOCUMENT_INTELLIGENCE_AVAILABLE = True
+    except Exception:
+        analyze_cv_with_improved_intelligence = None  # type: ignore
+        DOCUMENT_INTELLIGENCE_AVAILABLE = False
 
 def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     """
