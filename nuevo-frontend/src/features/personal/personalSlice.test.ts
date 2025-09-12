@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { personalSlice, saveCvAnalysis } from './personalSlice.ts';
+import { personalSlice, saveCvAnalysis, saveSoftSkills, generateFinalReport } from './personalSlice.ts';
 import type { CvAnalysis } from '@/types/report';
 
 test('saveCvAnalysis stores structured analysis', () => {
@@ -23,4 +23,32 @@ test('saveCvAnalysis stores structured analysis', () => {
   };
   const state = personalSlice.reducer(initialState, saveCvAnalysis(analysis));
   assert.deepEqual(state.cvAnalysis, analysis);
+});
+
+test('generateFinalReport includes CvAnalysis in report', () => {
+  let state = personalSlice.getInitialState();
+  const analysis: CvAnalysis = {
+    structure_score: 5,
+    coherence_score: 5,
+    key_info_score: 5,
+    clarity_score: 5,
+    style_score: 5,
+    evidence: {
+      structure: 'ok',
+      coherence: 'ok',
+      key_info: 'ok',
+      clarity: 'ok',
+      style: 'ok',
+    },
+    corrections: [],
+    reordering_suggestions: [],
+  };
+
+  state = personalSlice.reducer(state, saveCvAnalysis(analysis));
+  state = personalSlice.reducer(state, saveSoftSkills([
+    { skill: 'comunicacion', score: 80, level: 'alto', confidence: 90 },
+  ]));
+
+  state = personalSlice.reducer(state, generateFinalReport());
+  assert.deepEqual(state.report?.cvAnalysis, analysis);
 });
