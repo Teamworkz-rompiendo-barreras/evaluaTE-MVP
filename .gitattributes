@@ -1,0 +1,11 @@
+# Colapsar diffs de lockfiles en PRs
+nuevo-frontend/pnpm-lock.yaml -diff linguist-generated
+nuevo-frontend/package-lock.json -diff linguist-generated
+
+# Colapsar assets
+*.png -diff linguist-generated
+*.zip -diff linguist-generated
+*.log -diff linguist-generated
+
+# Normalizar fin de línea
+* text=auto eol=lf

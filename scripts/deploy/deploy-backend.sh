@@ -18,11 +18,7 @@ cd backend
 
 # Crear archivo ZIP con todos los archivos necesarios
 # Excluir rutas del Node.js runtime para evitar que Azure detecte incorrectamente el runtime
-zip -r ../backend-deploy.zip . \
-    -x "venv/*" "__pycache__/*" "*.pyc" ".git/*" "uploads/*" "dist/*" \
-       "node_modules/*" "src/*" "package.json" "tsconfig.json" \
-       "package-lock.json" ".env*" ".pytest_cache/*" ".deployment" \
-       ".azure-deployment"
+zip -r ../backend-deploy.zip . -x "venv/*" "__pycache__/*" "*.pyc" ".git/*" "uploads/*" "dist/*" "node_modules/*" "src/*" "package.json" "tsconfig.json" "package-lock.json"
 
 cd ..
 
@@ -46,9 +42,6 @@ if [ $? -eq 0 ]; then
     echo "✅ Backend desplegado correctamente"
 else
     echo "❌ Error en el despliegue del backend"
-    az webapp log deployment show \
-        --resource-group ${RESOURCE_GROUP} \
-        --name ${WEB_APP} -o json
     exit 1
 fi
 
