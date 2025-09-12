@@ -160,10 +160,10 @@ const testNewReportFormat = () => {
   console.log('📊 **PRUEBA 1: Formato Nuevo Completo**');
   console.log('=' .repeat(50));
   
+  // Importar las funciones del nuevo formato compilado
+  const { convertBackendResponseToNewFormat, generateNewFormatReport } = require('./nuevo-frontend/src/config/reportConfig.cjs');
+
   try {
-    // Importar las funciones del nuevo formato (simulado)
-    const { convertBackendResponseToNewFormat, generateNewFormatReport } = require('./nuevo-frontend/src/config/reportConfig.ts');
-    
     // Probar conversión del formato nuevo
     const newFormatData = convertBackendResponseToNewFormat(mockBackendResponse);
     if (newFormatData) {

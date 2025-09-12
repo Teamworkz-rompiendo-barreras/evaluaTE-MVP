@@ -1,4 +1,4 @@
-import type { CvAnalysis } from '@/types/report';
+import type { CvAnalysis } from '../types/report';
 
 export interface PersonalData {
   name: string;

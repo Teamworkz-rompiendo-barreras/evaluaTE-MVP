@@ -39,14 +39,22 @@ npm run dev
 
 ## Pruebas
 
-Los scripts de prueba de Node utilizan archivos TypeScript. Para ejecutarlos sin compilar previamente, usa [tsx](https://github.com/esbuild-kit/tsx) que transpila en tiempo real:
+Algunas pruebas dependen de código TypeScript del frontend. Se incluye la versión compilada a JavaScript de `nuevo-frontend/src/config/reportConfig.ts` para que puedan ejecutarse directamente con Node.
+
+Si se modifica el archivo TypeScript, recompílalo antes de correr los tests:
+
+```bash
+npx esbuild nuevo-frontend/src/config/reportConfig.ts --platform=node --format=cjs --target=es2019 --outfile=nuevo-frontend/src/config/reportConfig.cjs
+```
+
+Luego ejecuta las pruebas:
 
 ```bash
 # Pruebas a nivel raíz
-npx tsx test_new_report_format.js
-npx tsx test_frontend_integration.js
+node test_new_report_format.js
+node test_frontend_integration.js
 
-# Pruebas del módulo de configuración del reporte
+# Pruebas del módulo de configuración del reporte (usa tsx internamente)
 cd nuevo-frontend
 npm test
 ```
