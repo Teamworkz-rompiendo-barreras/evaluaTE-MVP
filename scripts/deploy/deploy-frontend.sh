@@ -1,5 +1,30 @@
 #!/bin/bash
 
+set -euo pipefail
+
+echo "🔨 Construyendo frontend..."
+cd "$(dirname "$0")/../../nuevo-frontend"
+npm run build
+
+if [ ! -d "dist" ]; then
+  echo "❌ Error: No se generó dist/"
+  exit 1
+fi
+
+NAME="frontend-build-$(date +%Y%m%d-%H%M%S).zip"
+echo "📦 Empaquetando: $NAME"
+cd dist
+zip -qr "../$NAME" .
+cd ..
+
+echo "✅ Paquete creado: $(pwd)/$NAME"
+echo "
+Siguiente paso:
+- Sube manualmente el zip a Azure Static Web Apps o usa tu pipeline CI/CD.
+"
+
+#!/bin/bash
+
 echo "🚀 Desplegando frontend a Azure Static Web Apps..."
 
 # Configuración

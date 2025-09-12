@@ -39,11 +39,4 @@ npm run dev
 
 ## Despliegue
 
-El proyecto está configurado para desplegarse en Azure.
-# Deploy trigger - Fri Aug  8 12:23:05 CEST 2025
-
-gunicorn==22.0.0
-
-# Verificando despliegue - Sat Aug 23 00:19:59 CEST 2025
-# Forzando despliegue - 00:34:48
-# Forzando despliegue final - 00:49:14
+Consulta la guía consolidada en `README_DEPLOY.md`.

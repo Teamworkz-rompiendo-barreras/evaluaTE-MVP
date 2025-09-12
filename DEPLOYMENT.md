@@ -24,7 +24,7 @@ az account show
 
 ### Opción 1: Despliegue Completo (Recomendado)
 ```bash
-./deploy-all.sh
+./scripts/deploy/deploy-all.sh
 ```
 
 Este script desplegará tanto el frontend como el backend automáticamente.
@@ -33,12 +33,12 @@ Este script desplegará tanto el frontend como el backend automáticamente.
 
 #### Frontend (Static Web App)
 ```bash
-./deploy-manual.sh
+./scripts/deploy/deploy-frontend.sh
 ```
 
 #### Backend (Web App)
 ```bash
-./deploy-backend.sh
+./scripts/deploy/deploy-backend.sh
 ```
 
 ## 🔐 Configuración de Variables de Entorno
@@ -51,7 +51,7 @@ cp backend/env.example backend/.env
 
 ### 2. Aplicar configuración a Azure
 ```bash
-./configure-environment.sh
+./scripts/deploy/configure-environment.sh
 ```
 
 ## 📊 Verificación del Despliegue
