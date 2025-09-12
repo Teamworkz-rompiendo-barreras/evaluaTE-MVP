@@ -127,6 +127,76 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             raise HTTPException(status_code=400, detail=result["error"])
 
         # Normalizar al shape esperado por el frontend (CvAnalysis)
+        di_used = bool(result.get("document_intelligence_used"))
+
+        # Dos formatos de entrada posibles:
+        # 1) Tradicional: {cv_info: {contacto, educacion, experiencia, idiomas, software, perfil}, analysis: {...}, raw_text}
+        # 2) Document Intelligence: {contact, experience, education, languages, software, raw_text, stars, ...}
+
+        if di_used or ("contact" in result or "experience" in result or "education" in result):
+            # Mapear salida de Document Intelligence a forma cv_info/analysis
+            contact_di: Dict[str, Any] = result.get("contact") or {}
+            emails = contact_di.get("emails") or []
+            phones = contact_di.get("phones") or []
+            location = contact_di.get("location") or ""
+            linkedin = contact_di.get("linkedin") or ""
+
+            lang_items: list = []
+            for item in (result.get("languages") or []):
+                if isinstance(item, dict):
+                    lang_items.append({
+                        "name": item.get("language") or item.get("name"),
+                        "level": item.get("level") or item.get("nivel") or ""
+                    })
+                elif isinstance(item, str):
+                    lang_items.append({"name": item, "level": ""})
+
+            normalized: Dict[str, Any] = {
+                "strengths": result.get("strengths") or [],
+                "weaknesses": result.get("weaknesses") or [],
+                "feedback": result.get("feedback") or "",
+                "structure": "regular",
+                "coherence": "regular",
+                "experience": "regular",
+                "skills": result.get("software") or [],
+                "education": [
+                    (e.get("degree") or e.get("titulo") or e.get("title") or "").strip()
+                    for e in (result.get("education") or []) if isinstance(e, dict)
+                ],
+                "alerts": [],
+                "cv_structured": {
+                    "candidate": contact_di.get("name") or contact_di.get("nombre") or "",
+                    "contact": {
+                        "emails": emails if isinstance(emails, list) else ([emails] if emails else []),
+                        "phones": phones if isinstance(phones, list) else ([phones] if phones else []),
+                        "location": location,
+                        "linkedin": linkedin,
+                    },
+                    "experience": result.get("experience") or [],
+                    "education": result.get("education") or [],
+                    "languages": lang_items,
+                    "skills": result.get("software") or [],
+                    "summary": result.get("summary") or "",
+                },
+                "candidate": contact_di.get("name") or contact_di.get("nombre") or "",
+                "contact": {
+                    "emails": emails if isinstance(emails, list) else ([emails] if emails else []),
+                    "phones": phones if isinstance(phones, list) else ([phones] if phones else []),
+                    "location": location,
+                    "linkedin": linkedin,
+                },
+                "experience_detailed": result.get("experience") or [],
+                "education_detailed": result.get("education") or [],
+                "languages": lang_items,
+                "raw_text": result.get("raw_text") or "",
+                "ai_analysis": {},
+                "cv_analysis_structured": {"stars": result.get("stars") or {}},
+                "document_intelligence_used": True,
+            }
+            logger.info("CV analysis normalizado correctamente (Document Intelligence)")
+            return normalized
+
+        # Formato tradicional
         cv_info: Dict[str, Any] = result.get("cv_info") or {}
         analysis: Dict[str, Any] = result.get("analysis") or {}
         contacto: Dict[str, Any] = cv_info.get("contacto") or {}
@@ -197,6 +267,7 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             "raw_text": result.get("raw_text") or "",
             "ai_analysis": result.get("full_cv_data") or {},
             "cv_analysis_structured": analysis,
+            "document_intelligence_used": False,
         }
         logger.info("CV analysis normalizado correctamente")
         return normalized
