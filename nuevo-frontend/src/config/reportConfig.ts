@@ -118,8 +118,8 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         strengths = recs.fortalezas_clave.map((s: unknown) => String(s));
       } else if (Array.isArray(report.soft_skills)) {
         strengths = (report.soft_skills as Array<Record<string, unknown>>)
-          .filter((s) => (Number(s?.score) || 0) >= 70)
-          .map((s) => String(s?.skill || s?.name || ''));
+          .filter((s) => (Number(s['score']) || 0) >= 70)
+          .map((s) => String((s['skill'] ?? s['name'] ?? '')));
       }
 
       // Áreas de mejora
