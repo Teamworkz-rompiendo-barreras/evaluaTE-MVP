@@ -73,10 +73,11 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       return {
         summary: report.resumen_ejecutivo || '',
         personal_data: {
-          name: report.fullName || 'Desconocido',
-          location: report.location || '',
-          email: report.email || '',
-          phone: report.phone || '',
+          // Map basic contact information from the legacy format
+          name: report.fullName ?? 'Desconocido',
+          location: report.location ?? '',
+          email: report.email ?? '',
+          phone: report.phone ?? '',
           disability_certificate: ''
         },
         profile_summary: report.resumen_ejecutivo || '',

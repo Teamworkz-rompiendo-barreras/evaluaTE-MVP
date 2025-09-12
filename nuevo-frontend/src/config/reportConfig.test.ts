@@ -73,6 +73,13 @@ test('convertBackendResponseToNewFormat returns data as-is for new format', () =
   assert.deepEqual(result, mockNewFormat);
 });
 
+test('convertBackendResponseToNewFormat keeps contact fields in new format', () => {
+  const result = convertBackendResponseToNewFormat(mockNewFormat);
+  assert.equal(result.personal_data.location, 'Madrid, España');
+  assert.equal(result.personal_data.email, 'jmanuelazana@gmail.com');
+  assert.equal(result.personal_data.phone, '+34 600 000 000');
+});
+
 test('convertBackendResponseToNewFormat transforms old format', () => {
   const oldFormat = {
     report: {
