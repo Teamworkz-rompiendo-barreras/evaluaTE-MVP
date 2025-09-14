@@ -48,6 +48,7 @@ export interface NewReportSchema {
   profile_summary: string;
   cv_summary: string;
   strengths: string[];
+  soft_skills: Array<{ skill: string; score: number }>;
   improvement_areas: ImprovementArea[];
   cv_analysis: CvAnalysis;
   ideal_work_environment: string;
@@ -112,14 +113,26 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         reordering_suggestions: Array.isArray(analysisJson?.reordering_suggestions) ? analysisJson.reordering_suggestions : [],
       } as CvAnalysis;
 
+      // Soft skills
+      let soft_skills: Array<{ skill: string; score: number }> = [];
+      if (Array.isArray(report.soft_skills)) {
+        soft_skills = (report.soft_skills as Array<Record<string, unknown>>).map((s) => ({
+          skill: String(s['skill'] ?? s['name'] ?? ''),
+          score: Number(s['score'] ?? 0),
+        }));
+      } else if (Array.isArray(data.softSkills)) {
+        soft_skills = (data.softSkills as Array<Record<string, unknown>>).map((s) => ({
+          skill: String(s['skill'] ?? s['name'] ?? ''),
+          score: Number(s['score'] ?? 0),
+        }));
+      }
+
       // Fortalezas
       let strengths: string[] = [];
       if (Array.isArray(recs.fortalezas_clave)) {
         strengths = recs.fortalezas_clave.map((s: unknown) => String(s));
-      } else if (Array.isArray(report.soft_skills)) {
-        strengths = (report.soft_skills as Array<Record<string, unknown>>)
-          .filter((s) => (Number(s['score']) || 0) >= 70)
-          .map((s) => String((s['skill'] ?? s['name'] ?? '')));
+      } else if (soft_skills.length > 0) {
+        strengths = soft_skills.filter((s) => (Number(s.score) || 0) >= 70).map((s) => s.skill);
       }
 
       // Áreas de mejora
@@ -196,6 +209,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         profile_summary,
         cv_summary,
         strengths,
+        soft_skills,
         improvement_areas,
         cv_analysis,
         ideal_work_environment,

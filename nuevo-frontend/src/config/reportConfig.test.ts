@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema } from './reportConfig';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema } from './reportConfig.ts';
 
 const mockNewFormat: NewReportSchema = {
   summary: 'Resumen ejecutivo del candidato',
@@ -14,6 +14,10 @@ const mockNewFormat: NewReportSchema = {
   profile_summary: 'Perfil profesional con experiencia en desarrollo de software y habilidades de liderazgo.',
   cv_summary: 'CV bien estructurado con experiencia en tecnologías modernas.',
   strengths: ['Liderazgo de equipos técnicos'],
+  soft_skills: [
+    { skill: 'Liderazgo', score: 90 },
+    { skill: 'Comunicación', score: 85 }
+  ],
   improvement_areas: [
     {
       area: 'Gestión de proyectos',
@@ -84,16 +88,23 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
   const oldFormat = {
     report: {
       fullName: 'María García',
-      location: 'Sevilla, España',
-      email: 'maria@example.com',
-      phone: '+34 123 456 789',
+      personal_data: {
+        name: 'María García',
+        location: 'Sevilla, España',
+        email: 'maria@example.com',
+        phone: '+34 123 456 789'
+      },
       resumen_ejecutivo: 'Candidata con experiencia en marketing digital',
+      soft_skills: [
+        { skill: 'Comunicación', score: 80 },
+        { name: 'Trabajo en equipo', score: 75 }
+      ],
       cvAnalysis: {
         structure: 'good',
         feedback: 'CV bien estructurado con información relevante'
       }
     },
-    recommendations: ['Habilidades de comunicación', 'Capacidad analítica']
+    recommendations: { fortalezas_clave: ['Habilidades de comunicación', 'Capacidad analítica'] }
   };
   const result = convertBackendResponseToNewFormat(oldFormat);
   assert.equal(result.personal_data.name, 'María García');
@@ -101,16 +112,20 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
   assert.equal(result.personal_data.email, 'maria@example.com');
   assert.equal(result.personal_data.phone, '+34 123 456 789');
   assert.deepEqual(result.strengths, ['Habilidades de comunicación', 'Capacidad analítica']);
+  assert.deepEqual(result.soft_skills, [
+    { skill: 'Comunicación', score: 80 },
+    { skill: 'Trabajo en equipo', score: 75 }
+  ]);
 });
 
 test('generateNewFormatReport includes required sections', () => {
   const report = generateNewFormatReport(mockNewFormat);
   const sections = [
-    '1. DATOS PERSONALES BÁSICOS',
-    '2. RESUMEN DEL PERFIL',
-    '3. RESUMEN DEL CV',
-    '4. FORTALEZAS',
-    '5. ÁREAS DE MEJORA Y CONSEJOS'
+    '## 1. Datos personales básicos',
+    '## 2. Resumen del perfil',
+    '## 3. Resumen del CV',
+    '## 4. Fortalezas',
+    '# 5. Áreas de mejora y consejos'
   ];
   sections.forEach(section => {
     assert.ok(report.includes(section));

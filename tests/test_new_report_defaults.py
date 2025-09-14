@@ -16,6 +16,8 @@ def test_create_default_report_missing_job_preferences():
     )
     assert report.personal_data.location == "No especificado"
     assert report.personal_data.disability_certificate == "No"
+    assert isinstance(report.soft_skills, list)
+    assert len(report.soft_skills) > 0
 
 
 def test_create_frontend_compatible_data_missing_cv_analysis():
@@ -29,3 +31,6 @@ def test_create_frontend_compatible_data_missing_cv_analysis():
     assert cv_data["structure"] == "regular"
     assert cv_data["coherence"] == "regular"
     assert cv_data["feedback"] == "CV analizado con limitaciones"
+    assert "softSkills" in data
+    assert isinstance(data["softSkills"], list)
+    assert len(data["softSkills"]) > 0

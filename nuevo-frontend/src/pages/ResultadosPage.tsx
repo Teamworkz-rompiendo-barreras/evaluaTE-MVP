@@ -20,7 +20,7 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
-import { convertBackendResponseToNewFormat, generateNewFormatReport } from '../config/reportConfig';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema } from '../config/reportConfig';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -114,6 +114,7 @@ const ResultadosPage: React.FC = () => {
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
+  const [info, setInfo] = useState<NewReportSchema | null>(null);
 
   // Hook de valoración (alias para evitar choque de nombres)
   const uid = report?.userId ?? '';
@@ -389,6 +390,7 @@ const ResultadosPage: React.FC = () => {
           let normalized;
           try {
             normalized = convertBackendResponseToNewFormat(data);
+            setInfo(normalized);
           } catch (error) {
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console
@@ -431,7 +433,7 @@ const ResultadosPage: React.FC = () => {
               if (/decisiones/.test(n)) return 'toma de decisiones';
               return String(val || 'fortalezas');
             };
-            const sorted = [...(softSkillsToSend || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
+            const sorted = [...(normalized.soft_skills || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
             const s1 = normalize(sorted[0]?.skill);
             const s2 = normalize(sorted[1]?.skill);
             const remotePref = (report?.jobPreferences as any)?.remoteWork ? 'el trabajo remoto' : 'los entornos presenciales';
@@ -685,8 +687,11 @@ const ResultadosPage: React.FC = () => {
     });
   };
 
-  const mergedSoftSkills = useMemo(() => {
-    // Merge de soft skills de juegos (game.softSkills) con personal.softSkills
+  const softSkillsData = useMemo(() => {
+    if (info?.soft_skills && info.soft_skills.length > 0) {
+      return info.soft_skills;
+    }
+    // Merge de soft skills de juegos (game.softSkills) con personal.softSkills como fallback
     const personalSkills = filterValidSoftSkills(personal.softSkills || []);
     const gameSkills = Array.isArray(game?.softSkills) ? game.softSkills : [];
     const mappedGame = gameSkills.map((s:any) => {
@@ -705,18 +710,18 @@ const ResultadosPage: React.FC = () => {
       }
     }
     return Object.values(byName);
-  }, [personal.softSkills, game?.softSkills]);
+  }, [info?.soft_skills, personal.softSkills, game?.softSkills]);
   const computedScore = useMemo(() => {
-    if (!mergedSoftSkills || mergedSoftSkills.length === 0) return undefined;
-    const sum = mergedSoftSkills.reduce((acc, s) => acc + (Number(s.score) || 0), 0);
-    const avg = sum / mergedSoftSkills.length;
+    if (!softSkillsData || softSkillsData.length === 0) return undefined;
+    const sum = softSkillsData.reduce((acc, s) => acc + (Number(s.score) || 0), 0);
+    const avg = sum / softSkillsData.length;
     // Evitar 0 en gráficas si hay datos; mínimo 10
     return Math.max(10, Math.round(avg));
-  }, [mergedSoftSkills]);
+  }, [softSkillsData]);
   const globalScore = iaScore ?? report?.employabilityScore ?? computedScore;
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
-    : processRadarData(mergedSoftSkills);
+    : processRadarData(softSkillsData);
   // Color de etiquetas del radar según modo (claro/oscuro)
   // Modo claro: etiquetas oscuras para legibilidad contra fondo blanco
   // Modo oscuro: etiquetas blancas para legibilidad contra fondo oscuro
@@ -786,8 +791,10 @@ const ResultadosPage: React.FC = () => {
           <ul className="space-y-1 text-sm">
             {(() => {
               try {
-                const validSkills = filterValidSoftSkills(personal.softSkills || []);
-                return validSkills.map((skill, idx: number) => (
+                const validSkills = info?.soft_skills?.length
+                  ? info.soft_skills
+                  : filterValidSoftSkills(personal.softSkills || []);
+                return validSkills.map((skill: any, idx: number) => (
                   <li key={idx}>
                     <span className="font-medium text-gray-900 dark:text-gray-100">{skill.skill}:</span> {skill.score}%
                   </li>
