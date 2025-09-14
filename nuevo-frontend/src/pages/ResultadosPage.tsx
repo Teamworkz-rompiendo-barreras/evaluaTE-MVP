@@ -22,7 +22,7 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
-import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema } from '../config/reportConfig';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData } from '../config/reportConfig';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -373,7 +373,7 @@ const ResultadosPage: React.FC = () => {
           const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
             || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
             || {} as Record<string, unknown>;
-          const dp = {
+          const dp: PersonalData = {
             name: (dpSrc?.['name'] as string) || candidateName,
             location: (dpSrc?.['location'] as string) || 'No consta',
             email: (dpSrc?.['email'] as string) || '',
@@ -383,9 +383,16 @@ const ResultadosPage: React.FC = () => {
               : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
           };
 
-          let normalized;
+          let normalized: NewReportSchema;
           try {
             normalized = convertBackendResponseToNewFormat(data);
+            // Merge user-provided personal data when backend values are missing
+            for (const key of Object.keys(dp) as (keyof PersonalData)[]) {
+              const backendVal = normalized.personal_data?.[key];
+              if (backendVal === undefined || backendVal === null || backendVal === '') {
+                normalized.personal_data[key] = dp[key];
+              }
+            }
             setInfo(normalized);
           } catch (error) {
             if (import.meta.env.MODE !== 'production') {
