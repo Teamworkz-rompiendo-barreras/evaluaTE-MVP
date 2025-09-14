@@ -1,7 +1,14 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { personalSlice, saveCvAnalysis, saveSoftSkills, generateFinalReport } from './personalSlice.ts';
+import {
+  personalSlice,
+  saveCvAnalysis,
+  saveSoftSkills,
+  generateFinalReport,
+  addSceneDecision,
+} from './personalSlice.ts';
 import type { CvAnalysis } from '@/types/report';
+import type { UserDecision } from '@/types/skills';
 
 test('saveCvAnalysis stores structured analysis', () => {
   const initialState = personalSlice.getInitialState();
@@ -55,4 +62,49 @@ test('generateFinalReport includes CvAnalysis in report', () => {
 
   state = personalSlice.reducer(state, generateFinalReport());
   assert.deepEqual(state.report?.cvAnalysis, analysis);
+});
+
+test('addSceneDecision stores decisions in state.logs', () => {
+  let state = personalSlice.getInitialState();
+  const decision: UserDecision = {
+    sceneId: 1,
+    stepIndex: 0,
+    optionText: 'Opción A',
+    isCorrect: true,
+    skillImpacts: { 'Opción A': 0.8 },
+    timestamp: '2024-01-01T00:00:00Z',
+    userAgent: 'test',
+    screenResolution: '1920x1080',
+  };
+  state = personalSlice.reducer(state, addSceneDecision(decision));
+  assert.equal(state.logs.length, 1);
+  assert.deepEqual(state.logs[0].decisions[0], decision);
+});
+
+test('addSceneDecision appends to existing scene log', () => {
+  let state = personalSlice.getInitialState();
+  const decision1: UserDecision = {
+    sceneId: 1,
+    stepIndex: 0,
+    optionText: 'Opción A',
+    isCorrect: true,
+    skillImpacts: { 'Opción A': 0.8 },
+    timestamp: '2024-01-01T00:00:00Z',
+    userAgent: 'test',
+    screenResolution: '1920x1080',
+  };
+  const decision2: UserDecision = {
+    sceneId: 1,
+    stepIndex: 1,
+    optionText: 'Opción B',
+    isCorrect: false,
+    skillImpacts: { 'Opción B': 0.5 },
+    timestamp: '2024-01-01T00:01:00Z',
+    userAgent: 'test',
+    screenResolution: '1920x1080',
+  };
+  state = personalSlice.reducer(state, addSceneDecision(decision1));
+  state = personalSlice.reducer(state, addSceneDecision(decision2));
+  assert.equal(state.logs.length, 1);
+  assert.equal(state.logs[0].decisions.length, 2);
 });
