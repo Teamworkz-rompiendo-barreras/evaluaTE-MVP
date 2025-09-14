@@ -4,7 +4,7 @@ import type { JobPreference } from '@/types/preferences';
  * Normaliza las preferencias laborales garantizando un objeto con valores por defecto.
  */
 export function resolveJobPreferences(personal: {
-  jobPreferences?: string | JobPreference;
+  jobPreferences?: string | Partial<JobPreference>;
   workMode?: JobPreference['workMode'];
   availability?: JobPreference['availability'];
   willingToRelocate?: boolean;
