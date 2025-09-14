@@ -42,7 +42,7 @@ function DarkZoomWidget() {
     document.documentElement.style.fontSize = `${Math.max(80, Math.min(160, zoom))}%`;
   }, [zoom]);
   return (
-    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-2 shadow">
+    <div className="fixed bottom-4 right-4 z-50 flex items-center gap-2 bg-white/90 dark:bg-gray-800/90 border border-gray-200 dark:border-gray-700 rounded-full px-3 py-2 shadow print-hidden">
       <button onClick={() => setDark(d => !d)} className="px-3 py-1 rounded-full text-sm bg-gray-200 dark:bg-gray-700 hover:opacity-90">{dark ? 'Modo claro' : 'Modo oscuro'}</button>
       <div className="flex items-center gap-1">
         <button onClick={() => setZoom(z => Math.max(80, z - 10))} className="px-2 py-1 rounded-full text-sm bg-gray-200 dark:bg-gray-700">-</button>
