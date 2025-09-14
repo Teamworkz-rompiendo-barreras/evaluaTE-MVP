@@ -148,50 +148,80 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
             'Destacar habilidades técnicas relevantes',
         ]),
     )
-
-    
-    # Crear plan de acción por defecto
-    action_plan = ActionPlan(
-        short_term=[
-            "Actualizar CV con información más detallada",
-            "Crear perfil en LinkedIn",
-            "Identificar 3-5 empresas objetivo"
-        ],
-        medium_term=[
-            "Completar formación en habilidades técnicas",
-            "Ampliar red profesional",
-            "Preparar portfolio de proyectos"
-        ],
-        long_term=[
-            "Desarrollar especialización técnica",
-            "Buscar oportunidades de liderazgo",
-            "Considerar certificaciones profesionales"
+    # Determinar áreas de mejora usando datos del CV cuando existan
+    improvement_areas: List[ImprovementArea] = []
+    if cv_analysis and (cv_analysis.get('corrections') or cv_analysis.get('reordering_suggestions')):
+        for c in cv_analysis.get('corrections', []):
+            improvement_areas.append(ImprovementArea(area=c, reason='Corrección sugerida', suggested_action=c))
+        for s in cv_analysis.get('reordering_suggestions', []):
+            improvement_areas.append(ImprovementArea(area=s, reason='Sugerencia de reordenamiento', suggested_action=s))
+    else:
+        improvement_areas = [
+            ImprovementArea(
+                area='Experiencia técnica',
+                reason='Necesita más práctica en tecnologías específicas',
+                suggested_action='Completar proyectos prácticos y cursos online',
+            ),
+            ImprovementArea(
+                area='Métricas de logros',
+                reason='Faltan resultados cuantificables',
+                suggested_action='Incluir números y porcentajes en el CV',
+            ),
         ]
-    )
+
+    areas_pref = (job_preferences or {}).get('desired_roles') or (job_preferences or {}).get('areas') or []
+    area_str = ', '.join(areas_pref)
+    if job_preferences and areas_pref:
+        action_plan = ActionPlan(
+            short_term=[f"Explorar oportunidades en {area_str}"],
+            medium_term=[f"Desarrollar habilidades para rol {(job_preferences or {}).get('seniority', 'Senior')}"],
+            long_term=[f"Alcanzar posición {(job_preferences or {}).get('seniority', 'Senior')} en {area_str}"],
+        )
+    else:
+        action_plan = ActionPlan(
+            short_term=[
+                "Actualizar CV con información más detallada",
+                "Crear perfil en LinkedIn",
+                "Identificar 3-5 empresas objetivo",
+            ],
+            medium_term=[
+                "Completar formación en habilidades técnicas",
+                "Ampliar red profesional",
+                "Preparar portfolio de proyectos",
+            ],
+            long_term=[
+                "Desarrollar especialización técnica",
+                "Buscar oportunidades de liderazgo",
+                "Considerar certificaciones profesionales",
+            ],
+        )
     
-    # Crear consejos de búsqueda por defecto
+    default_platforms = ["LinkedIn", "InfoJobs", "Indeed", "Stack Overflow Jobs"]
+    cv_tips = (cv_analysis or {}).get('corrections', [
+        "Usar palabras clave específicas del sector",
+        "Incluir logros cuantificables",
+        "Destacar proyectos relevantes",
+    ])
+    recommended_platforms = (job_preferences or {}).get('preferred_platforms') or (job_preferences or {}).get('platforms') or default_platforms
     job_search_advice = JobSearchAdvice(
-        cv_optimization=[
-            "Usar palabras clave específicas del sector",
-            "Incluir logros cuantificables",
-            "Destacar proyectos relevantes"
-        ],
-        letters_portfolio="Preparar carta de presentación personalizada para cada empresa",
-        recommended_platforms=["LinkedIn", "InfoJobs", "Indeed", "Stack Overflow Jobs"],
-        networking="Participar en meetups y grupos profesionales online",
-        interview_tips="Preparar respuestas STAR y practicar presentación de proyectos"
+        cv_optimization=cv_tips,
+        letters_portfolio="Destacar proyectos relevantes en la carta de presentación",
+        recommended_platforms=recommended_platforms,
+        networking="Participar en comunidades online" if (job_preferences or {}).get('workMode', '').lower() == 'remoto' else "Participar en meetups y grupos profesionales online",
+        interview_tips="Preparar respuestas STAR y practicar presentación de proyectos",
     )
     
-    # Crear herramientas útiles por defecto
+    productivity_tools = (cv_analysis or {}).get('software') or ["Trello", "Notion", "Google Calendar"]
+    job_search_tools = recommended_platforms if recommended_platforms else ["LinkedIn", "Glassdoor", "Resume.io"]
     useful_tools = UsefulTools(
-        productivity=["Trello", "Notion", "Google Calendar"],
-        job_search=["LinkedIn", "Glassdoor", "Resume.io"],
+        productivity=productivity_tools,
+        job_search=job_search_tools,
         learning=["Coursera", "edX", "Platzi", "Udemy"],
-        accessibility=["Microsoft Immersive Reader", "Grammarly", "ColorZilla"]
+        accessibility=["Microsoft Immersive Reader", "Grammarly", "ColorZilla"],
     )
     
     # Crear roles sugeridos a partir de las preferencias cuando existan
-    preferred_roles = (job_preferences or {}).get('desired_roles') or (job_preferences or {}).get('areas') or []
+    preferred_roles = areas_pref
     suggested_roles = []
     for role in preferred_roles:
         suggested_roles.append(
@@ -199,7 +229,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
                 role=role,
                 reason='Basado en preferencias del usuario',
                 seniority=(job_preferences or {}).get('seniority', 'Junior'),
-                remote_viable=((job_preferences or {}).get('workMode', '').lower() == 'remoto')
+                remote_viable=((job_preferences or {}).get('workMode', '').lower() == 'remoto'),
             )
         )
     if not suggested_roles:
@@ -208,7 +238,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
                 role='Desarrollador Junior',
                 reason='Perfil adecuado para roles de entrada con potencial de crecimiento',
                 seniority='Junior',
-                remote_viable=True
+                remote_viable=True,
             )
         ]
 
@@ -227,18 +257,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         cv_summary=cv_analysis.get('feedback', 'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.') if cv_analysis else 'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.',
         strengths=strengths,
         soft_skills=formatted_soft_skills,
-        improvement_areas=[
-            ImprovementArea(
-                area='Experiencia técnica',
-                reason='Necesita más práctica en tecnologías específicas',
-                suggested_action='Completar proyectos prácticos y cursos online'
-            ),
-            ImprovementArea(
-                area='Métricas de logros',
-                reason='Faltan resultados cuantificables',
-                suggested_action='Incluir números y porcentajes en el CV'
-            )
-        ],
+        improvement_areas=improvement_areas,
         cv_analysis=cv_analysis_data,
         ideal_work_environment=ideal_work_environment,
         suggested_roles=suggested_roles,
@@ -341,36 +360,48 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
             {'skill': 'Creatividad', 'score': 70}
         ]
     
-    # Crear áreas de mejora
-    improvement_areas = [
-        {
-            'area': 'Experiencia técnica',
-            'reason': 'Necesita más práctica en tecnologías específicas'
-        },
-        {
-            'area': 'Métricas de logros',
-            'reason': 'Faltan resultados cuantificables'
-        }
-    ]
-    
-    # Crear plan de acción
-    action_plan = {
-        'short_term': [
-            'Actualizar CV con información más detallada',
-            'Crear perfil en LinkedIn',
-            'Identificar 3-5 empresas objetivo'
-        ],
-        'medium_term': [
-            'Completar formación en habilidades técnicas',
-            'Ampliar red profesional',
-            'Preparar portfolio de proyectos'
-        ],
-        'long_term': [
-            'Desarrollar especialización técnica',
-            'Buscar oportunidades de liderazgo',
-            'Considerar certificaciones profesionales'
+    # Crear áreas de mejora a partir del análisis del CV cuando sea posible
+    if cv_analysis and (cv_analysis.get('corrections') or cv_analysis.get('reordering_suggestions')):
+        improvement_areas = [
+            {'area': c, 'reason': 'Corrección sugerida'} for c in cv_analysis.get('corrections', [])
+        ] + [
+            {'area': s, 'reason': 'Sugerencia de reordenamiento'} for s in cv_analysis.get('reordering_suggestions', [])
         ]
-    }
+        if not improvement_areas:
+            improvement_areas = []
+    else:
+        improvement_areas = [
+            {'area': 'Experiencia técnica', 'reason': 'Necesita más práctica en tecnologías específicas'},
+            {'area': 'Métricas de logros', 'reason': 'Faltan resultados cuantificables'},
+        ]
+
+    # Crear plan de acción basándose en preferencias cuando existan
+    areas_pref = (job_preferences or {}).get('desired_roles') or (job_preferences or {}).get('areas') or []
+    area_str = ', '.join(areas_pref)
+    if job_preferences and areas_pref:
+        action_plan = {
+            'short_term': [f"Explorar oportunidades en {area_str}"],
+            'medium_term': [f"Desarrollar habilidades para rol {(job_preferences or {}).get('seniority', 'Senior')}"],
+            'long_term': [f"Alcanzar posición {(job_preferences or {}).get('seniority', 'Senior')} en {area_str}"],
+        }
+    else:
+        action_plan = {
+            'short_term': [
+                'Actualizar CV con información más detallada',
+                'Crear perfil en LinkedIn',
+                'Identificar 3-5 empresas objetivo',
+            ],
+            'medium_term': [
+                'Completar formación en habilidades técnicas',
+                'Ampliar red profesional',
+                'Preparar portfolio de proyectos',
+            ],
+            'long_term': [
+                'Desarrollar especialización técnica',
+                'Buscar oportunidades de liderazgo',
+                'Considerar certificaciones profesionales',
+            ],
+        }
     
     # Crear análisis del CV basado en los datos de entrada
    
@@ -383,20 +414,25 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         'education': cv_analysis.get('education', []) if cv_analysis else [],
         'software': cv_analysis.get('software', []) if cv_analysis else [],
     }
-    # Crear consejos de búsqueda
+    # Crear consejos de búsqueda y herramientas útiles
+    recommended_platforms = (job_preferences or {}).get('preferred_platforms') or (job_preferences or {}).get('platforms') or ['LinkedIn', 'Indeed']
+    cv_tips = (cv_analysis or {}).get('corrections') or ['gestión', 'coordinación', 'liderazgo']
     job_search_advice = {
-        'cv_optimization': ['gestión', 'coordinación', 'liderazgo']
+        'cv_optimization': cv_tips,
+        'letters_portfolio': 'Destacar proyectos relevantes',
+        'recommended_platforms': recommended_platforms,
+        'networking': 'Participar en comunidades online' if (job_preferences or {}).get('workMode', '').lower() == 'remoto' else 'Asistir a eventos locales',
+        'interview_tips': 'Preparar ejemplos de proyectos relevantes',
     }
-    
-    # Crear herramientas útiles
+
     useful_tools = {
-        'productivity': ['Excel', 'Google Sheets'],
-        'job_search': ['LinkedIn', 'Indeed'],
-        'learning': ['Coursera', 'Udemy']
+        'productivity': (cv_analysis or {}).get('software', ['Excel', 'Google Sheets']),
+        'job_search': recommended_platforms,
+        'learning': ['Coursera', 'Udemy'],
     }
     
     # Crear roles sugeridos a partir de preferencias de trabajo
-    preferred_roles = (job_preferences or {}).get('desired_roles') or (job_preferences or {}).get('areas') or []
+    preferred_roles = areas_pref
     suggested_roles = []
     for role in preferred_roles:
         suggested_roles.append({
