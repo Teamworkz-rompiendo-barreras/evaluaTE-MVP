@@ -76,11 +76,11 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       // Personal data: preferir report.personal_data si existe
       const pdSrc = report.personal_data || {};
       const personal_data = {
-        name: String(pdSrc.name ?? report.fullName ?? data.fullName ?? 'Desconocido'),
-        location: String(pdSrc.location ?? ''),
-        email: String(pdSrc.email ?? ''),
-        phone: String(pdSrc.phone ?? ''),
-        disability_certificate: String(pdSrc.disability_certificate ?? ''),
+        name: pdSrc.name ?? report.fullName ?? data.fullName ?? 'Desconocido',
+        location: pdSrc.location ?? report.location ?? '',
+        email: pdSrc.email ?? report.email ?? '',
+        phone: pdSrc.phone ?? report.phone ?? '',
+        disability_certificate: pdSrc.disability_certificate ?? report.disability_certificate ?? ''
       };
 
       // CV analysis: usar report.cv_analysis.analysis_json si existe; fallback a estrellas

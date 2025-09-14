@@ -118,6 +118,26 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
   ]);
 });
 
+test('convertBackendResponseToNewFormat uses report fields when personal_data is missing', () => {
+  const oldFormat = {
+    report: {
+      fullName: 'Carlos López',
+      location: 'Valencia, España',
+      email: 'carlos@example.com',
+      phone: '+34 111 222 333',
+      disability_certificate: 'No'
+    }
+  };
+  const result = convertBackendResponseToNewFormat(oldFormat);
+  assert.deepEqual(result.personal_data, {
+    name: 'Carlos López',
+    location: 'Valencia, España',
+    email: 'carlos@example.com',
+    phone: '+34 111 222 333',
+    disability_certificate: 'No'
+  });
+});
+
 test('generateNewFormatReport includes required sections', () => {
   const report = generateNewFormatReport(mockNewFormat);
   const sections = [
