@@ -72,6 +72,7 @@ class NewReportSchema(BaseModel):
     profile_summary: str
     cv_summary: str
     strengths: List[str]
+    soft_skills: List[Dict[str, Any]]
     improvement_areas: List[ImprovementArea]
     cv_analysis: CvAnalysis
     ideal_work_environment: str
@@ -87,22 +88,29 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
     """
     Crea un reporte por defecto con el nuevo esquema estructurado
     """
-    # Extraer fortalezas de soft skills y crear formato compatible con frontend
-    strengths = []
+    # Formatear soft skills y derivar fortalezas
+    formatted_soft_skills: List[Dict[str, Any]] = []
     if soft_skills:
         for skill in soft_skills:
-            if isinstance(skill, dict) and skill.get('name'):
-                strengths.append(skill['name'])
+            if isinstance(skill, dict):
+                name = skill.get('name') or skill.get('skill')
+                if name:
+                    formatted_soft_skills.append({
+                        'skill': name,
+                        'score': skill.get('score', 70)
+                    })
             elif isinstance(skill, str):
-                strengths.append(skill)
-    
-    # Si no hay fortalezas, crear algunas por defecto
-    if not strengths:
-        strengths = [
-            "Capacidad de aprendizaje",
-            "Adaptabilidad al cambio",
-            "Trabajo en equipo"
+                formatted_soft_skills.append({'skill': skill, 'score': 70})
+
+    # Si no hay soft skills, crear algunas por defecto
+    if not formatted_soft_skills:
+        formatted_soft_skills = [
+            {'skill': 'Capacidad de aprendizaje', 'score': 85},
+            {'skill': 'Adaptabilidad al cambio', 'score': 80},
+            {'skill': 'Trabajo en equipo', 'score': 75}
         ]
+
+    strengths = [s['skill'] for s in formatted_soft_skills if s.get('skill')]
     
     # Crear datos personales básicos
     personal_data = PersonalData(
@@ -196,6 +204,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         profile_summary="Perfil profesional con potencial de desarrollo. Se recomienda fortalecer habilidades técnicas específicas y experiencia práctica.",
         cv_summary="CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.",
         strengths=strengths,
+        soft_skills=formatted_soft_skills,
         improvement_areas=[
             ImprovementArea(
                 area="Experiencia técnica",
