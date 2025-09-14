@@ -156,10 +156,9 @@ export const personalSlice = createSlice({
       };
     },
 
-    // Guarda análisis del CV en el estado usando la interfaz tipada
+    // Guarda análisis completo del CV (contacto, experiencia, educación, etc.)
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
-      const analysis: CvAnalysis = { ...action.payload };
-      // Solo log en desarrollo para debugging
+      const analysis = action.payload;
       if (import.meta?.env?.DEV) {
         console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', analysis);
       }
@@ -170,7 +169,6 @@ export const personalSlice = createSlice({
         unlockedGames: Math.min(10, state.unlockedGames + 1),
       };
 
-      // Solo log en desarrollo para debugging
       if (import.meta?.env?.DEV) {
         console.log('🔍 DEBUG - Nuevo estado después de saveCvAnalysis:', newState);
       }

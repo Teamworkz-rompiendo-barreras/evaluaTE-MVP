@@ -20,6 +20,10 @@ test('saveCvAnalysis stores structured analysis', () => {
     },
     corrections: ['Agregar más detalles en experiencia'],
     reordering_suggestions: ['Mover habilidades al inicio'],
+    contact: { emails: ['test@example.com'], phones: ['123'] },
+    experience_detailed: [{ title: 'Dev', company: 'Acme' }],
+    education_detailed: [{ degree: 'Ing', institution: 'Uni' }],
+    software: [{ name: 'Excel', level: 'básico' }],
   };
   const state = personalSlice.reducer(initialState, saveCvAnalysis(analysis));
   assert.deepEqual(state.cvAnalysis, analysis);
