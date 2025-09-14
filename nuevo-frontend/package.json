@@ -11,7 +11,7 @@
     "lint": "eslint . --ext .ts,.tsx --fix",
     "lint:check": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
-    "test": "node --test --import tsx src/config/reportConfig.test.ts",
+    "test": "node --test --import tsx \"src/**/*.test.ts\"",
     "clean": "rm -rf dist node_modules/.vite",
     "prebuild": "npm run clean",
     "postbuild": "echo 'Build completado exitosamente'"
