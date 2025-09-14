@@ -532,6 +532,13 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
                     or []
                 )
 
+                analysis_json = (
+                    cv_raw.get("analysis_json")
+                    or cv_raw.get("cv_analysis_structured")
+                    or cv_raw.get("analysis")
+                    or {}
+                )
+
                 cv_data = {
                     "rawText": cv_raw.get("raw_text") or "",
                     "languages": cv_raw.get("languages") or [],
@@ -544,13 +551,7 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
                         "phones": phones,
                         "location": loc,
                     },
-                    "diagnostico_cv": {
-                        "structure_score": 1,
-                        "clarity_score": 1,
-                        "coherence_score": 1,
-                        "key_info_score": 1,
-                        "spelling_style_score": 1,
-                    }
+                    "analysis_json": analysis_json,
                 }
 
             # Preferencias laborales

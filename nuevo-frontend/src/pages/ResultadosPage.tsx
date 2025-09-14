@@ -263,16 +263,7 @@ const ResultadosPage: React.FC = () => {
           confidence: 80,
         }];
 
-        const cvAnalysisPayload: CvAnalysis | null = cvAnalysis ? {
-          structure_score: cvAnalysis.structure_score,
-          coherence_score: cvAnalysis.coherence_score,
-          key_info_score: cvAnalysis.key_info_score,
-          clarity_score: cvAnalysis.clarity_score,
-          style_score: cvAnalysis.style_score,
-          evidence: cvAnalysis.evidence,
-          corrections: cvAnalysis.corrections ?? [],
-          reordering_suggestions: cvAnalysis.reordering_suggestions ?? [],
-        } : null;
+        const cvAnalysisPayload: CvAnalysis | null = cvAnalysis ? cvAnalysis : null;
         const jp: JobPreference = resolveJobPreferences(personal);
 
         const requestBody = {
