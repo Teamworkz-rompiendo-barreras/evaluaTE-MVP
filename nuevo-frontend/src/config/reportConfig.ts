@@ -173,10 +173,10 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
 
       // Herramientas
       const useful_tools = {
-        productivity: Array.isArray(report?.tools?.productivity) ? report.tools.productivity : [],
-        job_search: Array.isArray(report?.tools?.job_search) ? report.tools.job_search : [],
-        learning: Array.isArray(report?.tools?.learning) ? report.tools.learning : [],
-        accessibility: Array.isArray(report?.tools?.accessibility) ? report.tools.accessibility : [],
+        productivity: Array.isArray(report?.tools?.productivity) ? report.tools.productivity.filter(Boolean) : [],
+        job_search: Array.isArray(report?.tools?.job_search) ? report.tools.job_search.filter(Boolean) : [],
+        learning: Array.isArray(report?.tools?.learning) ? report.tools.learning.filter(Boolean) : [],
+        accessibility: Array.isArray(report?.tools?.accessibility) ? report.tools.accessibility.filter(Boolean) : [],
       };
 
       // Roles sugeridos
@@ -301,10 +301,12 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     `Entrevistas: ${data.job_search_advice.interview_tips}`,
     '',
     '## 11. Herramientas útiles y tecnología',
-    `Productividad: ${data.useful_tools.productivity.join(', ')}`,
-    `Búsqueda de empleo: ${data.useful_tools.job_search.join(', ')}`,
-    `Aprendizaje: ${data.useful_tools.learning.join(', ')}`,
-    `Accesibilidad: ${data.useful_tools.accessibility.join(', ')}`,
+    ...[
+      ['Productividad', data.useful_tools.productivity],
+      ['Búsqueda de empleo', data.useful_tools.job_search],
+      ['Aprendizaje', data.useful_tools.learning],
+      ['Accesibilidad', data.useful_tools.accessibility],
+    ].map(([label, items]) => `${label}: ${(items as string[]).join(', ')}`),
     '',
     '## 12. Juegos completados',
     ...prettyGames.map((g) => `- ${g}`),

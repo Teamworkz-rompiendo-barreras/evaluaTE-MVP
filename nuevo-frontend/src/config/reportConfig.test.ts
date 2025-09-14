@@ -118,6 +118,26 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
   ]);
 });
 
+test('convertBackendResponseToNewFormat extracts all useful_tools categories', () => {
+  const oldFormat = {
+    report: {
+      tools: {
+        productivity: ['Trello'],
+        job_search: ['LinkedIn'],
+        learning: ['Coursera'],
+        accessibility: ['Immersive Reader'],
+      },
+    },
+  };
+  const result = convertBackendResponseToNewFormat(oldFormat);
+  assert.deepEqual(result.useful_tools, {
+    productivity: ['Trello'],
+    job_search: ['LinkedIn'],
+    learning: ['Coursera'],
+    accessibility: ['Immersive Reader'],
+  });
+});
+
 test('convertBackendResponseToNewFormat uses report fields when personal_data is missing', () => {
   const oldFormat = {
     report: {
