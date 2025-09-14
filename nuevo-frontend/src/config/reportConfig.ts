@@ -243,8 +243,13 @@ export function generateNewFormatReport(data: NewReportSchema): string {
   const prettyGames = (data.completed_games || []).map((g) =>
     gameNameMap[g] ?? g.replace(/-/g, ' ')
   );
+  const radarData = data.soft_skills.map(s => ({ softskill: s.skill, score: s.score }));
 
   const lines = [
+    '```json',
+    JSON.stringify({ radarData }),
+    '```',
+    '',
     '## 1. Datos personales básicos',
     `Nombre: ${data.personal_data.name}`,
     `Ubicación: ${data.personal_data.location}`,

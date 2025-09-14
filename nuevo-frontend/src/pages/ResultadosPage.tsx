@@ -31,7 +31,8 @@ type CvStars = 1|2|3|4|5;
 
 // Tipo para los datos del radar
 interface RadarDataItem {
-  skill: string;
+  skill?: string;
+  softskill?: string;
   score: number;
   [key: string]: unknown;
 }
