@@ -44,7 +44,9 @@ const testBackendResponse = async () => {
         ],
         reordering_suggestions: [
           "Priorizar experiencia laboral más reciente"
-        ]
+        ],
+        observations: [],
+        actions: []
       },
       ideal_work_environment: "Entorno inclusivo con oportunidades de aprendizaje",
       suggested_roles: [

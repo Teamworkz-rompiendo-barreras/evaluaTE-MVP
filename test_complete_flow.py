@@ -85,7 +85,9 @@ def test_api_informe_ia():
                 "style": "Presentación profesional"
             },
             "corrections": [],
-            "reordering_suggestions": []
+            "reordering_suggestions": [],
+            "observations": [],
+            "actions": []
         },
         "jobPreferences": {
             "areas": ["Desarrollo de software", "Tecnología", "Startups", "Empresas de producto"],

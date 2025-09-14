@@ -127,6 +127,8 @@ export default function UploadCVPage() {
           },
           corrections: [],
           reordering_suggestions: [],
+          observations: [],
+          actions: [],
         };
 
         dispatch(saveCvAnalysis(fallbackAnalysis));
@@ -165,6 +167,8 @@ export default function UploadCVPage() {
         },
         corrections: [],
         reordering_suggestions: [],
+        observations: [],
+        actions: [],
       }));
       
       setIsLoading(false)

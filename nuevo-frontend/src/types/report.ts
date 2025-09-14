@@ -15,4 +15,6 @@ export interface CvAnalysis {
   evidence: CvEvidence;
   corrections: string[];
   reordering_suggestions: string[];
+  observations: string[];
+  actions: string[];
 }

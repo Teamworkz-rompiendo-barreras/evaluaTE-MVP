@@ -71,6 +71,17 @@ function convertBackendResponseToNewFormat(raw) {
         },
         corrections: Array.isArray(analysisJson?.corrections) ? analysisJson.corrections : [],
         reordering_suggestions: Array.isArray(analysisJson?.reordering_suggestions) ? analysisJson.reordering_suggestions : [],
+        observations: Array.isArray(analysisJson?.observations)
+          ? analysisJson.observations.map((o) => String(o))
+          : Object.values(analysisJson?.evidence || {}).map((v) => String(v)).filter((v) => v.length > 0),
+        actions: Array.isArray(analysisJson?.actions)
+          ? analysisJson.actions.map((a) => String(a))
+          : [
+              ...(Array.isArray(analysisJson?.corrections) ? analysisJson.corrections.map((c) => String(c)) : []),
+              ...(Array.isArray(analysisJson?.reordering_suggestions)
+                ? analysisJson.reordering_suggestions.map((r) => String(r))
+                : []),
+            ],
       };
 
       // Fortalezas
@@ -209,6 +220,12 @@ function generateNewFormatReport(data) {
     `Información clave: ${data.cv_analysis.key_info_score}/5`,
     `Claridad: ${data.cv_analysis.clarity_score}/5`,
     `Estilo: ${data.cv_analysis.style_score}/5`,
+    "",
+    "Observaciones del análisis:",
+    ...data.cv_analysis.observations.map((o) => `- ${o}`),
+    "",
+    "Correcciones/Acciones:",
+    ...data.cv_analysis.actions.map((a) => `- ${a}`),
     "",
     "## 7. Entornos de trabajo ideales",
     data.ideal_work_environment,

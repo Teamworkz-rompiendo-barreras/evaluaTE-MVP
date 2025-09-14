@@ -269,6 +269,8 @@ const ResultadosPage: React.FC = () => {
           evidence: cvAnalysis.evidence,
           corrections: cvAnalysis.corrections ?? [],
           reordering_suggestions: cvAnalysis.reordering_suggestions ?? [],
+          observations: cvAnalysis.observations ?? [],
+          actions: cvAnalysis.actions ?? [],
         } : null;
 
         const requestBody = {
@@ -826,7 +828,7 @@ const ResultadosPage: React.FC = () => {
     const keyInfoScore = asStars(cvAnalysis.key_info_score);
     const styleScore = asStars(cvAnalysis.style_score);
 
-    const { evidence, corrections = [], reordering_suggestions = [] } = cvAnalysis;
+    const { observations = [], actions = [] } = cvAnalysis;
 
     return (
       <div className="print-page-break-inside-avoid mb-6">
@@ -861,38 +863,24 @@ const ResultadosPage: React.FC = () => {
         </div>
 
         {/* Observaciones del análisis */}
-        {evidence && (
+        {observations.length > 0 && (
           <div className="mb-4">
             <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Observaciones del análisis:</p>
             <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Formato:</strong> {evidence.structure}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Coherencia:</strong> {evidence.coherence}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Información clave:</strong> {evidence.key_info}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Claridad:</strong> {evidence.clarity}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Estilo:</strong> {evidence.style}</li>
-            </ul>
-          </div>
-        )}
-
-        {/* Correcciones/Acciones sugeridas */}
-        {corrections.length > 0 && (
-          <div className="mb-4">
-            <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Correcciones/Acciones:</p>
-            <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              {corrections.map((correction, i) => (
-                <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{correction}</li>
+              {observations.map((obs, i) => (
+                <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{obs}</li>
               ))}
             </ul>
           </div>
         )}
 
-        {/* Reordenación sugerida */}
-        {reordering_suggestions.length > 0 && (
+        {/* Correcciones/Acciones sugeridas */}
+        {actions.length > 0 && (
           <div className="mb-4">
-            <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Reordenación sugerida:</p>
+            <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Correcciones/Acciones:</p>
             <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              {reordering_suggestions.map((suggestion, i) => (
-                <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{suggestion}</li>
+              {actions.map((act, i) => (
+                <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{act}</li>
               ))}
             </ul>
           </div>

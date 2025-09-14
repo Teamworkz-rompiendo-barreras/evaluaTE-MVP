@@ -394,8 +394,8 @@ function getRecommendationsFromProfile(params: {
 
   // Validación segura de cvAnalysis
   if (params.cvAnalysis) {
-    const { corrections = [], reordering_suggestions = [] } = params.cvAnalysis;
-    const validCvImprovements = [...corrections, ...reordering_suggestions].filter(
+    const { actions = [], corrections = [], reordering_suggestions = [] } = params.cvAnalysis;
+    const validCvImprovements = [...actions, ...corrections, ...reordering_suggestions].filter(
       item => item && item.trim().length > 0
     );
     cvImprovements.push(...validCvImprovements);

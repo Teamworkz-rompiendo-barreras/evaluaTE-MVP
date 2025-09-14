@@ -39,7 +39,9 @@ const mockNewFormat: NewReportSchema = {
       style: 'Presentación profesional'
     },
     corrections: [],
-    reordering_suggestions: []
+    reordering_suggestions: [],
+    observations: ['Observación 1', 'Observación 2'],
+    actions: ['Acción 1', 'Acción 2']
   },
   ideal_work_environment: 'Entorno dinámico',
   suggested_roles: [
@@ -116,6 +118,8 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
     { skill: 'Comunicación', score: 80 },
     { skill: 'Trabajo en equipo', score: 75 }
   ]);
+  assert.deepEqual(result.cv_analysis.observations, []);
+  assert.deepEqual(result.cv_analysis.actions, []);
 });
 
 test('convertBackendResponseToNewFormat uses report fields when personal_data is missing', () => {
@@ -145,7 +149,9 @@ test('generateNewFormatReport includes required sections', () => {
     '## 2. Resumen del perfil',
     '## 3. Resumen del CV',
     '## 4. Fortalezas',
-    '# 5. Áreas de mejora y consejos'
+    '# 5. Áreas de mejora y consejos',
+    'Observaciones del análisis:',
+    'Correcciones/Acciones:'
   ];
   sections.forEach(section => {
     assert.ok(report.includes(section));

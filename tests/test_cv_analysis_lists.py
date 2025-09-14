@@ -28,15 +28,25 @@ def test_cv_analysis_list_independence():
 
     cv1.corrections.append("fix1")
     cv1.reordering_suggestions.append("reorder1")
+    cv1.observations.append("obs1")
+    cv1.actions.append("act1")
 
     assert cv2.corrections == []
     assert cv2.reordering_suggestions == []
+    assert cv2.observations == []
+    assert cv2.actions == []
 
     cv2.corrections.append("fix2")
     cv2.reordering_suggestions.append("reorder2")
+    cv2.observations.append("obs2")
+    cv2.actions.append("act2")
 
     assert cv1.corrections == ["fix1"]
     assert cv2.corrections == ["fix2"]
     assert cv1.reordering_suggestions == ["reorder1"]
     assert cv2.reordering_suggestions == ["reorder2"]
+    assert cv1.observations == ["obs1"]
+    assert cv2.observations == ["obs2"]
+    assert cv1.actions == ["act1"]
+    assert cv2.actions == ["act2"]
 

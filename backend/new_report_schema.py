@@ -36,6 +36,8 @@ class CvAnalysis(BaseModel):
     evidence: CvEvidence
     corrections: List[str] = Field(default_factory=list)
     reordering_suggestions: List[str] = Field(default_factory=list)
+    observations: List[str] = Field(default_factory=list)
+    actions: List[str] = Field(default_factory=list)
 
 
 class SuggestedRole(BaseModel):
@@ -145,6 +147,14 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         reordering_suggestions=[
             "Priorizar experiencia laboral más reciente",
             "Destacar habilidades técnicas relevantes"
+        ],
+        observations=[
+            "Análisis preliminar basado en información limitada",
+            "Es necesario ampliar la información para mayor precisión"
+        ],
+        actions=[
+            "Actualizar la sección de experiencia con logros concretos",
+            "Revisar ortografía y gramática del documento"
         ]
     )
     

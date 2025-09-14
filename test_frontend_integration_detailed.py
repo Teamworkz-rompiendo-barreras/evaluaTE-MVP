@@ -37,13 +37,15 @@ def test_backend_data_structure():
             "evidence": {
                 "structure": "Perfil técnico sólido con experiencia demostrable",
                 "coherence": "CV excelentemente estructurado",
-                "key_info": "Portfolio de proyectos con tecnologías modernas",
-                "clarity": "Información clara y ordenada",
-                "style": "Presentación profesional"
-            },
-            "corrections": [],
-            "reordering_suggestions": []
+            "key_info": "Portfolio de proyectos con tecnologías modernas",
+            "clarity": "Información clara y ordenada",
+            "style": "Presentación profesional"
         },
+        "corrections": [],
+        "reordering_suggestions": [],
+        "observations": [],
+        "actions": []
+    },
         "jobPreferences": {
             "areas": ["Desarrollo de software", "Arquitectura de software", "Tecnología", "Startups", "Empresas de producto"],
             "needs": ["Crecimiento profesional", "Trabajo remoto", "Proyectos desafiantes", "Liderazgo técnico"],
@@ -156,7 +158,9 @@ def test_frontend_data_processing():
                 "style": ""
             },
             "corrections": [],
-            "reordering_suggestions": []
+            "reordering_suggestions": [],
+            "observations": [],
+            "actions": []
         },
         "jobPreferences": {
             "areas": ["Análisis de datos"]
@@ -249,7 +253,9 @@ def test_report_generation_flow():
                 "style": ""
             },
             "corrections": [],
-            "reordering_suggestions": []
+            "reordering_suggestions": [],
+            "observations": [],
+            "actions": []
         },
         "jobPreferences": {
             "areas": ["Gestión", "Dirección"]

@@ -52,7 +52,9 @@ const testNewReportFormat = () => {
       reordering_suggestions: [
         "Mover experiencia laboral antes que educación",
         "Priorizar habilidades técnicas más relevantes"
-      ]
+      ],
+      observations: [],
+      actions: []
     },
     ideal_work_environment: "Entorno tecnológico dinámico con oportunidades de crecimiento y trabajo en equipo. Preferencia por empresas que valoren la innovación y el desarrollo profesional.",
     suggested_roles: [
@@ -229,6 +231,8 @@ const testNewReportFormat = () => {
     '4. FORTALEZAS',
     '5. ÁREAS DE MEJORA Y CONSEJOS',
     '6. ANÁLISIS DEL CV CON PUNTUACIÓN 1–5',
+    'Observaciones del análisis',
+    'Correcciones/Acciones',
     '7. ENTORNOS DE TRABAJO IDEALES',
     '8. ROLES PROFESIONALES SUGERIDOS',
     '9. PLAN DE ACCIÓN',
