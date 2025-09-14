@@ -69,12 +69,14 @@ const mockNewFormat: NewReportSchema = {
     accessibility: ['Ninguna']
   },
   completed_games: ['Juego de lógica'],
-  final_message: '¡Éxitos en tu búsqueda laboral!'
+  final_message: '¡Éxitos en tu búsqueda laboral!',
+  employability_score: 76
 };
 
 test('convertBackendResponseToNewFormat returns data as-is for new format', () => {
   const result = convertBackendResponseToNewFormat(mockNewFormat);
   assert.deepEqual(result, mockNewFormat);
+  assert.equal(result.employability_score, 76);
 });
 
 test('convertBackendResponseToNewFormat keeps contact fields in new format', () => {
@@ -104,7 +106,8 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
         feedback: 'CV bien estructurado con información relevante'
       }
     },
-    recommendations: { fortalezas_clave: ['Habilidades de comunicación', 'Capacidad analítica'] }
+    recommendations: { fortalezas_clave: ['Habilidades de comunicación', 'Capacidad analítica'] },
+    employabilityScore: 66
   };
   const result = convertBackendResponseToNewFormat(oldFormat);
   assert.equal(result.personal_data.name, 'María García');
@@ -116,6 +119,7 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
     { skill: 'Comunicación', score: 80 },
     { skill: 'Trabajo en equipo', score: 75 }
   ]);
+  assert.equal(result.employability_score, 66);
 });
 
 test('convertBackendResponseToNewFormat extracts all useful_tools categories', () => {

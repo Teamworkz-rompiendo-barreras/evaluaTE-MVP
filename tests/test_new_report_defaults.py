@@ -4,7 +4,7 @@ import sys
 # Ensure backend module is importable
 sys.path.insert(0, os.path.abspath(os.path.join(os.path.dirname(__file__), '..', 'backend')))
 
-from new_report_schema import create_default_report, create_frontend_compatible_data
+from new_report_schema import create_default_report, create_frontend_compatible_data, convert_old_format_to_new
 
 
 def test_create_default_report_missing_job_preferences():
@@ -18,6 +18,7 @@ def test_create_default_report_missing_job_preferences():
     assert report.personal_data.disability_certificate == "No"
     assert isinstance(report.soft_skills, list)
     assert len(report.soft_skills) > 0
+    assert isinstance(report.employability_score, int)
 
 
 def test_create_frontend_compatible_data_missing_cv_analysis():
@@ -66,6 +67,17 @@ def test_create_default_report_reflects_inputs():
     assert report.personal_data.location == "Madrid"
     assert report.suggested_roles[0].role == "Analista"
     assert report.suggested_roles[0].remote_viable is True
+    assert report.employability_score == 80
+
+
+def test_convert_old_format_to_new_employability_score():
+    old = {
+        "report": {},
+        "recommendations": [],
+        "employabilityScore": 55,
+    }
+    new = convert_old_format_to_new(old)
+    assert new.employability_score == 55
 
 
 def test_create_frontend_compatible_data_reflects_inputs():

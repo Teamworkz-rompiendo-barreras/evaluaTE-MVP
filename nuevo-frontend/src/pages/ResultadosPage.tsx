@@ -104,12 +104,14 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
   );
 };
 
-
-
-
-
-
-
+// Componente para mostrar el puntaje global de empleabilidad
+const ScoreBadge: React.FC<{ value?: number }> = ({ value }) => (
+  <div className="flex justify-end mb-4">
+    <div className="bg-blue-600 text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl">
+      {typeof value === "number" ? `${value}%` : "-"}
+    </div>
+  </div>
+);
 
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -622,38 +624,6 @@ const ResultadosPage: React.FC = () => {
     window.print();
   };
 
-  // 1. Portada
-  const portada = (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
-      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4 print-shadow-none" />
-      <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Informe de Empleabilidad</h1>
-      <h2 className="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100">{report?.firstName} {report?.lastName}</h2>
-      <p className="text-gray-900 dark:text-gray-100">{fecha}</p>
-      
-      {/* Botones de acción */}
-      <div className="flex gap-4 mt-6 print-hidden">
-        <button
-          onClick={handlePrint}
-          disabled={!iaReport}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            !iaReport
-              ? 'bg-gray-300 text-gray-900 cursor-not-allowed'
-              : 'bg-[#374ba6] text-white hover:bg-[#2d3f96]'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Descargar Informe
-          </span>
-        </button>
-      </div>
-      
-      {/* Eliminado: mensaje de error del PDF */}
-    </div>
-  );
-
   // 2. Mapa de habilidades (Radar + resumen)
   // Usar useMemo para evitar recalcular en cada render
   const radarDataFromIa = useMemo(() => iaReport ? extractRadarData(iaReport) : [], [iaReport]);
@@ -721,10 +691,42 @@ const ResultadosPage: React.FC = () => {
     // Evitar 0 en gráficas si hay datos; mínimo 10
     return Math.max(10, Math.round(avg));
   }, [softSkillsData]);
-  const globalScore = iaScore ?? report?.employabilityScore ?? computedScore;
+  const globalScore = iaScore ?? info?.employability_score ?? report?.employabilityScore ?? computedScore;
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
     : processRadarData(softSkillsData);
+  // 1. Portada
+  const portada = (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
+      <ScoreBadge value={globalScore} />
+      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4 print-shadow-none" />
+      <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Informe de Empleabilidad</h1>
+      <h2 className="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100">{report?.firstName} {report?.lastName}</h2>
+      <p className="text-gray-900 dark:text-gray-100">{fecha}</p>
+
+      {/* Botones de acción */}
+      <div className="flex gap-4 mt-6 print-hidden">
+        <button
+          onClick={handlePrint}
+          disabled={!iaReport}
+          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+            !iaReport
+              ? 'bg-gray-300 text-gray-900 cursor-not-allowed'
+              : 'bg-[#374ba6] text-white hover:bg-[#2d3f96]'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Descargar Informe
+          </span>
+        </button>
+      </div>
+
+      {/* Eliminado: mensaje de error del PDF */}
+    </div>
+  );
   // Color de etiquetas del radar según modo (claro/oscuro)
   // Modo claro: etiquetas oscuras para legibilidad contra fondo blanco
   // Modo oscuro: etiquetas blancas para legibilidad contra fondo oscuro
@@ -741,6 +743,7 @@ const ResultadosPage: React.FC = () => {
 
   const radar = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
+          <ScoreBadge value={globalScore} />
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-3/5 h-96" ref={radarBoxRef}>
@@ -808,7 +811,7 @@ const ResultadosPage: React.FC = () => {
             })()}
           </ul>
           <p className="font-semibold mt-2 text-gray-900 dark:text-gray-100 text-sm">
-            Puntaje global de empleabilidad: {globalScore ?? report?.employabilityScore ?? '-'}
+            Puntaje global de empleabilidad: {globalScore ?? '-'}
           </p>
         </div>
       </div>
@@ -1166,7 +1169,7 @@ const ResultadosPage: React.FC = () => {
           <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg p-4 transition-colors">
             <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Resumen de Evaluación</h3>
             <p className="text-gray-900 dark:text-gray-100"><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
-            <p className="text-gray-900 dark:text-gray-100"><strong>Puntaje de empleabilidad:</strong> {report?.employabilityScore ?? 'Calculando...'}</p>
+            <p className="text-gray-900 dark:text-gray-100"><strong>Puntaje de empleabilidad:</strong> {info?.employability_score ?? report?.employabilityScore ?? 'Calculando...'}</p>
             
             
             
