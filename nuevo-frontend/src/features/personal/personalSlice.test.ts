@@ -1,7 +1,8 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { personalSlice, saveCvAnalysis, saveSoftSkills, generateFinalReport } from './personalSlice.ts';
+import { personalSlice, saveCvAnalysis, saveSoftSkills, generateFinalReport, addSceneDecision } from './personalSlice.ts';
 import type { CvAnalysis } from '@/types/report';
+import type { UserDecision } from '@/types/skills';
 
 test('saveCvAnalysis stores structured analysis', () => {
   const initialState = personalSlice.getInitialState();
@@ -55,4 +56,34 @@ test('generateFinalReport includes CvAnalysis in report', () => {
 
   state = personalSlice.reducer(state, generateFinalReport());
   assert.deepEqual(state.report?.cvAnalysis, analysis);
+});
+
+test('addSceneDecision persists decisions in logs', () => {
+  const initialState = personalSlice.getInitialState();
+  const decision1: UserDecision = {
+    sceneId: 1,
+    stepIndex: 0,
+    optionText: 'Option A',
+    isCorrect: true,
+    skillImpacts: { test: 0.8 },
+    timestamp: new Date().toISOString(),
+    userAgent: 'node-test',
+    screenResolution: '1920x1080',
+  };
+
+  let state = personalSlice.reducer(initialState, addSceneDecision(decision1));
+  assert.equal(state.logs.length, 1);
+  assert.deepEqual(state.logs[0].decisions, [decision1]);
+
+  const decision2: UserDecision = {
+    ...decision1,
+    stepIndex: 1,
+    optionText: 'Option B',
+    isCorrect: false,
+    skillImpacts: { test: 0.5 },
+  };
+
+  state = personalSlice.reducer(state, addSceneDecision(decision2));
+  assert.equal(state.logs.length, 1);
+  assert.deepEqual(state.logs[0].decisions, [decision1, decision2]);
 });
