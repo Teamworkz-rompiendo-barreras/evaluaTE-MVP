@@ -135,8 +135,8 @@ test('generateNewFormatReport includes required sections', () => {
 test('generateNewFormatReport includes radarData block', () => {
   const report = generateNewFormatReport(mockNewFormat);
   const match = report.match(/```json\n([\s\S]*?)\n```/);
-  assert.ok(match, 'radarData block not found');
-  const parsed = JSON.parse(match[1]);
+  assert.ok(match?.[1], 'radarData block not found');
+  const parsed = JSON.parse(match![1]!);
   assert.deepEqual(parsed, {
     radarData: mockNewFormat.soft_skills.map(s => ({ softskill: s.skill, score: s.score }))
   });
