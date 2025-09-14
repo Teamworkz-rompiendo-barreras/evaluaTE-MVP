@@ -121,32 +121,34 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         disability_certificate="Sí" if (job_preferences or {}).get("hasDisabilityCert", False) else "No",
     )
     
-    # Crear análisis del CV por defecto
+    # Crear análisis del CV tomando datos de entrada cuando existan
+    cv_evidence_input = (cv_analysis or {}).get('evidence', {})
     cv_evidence = CvEvidence(
-        structure="CV analizado con información limitada",
-        coherence="Se requiere más información para evaluar la coherencia",
-        key_info="Información básica disponible",
-        clarity="Formato estándar",
-        style="Presentación profesional"
+        structure=cv_evidence_input.get('structure', 'CV analizado con información limitada'),
+        coherence=cv_evidence_input.get('coherence', 'Se requiere más información para evaluar la coherencia'),
+        key_info=cv_evidence_input.get('key_info', 'Información básica disponible'),
+        clarity=cv_evidence_input.get('clarity', 'Formato estándar'),
+        style=cv_evidence_input.get('style', 'Presentación profesional'),
     )
-    
+
     cv_analysis_data = CvAnalysis(
-        structure_score=3,
-        coherence_score=3,
-        key_info_score=3,
-        clarity_score=3,
-        style_score=3,
+        structure_score=(cv_analysis or {}).get('structure_score', 3),
+        coherence_score=(cv_analysis or {}).get('coherence_score', 3),
+        key_info_score=(cv_analysis or {}).get('key_info_score', 3),
+        clarity_score=(cv_analysis or {}).get('clarity_score', 3),
+        style_score=(cv_analysis or {}).get('style_score', 3),
         evidence=cv_evidence,
-        corrections=[
-            "Incluir más detalles sobre logros específicos",
-            "Añadir métricas cuantificables",
-            "Especificar tecnologías y herramientas utilizadas"
-        ],
-        reordering_suggestions=[
-            "Priorizar experiencia laboral más reciente",
-            "Destacar habilidades técnicas relevantes"
-        ]
+        corrections=(cv_analysis or {}).get('corrections', [
+            'Incluir más detalles sobre logros específicos',
+            'Añadir métricas cuantificables',
+            'Especificar tecnologías y herramientas utilizadas',
+        ]),
+        reordering_suggestions=(cv_analysis or {}).get('reordering_suggestions', [
+            'Priorizar experiencia laboral más reciente',
+            'Destacar habilidades técnicas relevantes',
+        ]),
     )
+
     
     # Crear plan de acción por defecto
     action_plan = ActionPlan(
@@ -188,44 +190,65 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         accessibility=["Microsoft Immersive Reader", "Grammarly", "ColorZilla"]
     )
     
-    # Crear roles sugeridos por defecto
-    suggested_roles = [
-        SuggestedRole(
-            role="Desarrollador Junior",
-            reason="Perfil adecuado para roles de entrada con potencial de crecimiento",
-            seniority="Junior",
-            remote_viable=True
+    # Crear roles sugeridos a partir de las preferencias cuando existan
+    preferred_roles = (job_preferences or {}).get('desired_roles') or (job_preferences or {}).get('areas') or []
+    suggested_roles = []
+    for role in preferred_roles:
+        suggested_roles.append(
+            SuggestedRole(
+                role=role,
+                reason='Basado en preferencias del usuario',
+                seniority=(job_preferences or {}).get('seniority', 'Junior'),
+                remote_viable=((job_preferences or {}).get('workMode', '').lower() == 'remoto')
+            )
         )
-    ]
+    if not suggested_roles:
+        suggested_roles = [
+            SuggestedRole(
+                role='Desarrollador Junior',
+                reason='Perfil adecuado para roles de entrada con potencial de crecimiento',
+                seniority='Junior',
+                remote_viable=True
+            )
+        ]
+
+    ideal_work_environment_parts = []
+    if (job_preferences or {}).get('workMode'):
+        ideal_work_environment_parts.append('Modalidad preferida: ' + (job_preferences or {}).get('workMode'))
+    if (job_preferences or {}).get('areas'):
+        ideal_work_environment_parts.append('Áreas de interés: ' + ', '.join((job_preferences or {}).get('areas')))
+    ideal_work_environment = '. '.join(ideal_work_environment_parts) if ideal_work_environment_parts else 'Entorno inclusivo con oportunidades de aprendizaje y crecimiento profesional. Preferencia por empresas que valoren el desarrollo continuo.'
+
     
     return NewReportSchema(
         summary=f"Informe de empleabilidad para {full_name}",
         personal_data=personal_data,
-        profile_summary="Perfil profesional con potencial de desarrollo. Se recomienda fortalecer habilidades técnicas específicas y experiencia práctica.",
-        cv_summary="CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.",
+        profile_summary=cv_analysis.get('summary', 'Perfil profesional con potencial de desarrollo. Se recomienda fortalecer habilidades técnicas específicas y experiencia práctica.') if cv_analysis else 'Perfil profesional con potencial de desarrollo. Se recomienda fortalecer habilidades técnicas específicas y experiencia práctica.',
+        cv_summary=cv_analysis.get('feedback', 'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.') if cv_analysis else 'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.',
         strengths=strengths,
         soft_skills=formatted_soft_skills,
         improvement_areas=[
             ImprovementArea(
-                area="Experiencia técnica",
-                reason="Necesita más práctica en tecnologías específicas",
-                suggested_action="Completar proyectos prácticos y cursos online"
+                area='Experiencia técnica',
+                reason='Necesita más práctica en tecnologías específicas',
+                suggested_action='Completar proyectos prácticos y cursos online'
             ),
             ImprovementArea(
-                area="Métricas de logros",
-                reason="Faltan resultados cuantificables",
-                suggested_action="Incluir números y porcentajes en el CV"
+                area='Métricas de logros',
+                reason='Faltan resultados cuantificables',
+                suggested_action='Incluir números y porcentajes en el CV'
             )
         ],
         cv_analysis=cv_analysis_data,
-        ideal_work_environment="Entorno inclusivo con oportunidades de aprendizaje y crecimiento profesional. Preferencia por empresas que valoren el desarrollo continuo.",
+        ideal_work_environment=ideal_work_environment,
         suggested_roles=suggested_roles,
         action_plan=action_plan,
         job_search_advice=job_search_advice,
         useful_tools=useful_tools,
-        completed_games=["Evaluación de habilidades básicas completada"],
-        final_message=f"{full_name}, tu perfil muestra un excelente potencial para el desarrollo profesional. Enfócate en construir experiencia práctica y desarrollar habilidades técnicas específicas. La constancia y el aprendizaje continuo serán tus mejores aliados en la búsqueda de empleo."
+        completed_games=['Evaluación de habilidades básicas completada'],
+        final_message=f"{full_name}, tu perfil muestra un excelente potencial para el desarrollo profesional. Enfócate en construir experiencia práctica y desarrollar habilidades técnicas específicas. La constancia y el aprendizaje continuo serán tus mejores aliados en la búsqueda de empleo.",
     )
+
 
 
 def convert_old_format_to_new(old_data: Dict[str, Any]) -> NewReportSchema:
@@ -349,21 +372,17 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         ]
     }
     
-    # Crear análisis del CV
+    # Crear análisis del CV basado en los datos de entrada
+   
     cv_analysis_data = {
         'structure': cv_analysis.get('structure', 'regular') if cv_analysis else 'regular',
         'coherence': cv_analysis.get('coherence', 'regular') if cv_analysis else 'regular',
         'feedback': cv_analysis.get('feedback', 'CV analizado con limitaciones') if cv_analysis else 'CV analizado con limitaciones',
-        'summary': 'gestión y coordinación de proyectos',
-        'experience': [
-            {'title': 'Gestión de proyectos y coordinación'}
-        ],
-        'education': [
-            {'degree': 'Formación en gestión y administración'}
-        ],
-        'software': ['Microsoft Office', 'herramientas de gestión']
+        'summary': cv_analysis.get('summary', '') if cv_analysis else '',
+        'experience': cv_analysis.get('experience', []) if cv_analysis else [],
+        'education': cv_analysis.get('education', []) if cv_analysis else [],
+        'software': cv_analysis.get('software', []) if cv_analysis else [],
     }
-    
     # Crear consejos de búsqueda
     job_search_advice = {
         'cv_optimization': ['gestión', 'coordinación', 'liderazgo']
@@ -376,15 +395,25 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         'learning': ['Coursera', 'Udemy']
     }
     
-    # Crear roles sugeridos
-    suggested_roles = [
-        {
-            'role': 'Coordinador de Proyectos',
-            'reason': 'Perfil adecuado para roles de coordinación',
-            'seniority': 'Junior-Mid',
-            'remote_viable': True
-        }
-    ]
+    # Crear roles sugeridos a partir de preferencias de trabajo
+    preferred_roles = (job_preferences or {}).get('desired_roles') or (job_preferences or {}).get('areas') or []
+    suggested_roles = []
+    for role in preferred_roles:
+        suggested_roles.append({
+            'role': role,
+            'reason': 'Basado en preferencias del usuario',
+            'seniority': (job_preferences or {}).get('seniority', 'Junior'),
+            'remote_viable': ((job_preferences or {}).get('workMode', '').lower() == 'remoto')
+        })
+    if not suggested_roles:
+        suggested_roles = [
+            {
+                'role': 'Coordinador de Proyectos',
+                'reason': 'Perfil adecuado para roles de coordinación',
+                'seniority': 'Junior-Mid',
+                'remote_viable': True
+            }
+        ]
     
     # Crear juegos completados
     completed_games = ['Evaluación de habilidades básicas completada']

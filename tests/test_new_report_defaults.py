@@ -34,3 +34,55 @@ def test_create_frontend_compatible_data_missing_cv_analysis():
     assert "softSkills" in data
     assert isinstance(data["softSkills"], list)
     assert len(data["softSkills"]) > 0
+
+
+def test_create_default_report_reflects_inputs():
+    soft_skills = [{"skill": "Comunicación", "score": 80}]
+    cv_analysis = {
+        "structure_score": 5,
+        "coherence_score": 4,
+        "key_info_score": 3,
+        "clarity_score": 2,
+        "style_score": 1,
+        "evidence": {
+            "structure": "bien",
+            "coherence": "buena",
+            "key_info": "completa",
+            "clarity": "clara",
+            "style": "moderno",
+        },
+    }
+    job_preferences = {
+        "location": "Madrid",
+        "hasDisabilityCert": True,
+        "workMode": "remoto",
+        "areas": ["Analista"],
+        "seniority": "Senior",
+    }
+    report = create_default_report("Tester", soft_skills, cv_analysis, job_preferences)
+    assert report.soft_skills[0]["skill"] == "Comunicación"
+    assert report.cv_analysis.structure_score == 5
+    assert report.cv_analysis.evidence.structure == "bien"
+    assert report.personal_data.location == "Madrid"
+    assert report.suggested_roles[0].role == "Analista"
+    assert report.suggested_roles[0].remote_viable is True
+
+
+def test_create_frontend_compatible_data_reflects_inputs():
+    soft_skills = [{"skill": "Comunicación", "score": 80}]
+    cv_analysis = {
+        "structure": "excelente",
+        "coherence": "buena",
+        "feedback": "Gran CV",
+        "summary": "Buen resumen",
+        "experience": [{"title": "Proyecto X"}],
+        "education": [{"degree": "Universidad"}],
+        "software": ["Python"],
+    }
+    job_preferences = {"workMode": "remoto", "areas": ["Analista"]}
+    data = create_frontend_compatible_data("Tester", soft_skills, cv_analysis, job_preferences)
+    assert data["softSkills"][0]["skill"] == "Comunicación"
+    assert data["cv_analysis"]["structure"] == "excelente"
+    assert data["cv_analysis"]["experience"][0]["title"] == "Proyecto X"
+    assert data["suggested_roles"][0]["role"] == "Analista"
+    assert data["suggested_roles"][0]["remote_viable"] is True
