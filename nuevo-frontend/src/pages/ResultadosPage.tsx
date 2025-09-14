@@ -12,6 +12,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo } from 'react';
 import type { CvAnalysis } from '@/types/report';
+import type { JobPreference } from '@/types/preferences';
+import { resolveJobPreferences } from '@/utils/jobPreferences';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
 import '../styles/stars.css'; // Importar estilos para estrellas
@@ -55,6 +57,7 @@ function extractRadarData(markdown: string): RadarDataItem[] {
   }
   return [];
 }
+
 
 // Función helper para mapeo seguro
 
@@ -270,6 +273,7 @@ const ResultadosPage: React.FC = () => {
           corrections: cvAnalysis.corrections ?? [],
           reordering_suggestions: cvAnalysis.reordering_suggestions ?? [],
         } : null;
+        const jp: JobPreference = resolveJobPreferences(personal);
 
         const requestBody = {
           userId: report?.userId || 'user',
@@ -279,7 +283,7 @@ const ResultadosPage: React.FC = () => {
           email: personal.email || undefined,
           phone: personal.whatsapp || undefined,
           cvAnalysis: cvAnalysisPayload,
-          jobPreferences: personal.jobPreferences || report?.jobPreferences || null,
+          jobPreferences: jp,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
           completedGames: (Array.isArray(game?.completedGames) && game.completedGames.length > 0)
             ? game.completedGames
