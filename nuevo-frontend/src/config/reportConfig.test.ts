@@ -182,6 +182,15 @@ test('generateNewFormatReport includes radarData block', () => {
   });
 });
 
+test('generateNewFormatReport renders CV scores as stars', () => {
+  const report = generateNewFormatReport(mockNewFormat);
+  assert.ok(report.includes('Estructura: ★★★★☆'));
+  assert.ok(report.includes('Coherencia: ★★★★☆'));
+  assert.ok(report.includes('Información clave: ★★★★★'));
+  assert.ok(report.includes('Claridad: ★★★★☆'));
+  assert.ok(report.includes('Estilo: ★★★★★'));
+});
+
 test('generateNewFormatReport shows user contact info when backend omits it', () => {
   const backendMissing: NewReportSchema = {
     ...mockNewFormat,

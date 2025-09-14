@@ -245,6 +245,11 @@ export function generateNewFormatReport(data: NewReportSchema): string {
   );
   const radarData = data.soft_skills.map(s => ({ softskill: s.skill, score: s.score }));
 
+  const stars = (n: number): string => {
+    const v = Math.max(0, Math.min(5, Math.round(n)));
+    return '★'.repeat(v) + '☆'.repeat(5 - v);
+  };
+
   const lines = [
     '```json',
     JSON.stringify({ radarData }),
@@ -272,11 +277,11 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     ),
     '',
     '## 6. Análisis del CV con puntuación 1–5',
-    `Estructura: ${data.cv_analysis.structure_score}/5`,
-    `Coherencia: ${data.cv_analysis.coherence_score}/5`,
-    `Información clave: ${data.cv_analysis.key_info_score}/5`,
-    `Claridad: ${data.cv_analysis.clarity_score}/5`,
-    `Estilo: ${data.cv_analysis.style_score}/5`,
+    `Estructura: ${stars(data.cv_analysis.structure_score)}`,
+    `Coherencia: ${stars(data.cv_analysis.coherence_score)}`,
+    `Información clave: ${stars(data.cv_analysis.key_info_score)}`,
+    `Claridad: ${stars(data.cv_analysis.clarity_score)}`,
+    `Estilo: ${stars(data.cv_analysis.style_score)}`,
     '',
     '## 7. Entornos de trabajo ideales',
     data.ideal_work_environment,
