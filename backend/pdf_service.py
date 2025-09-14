@@ -53,7 +53,7 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         raise ValueError("Payload debe ser un diccionario")
     
     buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
+    c = canvas.Canvas(buf, pagesize=A4, pageCompression=0)
     width, height = A4
 
     margin_x = 20 * mm
@@ -95,18 +95,20 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     c.setFont("Helvetica", 10)
     y = _draw_wrapped_text(c, margin_x, y, report.get("summary") or "", line_w)
 
-    # CV: estrellas
-    stars = (cv.get("stars") or report.get("cv_analysis", {}).get("stars") or {})
+    # CV: análisis estructurado (estrellas)
+    cv_analysis = report.get("cv_analysis") or cv
+    if not isinstance(cv_analysis, dict):
+        cv_analysis = {}
     y -= 8
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin_x, y, "Diagnóstico del CV")
     y -= 14
     c.setFont("Helvetica", 10)
-    y = _draw_wrapped_text(c, margin_x, y, f"Formato: {_stars(stars.get('formato'))}", line_w)
-    y = _draw_wrapped_text(c, margin_x, y, f"Claridad: {_stars(stars.get('claridad'))}", line_w)
-    y = _draw_wrapped_text(c, margin_x, y, f"Coherencia: {_stars(stars.get('coherencia'))}", line_w)
-    y = _draw_wrapped_text(c, margin_x, y, f"Información clave: {_stars(stars.get('informacion_clave'))}", line_w)
-    y = _draw_wrapped_text(c, margin_x, y, f"Ortografía: {_stars(stars.get('ortografia'))}", line_w)
+    y = _draw_wrapped_text(c, margin_x, y, f"Estructura: {_stars(cv_analysis.get('structure_score'))}", line_w)
+    y = _draw_wrapped_text(c, margin_x, y, f"Claridad: {_stars(cv_analysis.get('clarity_score'))}", line_w)
+    y = _draw_wrapped_text(c, margin_x, y, f"Coherencia: {_stars(cv_analysis.get('coherence_score'))}", line_w)
+    y = _draw_wrapped_text(c, margin_x, y, f"Información clave: {_stars(cv_analysis.get('key_info_score'))}", line_w)
+    y = _draw_wrapped_text(c, margin_x, y, f"Estilo: {_stars(cv_analysis.get('style_score'))}", line_w)
 
     # Fortalezas y Áreas de mejora
     y -= 8
@@ -142,7 +144,7 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     plan = report.get("action_plan") or {}
     bloques = [
         ("Corto plazo (0–30 días)", plan.get("short_term", [])),
-        ("Medio plazo (1–3 meses)", plan.get("mid_term", [])),
+        ("Medio plazo (1–3 meses)", plan.get("medium_term", [])),
         ("Largo plazo (3–6+ meses)", plan.get("long_term", [])),
     ]
     for titulo, items in bloques:
