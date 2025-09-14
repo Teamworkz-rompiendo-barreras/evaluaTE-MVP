@@ -1,6 +1,5 @@
-# Colapsar diffs de lockfiles en PRs
-nuevo-frontend/pnpm-lock.yaml -diff linguist-generated
-nuevo-frontend/package-lock.json -diff linguist-generated
+# Tratar lockfile de pnpm como generado (mostrar diffs)
+nuevo-frontend/pnpm-lock.yaml linguist-generated
 
 # Colapsar assets
 *.png -diff linguist-generated
