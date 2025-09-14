@@ -56,6 +56,7 @@ export interface NewReportSchema {
   action_plan: ActionPlan;
   job_search_advice: JobSearchAdvice;
   useful_tools: UsefulTools;
+  employability_score: number;
   completed_games: string[];
   final_message: string;
 }
@@ -64,9 +65,14 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
   if (raw && typeof raw === 'object') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = raw;
+    const score = typeof data.employability_score === 'number'
+      ? data.employability_score
+      : typeof data.employabilityScore === 'number'
+        ? data.employabilityScore
+        : undefined;
     // Already in new format
     if (data.summary && data.personal_data) {
-      return data as NewReportSchema;
+      return { ...data, employability_score: score ?? 0 } as NewReportSchema;
     }
     // Old format conversion
     if (data.report) {
@@ -217,6 +223,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         action_plan,
         job_search_advice,
         useful_tools,
+        employability_score: score ?? 0,
         completed_games,
         final_message,
       };

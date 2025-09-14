@@ -80,6 +80,7 @@ class NewReportSchema(BaseModel):
     action_plan: ActionPlan
     job_search_advice: JobSearchAdvice
     useful_tools: UsefulTools
+    employability_score: int
     completed_games: List[str]
     final_message: str
 
@@ -111,6 +112,11 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         ]
 
     strengths = [s['skill'] for s in formatted_soft_skills if s.get('skill')]
+
+    # Calcular puntaje global de empleabilidad como promedio de soft skills
+    employability_score = int(
+        sum(s.get('score', 0) for s in formatted_soft_skills) / len(formatted_soft_skills)
+    ) if formatted_soft_skills else 0
     
     # Crear datos personales básicos
     personal_data = PersonalData(
@@ -264,6 +270,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         action_plan=action_plan,
         job_search_advice=job_search_advice,
         useful_tools=useful_tools,
+        employability_score=employability_score,
         completed_games=['Evaluación de habilidades básicas completada'],
         final_message=f"{full_name}, tu perfil muestra un excelente potencial para el desarrollo profesional. Enfócate en construir experiencia práctica y desarrollar habilidades técnicas específicas. La constancia y el aprendizaje continuo serán tus mejores aliados en la búsqueda de empleo.",
     )
@@ -308,20 +315,26 @@ def convert_old_format_to_new(old_data: Dict[str, Any]) -> NewReportSchema:
     # Ajustar puntuación si está disponible
     score = old_data.get('employabilityScore')
     if score is not None:
+        try:
+            score_int = int(score)
+        except Exception:
+            score_int = 0
         # Ajustar análisis del CV basado en la puntuación
-        if score >= 80:
+        if score_int >= 80:
             default_report.cv_analysis.structure_score = 5
             default_report.cv_analysis.coherence_score = 5
-        elif score >= 60:
+        elif score_int >= 60:
             default_report.cv_analysis.structure_score = 4
             default_report.cv_analysis.coherence_score = 4
-        elif score >= 40:
+        elif score_int >= 40:
             default_report.cv_analysis.structure_score = 3
             default_report.cv_analysis.coherence_score = 3
         else:
             default_report.cv_analysis.structure_score = 2
             default_report.cv_analysis.coherence_score = 2
-    
+
+        default_report.employability_score = score_int
+
     return default_report
 
 
