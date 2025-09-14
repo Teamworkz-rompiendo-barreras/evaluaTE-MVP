@@ -1,6 +1,12 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { personalSlice, saveCvAnalysis, saveSoftSkills, generateFinalReport } from './personalSlice.ts';
+import {
+  personalSlice,
+  saveCvAnalysis,
+  saveSoftSkills,
+  generateFinalReport,
+  addSceneDecision,
+} from './personalSlice.ts';
 import type { CvAnalysis } from '@/types/report';
 
 test('saveCvAnalysis stores structured analysis', () => {
@@ -55,4 +61,60 @@ test('generateFinalReport includes CvAnalysis in report', () => {
 
   state = personalSlice.reducer(state, generateFinalReport());
   assert.deepEqual(state.report?.cvAnalysis, analysis);
+});
+
+test('addSceneDecision creates a new log entry', () => {
+  let state = personalSlice.getInitialState();
+
+  const decision = {
+    sceneId: 1,
+    stepIndex: 0,
+    optionText: 'test',
+    isCorrect: true,
+    skillImpacts: { test: 0.8 },
+    timestamp: '2023-01-01T00:00:00Z',
+    userAgent: 'jest',
+    screenResolution: '800x600',
+  };
+
+  state = personalSlice.reducer(state, addSceneDecision(decision));
+  assert.equal(state.logs.length, 1);
+
+  const firstLog = state.logs[0];
+  assert(firstLog);
+  assert.equal(firstLog.decisions.length, 1);
+});
+
+test('addSceneDecision appends to existing log', () => {
+  let state = personalSlice.getInitialState();
+
+  const decision1 = {
+    sceneId: 2,
+    stepIndex: 0,
+    optionText: 'first',
+    isCorrect: true,
+    skillImpacts: { first: 0.5 },
+    timestamp: '2023-01-01T00:00:00Z',
+    userAgent: 'jest',
+    screenResolution: '800x600',
+  };
+
+  const decision2 = {
+    sceneId: 2,
+    stepIndex: 1,
+    optionText: 'second',
+    isCorrect: false,
+    skillImpacts: { second: 0.2 },
+    timestamp: '2023-01-01T00:00:01Z',
+    userAgent: 'jest',
+    screenResolution: '800x600',
+  };
+
+  state = personalSlice.reducer(state, addSceneDecision(decision1));
+  state = personalSlice.reducer(state, addSceneDecision(decision2));
+  assert.equal(state.logs.length, 1);
+
+  const firstLog = state.logs[0];
+  assert(firstLog);
+  assert.equal(firstLog.decisions.length, 2);
 });
