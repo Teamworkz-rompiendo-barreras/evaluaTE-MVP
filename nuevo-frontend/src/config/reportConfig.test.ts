@@ -1,6 +1,6 @@
 import test from 'node:test';
 import assert from 'node:assert/strict';
-import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema } from './reportConfig.ts';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData } from './reportConfig.ts';
 
 const mockNewFormat: NewReportSchema = {
   summary: 'Resumen ejecutivo del candidato',
@@ -160,4 +160,28 @@ test('generateNewFormatReport includes radarData block', () => {
   assert.deepEqual(parsed, {
     radarData: mockNewFormat.soft_skills.map(s => ({ softskill: s.skill, score: s.score }))
   });
+});
+
+test('generateNewFormatReport shows user contact info when backend omits it', () => {
+  const backendMissing: NewReportSchema = {
+    ...mockNewFormat,
+    personal_data: { name: '', location: '', email: '', phone: '', disability_certificate: '' }
+  };
+  const normalized = convertBackendResponseToNewFormat(backendMissing);
+  const dp: PersonalData = {
+    name: 'Ana Ejemplo',
+    location: 'Granada',
+    email: 'ana@example.com',
+    phone: '+34 999 999 999',
+    disability_certificate: 'No'
+  };
+  for (const key of Object.keys(dp) as (keyof PersonalData)[]) {
+    if (!normalized.personal_data[key]) {
+      normalized.personal_data[key] = dp[key];
+    }
+  }
+  const md = generateNewFormatReport(normalized);
+  assert.ok(md.includes('Email: ana@example.com'));
+  assert.ok(md.includes('Teléfono: +34 999 999 999'));
+  assert.ok(md.includes('Ubicación: Granada'));
 });
