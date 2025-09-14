@@ -24,6 +24,7 @@ def test_default_report_uses_inputs_for_sections():
     assert report.action_plan.short_term[0] == "Explorar oportunidades en Data Scientist"
     assert report.job_search_advice.recommended_platforms == ["LinkedIn", "Indeed"]
     assert report.useful_tools.productivity == ["Python", "Excel"]
+    assert report.useful_tools.accessibility == ["Microsoft Immersive Reader", "Grammarly", "ColorZilla"]
     assert report.suggested_roles[0].role == "Data Scientist"
 
 
@@ -44,4 +45,5 @@ def test_frontend_data_uses_inputs_for_sections():
     assert data["action_plan"]["short_term"][0] == "Explorar oportunidades en Data Scientist"
     assert data["job_search_advice"]["recommended_platforms"] == ["LinkedIn", "Indeed"]
     assert data["useful_tools"]["productivity"] == ["Python", "Excel"]
+    assert data["useful_tools"]["accessibility"] == ["Microsoft Immersive Reader", "Grammarly", "ColorZilla"]
     assert data["suggested_roles"][0]["role"] == "Data Scientist"

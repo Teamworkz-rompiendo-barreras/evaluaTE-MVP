@@ -429,6 +429,7 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         'productivity': (cv_analysis or {}).get('software', ['Excel', 'Google Sheets']),
         'job_search': recommended_platforms,
         'learning': ['Coursera', 'Udemy'],
+        'accessibility': ['Microsoft Immersive Reader', 'Grammarly', 'ColorZilla'],
     }
     
     # Crear roles sugeridos a partir de preferencias de trabajo
