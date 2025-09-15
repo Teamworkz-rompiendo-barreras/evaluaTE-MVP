@@ -41,12 +41,9 @@ def _stars(val: Optional[int]) -> str:
 def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     """
     Construye un PDF con los campos clave del informe IA + CV.
-    Espera un dict con:
-    {
-      "fullName": str,
-      "cvAnalysis": {...},
-      "report": {...}  # salida de la IA (generate_report)
-    }
+    Puede recibir directamente un diccionario compatible con `NewReportSchema`
+    (claves `summary`, `personal_data`, `cv_analysis`, etc.) o el formato legado
+    `{ "report": {...}, "cvAnalysis": {...} }`.
     """
     # Validar payload
     if not isinstance(payload, dict):
@@ -65,38 +62,67 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     c.drawString(margin_x, y, title)
     y -= 16
 
-    # Extraer nombre de forma segura
-    full_name = ""
+    # Determinar si el payload ya viene en el nuevo formato
+    report_data: Dict[str, Any] = {}
+    cv_data: Dict[str, Any] = {}
     if isinstance(payload, dict):
-        full_name = str(payload.get("fullName") or payload.get("userId") or "Usuario")
-    
+        if isinstance(payload.get("summary"), str) and isinstance(payload.get("personal_data"), dict):
+            report_data = payload
+            cv_data = payload.get("cv_analysis") if isinstance(payload.get("cv_analysis"), dict) else {}
+        else:
+            report_candidate = payload.get("report")
+            if isinstance(report_candidate, dict):
+                report_data = report_candidate
+            cv_candidate = payload.get("cvAnalysis")
+            if isinstance(cv_candidate, dict):
+                cv_data = cv_candidate
+
+    if not isinstance(report_data, dict):
+        report_data = {}
+    if not isinstance(cv_data, dict):
+        cv_data = {}
+
+    legacy_recs = payload.get("recommendations") if isinstance(payload.get("recommendations"), dict) else {}
+    if not report_data.get("summary"):
+        legacy_summary = report_data.get("resumen_ejecutivo") or legacy_recs.get("resumen_perfil")
+        if legacy_summary:
+            report_data["summary"] = legacy_summary
+    if not report_data.get("strengths"):
+        rec_strengths = legacy_recs.get("fortalezas_clave") if isinstance(legacy_recs, dict) else None
+        if isinstance(rec_strengths, list):
+            report_data["strengths"] = [str(item) for item in rec_strengths]
+        elif isinstance(report_data.get("soft_skills"), list):
+            report_data["strengths"] = [
+                str(item.get("skill") or item.get("name") or item)
+                for item in report_data.get("soft_skills")
+                if item
+            ]
+    if not report_data.get("final_message"):
+        legacy_message = report_data.get("frase_final") or (legacy_recs.get("frase_final") if isinstance(legacy_recs, dict) else None)
+        if legacy_message:
+            report_data["final_message"] = legacy_message
+
+    personal = report_data.get("personal_data") if isinstance(report_data.get("personal_data"), dict) else {}
+    full_name = str(payload.get("fullName") or personal.get("name") or "Usuario")
+
     c.setFont("Helvetica", 11)
     y = _draw_wrapped_text(c, margin_x, y, f"Nombre: {full_name}", line_w, leading=14)
+    if personal:
+        if personal.get("location"):
+            y = _draw_wrapped_text(c, margin_x, y, f"Ubicación: {personal.get('location')}", line_w, leading=14)
+        if personal.get("email"):
+            y = _draw_wrapped_text(c, margin_x, y, f"Email: {personal.get('email')}", line_w, leading=14)
+        if personal.get("phone"):
+            y = _draw_wrapped_text(c, margin_x, y, f"Teléfono: {personal.get('phone')}", line_w, leading=14)
     y -= 4
 
-    # Extraer report y cv de forma segura
-    report: Dict[str, Any] = {}
-    cv: Dict[str, Any] = {}
-    
-    if isinstance(payload, dict):
-        report = payload.get("report") or {}
-        cv = payload.get("cvAnalysis") or {}
-    
-    # Validar que sean diccionarios
-    if not isinstance(report, dict):
-        report = {}
-    if not isinstance(cv, dict):
-        cv = {}
-
-    # Resumen
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin_x, y, "Resumen ejecutivo")
     y -= 14
     c.setFont("Helvetica", 10)
-    y = _draw_wrapped_text(c, margin_x, y, report.get("summary") or "", line_w)
+    y = _draw_wrapped_text(c, margin_x, y, report_data.get("summary") or "", line_w)
 
-    # CV: análisis estructurado (estrellas)
-    cv_analysis = report.get("cv_analysis") or cv
+    cv_analysis = report_data.get("cv_analysis") or cv_data
     if not isinstance(cv_analysis, dict):
         cv_analysis = {}
     y -= 8
@@ -110,45 +136,52 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     y = _draw_wrapped_text(c, margin_x, y, f"Información clave: {_stars(cv_analysis.get('key_info_score'))}", line_w)
     y = _draw_wrapped_text(c, margin_x, y, f"Estilo: {_stars(cv_analysis.get('style_score'))}", line_w)
 
-    # Fortalezas y Áreas de mejora
     y -= 8
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin_x, y, "Fortalezas")
     y -= 14
     c.setFont("Helvetica", 10)
-    for s in report.get("strengths", []):
-        y = _draw_wrapped_text(c, margin_x, y, f"• {s}", line_w)
+    for strength in report_data.get("strengths", []) or []:
+        y = _draw_wrapped_text(c, margin_x, y, f"• {strength}", line_w)
+
     y -= 8
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin_x, y, "Áreas de mejora")
     y -= 14
     c.setFont("Helvetica", 10)
-    for s in report.get("improvement_areas", []):
-        y = _draw_wrapped_text(c, margin_x, y, f"• {s}", line_w)
+    for area in report_data.get("improvement_areas", []) or []:
+        if isinstance(area, dict):
+            label = area.get("area") or ""
+            action = area.get("suggested_action") or ""
+            line = label if not action else f"{label}: {action}"
+            y = _draw_wrapped_text(c, margin_x, y, f"• {line}", line_w)
+        else:
+            y = _draw_wrapped_text(c, margin_x, y, f"• {area}", line_w)
 
-    # Roles sugeridos
-    roles = report.get("suggested_roles", [])
+    roles = report_data.get("suggested_roles", []) or []
     if roles:
         y -= 8
         c.setFont("Helvetica-Bold", 12)
         c.drawString(margin_x, y, "Roles sugeridos")
         y -= 14
         c.setFont("Helvetica", 10)
-        for r in roles:
-            linea = f"• {r.get('role')} — {r.get('seniority')} — Remoto: {r.get('remote_viable')}"
-            y = _draw_wrapped_text(c, margin_x, y, linea, line_w)
-            if r.get("reason"):
-                y = _draw_wrapped_text(c, margin_x+8, y, f"   Razón: {r.get('reason')}", line_w-8)
+        for role in roles:
+            if isinstance(role, dict):
+                linea = f"• {role.get('role')} — {role.get('seniority')} — Remoto: {role.get('remote_viable')}"
+                y = _draw_wrapped_text(c, margin_x, y, linea, line_w)
+                if role.get("reason"):
+                    y = _draw_wrapped_text(c, margin_x + 8, y, f"   Razón: {role.get('reason')}", line_w - 8)
+            else:
+                y = _draw_wrapped_text(c, margin_x, y, f"• {role}", line_w)
 
-    # Plan de acción (si cabe en 1 página)
-    plan = report.get("action_plan") or {}
+    plan = report_data.get("action_plan") or {}
     bloques = [
         ("Corto plazo (0–30 días)", plan.get("short_term", [])),
         ("Medio plazo (1–3 meses)", plan.get("medium_term", [])),
         ("Largo plazo (3–6+ meses)", plan.get("long_term", [])),
     ]
     for titulo, items in bloques:
-        if not items: 
+        if not items:
             continue
         y -= 8
         c.setFont("Helvetica-Bold", 12)
@@ -158,14 +191,13 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         for it in items:
             y = _draw_wrapped_text(c, margin_x, y, f"• {it}", line_w)
 
-    # Mensaje final
-    if report.get("final_message"):
+    if report_data.get("final_message"):
         y -= 8
         c.setFont("Helvetica-Bold", 12)
         c.drawString(margin_x, y, "Mensaje final")
         y -= 14
         c.setFont("Helvetica", 10)
-        y = _draw_wrapped_text(c, margin_x, y, report["final_message"], line_w)
+        y = _draw_wrapped_text(c, margin_x, y, report_data.get("final_message"), line_w)
 
     c.showPage()
     c.save()

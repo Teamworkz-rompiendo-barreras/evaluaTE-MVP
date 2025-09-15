@@ -10,19 +10,47 @@ from report_generator import render_informe_estructurado
 def test_pdf_service_uses_new_cv_analysis_fields():
     payload = {
         "fullName": "Tester",
-        "report": {
-            "summary": "Resumen",
-            "strengths": [],
-            "improvement_areas": ["Área"],
-            "cv_analysis": {
-                "structure_score": 5,
-                "clarity_score": 4,
-                "coherence_score": 3,
-                "key_info_score": 2,
-                "style_score": 1,
-            },
-            "action_plan": {},
+        "summary": "Resumen",
+        "personal_data": {
+            "name": "Tester",
+            "location": "Ciudad",
+            "email": "tester@example.com",
+            "phone": "123456789",
+            "disability_certificate": "No",
         },
+        "profile_summary": "Perfil",
+        "cv_summary": "CV",
+        "strengths": [],
+        "soft_skills": [],
+        "improvement_areas": [
+            {"area": "Área", "reason": "", "suggested_action": "Acción"},
+        ],
+        "cv_analysis": {
+            "structure_score": 5,
+            "clarity_score": 4,
+            "coherence_score": 3,
+            "key_info_score": 2,
+            "style_score": 1,
+        },
+        "ideal_work_environment": "",
+        "suggested_roles": [],
+        "action_plan": {"short_term": [], "medium_term": [], "long_term": []},
+        "job_search_advice": {
+            "cv_optimization": [],
+            "letters_portfolio": "",
+            "recommended_platforms": [],
+            "networking": "",
+            "interview_tips": "",
+        },
+        "useful_tools": {
+            "productivity": [],
+            "job_search": [],
+            "learning": [],
+            "accessibility": [],
+        },
+        "employability_score": 80,
+        "completed_games": [],
+        "final_message": "Mensaje",
     }
     pdf_bytes = create_employability_pdf(payload)
     text = pdf_bytes.decode("latin1")
