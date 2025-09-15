@@ -122,7 +122,7 @@ def test_api_informe_ia():
             
             # Verificar estructura del informe
             required_fields = [
-                'summary', 'personal_data', 'profile_summary', 'cv_summary',
+                'summary', 'personal_data', 'profile_summary', 'cv_summary', 'cv_details',
                 'strengths', 'improvement_areas', 'cv_analysis', 'action_plan'
             ]
             

@@ -26,6 +26,7 @@ def test_default_report_uses_inputs_for_sections():
     assert report.useful_tools.productivity == ["Python", "Excel"]
     assert report.useful_tools.accessibility == ["Microsoft Immersive Reader", "Grammarly", "ColorZilla"]
     assert report.suggested_roles[0].role == "Data Scientist"
+    assert any("Python" in item for item in report.cv_details.tools)
 
 
 def test_frontend_data_uses_inputs_for_sections():
@@ -47,3 +48,4 @@ def test_frontend_data_uses_inputs_for_sections():
     assert data["useful_tools"]["productivity"] == ["Python", "Excel"]
     assert data["useful_tools"]["accessibility"] == ["Microsoft Immersive Reader", "Grammarly", "ColorZilla"]
     assert data["suggested_roles"][0]["role"] == "Data Scientist"
+    assert data["cv_details"]["tools"] == ["Python", "Excel"]

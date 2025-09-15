@@ -71,7 +71,7 @@ const testRealIntegration = async () => {
     console.log('\n3️⃣ Verificando estructura de la respuesta...');
     
     const requiredFields = [
-      'summary', 'personal_data', 'profile_summary', 'cv_summary', 
+      'summary', 'personal_data', 'profile_summary', 'cv_summary', 'cv_details',
       'strengths', 'improvement_areas', 'cv_analysis', 'ideal_work_environment',
       'suggested_roles', 'action_plan', 'job_search_advice', 'useful_tools',
       'completed_games', 'final_message'

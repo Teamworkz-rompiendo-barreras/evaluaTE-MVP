@@ -75,6 +75,7 @@ def test_report_generator_uses_new_cv_analysis_fields():
         },
         "profile_summary": "Perfil",
         "cv_summary": "CV",
+        "cv_details": {"experience": ["Experiencia reciente"], "education": [], "languages": [], "tools": []},
         "strengths": ["F1"],
         "improvement_areas": [{"area": "A1", "suggested_action": "Hacer algo"}],
         "cv_analysis": {
@@ -100,4 +101,5 @@ def test_report_generator_uses_new_cv_analysis_fields():
     assert "Estilo:" in text
     assert "Formato" not in text
     assert "Ortografía" not in text
+    assert "Experiencia reciente" in text
 

@@ -13,6 +13,12 @@ const mockNewFormat: NewReportSchema = {
   },
   profile_summary: 'Perfil profesional con experiencia en desarrollo de software y habilidades de liderazgo.',
   cv_summary: 'CV bien estructurado con experiencia en tecnologías modernas.',
+  cv_details: {
+    experience: ['Desarrollador en ACME (2020-2023)'],
+    education: ['Ingeniería Informática - Universidad Complutense'],
+    languages: ['Inglés (C1)'],
+    tools: ['React', 'Node.js'],
+  },
   strengths: ['Liderazgo de equipos técnicos'],
   soft_skills: [
     { skill: 'Liderazgo', score: 90 },
@@ -77,6 +83,7 @@ test('convertBackendResponseToNewFormat returns data as-is for new format', () =
   const result = convertBackendResponseToNewFormat(mockNewFormat);
   assert.deepEqual(result, mockNewFormat);
   assert.equal(result.employability_score, 76);
+  assert.deepEqual(result.cv_details, mockNewFormat.cv_details);
 });
 
 test('convertBackendResponseToNewFormat keeps contact fields in new format', () => {
@@ -120,6 +127,8 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
     { skill: 'Trabajo en equipo', score: 75 }
   ]);
   assert.equal(result.employability_score, 66);
+  assert.ok(Array.isArray(result.cv_details.experience));
+  assert.ok(Array.isArray(result.cv_details.education));
 });
 
 test('convertBackendResponseToNewFormat extracts all useful_tools categories', () => {
@@ -168,6 +177,7 @@ test('generateNewFormatReport includes required sections', () => {
     '## 1. Datos personales básicos',
     '## 2. Resumen del perfil',
     '## 3. Resumen del CV',
+    '### Experiencia destacada',
     '## 4. Fortalezas',
     '# 5. Áreas de mejora y consejos'
   ];
