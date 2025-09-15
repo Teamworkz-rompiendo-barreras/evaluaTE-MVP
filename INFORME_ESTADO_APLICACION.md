@@ -217,6 +217,6 @@ La aplicación está lista para uso en producción y puede manejar usuarios real
 
 ---
 
-*Informe generado el: $(date)*
+*Informe generado el: 2025-09-15*
 *Estado: APROBADO ✅*
 *Recomendación: LISTO PARA PRODUCCIÓN 🚀*
