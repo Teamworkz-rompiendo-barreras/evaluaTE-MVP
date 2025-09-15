@@ -1,4 +1,4 @@
-from typing import Any, Dict, List
+from typing import Any, Dict, List, Sequence
 
 STAR = "★"
 EMPTY = "☆"
@@ -9,10 +9,126 @@ def stars(n: int) -> str:
     return STAR * n + EMPTY * (5 - n)
 
 
+def _first_non_empty(data: Dict[str, Any], keys: Sequence[str]) -> str:
+    for key in keys:
+        value = data.get(key)
+        if value:
+            text = str(value).strip()
+            if text:
+                return text
+    return ""
+
+
+def _as_list(items: Any) -> List[Any]:
+    if not items:
+        return []
+    if isinstance(items, list):
+        return [item for item in items if item is not None]
+    if isinstance(items, tuple):
+        return [item for item in items if item is not None]
+    return [items]
+
+
+def _format_experience_entry(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        title = _first_non_empty(item, ["title", "cargo", "position", "role", "puesto"])
+        company = _first_non_empty(item, ["company", "empresa", "organization", "organizacion"])
+        period = _first_non_empty(item, ["period", "duration"])
+        if not period:
+            start = _first_non_empty(item, ["start_date", "fecha_inicio", "inicio"])
+            end = _first_non_empty(item, ["end_date", "fecha_fin", "fin"])
+            if not end and str(item.get("current") or item.get("actual") or "").lower() in {"true", "1", "si", "sí"}:
+                end = "Actualidad"
+            if start or end:
+                period = " - ".join(part for part in [start, end] if part)
+        description = _first_non_empty(item, ["description", "descripcion"])
+        components = [comp for comp in [title, company] if comp]
+        if period:
+            components.append(period)
+        line = " — ".join(components).strip()
+        if not line and description:
+            line = description
+        return line.strip()
+    if item is None:
+        return ""
+    return str(item).strip()
+
+
+def _format_education_entry(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        degree = _first_non_empty(item, ["degree", "titulo", "title", "program"])
+        institution = _first_non_empty(item, ["institution", "institucion", "school", "centro"])
+        level = _first_non_empty(item, ["level", "nivel"])
+        period = _first_non_empty(item, ["period", "duration"])
+        if not period:
+            start = _first_non_empty(item, ["start_date", "fecha_inicio", "inicio"])
+            end = _first_non_empty(item, ["end_date", "fecha_fin", "fin"])
+            if start or end:
+                period = " - ".join(part for part in [start, end] if part)
+        description = _first_non_empty(item, ["description", "descripcion"])
+        components = [comp for comp in [degree, institution] if comp]
+        if period:
+            components.append(period)
+        elif level:
+            components.append(level)
+        line = " — ".join(components).strip()
+        if not line and description:
+            line = description
+        return line.strip()
+    if item is None:
+        return ""
+    return str(item).strip()
+
+
+def _format_language_entry(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        language = _first_non_empty(item, ["language", "idioma", "name"])
+        level = _first_non_empty(item, ["level", "nivel", "proficiency"])
+        components = [comp for comp in [language, level] if comp]
+        line = " — ".join(components).strip()
+        return line
+    if item is None:
+        return ""
+    return str(item).strip()
+
+
+def _format_software_entry(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        name = _first_non_empty(item, ["name", "tool", "herramienta", "technology", "software"])
+        level = _first_non_empty(item, ["level", "nivel", "proficiency"])
+        description = _first_non_empty(item, ["description", "descripcion"])
+        components = [comp for comp in [name, level] if comp]
+        line = " — ".join(components).strip()
+        if not line and description:
+            line = description
+        return line.strip()
+    if item is None:
+        return ""
+    return str(item).strip()
+
+
+def _format_section_items(items: Any, formatter) -> List[str]:
+    formatted: List[str] = []
+    for raw in _as_list(items):
+        text = formatter(raw)
+        if text:
+            formatted.append(text)
+    return formatted
+
+
 def render_informe_estructurado(report: Dict[str, Any]) -> str:
     """Renderiza un informe estructurado en texto/markdown usando NewReportSchema."""
     personal = report.get("personal_data") or {}
     cv_analysis = report.get("cv_analysis") or {}
+    cv_details = report.get("cv_details") or {}
 
     out: List[str] = []
 
@@ -32,6 +148,49 @@ def render_informe_estructurado(report: Dict[str, Any]) -> str:
     out.append("\nResumen del CV\n")
     out.append(f"{report.get('cv_summary', '')}\n")
 
+    sections = [
+        (
+            "Experiencia",
+            _format_section_items(
+                cv_analysis.get("experience") or cv_details.get("experience"),
+                _format_experience_entry,
+            ),
+            "No se registró experiencia disponible.",
+        ),
+        (
+            "Educación",
+            _format_section_items(
+                cv_analysis.get("education") or cv_details.get("education"),
+                _format_education_entry,
+            ),
+            "No se registró formación educativa disponible.",
+        ),
+        (
+            "Idiomas",
+            _format_section_items(
+                cv_analysis.get("languages") or cv_details.get("languages"),
+                _format_language_entry,
+            ),
+            "No se registraron idiomas.",
+        ),
+        (
+            "Software",
+            _format_section_items(
+                cv_analysis.get("software") or cv_details.get("tools"),
+                _format_software_entry,
+            ),
+            "No se registraron herramientas destacadas.",
+        ),
+    ]
+
+    for title, items, fallback in sections:
+        out.append(f"\n{title}\n")
+        if items:
+            for entry in items:
+                out.append(f"- {entry}\n")
+        else:
+            out.append(f"- {fallback}\n")
+=======
     cv_details = report.get("cv_details") or {}
 
     def _render_detail_section(title: str, items: Any) -> None:
