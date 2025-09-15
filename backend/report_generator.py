@@ -128,6 +128,7 @@ def render_informe_estructurado(report: Dict[str, Any]) -> str:
     """Renderiza un informe estructurado en texto/markdown usando NewReportSchema."""
     personal = report.get("personal_data") or {}
     cv_analysis = report.get("cv_analysis") or {}
+    cv_details = report.get("cv_details") or {}
 
     out: List[str] = []
 
@@ -150,22 +151,34 @@ def render_informe_estructurado(report: Dict[str, Any]) -> str:
     sections = [
         (
             "Experiencia",
-            _format_section_items(cv_analysis.get("experience"), _format_experience_entry),
+            _format_section_items(
+                cv_analysis.get("experience") or cv_details.get("experience"),
+                _format_experience_entry,
+            ),
             "No se registró experiencia disponible.",
         ),
         (
             "Educación",
-            _format_section_items(cv_analysis.get("education"), _format_education_entry),
+            _format_section_items(
+                cv_analysis.get("education") or cv_details.get("education"),
+                _format_education_entry,
+            ),
             "No se registró formación educativa disponible.",
         ),
         (
             "Idiomas",
-            _format_section_items(cv_analysis.get("languages"), _format_language_entry),
+            _format_section_items(
+                cv_analysis.get("languages") or cv_details.get("languages"),
+                _format_language_entry,
+            ),
             "No se registraron idiomas.",
         ),
         (
             "Software",
-            _format_section_items(cv_analysis.get("software"), _format_software_entry),
+            _format_section_items(
+                cv_analysis.get("software") or cv_details.get("tools"),
+                _format_software_entry,
+            ),
             "No se registraron herramientas destacadas.",
         ),
     ]

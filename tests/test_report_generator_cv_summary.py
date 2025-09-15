@@ -101,3 +101,28 @@ def test_render_informe_handles_empty_cv_lists():
     assert "- No se registraron idiomas." in text
     assert "\nSoftware" in text
     assert "- No se registraron herramientas destacadas." in text
+
+
+def test_render_informe_uses_cv_details_when_cv_analysis_missing():
+    report = _base_report()
+    report.pop("cv_analysis")
+    report["cv_details"] = {
+        "experience": ["Trabajo A", "Trabajo B"],
+        "education": ["Curso 1"],
+        "languages": ["Inglés", "Español"],
+        "tools": ["Python", "Git"],
+    }
+
+    text = render_informe_estructurado(report)
+
+    assert "\nExperiencia" in text
+    assert "- Trabajo A" in text
+    assert "- Trabajo B" in text
+    assert "\nEducación" in text
+    assert "- Curso 1" in text
+    assert "\nIdiomas" in text
+    assert "- Inglés" in text
+    assert "- Español" in text
+    assert "\nSoftware" in text
+    assert "- Python" in text
+    assert "- Git" in text
