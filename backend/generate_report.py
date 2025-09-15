@@ -322,6 +322,7 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
 
     experience = cv_data.get("experience") or cv_data.get("experience_detailed") or []
     education = cv_data.get("education") or cv_data.get("education_detailed") or []
+    languages = cv_data.get("languages") or cv_data.get("languages_detailed") or cv_data.get("idiomas") or []
     software = cv_data.get("software") or cv_data.get("skills") or []
 
     return {
@@ -338,6 +339,7 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         "experience": experience,
         "education": education,
         "software": software,
+        "languages": languages,
     }
 
 

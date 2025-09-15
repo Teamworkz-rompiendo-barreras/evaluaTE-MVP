@@ -1,7 +1,7 @@
 # backend/new_report_schema.py
 # Nuevo esquema de informe estructurado para el backend
 
-from typing import List, Dict, Any
+from typing import List, Dict, Any, Iterable
 from pydantic import BaseModel, Field
 
 
@@ -38,6 +38,13 @@ class CvAnalysis(BaseModel):
     reordering_suggestions: List[str] = Field(default_factory=list)
 
 
+class CvDetails(BaseModel):
+    experience: List[str] = Field(default_factory=list)
+    education: List[str] = Field(default_factory=list)
+    languages: List[str] = Field(default_factory=list)
+    tools: List[str] = Field(default_factory=list)
+
+
 class SuggestedRole(BaseModel):
     role: str
     reason: str
@@ -71,6 +78,7 @@ class NewReportSchema(BaseModel):
     personal_data: PersonalData
     profile_summary: str
     cv_summary: str
+    cv_details: CvDetails = Field(default_factory=CvDetails)
     strengths: List[str]
     soft_skills: List[Dict[str, Any]]
     improvement_areas: List[ImprovementArea]
@@ -83,6 +91,56 @@ class NewReportSchema(BaseModel):
     employability_score: int
     completed_games: List[str]
     final_message: str
+
+
+def _iter_items(source: Any) -> Iterable[Any]:
+    if source is None:
+        return []
+    if isinstance(source, (list, tuple, set)):
+        return list(source)
+    return [source]
+
+
+def _stringify_entries(entries: Any, priority_keys: Iterable[str] = ()) -> List[str]:
+    normalized: List[str] = []
+    keys = list(priority_keys or [])
+    for item in _iter_items(entries):
+        text = ""
+        if isinstance(item, str):
+            text = item.strip()
+        elif isinstance(item, dict):
+            parts: List[str] = []
+            used_keys = set()
+            for key in keys:
+                if key in item:
+                    value = item.get(key)
+                    if isinstance(value, (list, dict)) or value is None:
+                        continue
+                    value_str = str(value).strip()
+                    if value_str:
+                        parts.append(value_str)
+                        used_keys.add(key)
+            if not parts:
+                for key, value in item.items():
+                    if key in used_keys or isinstance(value, (list, dict)) or value is None:
+                        continue
+                    value_str = str(value).strip()
+                    if value_str:
+                        parts.append(value_str)
+            text = " — ".join(parts)
+        elif item is not None:
+            text = str(item).strip()
+        if text:
+            normalized.append(text)
+
+    unique: List[str] = []
+    seen = set()
+    for entry in normalized:
+        key = entry.lower()
+        if key not in seen:
+            seen.add(key)
+            unique.append(entry)
+    return unique
 
 
 def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_analysis: Dict[str, Any], job_preferences: Dict[str, Any]) -> NewReportSchema:
@@ -154,6 +212,116 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
             'Destacar habilidades técnicas relevantes',
         ]),
     )
+
+    cv_details_input = (cv_analysis or {}).get('cv_details') if isinstance((cv_analysis or {}).get('cv_details'), dict) else {}
+    experience_input = (
+        cv_details_input.get('experience')
+        or (cv_analysis or {}).get('experience')
+        or (cv_analysis or {}).get('experience_detailed')
+        or []
+    )
+    education_input = (
+        cv_details_input.get('education')
+        or (cv_analysis or {}).get('education')
+        or (cv_analysis or {}).get('education_detailed')
+        or []
+    )
+    languages_input = (
+        cv_details_input.get('languages')
+        or (cv_analysis or {}).get('languages')
+        or (cv_analysis or {}).get('idiomas')
+        or []
+    )
+    tools_input = (
+        cv_details_input.get('tools')
+        or (cv_analysis or {}).get('tools')
+        or (cv_analysis or {}).get('software')
+        or (cv_analysis or {}).get('skills')
+        or []
+    )
+
+    experience_details = _stringify_entries(
+        experience_input,
+        (
+            'title',
+            'role',
+            'position',
+            'company',
+            'organization',
+            'employer',
+            'location',
+            'start_date',
+            'end_date',
+            'duration',
+            'description',
+        ),
+    )
+    education_details = _stringify_entries(
+        education_input,
+        (
+            'degree',
+            'title',
+            'program',
+            'area',
+            'institution',
+            'school',
+            'location',
+            'start_date',
+            'end_date',
+            'graduation_year',
+            'description',
+        ),
+    )
+    language_details = _stringify_entries(
+        languages_input,
+        (
+            'name',
+            'language',
+            'level',
+            'certification',
+        ),
+    )
+    tools_details = _stringify_entries(
+        tools_input,
+        (
+            'name',
+            'tool',
+            'technology',
+            'level',
+            'category',
+        ),
+    )
+
+    cv_details = CvDetails(
+        experience=experience_details,
+        education=education_details,
+        languages=language_details,
+        tools=tools_details,
+    )
+
+    feedback_text = (cv_analysis or {}).get(
+        'feedback',
+        'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.',
+    )
+    if not feedback_text:
+        feedback_text = 'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.'
+
+    cv_summary_lines: List[str] = [str(feedback_text).strip()]
+
+    def _append_section(title: str, items: List[str]) -> None:
+        if not items:
+            return
+        cv_summary_lines.append("")
+        cv_summary_lines.append(f"### {title}")
+        for entry in items:
+            cv_summary_lines.append(f"- {entry}")
+
+    _append_section('Experiencia destacada', experience_details)
+    _append_section('Formación', education_details)
+    _append_section('Idiomas', language_details)
+    _append_section('Herramientas y tecnología', tools_details)
+
+    cv_summary_markdown = "\n".join(line for line in cv_summary_lines if line is not None).strip()
     # Determinar áreas de mejora usando datos del CV cuando existan
     improvement_areas: List[ImprovementArea] = []
     if cv_analysis and (cv_analysis.get('corrections') or cv_analysis.get('reordering_suggestions')):
@@ -217,7 +385,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         interview_tips="Preparar respuestas STAR y practicar presentación de proyectos",
     )
     
-    productivity_tools = (cv_analysis or {}).get('software') or ["Trello", "Notion", "Google Calendar"]
+    productivity_tools = tools_details or ["Trello", "Notion", "Google Calendar"]
     job_search_tools = recommended_platforms if recommended_platforms else ["LinkedIn", "Glassdoor", "Resume.io"]
     useful_tools = UsefulTools(
         productivity=productivity_tools,
@@ -260,7 +428,8 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         summary=f"Informe de empleabilidad para {full_name}",
         personal_data=personal_data,
         profile_summary=cv_analysis.get('summary', 'Perfil profesional con potencial de desarrollo. Se recomienda fortalecer habilidades técnicas específicas y experiencia práctica.') if cv_analysis else 'Perfil profesional con potencial de desarrollo. Se recomienda fortalecer habilidades técnicas específicas y experiencia práctica.',
-        cv_summary=cv_analysis.get('feedback', 'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.') if cv_analysis else 'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.',
+        cv_summary=cv_summary_markdown,
+        cv_details=cv_details,
         strengths=strengths,
         soft_skills=formatted_soft_skills,
         improvement_areas=improvement_areas,
@@ -427,6 +596,59 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         'education': cv_analysis.get('education', []) if cv_analysis else [],
         'software': cv_analysis.get('software', []) if cv_analysis else [],
     }
+    cv_details_input = (cv_analysis or {}).get('cv_details') if isinstance((cv_analysis or {}).get('cv_details'), dict) else {}
+    experience_input = (
+        cv_details_input.get('experience')
+        or (cv_analysis or {}).get('experience')
+        or (cv_analysis or {}).get('experience_detailed')
+        or []
+    )
+    education_input = (
+        cv_details_input.get('education')
+        or (cv_analysis or {}).get('education')
+        or (cv_analysis or {}).get('education_detailed')
+        or []
+    )
+    language_input = (
+        cv_details_input.get('languages')
+        or (cv_analysis or {}).get('languages')
+        or (cv_analysis or {}).get('idiomas')
+        or []
+    )
+    tools_input = (
+        cv_details_input.get('tools')
+        or (cv_analysis or {}).get('tools')
+        or (cv_analysis or {}).get('software')
+        or (cv_analysis or {}).get('skills')
+        or []
+    )
+
+    cv_details = {
+        'experience': _stringify_entries(
+            experience_input,
+            (
+                'title', 'role', 'position', 'company', 'organization', 'employer', 'location', 'start_date', 'end_date', 'duration', 'description'
+            ),
+        ),
+        'education': _stringify_entries(
+            education_input,
+            (
+                'degree', 'title', 'program', 'area', 'institution', 'school', 'location', 'start_date', 'end_date', 'graduation_year', 'description'
+            ),
+        ),
+        'languages': _stringify_entries(
+            language_input,
+            (
+                'name', 'language', 'level', 'certification'
+            ),
+        ),
+        'tools': _stringify_entries(
+            tools_input,
+            (
+                'name', 'tool', 'technology', 'level', 'category'
+            ),
+        ),
+    }
     # Crear consejos de búsqueda y herramientas útiles
     recommended_platforms = (job_preferences or {}).get('preferred_platforms') or (job_preferences or {}).get('platforms') or ['LinkedIn', 'Indeed']
     cv_tips = (cv_analysis or {}).get('corrections') or ['gestión', 'coordinación', 'liderazgo']
@@ -438,8 +660,11 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         'interview_tips': 'Preparar ejemplos de proyectos relevantes',
     }
 
+    productivity_entries = cv_details['tools'] or [
+        str(item) for item in ((cv_analysis or {}).get('software') or ['Excel', 'Google Sheets']) if item
+    ]
     useful_tools = {
-        'productivity': (cv_analysis or {}).get('software', ['Excel', 'Google Sheets']),
+        'productivity': productivity_entries,
         'job_search': recommended_platforms,
         'learning': ['Coursera', 'Udemy'],
         'accessibility': ['Microsoft Immersive Reader', 'Grammarly', 'ColorZilla'],
@@ -473,6 +698,7 @@ def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, 
         'improvement_areas': improvement_areas,
         'action_plan': action_plan,
         'cv_analysis': cv_analysis_data,
+        'cv_details': cv_details,
         'job_search_advice': job_search_advice,
         'useful_tools': useful_tools,
         'suggested_roles': suggested_roles,

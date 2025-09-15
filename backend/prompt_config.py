@@ -321,6 +321,7 @@ Devuelve ÚNICAMENTE un JSON con estas claves y tipos:
 - personal_data: objeto con campos (name:string, location:string, email:string, phone:string, disability_certificate:string)
 - profile_summary: string
 - cv_summary: string
+- cv_details: objeto con (experience: array[string], education: array[string], languages: array[string], tools: array[string])
 - strengths: array[string]
 - improvement_areas: array de objetos (area:string, reason:string, suggested_action:string)
 - cv_analysis: objeto con campos:

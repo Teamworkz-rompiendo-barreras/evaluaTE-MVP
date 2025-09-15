@@ -32,6 +32,25 @@ def render_informe_estructurado(report: Dict[str, Any]) -> str:
     out.append("\nResumen del CV\n")
     out.append(f"{report.get('cv_summary', '')}\n")
 
+    cv_details = report.get("cv_details") or {}
+
+    def _render_detail_section(title: str, items: Any) -> None:
+        values = []
+        if isinstance(items, list):
+            values = [str(item) for item in items if item not in (None, "")]
+        elif items:
+            values = [str(items)]
+        if not values:
+            return
+        out.append(f"\n{title}\n")
+        for entry in values:
+            out.append(f"- {entry}\n")
+
+    _render_detail_section("Experiencia destacada", cv_details.get("experience"))
+    _render_detail_section("Formación", cv_details.get("education"))
+    _render_detail_section("Idiomas", cv_details.get("languages"))
+    _render_detail_section("Herramientas y tecnología", cv_details.get("tools"))
+
     out.append("\nFortalezas clave\n")
     for f in report.get("strengths", []):
         out.append(f"- {f}\n")
