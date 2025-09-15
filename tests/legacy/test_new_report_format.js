@@ -14,6 +14,12 @@ const testNewReportFormat = () => {
     },
     profile_summary: "Perfil profesional con experiencia en desarrollo de software y habilidades de liderazgo. Demuestra competencias técnicas sólidas y capacidad de trabajo en equipo.",
     cv_summary: "CV bien estructurado con experiencia en tecnologías modernas como React, Node.js y Python. Incluye proyectos relevantes y formación académica adecuada.",
+    cv_details: {
+      experience: ["Senior Developer en TechCorp (2020-2024)"],
+      education: ["Grado en Ingeniería Informática - Universidad de Madrid"],
+      languages: ["Inglés (C1)", "Español (Nativo)"],
+      tools: ["React", "Node.js", "Python"],
+    },
     strengths: [
       "Liderazgo de equipos técnicos",
       "Desarrollo full-stack",

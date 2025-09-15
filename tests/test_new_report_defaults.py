@@ -19,6 +19,8 @@ def test_create_default_report_missing_job_preferences():
     assert isinstance(report.soft_skills, list)
     assert len(report.soft_skills) > 0
     assert isinstance(report.employability_score, int)
+    assert isinstance(report.cv_details.experience, list)
+    assert isinstance(report.cv_details.languages, list)
 
 
 def test_create_frontend_compatible_data_missing_cv_analysis():
@@ -52,6 +54,10 @@ def test_create_default_report_reflects_inputs():
             "clarity": "clara",
             "style": "moderno",
         },
+        "experience": [{"title": "Analista", "company": "ACME"}],
+        "education": [{"degree": "Grado", "institution": "Uni"}],
+        "languages": [{"name": "Inglés", "level": "B2"}],
+        "software": [{"name": "Python"}],
     }
     job_preferences = {
         "location": "Madrid",
@@ -68,6 +74,8 @@ def test_create_default_report_reflects_inputs():
     assert report.suggested_roles[0].role == "Analista"
     assert report.suggested_roles[0].remote_viable is True
     assert report.employability_score == 80
+    assert any("Analista" in item for item in report.cv_details.experience)
+    assert "### Experiencia destacada" in report.cv_summary
 
 
 def test_convert_old_format_to_new_employability_score():
@@ -90,6 +98,7 @@ def test_create_frontend_compatible_data_reflects_inputs():
         "experience": [{"title": "Proyecto X"}],
         "education": [{"degree": "Universidad"}],
         "software": ["Python"],
+        "languages": [{"name": "Inglés", "level": "C1"}],
     }
     job_preferences = {"workMode": "remoto", "areas": ["Analista"]}
     data = create_frontend_compatible_data("Tester", soft_skills, cv_analysis, job_preferences)
@@ -98,3 +107,5 @@ def test_create_frontend_compatible_data_reflects_inputs():
     assert data["cv_analysis"]["experience"][0]["title"] == "Proyecto X"
     assert data["suggested_roles"][0]["role"] == "Analista"
     assert data["suggested_roles"][0]["remote_viable"] is True
+    assert data["cv_details"]["experience"][0].startswith("Proyecto X")
+    assert "Inglés" in data["cv_details"]["languages"][0]

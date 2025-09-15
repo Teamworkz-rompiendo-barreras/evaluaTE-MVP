@@ -42,11 +42,19 @@ export interface UsefulTools {
   accessibility: string[];
 }
 
+export interface CvDetails {
+  experience: string[];
+  education: string[];
+  languages: string[];
+  tools: string[];
+}
+
 export interface NewReportSchema {
   summary: string;
   personal_data: PersonalData;
   profile_summary: string;
   cv_summary: string;
+  cv_details: CvDetails;
   strengths: string[];
   soft_skills: Array<{ skill: string; score: number }>;
   improvement_areas: ImprovementArea[];
@@ -61,6 +69,100 @@ export interface NewReportSchema {
   final_message: string;
 }
 
+const detailPriority = {
+  experience: ['title', 'role', 'position', 'company', 'organization', 'employer', 'location', 'start_date', 'end_date', 'duration', 'description'] as const,
+  education: ['degree', 'title', 'program', 'area', 'institution', 'school', 'location', 'start_date', 'end_date', 'graduation_year', 'description'] as const,
+  languages: ['name', 'language', 'level', 'certification'] as const,
+  tools: ['name', 'tool', 'technology', 'level', 'category'] as const,
+};
+
+const stringifyDetailEntry = (entry: unknown, priorityKeys: readonly string[]): string | null => {
+  if (entry === null || entry === undefined) return null;
+  if (typeof entry === 'string') {
+    const trimmed = entry.trim();
+    return trimmed ? trimmed : null;
+  }
+  if (typeof entry === 'number' || typeof entry === 'boolean') {
+    const str = String(entry).trim();
+    return str ? str : null;
+  }
+  if (entry instanceof Date) {
+    return entry.toISOString();
+  }
+  if (typeof entry === 'object') {
+    const obj = entry as Record<string, unknown>;
+    const parts: string[] = [];
+    const used = new Set<string>();
+    for (const key of priorityKeys) {
+      if (Object.prototype.hasOwnProperty.call(obj, key)) {
+        const value = obj[key];
+        if (value === null || value === undefined) continue;
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          const str = String(value).trim();
+          if (str) {
+            parts.push(str);
+            used.add(key);
+          }
+        }
+      }
+    }
+    if (!parts.length) {
+      for (const [key, value] of Object.entries(obj)) {
+        if (used.has(key) || value === null || value === undefined) continue;
+        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+          const str = String(value).trim();
+          if (str) parts.push(str);
+        }
+      }
+    }
+    const joined = parts.join(' — ');
+    return joined || null;
+  }
+  const str = String(entry).trim();
+  return str ? str : null;
+};
+
+const normalizeDetailList = (input: unknown, priorityKeys: readonly string[]): string[] => {
+  const result: string[] = [];
+  const seen = new Set<string>();
+  const pushEntry = (value: unknown): void => {
+    if (value === null || value === undefined) return;
+    if (value instanceof Date) {
+      pushEntry(value.toISOString());
+      return;
+    }
+    if (Array.isArray(value)) {
+      value.forEach(pushEntry);
+      return;
+    }
+    if (typeof value === 'object' && value !== null) {
+      const obj = value as Record<string, unknown>;
+      const values = Object.values(obj);
+      if (values.some((child) => Array.isArray(child))) {
+        values.forEach(pushEntry);
+        return;
+      }
+    }
+    const formatted = stringifyDetailEntry(value, priorityKeys);
+    if (formatted) {
+      const key = formatted.toLowerCase();
+      if (!seen.has(key)) {
+        seen.add(key);
+        result.push(formatted);
+      }
+    }
+  };
+  pushEntry(input);
+  return result;
+};
+
+const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvDetails => ({
+  experience: normalizeDetailList(sources.experience, detailPriority.experience),
+  education: normalizeDetailList(sources.education, detailPriority.education),
+  languages: normalizeDetailList(sources.languages, detailPriority.languages),
+  tools: normalizeDetailList(sources.tools, detailPriority.tools),
+});
+
 export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema {
   if (raw && typeof raw === 'object') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -72,7 +174,14 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         : undefined;
     // Already in new format
     if (data.summary && data.personal_data) {
-      return { ...data, employability_score: score ?? 0 } as NewReportSchema;
+      const rawDetails = data.cv_details || {};
+      const normalizedDetails = buildCvDetails({
+        experience: [rawDetails.experience, rawDetails.experience_highlights, data.cv_analysis?.experience, data.cv_analysis?.experience_detailed],
+        education: [rawDetails.education, data.cv_analysis?.education, data.cv_analysis?.education_detailed],
+        languages: [rawDetails.languages, data.cv_analysis?.languages],
+        tools: [rawDetails.tools, rawDetails.software, data.cv_analysis?.tools, data.cv_analysis?.software],
+      });
+      return { ...data, cv_details: normalizedDetails, employability_score: score ?? 0 } as NewReportSchema;
     }
     // Old format conversion
     if (data.report) {
@@ -185,6 +294,53 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         accessibility: Array.isArray(report?.tools?.accessibility) ? report.tools.accessibility.filter(Boolean) : [],
       };
 
+      const cvDetailsSource = report.cv_details || {};
+      const cv_details = buildCvDetails({
+        experience: [
+          cvDetailsSource.experience,
+          report.experience,
+          report.experiencia,
+          cvA?.experience,
+          cvA?.experience_detailed,
+          analysisJson?.experience,
+          analysisJson?.experience_detailed,
+          data?.cv_analysis?.experience,
+          data?.cv_analysis?.experience_detailed,
+        ],
+        education: [
+          cvDetailsSource.education,
+          report.education,
+          report.educacion,
+          report.education_history,
+          cvA?.education,
+          cvA?.education_detailed,
+          analysisJson?.education,
+          analysisJson?.education_detailed,
+          data?.cv_analysis?.education,
+          data?.cv_analysis?.education_detailed,
+        ],
+        languages: [
+          cvDetailsSource.languages,
+          report.languages,
+          report.idiomas,
+          cvA?.languages,
+          analysisJson?.languages,
+          data?.cv_analysis?.languages,
+        ],
+        tools: [
+          cvDetailsSource.tools,
+          report.tools,
+          report.software,
+          cvA?.tools,
+          cvA?.software,
+          cvA?.skills,
+          analysisJson?.tools,
+          analysisJson?.software,
+          data?.cv_analysis?.tools,
+          data?.cv_analysis?.software,
+        ],
+      });
+
       // Roles sugeridos
       const suggested_roles = Array.isArray(report?.suggested_roles)
         ? report.suggested_roles.map((r: any) => ({
@@ -218,6 +374,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         soft_skills,
         improvement_areas,
         cv_analysis,
+        cv_details,
         ideal_work_environment,
         suggested_roles,
         action_plan,
@@ -257,6 +414,28 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     return '★'.repeat(v) + '☆'.repeat(5 - v);
   };
 
+  const detailSectionLines: string[] = [''];
+  const addDetailSection = (title: string, items?: string[]): void => {
+    if (!items || items.length === 0) return;
+    const normalized = items
+      .map((item) => String(item ?? '').trim())
+      .filter((item) => item.length > 0);
+    if (normalized.length === 0) return;
+    detailSectionLines.push(title);
+    normalized.forEach((item) => detailSectionLines.push(`- ${item}`));
+    detailSectionLines.push('');
+  };
+
+  addDetailSection('### Experiencia destacada', data.cv_details?.experience);
+  addDetailSection('### Formación', data.cv_details?.education);
+  addDetailSection('### Idiomas', data.cv_details?.languages);
+  addDetailSection('### Herramientas y tecnología', data.cv_details?.tools);
+
+  if (detailSectionLines.length === 1) {
+    // Mantener una línea en blanco para separar secciones aunque no haya detalles.
+    detailSectionLines[0] = '';
+  }
+
   const lines = [
     '```json',
     JSON.stringify({ radarData }),
@@ -273,7 +452,7 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     '',
     '## 3. Resumen del CV',
     data.cv_summary,
-    '',
+    ...detailSectionLines,
     '## 4. Fortalezas',
     ...data.strengths.map((s) => `- ${s}`),
     '',
