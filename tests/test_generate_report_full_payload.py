@@ -122,3 +122,21 @@ def test_generar_informe_with_complete_payload(
 
     # Completed games are preserved in the response
     assert report.completed_games == sample_completed_games
+
+
+def test_generar_informe_prefers_soft_skills_average_over_zero_score() -> None:
+    payload = {
+        "fullName": "María García",
+        "softSkills": [
+            {"skill": "Comunicación", "score": 80},
+            {"skill": "Pensamiento analítico", "score": 90},
+        ],
+        "employabilityScore": 0,
+    }
+
+    raw_report = generar_informe(payload)
+    report = NewReportSchema.model_validate(raw_report)
+
+    expected_average = int(round((80 + 90) / 2))
+    assert report.employability_score == expected_average
+    assert report.employability_score != 0
