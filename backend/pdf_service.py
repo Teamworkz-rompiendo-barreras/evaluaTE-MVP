@@ -191,6 +191,93 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         for it in items:
             y = _draw_wrapped_text(c, margin_x, y, f"• {it}", line_w)
 
+    ideal_env = report_data.get("ideal_work_environment")
+    if ideal_env:
+        y -= 8
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(margin_x, y, "Entornos de trabajo ideales")
+        y -= 14
+        c.setFont("Helvetica", 10)
+        y = _draw_wrapped_text(c, margin_x, y, str(ideal_env), line_w)
+
+    job_advice = report_data.get("job_search_advice")
+    advice_lines: List[str] = []
+    if isinstance(job_advice, dict):
+        def _fmt(value: Any) -> str:
+            if isinstance(value, (list, tuple, set)):
+                return ", ".join(str(v) for v in value if v)
+            return str(value)
+
+        if job_advice.get("cv_optimization"):
+            advice_lines.append(f"• CV: {_fmt(job_advice.get('cv_optimization'))}")
+        if job_advice.get("letters_portfolio"):
+            advice_lines.append(f"• Cartas/portfolio: {_fmt(job_advice.get('letters_portfolio'))}")
+        if job_advice.get("recommended_platforms"):
+            advice_lines.append(
+                f"• Plataformas: {_fmt(job_advice.get('recommended_platforms'))}"
+            )
+        if job_advice.get("networking"):
+            advice_lines.append(f"• Networking: {_fmt(job_advice.get('networking'))}")
+        if job_advice.get("interview_tips"):
+            advice_lines.append(f"• Entrevistas: {_fmt(job_advice.get('interview_tips'))}")
+
+    if advice_lines:
+        y -= 8
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(margin_x, y, "Consejos de búsqueda de empleo")
+        y -= 14
+        c.setFont("Helvetica", 10)
+        for line in advice_lines:
+            y = _draw_wrapped_text(c, margin_x, y, line, line_w)
+
+    tools = report_data.get("useful_tools")
+    tool_lines: List[str] = []
+    if isinstance(tools, dict):
+        labels = {
+            "productivity": "Productividad",
+            "job_search": "Búsqueda de empleo",
+            "learning": "Aprendizaje",
+            "accessibility": "Accesibilidad",
+        }
+
+        def _fmt_tools(val: Any) -> str:
+            if isinstance(val, (list, tuple, set)):
+                return ", ".join(str(v) for v in val if v)
+            return str(val)
+
+        for key, label in labels.items():
+            value = tools.get(key)
+            if value:
+                tool_lines.append(f"• {label}: {_fmt_tools(value)}")
+
+    if tool_lines:
+        y -= 8
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(margin_x, y, "Herramientas útiles")
+        y -= 14
+        c.setFont("Helvetica", 10)
+        for line in tool_lines:
+            y = _draw_wrapped_text(c, margin_x, y, line, line_w)
+
+    games = report_data.get("completed_games")
+    if games:
+        y -= 8
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(margin_x, y, "Juegos completados")
+        y -= 14
+        c.setFont("Helvetica", 10)
+        for game in games:
+            if isinstance(game, dict):
+                nombre = game.get("name") or game.get("title") or ""
+                detalle = game.get("insight") or game.get("summary") or ""
+                base = nombre
+                if detalle:
+                    base = f"{nombre}: {detalle}" if nombre else detalle
+                if base:
+                    y = _draw_wrapped_text(c, margin_x, y, f"• {base}", line_w)
+            else:
+                y = _draw_wrapped_text(c, margin_x, y, f"• {game}", line_w)
+
     if report_data.get("final_message"):
         y -= 8
         c.setFont("Helvetica-Bold", 12)
