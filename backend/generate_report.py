@@ -560,8 +560,26 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
                     scores.append(score)
             soft_avg = int(round(sum(scores) / len(scores))) if scores else 0
 
-            provided_score = data.get("employabilityScore") or data.get("employability_score")
-            if provided_score is not None:
+            provided_score = data.get("employabilityScore")
+            if provided_score is None:
+                provided_score = data.get("employability_score")
+
+            override_score = None
+            for key in ("employabilityScoreOverride", "employability_score_override"):
+                candidate = data.get(key)
+                if isinstance(candidate, str):
+                    candidate = candidate.strip()
+                if candidate in (None, "", []):
+                    continue
+                override_score = candidate
+                break
+
+            if override_score is not None:
+                try:
+                    soft_avg = int(round(float(override_score)))
+                except (TypeError, ValueError):
+                    pass
+            elif not scores and provided_score not in (None, "", []):
                 try:
                     soft_avg = int(round(float(provided_score)))
                 except (TypeError, ValueError):
