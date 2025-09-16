@@ -69,11 +69,161 @@ export interface NewReportSchema {
   final_message: string;
 }
 
+interface NormalizedJobPreferences {
+  areas: string[];
+  preferred_platforms: string[];
+  location: string;
+  seniority: string;
+  work_mode: string;
+  disability_certificate: string;
+}
+
 const detailPriority = {
   experience: ['title', 'role', 'position', 'company', 'organization', 'employer', 'location', 'start_date', 'end_date', 'duration', 'description'] as const,
   education: ['degree', 'title', 'program', 'area', 'institution', 'school', 'location', 'start_date', 'end_date', 'graduation_year', 'description'] as const,
   languages: ['name', 'language', 'level', 'certification'] as const,
   tools: ['name', 'tool', 'technology', 'level', 'category'] as const,
+};
+
+const toUniqueStringArray = (value: unknown): string[] => {
+  const result: string[] = [];
+  const seen = new Set<string>();
+  const push = (entry: unknown): void => {
+    if (entry === null || entry === undefined) return;
+    if (Array.isArray(entry)) {
+      entry.forEach(push);
+      return;
+    }
+    if (entry instanceof Set) {
+      Array.from(entry).forEach(push);
+      return;
+    }
+    if (typeof entry === 'object') {
+      const obj = entry as Record<string, unknown>;
+      if (typeof obj['name'] === 'string') {
+        push(obj['name']);
+        return;
+      }
+    }
+    const str =
+      typeof entry === 'string'
+        ? entry.trim()
+        : typeof entry === 'number' || typeof entry === 'boolean'
+          ? String(entry).trim()
+          : '';
+    if (!str) return;
+    const key = str.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push(str);
+  };
+  push(value);
+  return result;
+};
+
+const firstString = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value.trim();
+  if (typeof value === 'number' || typeof value === 'boolean') return String(value);
+  if (value instanceof Date) return value.toISOString();
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const str = firstString(entry);
+      if (str) return str;
+    }
+    return '';
+  }
+  if (typeof value === 'object') {
+    for (const entry of Object.values(value as Record<string, unknown>)) {
+      const str = firstString(entry);
+      if (str) return str;
+    }
+  }
+  return '';
+};
+
+const formatDisabilityCertificate = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'boolean') {
+    return value ? 'Sí' : 'No';
+  }
+  if (typeof value === 'string') {
+    const trimmed = value.trim();
+    if (!trimmed) return '';
+    if (/^(si|sí|yes|true)$/i.test(trimmed)) return 'Sí';
+    if (/^(no|false)$/i.test(trimmed)) return 'No';
+    return trimmed;
+  }
+  if (Array.isArray(value)) {
+    for (const entry of value) {
+      const str = formatDisabilityCertificate(entry);
+      if (str) return str;
+    }
+    return '';
+  }
+  return String(value);
+};
+
+const normalizeJobPreferences = (...sources: unknown[]): NormalizedJobPreferences => {
+  const merged: Record<string, unknown> = {};
+  for (const source of sources) {
+    if (source && typeof source === 'object' && !Array.isArray(source)) {
+      Object.assign(merged, source as Record<string, unknown>);
+    }
+  }
+
+  const areasSource =
+    merged['areas'] ??
+    merged['desired_roles'] ??
+    merged['desiredRoles'] ??
+    merged['roles'] ??
+    merged['targets'] ??
+    [];
+
+  const preferredPlatformsSource =
+    merged['preferred_platforms'] ??
+    merged['preferredPlatforms'] ??
+    merged['platforms'] ??
+    merged['sites'] ??
+    merged['channels'] ??
+    [];
+
+  const locationValue =
+    merged['location'] ??
+    merged['ubicacion'] ??
+    merged['city'] ??
+    merged['region'] ??
+    merged['preferred_location'];
+
+  const seniorityValue =
+    merged['seniority'] ??
+    merged['experience_level'] ??
+    merged['experienceLevel'] ??
+    merged['level'] ??
+    merged['seniority_level'];
+
+  const workModeValue =
+    merged['work_mode'] ??
+    merged['workMode'] ??
+    merged['mode'] ??
+    merged['working_mode'] ??
+    merged['modalidad'];
+
+  const disabilityValue =
+    merged['disability_certificate'] ??
+    merged['disabilityCertificate'] ??
+    merged['has_disability_certificate'] ??
+    merged['hasDisabilityCert'] ??
+    merged['disability_cert'];
+
+  return {
+    areas: toUniqueStringArray(areasSource),
+    preferred_platforms: toUniqueStringArray(preferredPlatformsSource),
+    location: firstString(locationValue),
+    seniority: firstString(seniorityValue),
+    work_mode: firstString(workModeValue),
+    disability_certificate: formatDisabilityCertificate(disabilityValue),
+  };
 };
 
 const stringifyDetailEntry = (entry: unknown, priorityKeys: readonly string[]): string | null => {
@@ -187,15 +337,31 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
     if (data.report) {
       const report = data.report || {};
       const recs = (data.recommendations && typeof data.recommendations === 'object') ? data.recommendations : {};
+      const jobPreferences = normalizeJobPreferences(
+        report.job_preferences,
+        report.jobPreferences,
+        report.job_preferences_data,
+        report.jobPreferencesData,
+        data.job_preferences,
+        data.jobPreferences,
+        data.job_preferences_data,
+        data.jobPreferencesData,
+        recs.job_preferences,
+        recs.jobPreferences,
+      );
 
       // Personal data: preferir report.personal_data si existe
       const pdSrc = report.personal_data || {};
       const personal_data = {
         name: pdSrc.name ?? report.fullName ?? data.fullName ?? 'Desconocido',
-        location: pdSrc.location ?? report.location ?? '',
+        location: pdSrc.location ?? report.location ?? jobPreferences.location ?? '',
         email: pdSrc.email ?? report.email ?? '',
         phone: pdSrc.phone ?? report.phone ?? '',
-        disability_certificate: pdSrc.disability_certificate ?? report.disability_certificate ?? ''
+        disability_certificate:
+          pdSrc.disability_certificate
+          ?? report.disability_certificate
+          ?? jobPreferences.disability_certificate
+          ?? ''
       };
 
       // CV analysis: usar report.cv_analysis.analysis_json si existe; fallback a estrellas
@@ -274,14 +440,19 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       };
 
       // Consejos de búsqueda
+      const reportRecommendedPlatforms = Array.isArray(report?.job_search_advice?.recommended_platforms)
+        ? (report.job_search_advice.recommended_platforms as unknown[])
+            .map((platform) => (platform === null || platform === undefined ? '' : String(platform).trim()))
+            .filter((platform): platform is string => Boolean(platform))
+        : undefined;
       const job_search_advice = {
         cv_optimization: Array.isArray(report?.job_search_advice?.cv_optimization)
           ? report.job_search_advice.cv_optimization
           : (Array.isArray(report?.job_search_advice?.tips) ? report.job_search_advice.tips : []),
         letters_portfolio: String(report?.job_search_advice?.letters_portfolio ?? ''),
-        recommended_platforms: Array.isArray(report?.job_search_advice?.recommended_platforms)
-          ? report.job_search_advice.recommended_platforms
-          : [],
+        recommended_platforms: reportRecommendedPlatforms && reportRecommendedPlatforms.length > 0
+          ? reportRecommendedPlatforms
+          : jobPreferences.preferred_platforms,
         networking: String(report?.job_search_advice?.networking ?? ''),
         interview_tips: String(report?.job_search_advice?.interview_tips ?? ''),
       };
@@ -346,15 +517,23 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         ? report.suggested_roles.map((r: any) => ({
             role: String(r?.role ?? r?.name ?? ''),
             reason: String(r?.reason ?? ''),
-            seniority: String(r?.seniority ?? ''),
-            remote_viable: Boolean(r?.remote_viable),
+            seniority: String(r?.seniority ?? jobPreferences.seniority ?? ''),
+            remote_viable: typeof r?.remote_viable === 'boolean'
+              ? Boolean(r?.remote_viable)
+              : (jobPreferences.work_mode || '').toLowerCase() === 'remoto',
           }))
         : [];
 
       // Otros campos
+      const jobPreferenceEnvironment = [
+        jobPreferences.work_mode ? `Modalidad preferida: ${jobPreferences.work_mode}` : '',
+        jobPreferences.areas.length ? `Áreas de interés: ${jobPreferences.areas.join(', ')}` : '',
+        jobPreferences.location ? `Ubicación deseada: ${jobPreferences.location}` : '',
+      ].filter(Boolean).join(' — ');
       const ideal_work_environment = String(
         recs?.entornos_ideales
           || (Array.isArray(report?.environments) ? report.environments.join(', ') : '')
+          || jobPreferenceEnvironment
           || ''
       );
       const completed_games = Array.isArray(report?.completed_games) ? report.completed_games.map(String) : [];
