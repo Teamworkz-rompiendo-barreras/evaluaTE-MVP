@@ -20,12 +20,13 @@ except ImportError:
 
 try:
     from backend.new_report_schema import (
+        JobPreferences,
         NewReportSchema,
         convert_old_format_to_new,
         create_default_report,
     )
 except ImportError:  # pragma: no cover - fallback cuando se ejecuta dentro de backend/
-    from new_report_schema import NewReportSchema, convert_old_format_to_new, create_default_report
+    from new_report_schema import JobPreferences, NewReportSchema, convert_old_format_to_new, create_default_report
 
 # ----------------------------
 # Utilidades de parsing seguro
@@ -421,6 +422,64 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     cv_payload = _build_cv_analysis_payload(cv_data or {})
     job_pref_payload = _build_job_preferences_payload(candidate_data, job_preferences_data or {})
 
+    def _coerce_str(value: Any) -> str:
+        if value is None:
+            return ""
+        if isinstance(value, str):
+            return value.strip()
+        return str(value).strip()
+
+    def _coerce_bool(value: Any) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            text = value.strip().lower()
+            if text in {"true", "1", "yes", "si", "sí"}:
+                return True
+            if text in {"false", "0", "no"}:
+                return False
+        return False
+
+    def _coerce_str_list(values: Any) -> List[str]:
+        items: List[str] = []
+
+        def _append(entry: Any) -> None:
+            if entry is None:
+                return
+            if isinstance(entry, (list, tuple, set)):
+                for child in entry:
+                    _append(child)
+                return
+            if isinstance(entry, dict):
+                for key in ("role", "title", "name", "area", "label", "value"):
+                    if key in entry and entry[key] is not None:
+                        text = _coerce_str(entry[key])
+                        if text:
+                            items.append(text)
+                            return
+                joined = " — ".join(
+                    text for text in (_coerce_str(v) for v in entry.values()) if text
+                )
+                if joined:
+                    items.append(joined)
+                return
+            text = _coerce_str(entry)
+            if text:
+                items.append(text)
+
+        _append(values)
+
+        deduped: List[str] = []
+        seen = set()
+        for entry in items:
+            key = entry.lower()
+            if key not in seen:
+                seen.add(key)
+                deduped.append(entry)
+        return deduped
+
     safe_score = max(0, min(100, int(employability_score or 0)))
     level_label = level or _score_to_level(safe_score)
 
@@ -480,17 +539,40 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     if games_list:
         report.completed_games = games_list
 
-    preferred_platforms = job_pref_payload.get("preferred_platforms") or []
+    preferred_platforms = _coerce_str_list(
+        job_pref_payload.get("preferred_platforms")
+        or job_pref_payload.get("preferredPlatforms")
+    )
+    if not preferred_platforms:
+        preferred_platforms = _coerce_str_list(report.job_search_advice.recommended_platforms)
     if preferred_platforms:
-        report.job_search_advice.recommended_platforms = [str(p) for p in preferred_platforms if p]
+        report.job_search_advice.recommended_platforms = preferred_platforms
 
-    work_mode = job_pref_payload.get("workMode")
-    areas = job_pref_payload.get("areas") or []
+    location_pref = _coerce_str(job_pref_payload.get("location")) or _coerce_str(candidate_data.get("location"))
+    if not location_pref and report.personal_data.location != "No especificado":
+        location_pref = report.personal_data.location
+
+    has_cert_source = job_pref_payload.get("hasDisabilityCert")
+    if has_cert_source is None:
+        has_cert_source = candidate_data.get("hasDisabilityCertificate")
+    if has_cert_source is None:
+        has_cert_source = report.personal_data.disability_certificate
+
+    job_pref_model = JobPreferences(
+        location=location_pref,
+        work_mode=_coerce_str(job_pref_payload.get("workMode") or job_pref_payload.get("work_mode")),
+        areas=_coerce_str_list(job_pref_payload.get("areas")),
+        preferred_platforms=preferred_platforms,
+        seniority=_coerce_str(job_pref_payload.get("seniority") or candidate_data.get("seniority")) or 'Senior',
+        has_disability_cert=_coerce_bool(has_cert_source),
+    )
+    report.job_preferences = job_pref_model
+
     ideal_parts = []
-    if work_mode:
-        ideal_parts.append(f"Modalidad preferida: {work_mode}")
-    if areas:
-        ideal_parts.append("Áreas de interés: " + ", ".join(str(a) for a in areas if a))
+    if job_pref_model.work_mode:
+        ideal_parts.append(f"Modalidad preferida: {job_pref_model.work_mode}")
+    if job_pref_model.areas:
+        ideal_parts.append("Áreas de interés: " + ", ".join(job_pref_model.areas))
     if ideal_parts:
         report.ideal_work_environment = ". ".join(ideal_parts)
 

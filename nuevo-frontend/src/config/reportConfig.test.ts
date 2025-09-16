@@ -68,6 +68,14 @@ const mockNewFormat: NewReportSchema = {
     networking: 'Participar en meetups',
     interview_tips: 'Practicar presentación de proyectos técnicos'
   },
+  job_preferences: {
+    location: 'Madrid, España',
+    work_mode: 'remoto',
+    areas: ['Desarrollo web'],
+    preferred_platforms: ['LinkedIn'],
+    seniority: 'Senior',
+    has_disability_cert: true,
+  },
   useful_tools: {
     productivity: ['Trello'],
     job_search: ['LinkedIn'],
@@ -129,6 +137,9 @@ test('convertBackendResponseToNewFormat transforms old format', () => {
   assert.equal(result.employability_score, 66);
   assert.ok(Array.isArray(result.cv_details.experience));
   assert.ok(Array.isArray(result.cv_details.education));
+  assert.equal(result.job_preferences.location, 'Sevilla, España');
+  assert.equal(result.job_preferences.has_disability_cert, false);
+  assert.deepEqual(result.job_preferences.areas, []);
 });
 
 test('convertBackendResponseToNewFormat extracts all useful_tools categories', () => {
@@ -179,11 +190,20 @@ test('generateNewFormatReport includes required sections', () => {
     '## 3. Resumen del CV',
     '### Experiencia destacada',
     '## 4. Fortalezas',
-    '# 5. Áreas de mejora y consejos'
+    '# 5. Áreas de mejora y consejos',
+    '## 7. Preferencias laborales y entorno ideal'
   ];
   sections.forEach(section => {
     assert.ok(report.includes(section));
   });
+});
+
+test('generateNewFormatReport includes job preference highlights', () => {
+  const report = generateNewFormatReport(mockNewFormat);
+  assert.ok(report.includes('Modalidad preferida: remoto'));
+  assert.ok(report.includes('Áreas de interés: Desarrollo web'));
+  assert.ok(report.includes('Plataformas preferidas: LinkedIn'));
+  assert.ok(report.includes('Certificado de discapacidad: Sí'));
 });
 
 test('generateNewFormatReport includes radarData block', () => {

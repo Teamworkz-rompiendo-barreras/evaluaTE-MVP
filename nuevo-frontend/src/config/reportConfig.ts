@@ -42,6 +42,15 @@ export interface UsefulTools {
   accessibility: string[];
 }
 
+export interface JobPreferences {
+  location: string;
+  work_mode: string;
+  areas: string[];
+  preferred_platforms: string[];
+  seniority: string;
+  has_disability_cert: boolean;
+}
+
 export interface CvDetails {
   experience: string[];
   education: string[];
@@ -63,6 +72,7 @@ export interface NewReportSchema {
   suggested_roles: SuggestedRole[];
   action_plan: ActionPlan;
   job_search_advice: JobSearchAdvice;
+  job_preferences: JobPreferences;
   useful_tools: UsefulTools;
   employability_score: number;
   completed_games: string[];
@@ -163,6 +173,69 @@ const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvD
   tools: normalizeDetailList(sources.tools, detailPriority.tools),
 });
 
+const coerceString = (value: unknown): string => {
+  if (value === null || value === undefined) return '';
+  if (typeof value === 'string') return value.trim();
+  return String(value).trim();
+};
+
+const coerceBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const normalized = value.trim().toLowerCase();
+    if (['true', '1', 'yes', 'si', 'sí'].includes(normalized)) return true;
+    if (['false', '0', 'no'].includes(normalized)) return false;
+  }
+  return false;
+};
+
+const normalizeJobPreferenceList = (input: unknown): string[] =>
+  normalizeDetailList(input, ['role', 'title', 'name', 'area', 'label', 'value']);
+
+const mergeJobPreferenceSources = (...sources: Array<unknown>): Record<string, unknown> => {
+  const merged: Record<string, unknown> = {};
+  for (const source of sources) {
+    if (source && typeof source === 'object' && !Array.isArray(source)) {
+      Object.assign(merged, source as Record<string, unknown>);
+    }
+  }
+  return merged;
+};
+
+const normalizeJobPreferences = (...sources: Array<unknown>): JobPreferences => {
+  const merged = mergeJobPreferenceSources(...sources);
+  const areasSource =
+    merged.areas ?? merged.desired_roles ?? merged.desiredRoles ?? merged.roles ?? merged.targets ?? [];
+  const preferredPlatformsSource =
+    merged.preferred_platforms ??
+    merged.preferredPlatforms ??
+    merged.platforms ??
+    merged.recommended_platforms ??
+    merged.recommendedPlatforms ??
+    [];
+  let location = coerceString(merged.location ?? merged.city ?? merged.region ?? '');
+  if (location.toLowerCase() === 'no especificado') location = '';
+  const seniority = coerceString(merged.seniority ?? merged.level ?? merged.targetLevel ?? '') || 'Senior';
+  const workMode = coerceString(merged.work_mode ?? merged.workMode ?? merged.mode ?? merged.modality ?? '');
+  const hasCertSource =
+    merged.has_disability_cert ??
+    merged.hasDisabilityCert ??
+    merged.disability_certificate ??
+    merged.disabilityCertificate ??
+    merged.disability ??
+    merged.certificate;
+
+  return {
+    location,
+    work_mode: workMode,
+    areas: normalizeJobPreferenceList(areasSource),
+    preferred_platforms: normalizeJobPreferenceList(preferredPlatformsSource),
+    seniority,
+    has_disability_cert: hasCertSource !== undefined ? coerceBoolean(hasCertSource) : false,
+  };
+};
+
 export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema {
   if (raw && typeof raw === 'object') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -181,7 +254,22 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         languages: [rawDetails.languages, data.cv_analysis?.languages],
         tools: [rawDetails.tools, rawDetails.software, data.cv_analysis?.tools, data.cv_analysis?.software],
       });
-      return { ...data, cv_details: normalizedDetails, employability_score: score ?? 0 } as NewReportSchema;
+      const job_preferences = normalizeJobPreferences(
+        {
+          location: data.personal_data?.location ?? '',
+          hasDisabilityCert: data.personal_data?.disability_certificate,
+          preferred_platforms: data.job_search_advice?.recommended_platforms,
+        },
+        data.job_preferences,
+        data.jobPreferences,
+        data.job_preferences_data,
+      );
+      return {
+        ...data,
+        cv_details: normalizedDetails,
+        job_preferences,
+        employability_score: score ?? 0,
+      } as NewReportSchema;
     }
     // Old format conversion
     if (data.report) {
@@ -365,6 +453,24 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       const summary = String(report?.resumen_ejecutivo || data?.summary || profile_summary || '');
       const cv_summary = String(recs?.resumen_cv || '');
 
+      const job_preferences = normalizeJobPreferences(
+        {
+          location: personal_data.location,
+          hasDisabilityCert: personal_data.disability_certificate,
+          preferred_platforms: job_search_advice.recommended_platforms,
+        },
+        data.job_preferences,
+        data.jobPreferences,
+        report?.job_preferences,
+        report?.jobPreferences,
+        report?.job_preferences_data,
+        report?.jobPreferencesData,
+        {
+          work_mode: data.workMode ?? data.work_mode ?? report?.workMode ?? report?.work_mode,
+          seniority: data.seniority ?? report?.seniority ?? data.level,
+        },
+      );
+
       return {
         summary,
         personal_data,
@@ -379,6 +485,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         suggested_roles,
         action_plan,
         job_search_advice,
+        job_preferences,
         useful_tools,
         employability_score: score ?? 0,
         completed_games,
@@ -436,6 +543,33 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     detailSectionLines[0] = '';
   }
 
+  const jobPref: JobPreferences = data.job_preferences ?? {
+    location: '',
+    work_mode: '',
+    areas: [],
+    preferred_platforms: [],
+    seniority: 'Senior',
+    has_disability_cert: false,
+  };
+  const preferenceLines: string[] = ['## 7. Preferencias laborales y entorno ideal'];
+  const preferenceItems = [
+    jobPref.work_mode && `Modalidad preferida: ${jobPref.work_mode}`,
+    jobPref.areas.length > 0 ? `Áreas de interés: ${jobPref.areas.join(', ')}` : null,
+    jobPref.preferred_platforms.length > 0
+      ? `Plataformas preferidas: ${jobPref.preferred_platforms.join(', ')}`
+      : null,
+    jobPref.seniority && `Seniority objetivo: ${jobPref.seniority}`,
+    jobPref.location && `Ubicación objetivo: ${jobPref.location}`,
+    `Certificado de discapacidad: ${jobPref.has_disability_cert ? 'Sí' : 'No'}`,
+  ].filter((entry): entry is string => Boolean(entry));
+  preferenceLines.push(...preferenceItems.map((text) => `- ${text}`));
+  const environmentText = String(data.ideal_work_environment ?? '').trim();
+  if (environmentText) {
+    preferenceLines.push('');
+    preferenceLines.push(environmentText);
+  }
+  preferenceLines.push('');
+
   const lines = [
     '```json',
     JSON.stringify({ radarData }),
@@ -469,9 +603,7 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     `Claridad: ${stars(data.cv_analysis.clarity_score)}`,
     `Estilo: ${stars(data.cv_analysis.style_score)}`,
     '',
-    '## 7. Entornos de trabajo ideales',
-    data.ideal_work_environment,
-    '',
+    ...preferenceLines,
     '## 8. Roles profesionales sugeridos',
     ...data.suggested_roles.map((r) => `- ${r.role} - ${r.reason}`),
     '',
