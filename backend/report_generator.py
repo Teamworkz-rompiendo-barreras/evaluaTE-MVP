@@ -190,7 +190,6 @@ def render_informe_estructurado(report: Dict[str, Any]) -> str:
                 out.append(f"- {entry}\n")
         else:
             out.append(f"- {fallback}\n")
-=======
     cv_details = report.get("cv_details") or {}
 
     def _render_detail_section(title: str, items: Any) -> None:
