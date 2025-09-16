@@ -47,6 +47,7 @@ def test_create_default_report_reflects_inputs():
         "key_info_score": 3,
         "clarity_score": 2,
         "style_score": 1,
+        "feedback": "Revisar logros cuantificables.",
         "evidence": {
             "structure": "bien",
             "coherence": "buena",
@@ -76,6 +77,11 @@ def test_create_default_report_reflects_inputs():
     assert report.employability_score == 80
     assert any("Analista" in item for item in report.cv_details.experience)
     assert "### Experiencia destacada" in report.cv_summary
+    assert "Revisar logros cuantificables." in report.cv_summary
+    assert "- Analista — ACME" in report.cv_summary
+    assert "- Grado — Uni" in report.cv_summary
+    assert "- Inglés — B2" in report.cv_summary
+    assert "- Python" in report.cv_summary
 
 
 def test_convert_old_format_to_new_employability_score():

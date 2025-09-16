@@ -232,10 +232,10 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         or (cv_analysis or {}).get('idiomas')
         or []
     )
-    tools_input = (
+    software_input = (
         cv_details_input.get('tools')
-        or (cv_analysis or {}).get('tools')
         or (cv_analysis or {}).get('software')
+        or (cv_analysis or {}).get('tools')
         or (cv_analysis or {}).get('skills')
         or []
     )
@@ -281,12 +281,13 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
             'certification',
         ),
     )
-    tools_details = _stringify_entries(
-        tools_input,
+    software_details = _stringify_entries(
+        software_input,
         (
             'name',
             'tool',
             'technology',
+            'software',
             'level',
             'category',
         ),
@@ -296,7 +297,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         experience=experience_details,
         education=education_details,
         languages=language_details,
-        tools=tools_details,
+        tools=software_details,
     )
 
     feedback_text = (cv_analysis or {}).get(
@@ -306,20 +307,23 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
     if not feedback_text:
         feedback_text = 'CV con información básica disponible. Se sugiere enriquecer con más detalles sobre proyectos y logros específicos.'
 
-    cv_summary_lines: List[str] = [str(feedback_text).strip()]
+    cv_summary_lines: List[str] = []
+    feedback_line = str(feedback_text).strip()
+    if feedback_line:
+        cv_summary_lines.append(feedback_line)
 
     def _append_section(title: str, items: List[str]) -> None:
-        if not items:
+        markdown_items = [f"- {entry}" for entry in items if entry]
+        if not markdown_items:
             return
         cv_summary_lines.append("")
         cv_summary_lines.append(f"### {title}")
-        for entry in items:
-            cv_summary_lines.append(f"- {entry}")
+        cv_summary_lines.extend(markdown_items)
 
     _append_section('Experiencia destacada', experience_details)
     _append_section('Formación', education_details)
     _append_section('Idiomas', language_details)
-    _append_section('Herramientas y tecnología', tools_details)
+    _append_section('Herramientas y tecnología', software_details)
 
     cv_summary_markdown = "\n".join(line for line in cv_summary_lines if line is not None).strip()
     # Determinar áreas de mejora usando datos del CV cuando existan
@@ -385,7 +389,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         interview_tips="Preparar respuestas STAR y practicar presentación de proyectos",
     )
     
-    productivity_tools = tools_details or ["Trello", "Notion", "Google Calendar"]
+    productivity_tools = software_details or ["Trello", "Notion", "Google Calendar"]
     job_search_tools = recommended_platforms if recommended_platforms else ["LinkedIn", "Glassdoor", "Resume.io"]
     useful_tools = UsefulTools(
         productivity=productivity_tools,
