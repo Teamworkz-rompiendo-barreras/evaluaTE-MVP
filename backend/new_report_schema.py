@@ -444,7 +444,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         job_search_advice=job_search_advice,
         useful_tools=useful_tools,
         employability_score=employability_score,
-        completed_games=['Evaluación de habilidades básicas completada'],
+        completed_games=[],
         final_message=f"{full_name}, tu perfil muestra un excelente potencial para el desarrollo profesional. Enfócate en construir experiencia práctica y desarrollar habilidades técnicas específicas. La constancia y el aprendizaje continuo serán tus mejores aliados en la búsqueda de empleo.",
     )
 
