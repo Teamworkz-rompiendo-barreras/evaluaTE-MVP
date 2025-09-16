@@ -477,8 +477,7 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
                 continue
         if game:
             games_list.append(str(game))
-    if games_list:
-        report.completed_games = games_list
+    report.completed_games = games_list
 
     preferred_platforms = job_pref_payload.get("preferred_platforms") or []
     if preferred_platforms:
