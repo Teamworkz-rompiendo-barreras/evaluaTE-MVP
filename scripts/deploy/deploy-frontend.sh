@@ -2,75 +2,146 @@
 
 set -euo pipefail
 
-echo "🔨 Construyendo frontend..."
-cd "$(dirname "$0")/../../nuevo-frontend"
-npm run build
+# -----------------------------------------------------------------------------
+# Despliega el frontend a Azure Static Web Apps.
+#
+# El token de despliegue nunca debe almacenarse en el repositorio. Proporciónalo
+# de forma segura en tiempo de ejecución exportando la variable de entorno
+# DEPLOYMENT_TOKEN o dejando que el script lo obtenga mediante
+# `az staticwebapp secrets list`. Consulta scripts/deploy/README.md para más
+# detalles sobre cómo integrarlo con un gestor de secretos o con tu pipeline de
+# CI/CD.
+# -----------------------------------------------------------------------------
 
-if [ ! -d "dist" ]; then
-  echo "❌ Error: No se generó dist/"
+RESOURCE_GROUP="evaluador-web_group"
+STATIC_WEB_APP="evaluador-web"
+SUBSCRIPTION_ID="824553b7-ed65-481c-bd34-5b6bcb6b360b"
+API_URL="https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Web/staticSites/${STATIC_WEB_APP}/deployments"
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRONTEND_DIR="${SCRIPT_DIR}/../../nuevo-frontend"
+DIST_DIR="${FRONTEND_DIR}/dist"
+PACKAGE_NAME="frontend-deploy.zip"
+PACKAGE_PATH="${FRONTEND_DIR}/${PACKAGE_NAME}"
+
+CLEANUP_DEPLOYMENT_TOKEN=false
+
+cleanup() {
+  rm -f "${PACKAGE_PATH}"
+  if [ "${CLEANUP_DEPLOYMENT_TOKEN}" = true ]; then
+    unset DEPLOYMENT_TOKEN
+  fi
+}
+
+trap cleanup EXIT
+
+require_command() {
+  if ! command -v "$1" >/dev/null 2>&1; then
+    printf '❌ Error: Se requiere el comando "%s" para ejecutar este script.\n' "$1" >&2
+    exit 1
+  fi
+}
+
+# Utiliza el token estándar de Static Web Apps si está disponible.
+if [ -z "${DEPLOYMENT_TOKEN:-}" ] && [ -n "${AZURE_STATIC_WEB_APPS_API_TOKEN:-}" ]; then
+  DEPLOYMENT_TOKEN="${AZURE_STATIC_WEB_APPS_API_TOKEN}"
+fi
+
+log() {
+  printf '%s\n' "$1"
+}
+
+obtain_deployment_token() {
+  if [ -n "${DEPLOYMENT_TOKEN:-}" ]; then
+    return 0
+  fi
+
+  if ! command -v az >/dev/null 2>&1; then
+    return 1
+  fi
+
+  log "🔐 Intentando obtener DEPLOYMENT_TOKEN con Azure CLI..."
+  local token
+  if ! token=$(az staticwebapp secrets list \
+      --name "${STATIC_WEB_APP}" \
+      --resource-group "${RESOURCE_GROUP}" \
+      --query "properties.apiKey" \
+      -o tsv 2>/dev/null); then
+    return 1
+  fi
+
+  if [ -z "${token}" ]; then
+    return 1
+  fi
+
+  export DEPLOYMENT_TOKEN="${token}"
+  CLEANUP_DEPLOYMENT_TOKEN=true
+  return 0
+}
+
+if ! obtain_deployment_token; then
+  cat >&2 <<'EOF'
+❌ Error: No se encontró el token de despliegue de Azure Static Web Apps.
+Proporciona el secreto exportando la variable de entorno DEPLOYMENT_TOKEN o
+asegúrate de tener Azure CLI instalado y autenticado para ejecutar
+`az staticwebapp secrets list`. Revisa scripts/deploy/README.md para más
+información.
+EOF
   exit 1
 fi
 
-NAME="frontend-build-$(date +%Y%m%d-%H%M%S).zip"
-echo "📦 Empaquetando: $NAME"
-cd dist
-zip -qr "../$NAME" .
-cd ..
+require_command npm
+require_command zip
+require_command curl
+require_command az
 
-echo "✅ Paquete creado: $(pwd)/$NAME"
-echo "
-Siguiente paso:
-- Sube manualmente el zip a Azure Static Web Apps o usa tu pipeline CI/CD.
-"
-
-#!/bin/bash
-
-echo "🚀 Desplegando frontend a Azure Static Web Apps..."
-
-# Configuración
-RESOURCE_GROUP="evaluador-web_group"
-STATIC_WEB_APP="evaluador-web"
-DEPLOYMENT_TOKEN="aebf1d49e3563ed29cbad51f918b803e42c75fe04ae919b300d466e29962b31206-02a10979-c52c-4d1b-8007-0ecee55f986d01e13320b6281c1e"
-API_URL="https://management.azure.com/subscriptions/824553b7-ed65-481c-bd34-5b6bcb6b360b/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Web/staticSites/${STATIC_WEB_APP}/deployments"
-
-# Construir el frontend
-echo "🔨 Construyendo el frontend..."
-cd nuevo-frontend
+log "🔨 Construyendo el frontend..."
+cd "${FRONTEND_DIR}"
 npm run build
 
-if [ ! -d "dist" ]; then
-    echo "❌ Error: No se pudo crear el directorio dist/"
-    exit 1
+if [ ! -d "${DIST_DIR}" ]; then
+  echo "❌ Error: No se pudo crear el directorio dist/" >&2
+  exit 1
 fi
 
-# Crear archivo ZIP para despliegue
-echo "📦 Creando archivo de despliegue..."
-cd dist
-zip -r ../frontend-deploy.zip .
-cd ..
+log "📦 Creando paquete de despliegue..."
+rm -f "${PACKAGE_PATH}"
+cd "${DIST_DIR}"
+zip -qr "${PACKAGE_PATH}" .
+cd "${FRONTEND_DIR}"
 
-# Desplegar usando la API REST de Azure
-echo "🚀 Desplegando a Azure..."
-curl -X POST "${API_URL}?api-version=2021-02-01" \
+if [ ! -f "${PACKAGE_PATH}" ]; then
+  echo "❌ Error: No se pudo crear el paquete ${PACKAGE_NAME}" >&2
+  exit 1
+fi
+
+log "✅ Paquete listo: ${PACKAGE_PATH}"
+
+log "🚀 Desplegando a Azure Static Web Apps..."
+response_file="$(mktemp)"
+status_code=$(curl --silent --show-error --fail-with-body \
+  -X POST "${API_URL}?api-version=2021-02-01" \
   -H "Authorization: Bearer $(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)" \
+  -H "x-azure-static-web-apps-deployment-token: ${DEPLOYMENT_TOKEN}" \
   -H "Content-Type: application/json" \
-  -d "{
-    \"properties\": {
-      \"source\": \"manual\",
-      \"buildProperties\": {
-        \"apiLocation\": \"\",
-        \"appLocation\": \".\",
-        \"outputLocation\": \".\"
-      }
-    }
-  }"
+  -d '{"properties":{"source":"manual","buildProperties":{"apiLocation":"","appLocation":".","outputLocation":"."}}}' \
+  -w '%{http_code}' \
+  -o "${response_file}" || true)
 
-echo "✅ Despliegue iniciado. Verificando estado..."
+if [ "${status_code}" != "202" ] && [ "${status_code}" != "200" ]; then
+  echo "❌ Error al iniciar el despliegue. Código HTTP: ${status_code}" >&2
+  cat "${response_file}" >&2 || true
+  rm -f "${response_file}"
+  exit 1
+fi
 
-# Verificar el estado del despliegue
+rm -f "${response_file}"
+log "✅ Despliegue iniciado. Verificando estado..."
+
 sleep 10
-az staticwebapp show --name ${STATIC_WEB_APP} --resource-group ${RESOURCE_GROUP} --query "defaultHostname" -o tsv
 
-echo ""
-echo "🎉 Frontend desplegado correctamente!"
-echo "🌐 URL: https://$(az staticwebapp show --name ${STATIC_WEB_APP} --resource-group ${RESOURCE_GROUP} --query "defaultHostname" -o tsv)"
+default_hostname=$(az staticwebapp show --name "${STATIC_WEB_APP}" --resource-group "${RESOURCE_GROUP}" --query "defaultHostname" -o tsv)
+
+log ""
+log "🎉 Frontend desplegado correctamente!"
+log "🌐 URL: https://${default_hostname}"
