@@ -88,28 +88,36 @@ fi
 
 log "✅ Paquete listo: ${PACKAGE_PATH}"
 
-log "🚀 Desplegando a Azure Static Web Apps..."
+log "🚀 Subiendo paquete a Azure Static Web Apps..."
 response_file="$(mktemp)"
-status_code=$(curl --silent --show-error --fail-with-body \
+status_code=$(curl --silent --show-error \
   -X POST "${API_URL}?api-version=2021-02-01" \
   -H "Authorization: Bearer $(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)" \
   -H "x-azure-static-web-apps-deployment-token: ${DEPLOYMENT_TOKEN}" \
-  -H "Content-Type: application/json" \
-  -d '{"properties":{"source":"manual","buildProperties":{"apiLocation":"","appLocation":".","outputLocation":"."}}}' \
+  -H "Content-Type: application/zip" \
+  --data-binary "@${PACKAGE_PATH}" \
   -w '%{http_code}' \
-  -o "${response_file}" || true)
+  -o "${response_file}")
+
+curl_exit_code=$?
+
+if [ "${curl_exit_code}" -ne 0 ]; then
+  echo "❌ Error al subir el paquete (curl exit ${curl_exit_code})." >&2
+  cat "${response_file}" >&2 || true
+  rm -f "${response_file}"
+  exit 1
+fi
 
 if [ "${status_code}" != "202" ] && [ "${status_code}" != "200" ]; then
-  echo "❌ Error al iniciar el despliegue. Código HTTP: ${status_code}" >&2
+  echo "❌ Error al subir el paquete. Código HTTP: ${status_code}" >&2
   cat "${response_file}" >&2 || true
   rm -f "${response_file}"
   exit 1
 fi
 
 rm -f "${response_file}"
-log "✅ Despliegue iniciado. Verificando estado..."
-
-sleep 10
+log "✅ Paquete subido correctamente. Eliminando artefacto temporal..."
+rm -f "${PACKAGE_PATH}"
 
 default_hostname=$(az staticwebapp show --name "${STATIC_WEB_APP}" --resource-group "${RESOURCE_GROUP}" --query "defaultHostname" -o tsv)
 
