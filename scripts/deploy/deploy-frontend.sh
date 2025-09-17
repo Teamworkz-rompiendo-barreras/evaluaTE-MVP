@@ -16,7 +16,6 @@ set -euo pipefail
 RESOURCE_GROUP="evaluador-web_group"
 STATIC_WEB_APP="evaluador-web"
 SUBSCRIPTION_ID="824553b7-ed65-481c-bd34-5b6bcb6b360b"
-API_URL="https://management.azure.com/subscriptions/${SUBSCRIPTION_ID}/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Web/staticSites/${STATIC_WEB_APP}/deployments"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 FRONTEND_DIR="${SCRIPT_DIR}/../../nuevo-frontend"
@@ -89,35 +88,18 @@ fi
 log "✅ Paquete listo: ${PACKAGE_PATH}"
 
 log "🚀 Subiendo paquete a Azure Static Web Apps..."
-response_file="$(mktemp)"
-status_code=$(curl --silent --show-error \
-  -X POST "${API_URL}?api-version=2021-02-01" \
-  -H "Authorization: Bearer $(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)" \
-  -H "x-azure-static-web-apps-deployment-token: ${DEPLOYMENT_TOKEN}" \
-  -H "Content-Type: application/zip" \
-  --data-binary "@${PACKAGE_PATH}" \
-  -w '%{http_code}' \
-  -o "${response_file}")
-
-curl_exit_code=$?
-
-if [ "${curl_exit_code}" -ne 0 ]; then
-  echo "❌ Error al subir el paquete (curl exit ${curl_exit_code})." >&2
-  cat "${response_file}" >&2 || true
-  rm -f "${response_file}"
-  exit 1
+if az staticwebapp upload \
+  --resource-group "${RESOURCE_GROUP}" \
+  --name "${STATIC_WEB_APP}" \
+  --source "${DIST_DIR}"; then
+  log "✅ Paquete subido correctamente. Eliminando artefacto temporal..."
+  rm -f "${PACKAGE_PATH}"
+else
+  upload_exit_code=$?
+  echo "❌ Error al subir el paquete (az staticwebapp upload exit ${upload_exit_code})." >&2
+  echo "ℹ️ El artefacto ${PACKAGE_PATH} se conserva para diagnóstico." >&2
+  exit "${upload_exit_code}"
 fi
-
-if [ "${status_code}" != "202" ] && [ "${status_code}" != "200" ]; then
-  echo "❌ Error al subir el paquete. Código HTTP: ${status_code}" >&2
-  cat "${response_file}" >&2 || true
-  rm -f "${response_file}"
-  exit 1
-fi
-
-rm -f "${response_file}"
-log "✅ Paquete subido correctamente. Eliminando artefacto temporal..."
-rm -f "${PACKAGE_PATH}"
 
 default_hostname=$(az staticwebapp show --name "${STATIC_WEB_APP}" --resource-group "${RESOURCE_GROUP}" --query "defaultHostname" -o tsv)
 
