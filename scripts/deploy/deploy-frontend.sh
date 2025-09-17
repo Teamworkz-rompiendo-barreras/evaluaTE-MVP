@@ -2,75 +2,64 @@
 
 set -euo pipefail
 
-echo "🔨 Construyendo frontend..."
-cd "$(dirname "$0")/../../nuevo-frontend"
-npm run build
-
-if [ ! -d "dist" ]; then
-  echo "❌ Error: No se generó dist/"
-  exit 1
-fi
-
-NAME="frontend-build-$(date +%Y%m%d-%H%M%S).zip"
-echo "📦 Empaquetando: $NAME"
-cd dist
-zip -qr "../$NAME" .
-cd ..
-
-echo "✅ Paquete creado: $(pwd)/$NAME"
-echo "
-Siguiente paso:
-- Sube manualmente el zip a Azure Static Web Apps o usa tu pipeline CI/CD.
-"
-
-#!/bin/bash
-
 echo "🚀 Desplegando frontend a Azure Static Web Apps..."
 
-# Configuración
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+FRONTEND_DIR="${SCRIPT_DIR}/../../nuevo-frontend"
+DIST_DIR="${FRONTEND_DIR}/dist"
+
 RESOURCE_GROUP="evaluador-web_group"
 STATIC_WEB_APP="evaluador-web"
 DEPLOYMENT_TOKEN="aebf1d49e3563ed29cbad51f918b803e42c75fe04ae919b300d466e29962b31206-02a10979-c52c-4d1b-8007-0ecee55f986d01e13320b6281c1e"
-API_URL="https://management.azure.com/subscriptions/824553b7-ed65-481c-bd34-5b6bcb6b360b/resourceGroups/${RESOURCE_GROUP}/providers/Microsoft.Web/staticSites/${STATIC_WEB_APP}/deployments"
+ZIPDEPLOY_URL="https://${STATIC_WEB_APP}.scm.azurestaticapps.net/api/zipdeploy"
 
-# Construir el frontend
-echo "🔨 Construyendo el frontend..."
-cd nuevo-frontend
-npm run build
-
-if [ ! -d "dist" ]; then
-    echo "❌ Error: No se pudo crear el directorio dist/"
-    exit 1
+if [ ! -d "${FRONTEND_DIR}" ]; then
+  echo "❌ Error: No se encontró el directorio ${FRONTEND_DIR}."
+  exit 1
 fi
 
-# Crear archivo ZIP para despliegue
-echo "📦 Creando archivo de despliegue..."
-cd dist
-zip -r ../frontend-deploy.zip .
-cd ..
+cd "${FRONTEND_DIR}"
 
-# Desplegar usando la API REST de Azure
-echo "🚀 Desplegando a Azure..."
-curl -X POST "${API_URL}?api-version=2021-02-01" \
-  -H "Authorization: Bearer $(az account get-access-token --resource https://management.azure.com --query accessToken -o tsv)" \
-  -H "Content-Type: application/json" \
-  -d "{
-    \"properties\": {
-      \"source\": \"manual\",
-      \"buildProperties\": {
-        \"apiLocation\": \"\",
-        \"appLocation\": \".\",
-        \"outputLocation\": \".\"
-      }
-    }
-  }"
+if [ -d "${DIST_DIR}" ] && [ -n "$(find "${DIST_DIR}" -mindepth 1 -maxdepth 1 -print -quit)" ]; then
+  echo "♻️ Reutilizando build existente en dist/."
+else
+  echo "🔨 Construyendo frontend..."
+  npm run build
+fi
 
-echo "✅ Despliegue iniciado. Verificando estado..."
+if [ ! -d "${DIST_DIR}" ] || [ -z "$(find "${DIST_DIR}" -mindepth 1 -print -quit)" ]; then
+  echo "❌ Error: No se pudo encontrar un build válido en dist/."
+  exit 1
+fi
 
-# Verificar el estado del despliegue
-sleep 10
-az staticwebapp show --name ${STATIC_WEB_APP} --resource-group ${RESOURCE_GROUP} --query "defaultHostname" -o tsv
+PACKAGE_NAME="frontend-build-$(date +%Y%m%d-%H%M%S).zip"
+PACKAGE_PATH="${FRONTEND_DIR}/${PACKAGE_NAME}"
+
+echo "📦 Empaquetando dist/ en ${PACKAGE_PATH}"
+(
+  cd "${DIST_DIR}"
+  zip -qr "${PACKAGE_PATH}" .
+)
+
+cd "${SCRIPT_DIR}"
+
+if ! command -v curl >/dev/null 2>&1; then
+  echo "❌ Error: curl no está instalado en el sistema."
+  exit 1
+fi
+
+echo "🚀 Subiendo paquete a Azure Static Web Apps..."
+if ! curl --fail --show-error --silent \
+  -X POST "${ZIPDEPLOY_URL}" \
+  -H "Authorization: Bearer ${DEPLOYMENT_TOKEN}" \
+  -H "Content-Type: application/zip" \
+  --data-binary @"${PACKAGE_PATH}"; then
+  echo ""
+  echo "❌ Error: fallo al subir el artefacto generado."
+  exit 1
+fi
 
 echo ""
-echo "🎉 Frontend desplegado correctamente!"
-echo "🌐 URL: https://$(az staticwebapp show --name ${STATIC_WEB_APP} --resource-group ${RESOURCE_GROUP} --query "defaultHostname" -o tsv)"
+echo "✅ Frontend desplegado correctamente."
+echo "📦 Paquete utilizado: ${PACKAGE_PATH}"
+echo "🌐 URL: https://${STATIC_WEB_APP}.azurestaticapps.net"
