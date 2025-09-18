@@ -441,13 +441,52 @@ const ResultadosPage: React.FC = () => {
             const sorted = [...(normalized.soft_skills || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
             const s1 = normalize(sorted[0]?.skill);
             const s2 = normalize(sorted[1]?.skill);
+            const normalizeMode = (value: unknown): 'remoto' | 'híbrido' | 'presencial' | '' => {
+              if (typeof value !== 'string') return '';
+              const raw = value.trim();
+              if (!raw) return '';
+              const lower = raw
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+              if (/(hibrid|mixt|combin|flexib|dual|semipresenc)/.test(lower)) return 'híbrido';
+              if (/(remot|teletrab|home\s*office|desde casa|work from home)/.test(lower)) return 'remoto';
+              if (/(presenc|oficina|onsite|en sitio|en-sitio|cara a cara|oficinas)/.test(lower)) return 'presencial';
+              return '';
+            };
+
             const jobPreferences = (
               (report?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
+              ((report as Record<string, unknown> | undefined)?.['job_preferences'] as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
               (personal?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined)
             );
-            const preferredMode = jobPreferences?.['workMode']
-              ?? jobPreferences?.['work_mode']
-              ?? jobPreferences?.['mode'];
+
+            const resolvedPersonalPrefs = resolveJobPreferences({
+              jobPreferences: personal?.jobPreferences as Partial<JobPreference> | string | undefined,
+              workMode: personal?.workMode,
+              availability: personal?.availability,
+              willingToRelocate: personal?.willingToRelocate,
+              hasDisabilityCert: personal?.hasDisabilityCert,
+            });
+
+            const personalJobPreferences = personal?.jobPreferences;
+            const personalHasPreferences = Boolean(
+              (typeof personalJobPreferences === 'string' && personalJobPreferences.trim().length > 0) ||
+              (personalJobPreferences && typeof personalJobPreferences === 'object') ||
+              personal?.completed
+            );
+
+            const normalizedWorkEnvironment = normalizeMode(normalized?.ideal_work_environment);
+
+            const preferredMode =
+              normalizeMode(jobPreferences?.['workMode']) ||
+              normalizeMode(jobPreferences?.['work_mode']) ||
+              normalizeMode(jobPreferences?.['preferredMode']) ||
+              normalizeMode(jobPreferences?.['preferred_mode']) ||
+              normalizeMode(jobPreferences?.['mode']) ||
+              (personalHasPreferences ? normalizeMode(resolvedPersonalPrefs.workMode) : '') ||
+              normalizedWorkEnvironment;
+
             const remotePref = (() => {
               if (preferredMode === 'remoto') return 'el trabajo remoto';
               if (preferredMode === 'híbrido') return 'los entornos híbridos';
