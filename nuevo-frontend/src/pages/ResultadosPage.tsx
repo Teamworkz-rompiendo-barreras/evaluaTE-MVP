@@ -456,12 +456,28 @@ const ResultadosPage: React.FC = () => {
               if (remoteWork === true) return 'el trabajo remoto';
               return 'los entornos presenciales';
             })();
-            const rolesArr: any[] = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
-            const roleName = (r:any)=> (r?.name||r?.title||r?.role||r?.label||r?.position||r?.jobTitle||'');
-            const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0,2).join(' y ') || 'roles administrativos';
-            const improv: any[] = Array.isArray((data as any)?.report?.improvement_areas) ? (data as any).report.improvement_areas : [];
-            const clean = (v:string)=> String(v||'').replace(/\s*\((?:\d+%?|\d+\s*\/\s*\d+)\)\s*/g,'').trim();
-            const improvementAreas = improv.map(a=> clean(a?.area||a?.name||'')).filter(Boolean).slice(0,2).join(' y ') || 'tus áreas de mejora';
+            const normalizedRoles = Array.isArray(normalized?.suggested_roles) ? normalized.suggested_roles : [];
+            const legacyRoles = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
+            const rolesArr = normalizedRoles.length > 0 ? normalizedRoles : legacyRoles;
+            const roleName = (r: any) => {
+              if (!r) return '';
+              if (typeof r === 'string') return r;
+              return r?.role || r?.name || r?.title || r?.label || r?.position || r?.jobTitle || '';
+            };
+            const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0, 2).join(' y ') || 'roles administrativos';
+            const normalizedImprovements = Array.isArray(normalized?.improvement_areas) ? normalized.improvement_areas : [];
+            const legacyImprovements = Array.isArray((data as any)?.report?.improvement_areas) ? (data as any).report.improvement_areas : [];
+            const improv = normalizedImprovements.length > 0 ? normalizedImprovements : legacyImprovements;
+            const clean = (v: string) => String(v || '').replace(/\s*\((?:\d+%?|\d+\s*\/\s*\d+)\)\s*/g, '').trim();
+            const improvementAreas = improv
+              .map((a: any) => {
+                if (!a) return '';
+                if (typeof a === 'string') return clean(a);
+                return clean(a?.area || a?.name || '');
+              })
+              .filter(Boolean)
+              .slice(0, 2)
+              .join(' y ') || 'tus áreas de mejora';
             const fortalezas = s1 && s2 ? `Aprovecha tu ${s1} y ${s2} para avanzar hacia tus objetivos profesionales.` : s1 ? `Aprovecha tu ${s1} para avanzar hacia tus objetivos profesionales.` : 'Aprovecha tus fortalezas para avanzar hacia tus objetivos profesionales.';
             return `Este informe ha sido elaborado a partir de tus preferencias laborales, los resultados de los minijuegos y tu CV.\n\n${firstName}, tu perfil muestra una base sólida de habilidades y una clara orientación al crecimiento.\n\n${fortalezas} Además, ${remotePref} y ${roleHint} encajan con tus competencias. Continúa desarrollando ${improvementAreas} y mantén la motivación: tu potencial está en constante evolución.`;
           })();
