@@ -441,7 +441,21 @@ const ResultadosPage: React.FC = () => {
             const sorted = [...(normalized.soft_skills || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
             const s1 = normalize(sorted[0]?.skill);
             const s2 = normalize(sorted[1]?.skill);
-            const remotePref = (report?.jobPreferences as any)?.remoteWork ? 'el trabajo remoto' : 'los entornos presenciales';
+            const jobPreferences = (
+              (report?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
+              (personal?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined)
+            );
+            const preferredMode = jobPreferences?.['workMode']
+              ?? jobPreferences?.['work_mode']
+              ?? jobPreferences?.['mode'];
+            const remotePref = (() => {
+              if (preferredMode === 'remoto') return 'el trabajo remoto';
+              if (preferredMode === 'híbrido') return 'los entornos híbridos';
+              if (preferredMode === 'presencial') return 'los entornos presenciales';
+              const remoteWork = jobPreferences?.['remoteWork'];
+              if (remoteWork === true) return 'el trabajo remoto';
+              return 'los entornos presenciales';
+            })();
             const rolesArr: any[] = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
             const roleName = (r:any)=> (r?.name||r?.title||r?.role||r?.label||r?.position||r?.jobTitle||'');
             const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0,2).join(' y ') || 'roles administrativos';
