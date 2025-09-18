@@ -441,7 +441,48 @@ const ResultadosPage: React.FC = () => {
             const sorted = [...(normalized.soft_skills || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
             const s1 = normalize(sorted[0]?.skill);
             const s2 = normalize(sorted[1]?.skill);
-            const remotePref = (report?.jobPreferences as any)?.remoteWork ? 'el trabajo remoto' : 'los entornos presenciales';
+            const normalizeWorkModePreference = (value: unknown): '' | 'remoto' | 'híbrido' | 'presencial' => {
+              if (value === null || value === undefined) return '';
+              const normalized = String(value).trim().toLowerCase();
+              if (!normalized) return '';
+              if (/(remoto|teletrabajo|distancia)/.test(normalized)) return 'remoto';
+              if (/(h[ií]brido|mixto|combinado)/.test(normalized)) return 'híbrido';
+              if (/(presencial|presencia|oficina|site)/.test(normalized)) return 'presencial';
+              return '';
+            };
+
+            const extractWorkModeFromNormalized = (): string => {
+              const fromPersonalData = (normalized?.personal_data as any)?.work_mode
+                ?? (normalized?.personal_data as any)?.workMode;
+              if (fromPersonalData) return String(fromPersonalData);
+              const env = normalized?.ideal_work_environment;
+              if (typeof env === 'string') {
+                const match = env.match(/Modalidad preferida:\s*([^—\n]+)/i);
+                if (match?.[1]) return match[1].trim();
+                return env;
+              }
+              return '';
+            };
+
+            const resolvedPreferences = resolveJobPreferences(personal);
+            const jobPreferences = report?.jobPreferences as Record<string, unknown> | undefined;
+            const preferredMode = [
+              jobPreferences?.workMode,
+              jobPreferences?.work_mode,
+              jobPreferences?.mode,
+              extractWorkModeFromNormalized(),
+              resolvedPreferences?.workMode,
+            ]
+              .map((candidate) => normalizeWorkModePreference(candidate))
+              .find(Boolean) || '';
+
+            const remotePref = preferredMode === 'remoto'
+              ? 'el trabajo remoto'
+              : preferredMode === 'híbrido'
+                ? 'los entornos de trabajo híbridos'
+                : preferredMode === 'presencial'
+                  ? 'los entornos presenciales'
+                  : 'los entornos laborales que impulsan tu crecimiento';
             const rolesArr: any[] = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
             const roleName = (r:any)=> (r?.name||r?.title||r?.role||r?.label||r?.position||r?.jobTitle||'');
             const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0,2).join(' y ') || 'roles administrativos';
