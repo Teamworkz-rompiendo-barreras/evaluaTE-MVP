@@ -32,11 +32,13 @@ PRODUCTION=true
 HOST=0.0.0.0
 PORT=8080
 PYTHONPATH=./backend
-AZURE_OPENAI_API_KEY=4ku7UcKVerAXcTXurf4Of1aDGC5w5UreekGaLuxbsnuxOdZe48NdJQQJ99BGACR0EKYXJ3w3AAABACOGiqbl
-AZURE_OPENAI_ENDPOINT=https://teamworkzevaluate-openai.openai.azure.com
+AZURE_OPENAI_API_KEY=<TU_API_KEY>
+AZURE_OPENAI_ENDPOINT=https://<TU_ENDPOINT>.openai.azure.com
 AZURE_OPENAI_DEPLOYMENT=gpt-4o
 AZURE_OPENAI_API_VERSION=2024-11-20
 ```
+
+> ⚠️ **Seguridad**: Carga todas las credenciales (por ejemplo, `AZURE_OPENAI_API_KEY` y `AZURE_OPENAI_ENDPOINT`) mediante variables de entorno o gestores de secretos. Nunca las almacenes directamente en el repositorio ni en archivos versionados.
 
 ### Paso 2: Configurar Startup Command
 En Azure App Service > Configuration > General settings:
@@ -104,6 +106,11 @@ az webapp restart \
 2. **La configuración de CORS es secundaria** pero necesaria para el funcionamiento completo
 3. **Después de configurar las variables, el backend debería funcionar correctamente**
 4. **Los cambios son compatibles con desarrollo local y producción**
+
+## 🛡️ Acciones de Seguridad Inmediatas
+
+1. Coordina con el equipo de infraestructura para **revocar y rotar de inmediato la clave expuesta** en Azure OpenAI.
+2. Si el repositorio es público, sigue el procedimiento interno de seguridad para **purgar el secreto del historial** (por ejemplo, utilizando `git filter-repo`) una vez que la rotación se haya completado.
 
 ## 🎉 Resultado Esperado
 
