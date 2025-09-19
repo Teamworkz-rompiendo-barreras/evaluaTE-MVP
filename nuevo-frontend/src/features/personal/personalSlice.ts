@@ -156,10 +156,9 @@ export const personalSlice = createSlice({
       };
     },
 
-    // Guarda análisis del CV en el estado usando la interfaz tipada
+    // Guarda análisis completo del CV (contacto, experiencia, educación, etc.)
     saveCvAnalysis(state, action: PayloadAction<CvAnalysis>) {
-      const analysis: CvAnalysis = { ...action.payload };
-      // Solo log en desarrollo para debugging
+      const analysis = action.payload;
       if (import.meta?.env?.DEV) {
         console.log('🔍 DEBUG - Reducer saveCvAnalysis ejecutado con payload:', analysis);
       }
@@ -170,7 +169,6 @@ export const personalSlice = createSlice({
         unlockedGames: Math.min(10, state.unlockedGames + 1),
       };
 
-      // Solo log en desarrollo para debugging
       if (import.meta?.env?.DEV) {
         console.log('🔍 DEBUG - Nuevo estado después de saveCvAnalysis:', newState);
       }
@@ -213,34 +211,29 @@ export const personalSlice = createSlice({
     // Registra decisiones tomadas durante escenas
     addSceneDecision(state, action: PayloadAction<UserDecision>) {
       const sceneId = action.payload.sceneId;
-      const logs = (state.report && Array.isArray(state.report as unknown))
-        ? (state.report as unknown as SceneLog[])
-        : [];
+      const existingIndex: number = state.logs.findIndex(
+        (log: SceneLog) => log.sceneId === String(sceneId),
+      );
+      const existingLog = state.logs[existingIndex];
 
-      const existingIndex: number = logs.findIndex((log: SceneLog) => log.sceneId === String(sceneId));
-
-      if (existingIndex > -1) {
-        const existingLog = logs[existingIndex];
-        if (existingLog) {
-          existingLog.decisions.push(action.payload);
-        }
-        state.report = {
-          ...((state.report ?? {}) as EmployabilityReport),
-        } as EmployabilityReport;
+      if (existingLog) {
+        existingLog.decisions.push(action.payload);
       } else {
-        state.logs = [
-          ...logs,
-          {
-            sceneId: String(sceneId),
-            decisions: [action.payload],
-            totalSteps: 5,
-            totalTime: 300,
-            averageConfidence: action.payload.skillImpacts[action.payload.optionText] || 0.6,
-            emotionalTrend: ['positivo', 'neutro'] as ('positivo' | 'neutro' | 'negativo')[],
-            accessibilityUsed: !!state.accessibilitySettings,
-            accessibilitySettings: state.accessibilitySettings,
-          },
-        ];
+        state.logs.push({
+          sceneId: String(sceneId),
+          decisions: [action.payload],
+          totalSteps: 5,
+          totalTime: 300,
+          averageConfidence:
+            action.payload.skillImpacts[action.payload.optionText] || 0.6,
+          emotionalTrend: ['positivo', 'neutro'] as (
+            | 'positivo'
+            | 'neutro'
+            | 'negativo'
+          )[],
+          accessibilityUsed: !!state.accessibilitySettings,
+          accessibilitySettings: state.accessibilitySettings,
+        });
       }
     },
 

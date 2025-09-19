@@ -77,83 +77,153 @@ OCR_AVAILABLE = False
 _pytesseract_imported = False
 _pil_imported = False
 
-def _import_ocr_dependencies():
-    """Importa dependencias de OCR solo cuando se necesitan"""
+
+def _import_ocr_dependencies() -> bool:
+    """Importa dependencias de OCR solo cuando se necesitan."""
     global OCR_AVAILABLE, _pytesseract_imported, _pil_imported
-    
+
     if not _pytesseract_imported:
         try:
-            import pytesseract  # type: ignore
+            import pytesseract  # type: ignore  # noqa: F401
             _pytesseract_imported = True
         except ImportError:
             return False
-    
+
     if not _pil_imported:
         try:
-            from PIL import Image  # type: ignore
+            from PIL import Image  # type: ignore  # noqa: F401
             _pil_imported = True
         except ImportError:
             return False
-    
+
     OCR_AVAILABLE = True
     return True
 
-def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> str:
+
+def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> tuple[str, Dict[str, Any]]:
+    """Extrae texto combinando PyMuPDF y OCR para todas las páginas.
+
+    Devuelve una tupla ``(texto, metadata)`` donde ``metadata`` describe si se
+    utilizaron PyMuPDF y/o OCR, páginas procesadas y posibles errores.
     """
-    Extrae texto de un PDF usando OCR avanzado para todas las páginas
-    """
+
+    doc = None
+    metadata: Dict[str, Any] = {
+        "pages": 0,
+        "py_mupdf_attempted": True,
+        "py_mupdf_used": False,
+        "py_mupdf_pages": [],
+        "ocr_available": False,
+        "ocr_attempted": False,
+        "ocr_used": False,
+        "ocr_pages": [],
+        "ocr_errors": [],
+    }
+
     try:
         doc = fitz.open(stream=pdf_buffer, filetype="pdf")  # type: ignore
-        text = ""
-        
-        # Procesar todas las páginas
+        text_segments: List[str] = []
+        seen_segments: set[str] = set()
+
+        ocr_ready = _import_ocr_dependencies()
+        metadata["ocr_available"] = bool(ocr_ready)
+        if ocr_ready:
+            try:
+                import pytesseract  # type: ignore
+                from PIL import Image  # type: ignore
+            except ImportError:
+                metadata["ocr_available"] = False
+                ocr_ready = False
+
         for page_num in range(len(doc)):
             page = doc[page_num]
-            
-            # Intentar extraer texto normal primero
-            page_text = page.get_text("text")
-            
-            # Si hay texto suficiente, usarlo
-            if len(page_text.strip()) > 20:
-                text += page_text + "\n"
-            elif _import_ocr_dependencies():
-                # Usar OCR para páginas sin texto o con poco texto
+            metadata["pages"] += 1
+
+            # Siempre intentamos extraer texto con PyMuPDF
+            page_text = (page.get_text("text") or "").strip()
+            metadata["py_mupdf_pages"].append(page_num)
+            if page_text:
+                metadata["py_mupdf_used"] = True
+                if page_text not in seen_segments:
+                    text_segments.append(page_text)
+                    seen_segments.add(page_text)
+
+            # Ejecutar OCR en paralelo para enriquecer el texto
+            if ocr_ready:
+                metadata["ocr_attempted"] = True
                 try:
-                    # Obtener imagen de alta resolución
-                    zoom = 2.0  # Aumentar resolución para mejor OCR
+                    zoom = 2.0  # Mayor resolución para OCR
                     mat = fitz.Matrix(zoom, zoom)
                     pix = page.get_pixmap(matrix=mat)
                     img_data = pix.tobytes("png")
                     img = Image.open(io.BytesIO(img_data))
-                    
-                    # Configurar OCR optimizado para CVs
-                    ocr_config = '--psm 6 --oem 3 -c tessedit_char_whitelist=ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@.-_()/\\|,;: '
-                    
-                    ocr_text = pytesseract.image_to_string(
-                        img, 
-                        lang='spa+eng',
-                        config=ocr_config
+
+                    ocr_config = (
+                        "--psm 6 --oem 3 "
+                        "-c tessedit_char_whitelist="
+                        "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@.-_()/\\|,;: "
                     )
-                    
-                    if ocr_text.strip():
-                        text += ocr_text + "\n"
-                    else:
-                        # Si OCR no funciona, usar el texto disponible
-                        text += page_text + "\n"
-                        
-                except Exception as e:
-                    print(f"⚠️ Error en OCR página {page_num}: {e}")
-                    text += page_text + "\n"
-            else:
-                # Si no hay OCR, usar el texto disponible
-                text += page_text + "\n"
-        
-        doc.close()
-        return text.strip()
-        
-    except Exception as e:
+
+                    ocr_text = pytesseract.image_to_string(
+                        img,
+                        lang="spa+eng",
+                        config=ocr_config,
+                    )
+                    normalized = (ocr_text or "").strip()
+                    if normalized:
+                        metadata["ocr_used"] = True
+                        metadata["ocr_pages"].append(page_num)
+                        if normalized not in seen_segments:
+                            text_segments.append(normalized)
+                            seen_segments.add(normalized)
+                except Exception as ocr_error:  # pragma: no cover - diagnóstico
+                    metadata["ocr_errors"].append({
+                        "page": page_num,
+                        "error": str(ocr_error),
+                    })
+
+        combined_text = "\n\n".join(text_segments).strip()
+        metadata["combined_text_length"] = len(combined_text)
+        return combined_text, metadata
+
+    except Exception as e:  # pragma: no cover - errores inesperados
         print(f"❌ Error extrayendo texto: {e}")
-        return ""
+        metadata["error"] = str(e)
+        return "", metadata
+    finally:
+        try:
+            if doc is not None:
+                doc.close()
+        except Exception:  # pragma: no cover - cleanup defensivo
+            pass
+
+
+_JSON_CODE_BLOCK_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL | re.IGNORECASE)
+
+
+def _normalize_ai_json_response(content: str) -> str:
+    """Normaliza la respuesta de Azure OpenAI para extraer únicamente el JSON."""
+
+    if not isinstance(content, str):
+        return str(content)
+
+    cleaned = content.strip()
+
+    block_match = _JSON_CODE_BLOCK_RE.search(cleaned)
+    if block_match:
+        return block_match.group(1).strip()
+
+    lowered = cleaned.lower()
+    if lowered.startswith("json"):
+        cleaned = cleaned[4:].strip(": \n\r\t")
+
+    first_brace = cleaned.find("{")
+    last_brace = cleaned.rfind("}")
+    if first_brace != -1 and last_brace != -1 and last_brace >= first_brace:
+        return cleaned[first_brace:last_brace + 1].strip()
+
+    return cleaned
+
 
 def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
     """
@@ -282,22 +352,23 @@ IMPORTANTE:
         
         print("📥 Respuesta recibida de Azure OpenAI")
         
-        # Extraer el contenido de la respuesta
+        # Extraer y normalizar el contenido de la respuesta
         content = response.choices[0].message.content
         if content is None:
             raise ValueError("Respuesta vacía de Azure OpenAI")
-        content = content.strip()
-        
+        normalized_content = _normalize_ai_json_response(content)
+
         # Intentar parsear el JSON
         try:
-            import json
-            cv_data = json.loads(content)
+            cv_data = json.loads(normalized_content)
             print("✅ JSON parseado correctamente")
             return cv_data
-        except json.JSONDecodeError as e:
+        except (json.JSONDecodeError, TypeError) as e:
             print(f"⚠️ Error parseando JSON: {e}")
-            print(f"📝 Contenido recibido: {content[:200]}...")
-            
+            print(f"📝 Contenido recibido: {str(content)[:200]}...")
+            if normalized_content != content:
+                print(f"🧹 Contenido normalizado: {normalized_content[:200]}...")
+
             # Fallback: intentar extraer información básica del texto
             return extract_basic_cv_data_from_text(text)
             
@@ -918,59 +989,290 @@ except ImportError:
     DOCUMENT_INTELLIGENCE_AVAILABLE = False
     print("⚠️ Document Intelligence no disponible, usando método tradicional")
 
+
 def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
-    """
-    Extrae y analiza información de un CV en PDF usando Azure AI Document Intelligence
-    como método principal, con fallback al método tradicional
-    """
+    """Extrae y analiza información de un CV en PDF."""
+
     file_size = len(pdf_buffer) if pdf_buffer else 0
     logger.info("Iniciando análisis de CV (%d bytes)", file_size)
+    processing_metadata: Dict[str, Any] = {
+        "document_intelligence": {
+            "attempted": bool(DOCUMENT_INTELLIGENCE_AVAILABLE),
+            "used": False,
+            "error": None,
+        },
+        "text_extraction": {},
+    }
+
     try:
         print("🚀 Iniciando análisis de CV...")
-        
-        # Intentar usar Document Intelligence primero
+
+        di_result: Optional[Dict[str, Any]] = None
+        di_error: Optional[str] = None
+
         if DOCUMENT_INTELLIGENCE_AVAILABLE:
             print("🤖 Intentando análisis con Azure AI Document Intelligence...")
-            result = analyze_cv_with_improved_intelligence(pdf_buffer)
-            
-            if not result.get("error") and result.get("document_intelligence_used"):
-                print("✅ Análisis completado con Document Intelligence")
-                return result
+            try:
+                di_attempt = analyze_cv_with_improved_intelligence(pdf_buffer)
+            except Exception as di_exc:  # pragma: no cover - diagnóstico
+                di_error = str(di_exc)
             else:
-                print("⚠️ Document Intelligence no disponible o falló, usando método tradicional")
-        
-        # Fallback al método tradicional
-        print("📄 Usando método tradicional de extracción...")
-        
-        # Extraer texto del PDF con OCR avanzado
-        print("📄 Extrayendo texto del PDF...")
-        text = extract_text_with_advanced_ocr(pdf_buffer)
-        
-        if not text.strip():
+                if di_attempt and not di_attempt.get("error") and di_attempt.get("document_intelligence_used"):
+                    di_result = di_attempt
+                    processing_metadata["document_intelligence"]["used"] = True
+                    print("✅ Análisis completado con Document Intelligence")
+                else:
+                    di_error = (di_attempt or {}).get("error") or "Resultado vacío de Document Intelligence"
+
+            if di_error:
+                processing_metadata["document_intelligence"]["error"] = di_error
+                print(f"⚠️ Document Intelligence no disponible o falló: {di_error}")
+        else:
+            print("ℹ️ Document Intelligence no disponible, se combinarán métodos locales")
+
+        print("📄 Extrayendo texto del PDF con PyMuPDF + OCR...")
+        text, text_meta = extract_text_with_advanced_ocr(pdf_buffer)
+        processing_metadata["text_extraction"] = text_meta
+        print(
+            f"✅ Texto combinado extraído: {text_meta.get('combined_text_length', len(text))} caracteres"
+        )
+
+        # Helper para listas únicas y limpias
+        def _to_unique_list(*values: Any) -> List[str]:
+            merged: List[str] = []
+            seen: set[str] = set()
+            for value in values:
+                if isinstance(value, list):
+                    iter_values = value
+                elif value is None or value == "":
+                    iter_values = []
+                else:
+                    iter_values = [value]
+                for item in iter_values:
+                    if item is None:
+                        continue
+                    normalized = str(item).strip()
+                    if not normalized or normalized.lower() == "none":
+                        continue
+                    if normalized not in seen:
+                        merged.append(normalized)
+                        seen.add(normalized)
+            return merged
+
+        # Determinar texto útil para heurísticas adicionales
+        di_raw_text = ""
+        if di_result and isinstance(di_result.get("raw_text"), str):
+            di_raw_text = di_result["raw_text"]
+
+        candidate_text = text if text.strip() else di_raw_text
+
+        if di_result:
+            # Fusionar datos de Document Intelligence con la extracción local
+            contact_di = di_result.get("contact") or {}
+            fallback_contact = extract_contact_info_enhanced(candidate_text or di_raw_text)
+
+            name_candidate = (
+                contact_di.get("name")
+                or contact_di.get("nombre")
+                or fallback_contact.get("nombre")
+                or ""
+            )
+            merged_contact = {
+                "name": name_candidate,
+                "nombre": name_candidate,
+                "emails": _to_unique_list(contact_di.get("emails"), fallback_contact.get("email")),
+                "phones": _to_unique_list(contact_di.get("phones"), fallback_contact.get("telefono")),
+                "location": contact_di.get("location") or fallback_contact.get("ubicacion") or "",
+                "linkedin": contact_di.get("linkedin") or fallback_contact.get("linkedin") or "",
+            }
+
+            def _normalize_experience(items: Any) -> List[Dict[str, Any]]:
+                normalized: List[Dict[str, Any]] = []
+                for item in items or []:
+                    if isinstance(item, dict):
+                        normalized.append({
+                            "empresa": (item.get("company") or item.get("empresa") or "").strip(),
+                            "cargo": (item.get("position") or item.get("cargo") or "").strip(),
+                            "fecha_inicio": (item.get("start_date") or item.get("fecha_inicio") or "").strip(),
+                            "fecha_fin": (item.get("end_date") or item.get("fecha_fin") or ("Actualidad" if item.get("current") else "")).strip(),
+                            "descripcion": (item.get("description") or item.get("descripcion") or "").strip(),
+                            "responsabilidades": item.get("responsibilities") or item.get("responsabilidades") or [],
+                            "logros": item.get("achievements") or item.get("logros") or [],
+                            "tecnologias": item.get("technologies") or item.get("tecnologias") or [],
+                        })
+                    else:
+                        normalized.append({
+                            "empresa": str(item),
+                            "cargo": "",
+                            "fecha_inicio": "",
+                            "fecha_fin": "",
+                            "descripcion": "",
+                            "responsabilidades": [],
+                            "logros": [],
+                            "tecnologias": [],
+                        })
+                return normalized
+
+            def _normalize_education(items: Any) -> List[Dict[str, Any]]:
+                normalized: List[Dict[str, Any]] = []
+                for item in items or []:
+                    if isinstance(item, dict):
+                        normalized.append({
+                            "titulo": (item.get("degree") or item.get("titulo") or item.get("title") or "").strip(),
+                            "institucion": (item.get("institution") or item.get("institucion") or item.get("school") or "").strip(),
+                            "fecha_inicio": (item.get("start_date") or item.get("fecha_inicio") or "").strip(),
+                            "fecha_fin": (item.get("end_date") or item.get("fecha_fin") or "").strip(),
+                            "nivel": (item.get("level") or item.get("nivel") or "").strip(),
+                        })
+                    else:
+                        normalized.append({
+                            "titulo": str(item),
+                            "institucion": "",
+                            "fecha_inicio": "",
+                            "fecha_fin": "",
+                            "nivel": "",
+                        })
+                return normalized
+
+            def _normalize_languages(items: Any) -> List[Dict[str, Any]]:
+                normalized: List[Dict[str, Any]] = []
+                for item in items or []:
+                    if isinstance(item, dict):
+                        idioma = item.get("language") or item.get("idioma") or ""
+                        nivel = item.get("level") or item.get("nivel") or ""
+                        normalized.append({"idioma": idioma, "nivel": nivel})
+                    else:
+                        normalized.append({"idioma": str(item), "nivel": ""})
+                return normalized
+
+            experience_structured = _normalize_experience(di_result.get("experience"))
+            education_structured = _normalize_education(di_result.get("education"))
+            languages_structured = _normalize_languages(di_result.get("languages"))
+
+            software_items = di_result.get("software") or []
+            software_for_cv_info = [
+                {"name": str(item), "level": ""}
+                for item in software_items
+                if item
+            ]
+            software_for_structure = [
+                {"herramienta": str(item), "nivel": "No especificado"}
+                for item in software_items
+                if item
+            ]
+
+            resumen_profesional = (di_result.get("summary") or di_result.get("feedback") or candidate_text[:400]).strip()
+
+            cv_info = {
+                "contacto": {
+                    "nombre": merged_contact["name"],
+                    "email": merged_contact["emails"][0] if merged_contact["emails"] else "",
+                    "telefono": merged_contact["phones"][0] if merged_contact["phones"] else "",
+                    "ubicacion": merged_contact["location"],
+                    "linkedin": merged_contact["linkedin"],
+                },
+                "software": software_for_cv_info,
+                "idiomas": [
+                    f"{lang.get('idioma', '')} ({lang.get('nivel', '')})".strip()
+                    for lang in languages_structured
+                ],
+                "perfil": resumen_profesional,
+                "experiencia": experience_structured,
+                "educacion": education_structured,
+                "habilidades": di_result.get("strengths") or [],
+                "proyectos": di_result.get("projects") or [],
+            }
+
+            cv_data_for_structure = {
+                "contacto": cv_info["contacto"],
+                "experiencia_laboral": [
+                    {
+                        "empresa": exp.get("empresa"),
+                        "cargo": exp.get("cargo"),
+                        "fecha_inicio": exp.get("fecha_inicio"),
+                        "fecha_fin": exp.get("fecha_fin"),
+                        "descripcion": exp.get("descripcion"),
+                        "responsabilidades": exp.get("responsabilidades", []),
+                        "logros": exp.get("logros", []),
+                        "tecnologias": exp.get("tecnologias", []),
+                    }
+                    for exp in experience_structured
+                ],
+                "formacion_academica": education_structured,
+                "habilidades_tecnicas": software_for_structure,
+                "habilidades_blandas": di_result.get("strengths") or [],
+                "idiomas": languages_structured,
+                "certificaciones": di_result.get("certifications") or [],
+                "proyectos": di_result.get("projects") or [],
+                "resumen_profesional": resumen_profesional,
+                "intereses": di_result.get("interests") or [],
+                "voluntariado": di_result.get("volunteer") or [],
+            }
+
+            print("📊 Analizando estructura del CV con datos combinados...")
+            analysis = analyze_cv_structure_ai(cv_data_for_structure)
+            print("✅ Análisis estructural completado (Document Intelligence + PyMuPDF/OCR)")
+
+            raw_segments: List[str] = []
+            if text.strip():
+                raw_segments.append(text.strip())
+            if di_raw_text and di_raw_text.strip() not in raw_segments:
+                raw_segments.append(di_raw_text.strip())
+            combined_raw_text = "\n\n".join(raw_segments).strip()
+
+            result_payload = {
+                "summary": di_result.get("summary"),
+                "strengths": di_result.get("strengths") or [],
+                "weaknesses": di_result.get("weaknesses") or [],
+                "feedback": di_result.get("feedback"),
+                "stars": di_result.get("stars") or analysis.get("stars") or _default_stars(),
+                "experience": di_result.get("experience") or experience_structured,
+                "education": di_result.get("education") or education_structured,
+                "languages": di_result.get("languages") or languages_structured,
+                "software": di_result.get("software") or [item["herramienta"] for item in software_for_structure],
+                "contact": merged_contact,
+                "raw_text": (combined_raw_text or candidate_text or di_raw_text or "")[:10000],
+                "raw_text_excerpt": (combined_raw_text or candidate_text or di_raw_text or "")[:1000],
+                "analysis": analysis,
+                "cv_info": cv_info,
+                "full_cv_data": cv_data_for_structure,
+                "processing_metadata": processing_metadata,
+                "raw_text_sources": {
+                    "py_mupdf_ocr": text,
+                    "document_intelligence": di_raw_text,
+                },
+                "document_intelligence_used": True,
+            }
+
+            logger.info("Análisis de CV completado combinando Document Intelligence y PyMuPDF/OCR")
+            return result_payload
+
+        # Si Document Intelligence no está disponible o falló, usar el método tradicional
+        print("📄 Aplicando método tradicional de extracción y análisis...")
+
+        if not candidate_text.strip():
             print("❌ No se pudo extraer texto del PDF")
             return {
                 "error": "No se pudo extraer texto del PDF. El archivo puede estar corrupto o ser una imagen sin texto.",
                 "cv_info": {},
                 "analysis": {},
                 "raw_text": "",
-                "document_intelligence_used": False
+                "processing_metadata": processing_metadata,
+                "document_intelligence_used": False,
             }
-        
-        print(f"✅ Texto extraído: {len(text)} caracteres")
-        print(f"📝 Primeros 200 caracteres: {text[:200]}...")
-        
-        # Extraer información de contacto mejorada
+
+        print(f"✅ Texto extraído: {len(candidate_text)} caracteres")
+        print(f"📝 Primeros 200 caracteres: {candidate_text[:200]}...")
+
         print("📞 Extrayendo información de contacto...")
-        contact = extract_contact_info_enhanced(text)
+        contact = extract_contact_info_enhanced(candidate_text)
         print(f"✅ Contacto extraído: {contact}")
-        
-        # Analizar CV con IA
-        print("🤖 Analizando CV con IA...")
-        cv_data = analyze_cv_with_ai(text)
-        
+
+        print("🤖 Analizando CV con IA heurística...")
+        cv_data = analyze_cv_with_ai(candidate_text)
+
         if "error" in cv_data:
             print(f"⚠️ Error en análisis con IA: {cv_data['error']}")
-            # Fallback: usar solo información de contacto
             cv_data = {
                 "contacto": contact,
                 "experiencia_laboral": [],
@@ -978,50 +1280,57 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "habilidades_tecnicas": [],
                 "habilidades_blandas": [],
                 "idiomas": [],
-                "proyectos": []
+                "proyectos": [],
             }
         else:
             print("✅ Análisis con IA completado exitosamente")
-        
-        # Analizar estructura del CV
-        print("📊 Analizando estructura del CV...")
+
+        print("📊 Analizando estructura del CV (método tradicional)...")
         analysis = analyze_cv_structure_ai(cv_data)
-        print(f"✅ Análisis de estructura completado: {len(analysis)} elementos")
-        
-        # Construir resultado compatible
+        print("✅ Análisis estructural completado")
+
         cv_info = {
             "contacto": cv_data.get("contacto", {}),
             "software": [
                 {
                     "name": skill.get("herramienta", ""),
-                    "level": skill.get("nivel", "No especificado")
+                    "level": skill.get("nivel", "No especificado"),
                 }
                 for skill in cv_data.get("habilidades_tecnicas", [])
                 if isinstance(skill, dict) and skill.get("herramienta")
             ],
-            "idiomas": [f"{lang.get('idioma', '')} ({lang.get('nivel', '')})" for lang in cv_data.get("idiomas", [])],
+            "idiomas": [
+                f"{lang.get('idioma', '')} ({lang.get('nivel', '')})".strip()
+                for lang in cv_data.get("idiomas", [])
+            ],
             "perfil": cv_data.get("resumen_profesional", ""),
             "experiencia": cv_data.get("experiencia_laboral", []),
             "educacion": cv_data.get("formacion_academica", []),
             "habilidades": cv_data.get("habilidades_blandas", []),
-            "proyectos": cv_data.get("proyectos", [])
+            "proyectos": cv_data.get("proyectos", []),
         }
-        
-        print("✅ Análisis completado exitosamente")
-        print(f"📊 Resumen: {len(cv_info['software'])} habilidades técnicas, {len(cv_info['experiencia'])} experiencias, {len(cv_info['educacion'])} formación")
-        logger.info("Análisis de CV completado correctamente")
+
+        print(
+            "✅ Análisis completado: "
+            f"{len(cv_info['software'])} habilidades técnicas, "
+            f"{len(cv_info['experiencia'])} experiencias, "
+            f"{len(cv_info['educacion'])} formaciones"
+        )
+        logger.info("Análisis de CV completado con método tradicional")
 
         return {
             "cv_info": cv_info,
             "analysis": analysis,
-            "raw_text": text[:1000],  # Primeros 1000 caracteres para debug
-            "full_cv_data": cv_data,  # Datos completos extraídos por IA
-            "document_intelligence_used": False
+            "raw_text": candidate_text[:1000],
+            "full_cv_data": cv_data,
+            "processing_metadata": processing_metadata,
+            "document_intelligence_used": False,
         }
 
-    except Exception as e:
+    except Exception as e:  # pragma: no cover - errores inesperados
         print(f"❌ Error en análisis: {str(e)}")
         import traceback
+
         print(f"🔍 Traceback completo: {traceback.format_exc()}")
         logger.exception("Error analizando CV")
         return {
@@ -1029,7 +1338,8 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "cv_info": {},
             "analysis": {},
             "raw_text": "",
-            "document_intelligence_used": False
+            "processing_metadata": processing_metadata,
+            "document_intelligence_used": False,
         }
 
 if __name__ == "__main__":

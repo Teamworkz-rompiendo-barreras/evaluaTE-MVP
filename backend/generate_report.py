@@ -2,25 +2,30 @@
 # -*- coding: utf-8 -*-
 """
 Generador de informe IA _determinista_ y robusto a partir del prompt de back-end.
-No requiere claves ni servicios externos. Siempre devuelve un dict con:
-{
-  "report": {...},
-  "recommendations": [...],
-  "level": "Bajo|Medio|Alto",
-  "employabilityScore": int
-}
+No requiere claves ni servicios externos. Devuelve un diccionario compatible con
+`NewReportSchema`, es decir, con claves como `summary`, `personal_data`,
+`cv_analysis`, `action_plan`, etc., más el campo `employability_score`.
 """
 
 from __future__ import annotations
 import json
 import re
-from typing import Any, Dict, List, Tuple
+from typing import Any, Dict, List, Optional, Tuple
 
 # Importar la nueva configuración de prompts
 try:
     from prompt_config import PromptConfig
 except ImportError:
     PromptConfig = None
+
+try:
+    from backend.new_report_schema import (
+        NewReportSchema,
+        convert_old_format_to_new,
+        create_default_report,
+    )
+except ImportError:  # pragma: no cover - fallback cuando se ejecuta dentro de backend/
+    from new_report_schema import NewReportSchema, convert_old_format_to_new, create_default_report
 
 # ----------------------------
 # Utilidades de parsing seguro
@@ -143,9 +148,235 @@ def _extract_list_from_lines(lines: List[str]) -> List[str]:
             out.append(m.group(1).strip())
     return out
 
-def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_data: dict, 
-                           job_preferences_data: dict, employability_score: int, level: str, 
-                           completed_games: list) -> Dict[str, Any]:
+
+_DEFAULT_EVIDENCE = {
+    "structure": (
+        "El CV contiene secciones básicas (experiencia, educación, idiomas, herramientas, contacto), "
+        "pero no se detalla el orden ni la jerarquía de la información."
+    ),
+    "coherence": (
+        "Falta de detalles sobre fechas, empresas y funciones específicas; no se observa consistencia en la presentación."
+    ),
+    "key_info": "No se incluyen logros cuantificables, KPIs ni enlaces a perfiles profesionales.",
+    "clarity": "Ausencia de bullets claros y verbos de acción; la información es general y poco específica.",
+    "style": "No se pueden evaluar tildes ni formato debido a la falta de texto raw, pero la estructura detectada es básica.",
+}
+
+_DEFAULT_CORRECTIONS = [
+    "Añadir logros cuantificables y KPIs en cada experiencia.",
+    "Incluir enlaces a LinkedIn u otros perfiles profesionales.",
+    "Homogeneizar el formato de fechas y ubicaciones.",
+    "Utilizar bullets y verbos de acción claros.",
+    "Revisar ortografía y formato general.",
+]
+
+_DEFAULT_REORDERING = [
+    "Colocar el perfil profesional al inicio.",
+    "Agrupar la experiencia profesional antes de la formación.",
+    "Incluir una sección específica de habilidades técnicas y soft skills.",
+]
+
+
+def _normalize_soft_skills(soft_skills: List[Dict[str, Any]]) -> List[Dict[str, Any]]:
+    normalized: List[Dict[str, Any]] = []
+    for skill in soft_skills or []:
+        if not isinstance(skill, dict):
+            continue
+        name = (skill.get("skill") or skill.get("name") or "").strip()
+        if not name:
+            continue
+        score_raw = skill.get("score")
+        try:
+            score = int(round(float(score_raw)))
+        except (TypeError, ValueError):
+            score = 0
+        score = max(0, min(100, score))
+        normalized.append({"skill": name, "score": score})
+    return normalized
+
+
+def _parse_star_value(value: Any) -> Optional[int]:
+    if isinstance(value, (int, float)):
+        num = int(round(float(value)))
+        return max(1, min(5, num))
+    if isinstance(value, str):
+        stripped = value.strip()
+        if not stripped:
+            return None
+        star_count = stripped.count("★")
+        if star_count:
+            return max(1, min(5, star_count))
+        try:
+            # Permitir formatos "3/5" o "4"
+            digits = re.findall(r"\d+", stripped)
+            if digits:
+                num = int(digits[0])
+                return max(1, min(5, num))
+        except (TypeError, ValueError):
+            return None
+    return None
+
+
+def _extract_score(analysis: Dict[str, Any], stars: Dict[str, Any], keys: List[str], fallback: int = 3) -> int:
+    for key in keys:
+        if not isinstance(analysis, dict):
+            break
+        if key in analysis:
+            parsed = _parse_star_value(analysis.get(key))
+            if parsed is not None:
+                return parsed
+        # También probar con sufijo _score si no estaba explícito
+        if not key.endswith("_score") and isinstance(analysis, dict):
+            alt_key = f"{key}_score"
+            if alt_key in analysis:
+                parsed = _parse_star_value(analysis.get(alt_key))
+                if parsed is not None:
+                    return parsed
+    if isinstance(stars, dict):
+        for key in keys:
+            if key in stars:
+                parsed = _parse_star_value(stars.get(key))
+                if parsed is not None:
+                    return parsed
+            # admitir claves con guiones bajos ↔ camelCase
+            alt = key.replace("_", "")
+            if alt in stars:
+                parsed = _parse_star_value(stars.get(alt))
+                if parsed is not None:
+                    return parsed
+    return fallback
+
+
+def _coerce_str_list(value: Any) -> List[str]:
+    if isinstance(value, list):
+        return [str(item) for item in value if item not in (None, "")]
+    if value is None:
+        return []
+    return [str(value)]
+
+
+def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
+    if not isinstance(cv_data, dict):
+        cv_data = {}
+
+    analysis_candidates: List[Dict[str, Any]] = []
+    for key in ("analysis_json", "cv_analysis_structured", "analysis", "diagnostico_cv"):
+        val = cv_data.get(key)
+        if isinstance(val, dict) and val:
+            analysis_candidates.append(val)
+
+    analysis = analysis_candidates[0] if analysis_candidates else {}
+
+    stars: Dict[str, Any] = {}
+    star_candidates = []
+    if isinstance(analysis, dict) and isinstance(analysis.get("stars"), dict):
+        star_candidates.append(analysis.get("stars") or {})
+    for key in ("stars", "cv_analysis_structured"):
+        val = cv_data.get(key)
+        if isinstance(val, dict):
+            if key == "cv_analysis_structured" and isinstance(val.get("stars"), dict):
+                star_candidates.append(val.get("stars") or {})
+            else:
+                star_candidates.append(val)
+    for candidate in star_candidates:
+        if candidate:
+            stars = candidate
+            break
+
+    structure_score = _extract_score(analysis, stars, ["structure_score", "structure", "formato", "estructura"], 3)
+    clarity_score = _extract_score(analysis, stars, ["clarity_score", "clarity", "claridad"], 3)
+    coherence_score = _extract_score(analysis, stars, ["coherence_score", "coherence", "coherencia"], 3)
+    key_info_score = _extract_score(analysis, stars, ["key_info_score", "key_info", "informacion_clave", "información_clave"], 3)
+    style_score = _extract_score(analysis, stars, ["style_score", "spelling_style_score", "style", "ortografia", "ortografía"], 3)
+
+    evidence_src = {}
+    if isinstance(analysis, dict) and isinstance(analysis.get("evidence"), dict):
+        evidence_src = analysis.get("evidence") or {}
+
+    feedback = ""
+    for key in ("feedback", "resumen", "resume"):
+        if isinstance(analysis, dict) and analysis.get(key):
+            feedback = str(analysis.get(key))
+            break
+    if not feedback:
+        feedback = str(cv_data.get("feedback") or "")
+
+    summary = ""
+    for key in ("summary", "perfil", "profile_summary"):
+        if isinstance(analysis, dict) and analysis.get(key):
+            summary = str(analysis.get(key))
+            break
+    if not summary:
+        summary = str(cv_data.get("summary") or "")
+
+    corrections = _coerce_str_list((analysis or {}).get("corrections")) or _DEFAULT_CORRECTIONS
+    reordering = _coerce_str_list((analysis or {}).get("reordering_suggestions")) or _DEFAULT_REORDERING
+
+    evidence = {
+        "structure": str(evidence_src.get("structure") or _DEFAULT_EVIDENCE["structure"]),
+        "coherence": str(evidence_src.get("coherence") or _DEFAULT_EVIDENCE["coherence"]),
+        "key_info": str(evidence_src.get("key_info") or _DEFAULT_EVIDENCE["key_info"]),
+        "clarity": str(evidence_src.get("clarity") or _DEFAULT_EVIDENCE["clarity"]),
+        "style": str(evidence_src.get("style") or _DEFAULT_EVIDENCE["style"]),
+    }
+
+    experience = cv_data.get("experience") or cv_data.get("experience_detailed") or []
+    education = cv_data.get("education") or cv_data.get("education_detailed") or []
+    languages = cv_data.get("languages") or cv_data.get("languages_detailed") or cv_data.get("idiomas") or []
+    software = cv_data.get("software") or cv_data.get("skills") or []
+
+    return {
+        "structure_score": structure_score,
+        "coherence_score": coherence_score,
+        "key_info_score": key_info_score,
+        "clarity_score": clarity_score,
+        "style_score": style_score,
+        "evidence": evidence,
+        "corrections": corrections,
+        "reordering_suggestions": reordering,
+        "feedback": feedback or "CV con información básica disponible.",
+        "summary": summary or "Perfil profesional con potencial de desarrollo.",
+        "experience": experience,
+        "education": education,
+        "software": software,
+        "languages": languages,
+    }
+
+
+def _build_job_preferences_payload(candidate: Dict[str, Any], job_preferences: Dict[str, Any]) -> Dict[str, Any]:
+    job_preferences = job_preferences.copy() if isinstance(job_preferences, dict) else {}
+
+    location = candidate.get("location") or job_preferences.get("location") or ""
+    if location:
+        job_preferences["location"] = location
+
+    has_cert = candidate.get("hasDisabilityCertificate")
+    if has_cert is None:
+        has_cert = job_preferences.get("hasDisabilityCert")
+    if has_cert is not None:
+        job_preferences["hasDisabilityCert"] = bool(has_cert)
+
+    work_mode = job_preferences.get("workMode") or job_preferences.get("work_mode")
+    if work_mode:
+        job_preferences["workMode"] = work_mode
+
+    desired = job_preferences.get("desired_roles") or job_preferences.get("areas") or []
+    if not isinstance(desired, list):
+        desired = [desired]
+    job_preferences["desired_roles"] = desired
+    job_preferences["areas"] = desired
+
+    if "preferred_platforms" not in job_preferences and job_preferences.get("platforms"):
+        job_preferences["preferred_platforms"] = job_preferences.get("platforms")
+
+    if "seniority" not in job_preferences and candidate.get("seniority"):
+        job_preferences["seniority"] = candidate.get("seniority")
+
+    return job_preferences
+
+def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_data: dict,
+                           job_preferences_data: dict, employability_score: int, level: str,
+                           completed_games: list) -> Optional[NewReportSchema]:
     """
     Genera un informe moderno y completo usando la nueva lógica de PromptConfig
     """
@@ -171,275 +402,104 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
         # Aquí normalmente se enviaría a OpenAI, pero como es local, generamos una respuesta estructurada
         # basada en los datos disponibles
         return _generate_structured_response_from_data(
-            candidate_data, soft_skills_data, cv_data, 
+            candidate_data, soft_skills_data, cv_data,
             job_preferences_data, employability_score, level, completed_games
         )
-        
+
     except Exception as e:
         # Fallback a la lógica antigua si hay error
         return None
 
-def _generate_structured_response_from_data(candidate_data: dict, soft_skills_data: list, 
-                                          cv_data: dict, job_preferences_data: dict, 
-                                          employability_score: int, level: str, 
-                                          completed_games: list) -> Dict[str, Any]:
-    """
-    Genera una respuesta estructurada basada en los datos disponibles
-    """
-    # Preparar datos personales
-    personal_data = {
-        "name": candidate_data.get("fullName", "No consta"),
-        "location": candidate_data.get("location", "No consta"),
-        "email": candidate_data.get("email", "No consta"),
-        "phone": candidate_data.get("phone", "No especificado"),
-        "disability_certificate": "Sí" if candidate_data.get("hasDisabilityCertificate") else "No"
-    }
-    
-    # Preparar resumen del perfil
-    profile_summary = f"Perfil {level.lower()} con puntuación de empleabilidad {employability_score}/100. "
-    if soft_skills_data:
-        avg_score = sum(s.get("score", 0) for s in soft_skills_data) / len(soft_skills_data)
-        profile_summary += f"Soft skills evaluadas con puntuación media de {int(avg_score)}/100."
-    
-    # Preparar resumen del CV
-    cv_summary = "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos."
-    if cv_data.get("rawText"):
-        cv_summary = "CV analizado con información disponible para evaluación."
-    
-    # Preparar fortalezas
-    strengths = []
-    if soft_skills_data:
-        for skill in soft_skills_data:
-            if skill.get("score", 0) >= 70:
-                strengths.append(f"{skill.get('skill', '')} - Puntuación alta ({skill.get('score')}/100)")
-    
-    if not strengths:
-        strengths = ["Potencial de desarrollo profesional", "Disposición para el aprendizaje", "Adaptabilidad"]
-    
-    # Preparar áreas de mejora
-    improvement_areas = []
-    if soft_skills_data:
-        for skill in soft_skills_data:
-            if skill.get("score", 0) < 50:
-                improvement_areas.append(f"{skill.get('skill', '')} - Oportunidad de mejora ({skill.get('score')}/100)")
-    
-    if not improvement_areas:
-        improvement_areas = ["Desarrollo de competencias específicas", "Elaboración del CV", "Definición de objetivos profesionales"]
-    
-    # Preparar diagnóstico del CV - usar datos reales si están disponibles
-    cv_analysis_data = cv_data.get("analysis_json", {}) if isinstance(cv_data, dict) else {}
-    
-    # Usar datos reales del análisis del CV si están disponibles, sino usar valores por defecto
-    cv_diagnosis = {
-        "structure_score": cv_analysis_data.get("structure_score", 3),
-        "coherence_score": cv_analysis_data.get("coherence_score", 2),
-        "key_info_score": cv_analysis_data.get("key_info_score", 2),
-        "clarity_score": cv_analysis_data.get("clarity_score", 2),
-        "spelling_style_score": cv_analysis_data.get("spelling_style_score", 3),
-        "evidence": cv_analysis_data.get("evidence", {
-            "structure": "El CV contiene secciones básicas (experiencia, educación, idiomas, herramientas, contacto), pero no se detalla el orden ni la jerarquía de la información.",
-            "coherence": "Falta de detalles sobre fechas, empresas y funciones específicas; no se observa consistencia en la presentación.",
-            "key_info": "No se incluyen logros cuantificables, KPIs ni enlaces a perfiles profesionales.",
-            "clarity": "Ausencia de bullets claros y verbos de acción; la información es general y poco específica.",
-            "style": "No se pueden evaluar tildes ni formato debido a la falta de texto raw, pero la estructura detectada es básica."
-        }),
-        "corrections": cv_analysis_data.get("corrections", [
-            "Añadir logros cuantificables y KPIs en cada experiencia.",
-            "Incluir enlaces a LinkedIn u otros perfiles profesionales.",
-            "Homogeneizar el formato de fechas y ubicaciones.",
-            "Utilizar bullets y verbos de acción claros.",
-            "Revisar ortografía y formato general."
-        ]),
-        "reordering_suggestions": cv_analysis_data.get("reordering_suggestions", [
-            "Colocar el perfil profesional al inicio.",
-            "Agrupar la experiencia profesional antes de la formación.",
-            "Incluir una sección específica de habilidades técnicas y soft skills."
-        ]),
-        "observations": cv_analysis_data.get("observations", [
-            "Estructura: El CV contiene secciones básicas (experiencia, educación, idiomas, herramientas, contacto), pero no se detalla el orden ni la jerarquía de la información.",
-            "Claridad: Ausencia de bullets claros y verbos de acción; la información es general y poco específica.",
-            "Coherencia: Falta de detalles sobre fechas, empresas y funciones específicas; no se observa consistencia en la presentación.",
-            "Información clave: No se incluyen logros cuantificables, KPIs ni enlaces a perfiles profesionales.",
-            "Ortografía y estilo: No se pueden evaluar tildes ni formato debido a la falta de texto raw, pero la estructura detectada es básica."
-        ])
-    }
-    
-    # Preparar roles sugeridos
-    suggested_roles = [
-        "Asistente administrativo/a - Rol de entrada con potencial de desarrollo (Junior, Remoto: Sí)",
-        "Auxiliar de soporte técnico - Posición para desarrollar competencias tecnológicas (Junior, Remoto: Sí)",
-        "Operario/a de servicios generales - Para perfiles en desarrollo (Junior, Remoto: No)"
-    ]
-    
-    # Preparar plan de acción
-    action_plan = {
-        "corto_plazo": [
-            "Elaborar CV actualizado en los próximos 15 días",
-            "Definir objetivos profesionales en 2 semanas",
-            "Inscribirse en curso de soft skills en 30 días"
-        ],
-        "medio_plazo": [
-            "Actualizar CV para cada oferta en 2 meses",
-            "Participar en networking en 3 meses",
-            "Solicitar feedback profesional"
-        ],
-        "largo_plazo": [
-            "Desarrollar competencias técnicas en 6 meses",
-            "Explorar oportunidades de prácticas",
-            "Mantener aprendizaje continuo"
-        ]
-    }
-    
-    # Preparar consejos de búsqueda
-    job_search_advice = {
-        "cv_optimization": [
-            "Usar formato claro y profesional",
-            "Incluir logros cuantificables",
-            "Revisar ortografía antes de enviar"
-        ],
-        "letters_portfolio": "Preparar carta de presentación adaptable",
-        "recommended_platforms": ["InfoJobs", "LinkedIn", "Indeed", "Portal Empléate"],
-        "networking": "Participar en grupos profesionales online",
-        "interview_tips": "Preparar respuestas frecuentes y practicar presentación"
-    }
-    
-    # Preparar herramientas útiles
-    useful_tools = {
-        "productividad": [{"name": "Trello", "description": "", "url": ""}, {"name": "Google Calendar", "description": "", "url": ""}],
-        "busqueda": [{"name": "LinkedIn", "description": "", "url": ""}, {"name": "InfoJobs", "description": "", "url": ""}],
-        "aprendizaje": [{"name": "Coursera", "description": "", "url": ""}, {"name": "edX", "description": "", "url": ""}, {"name": "Google Actívate", "description": "", "url": ""}],
-        "accesibilidad": [{"name": "Microsoft Immersive Reader", "description": "", "url": ""}, {"name": "Grammarly", "description": "", "url": ""}]
-    }
+def _generate_structured_response_from_data(candidate_data: dict, soft_skills_data: list,
+                                          cv_data: dict, job_preferences_data: dict,
+                                          employability_score: int, level: str,
+                                          completed_games: list) -> NewReportSchema:
+    """Genera un ``NewReportSchema`` consistente a partir de los datos normalizados."""
 
-    # -----------------------------
-    # Normalización para UI (cv_analysis)
-    # -----------------------------
+    full_name = str(candidate_data.get("fullName") or "Usuario").strip() or "Usuario"
+    normalized_soft_skills = _normalize_soft_skills(soft_skills_data or [])
+    cv_payload = _build_cv_analysis_payload(cv_data or {})
+    job_pref_payload = _build_job_preferences_payload(candidate_data, job_preferences_data or {})
 
-    def _fmt_dates(start: str | None, end: str | None) -> str:
-        start = (start or "").strip()
-        end = (end or "").strip()
-        if start and end:
-            return f"{start} – {end}"
-        return start or end or ""
+    safe_score = max(0, min(100, int(employability_score or 0)))
+    level_label = level or _score_to_level(safe_score)
 
-    def _map_experience_for_ui(items: list) -> list:
-        out = []
-        for it in items or []:
-            if not isinstance(it, dict):
-                # admitir cadenas sueltas
-                out.append({"title": str(it), "company": "", "dates": "", "summary": ""})
+    # Preparar resumen y feedback antes de crear el reporte base
+    highlighted = ", ".join([s["skill"] for s in normalized_soft_skills[:3] if s.get("skill")])
+    profile_parts = [f"Perfil {level_label.lower()} con puntuación de empleabilidad {safe_score}/100."]
+    if highlighted:
+        profile_parts.append(f"Destacan habilidades como {highlighted}.")
+    if cv_payload.get("summary"):
+        profile_parts.append(str(cv_payload.get("summary")))
+    cv_payload["summary"] = " ".join(part.strip() for part in profile_parts if part).strip()
+
+    cv_feedback = cv_payload.get("feedback") or ""
+    if not cv_feedback:
+        cv_feedback = (
+            "CV con información básica disponible. Se recomienda enriquecerlo con más "
+            "detalles sobre proyectos y logros específicos."
+        )
+    cv_payload["feedback"] = cv_feedback
+
+    report = create_default_report(full_name, normalized_soft_skills, cv_payload, job_pref_payload)
+
+    report.summary = (
+        f"Informe de empleabilidad para {full_name}. Puntuación global {safe_score}/100 ({level_label})."
+    )
+
+    personal = report.personal_data
+    personal.name = full_name
+    if candidate_data.get("location"):
+        personal.location = str(candidate_data.get("location"))
+    if candidate_data.get("email"):
+        personal.email = str(candidate_data.get("email"))
+    if candidate_data.get("phone"):
+        personal.phone = str(candidate_data.get("phone"))
+    has_cert = candidate_data.get("hasDisabilityCertificate")
+    if has_cert is None:
+        has_cert = job_pref_payload.get("hasDisabilityCert")
+    if has_cert is not None:
+        personal.disability_certificate = "Sí" if has_cert else "No"
+    report.personal_data = personal
+
+    if normalized_soft_skills:
+        report.soft_skills = normalized_soft_skills
+        report.strengths = [s["skill"] for s in normalized_soft_skills if s.get("skill")]
+
+    report.employability_score = safe_score
+
+    games_list: List[str] = []
+    for game in completed_games or []:
+        if isinstance(game, dict):
+            name = game.get("name") or game.get("title")
+            if name:
+                games_list.append(str(name))
                 continue
-            title = it.get("title") or it.get("cargo") or it.get("position") or "Experiencia"
-            company = it.get("company") or it.get("empresa") or it.get("organization") or it.get("organisation") or ""
-            dates = _fmt_dates(it.get("start_date") or it.get("fecha_inicio"), it.get("end_date") or it.get("fecha_fin"))
-            # construir resumen
-            partes = []
-            desc = it.get("description") or it.get("descripcion")
-            if isinstance(desc, str) and desc.strip():
-                partes.append(desc.strip())
-            for key in ("responsabilidades", "logros", "tecnologias"):
-                val = it.get(key)
-                if isinstance(val, list) and val:
-                    partes.append("; ".join(str(x) for x in val if x))
-            summary = "; ".join([p for p in partes if p])
-            out.append({"title": title, "company": company, "dates": dates, "summary": summary})
-        return out
+        if game:
+            games_list.append(str(game))
+    report.completed_games = games_list
 
-    def _map_education_for_ui(items: list) -> list:
-        out = []
-        for it in items or []:
-            if not isinstance(it, dict):
-                out.append({"degree": str(it), "center": "", "year": ""})
-                continue
-            degree = it.get("degree") or it.get("titulo") or it.get("title") or "Formación"
-            center = it.get("institution") or it.get("institucion") or it.get("school") or ""
-            year = it.get("end_date") or it.get("fecha_fin") or it.get("start_date") or it.get("fecha_inicio") or ""
-            out.append({"degree": degree, "center": center, "year": year})
-        return out
-    
-    # Construir objeto report con el shape esperado por el frontend
-    report_obj: Dict[str, Any] = {
-        "personal_data": personal_data,
-        "resumen_ejecutivo": f"El informe analiza la empleabilidad de {personal_data['name']}, quien presenta un perfil {level.lower()} con puntuación {employability_score}/100. Se identifican fortalezas y áreas de mejora para potenciar el acceso al mercado laboral.",
-        "soft_skills": soft_skills_data,
-        "cv_analysis": {
-            # Adaptado al formato de la UI
-            "experience": _map_experience_for_ui(cv_data.get("experience") or []),
-            "education": _map_education_for_ui(cv_data.get("education") or []),
-            "languages": cv_data.get("languages") or [],
-            "software": cv_data.get("software") or [],
-            "contact": cv_data.get("contact") or {},
-            # Estrellas opcionales para el bloque visual
-            "stars": {
-                "formato": cv_diagnosis.get("structure_score"),
-                "claridad": cv_diagnosis.get("clarity_score"),
-                "coherencia": cv_diagnosis.get("coherence_score"),
-                "informacion_clave": cv_diagnosis.get("key_info_score"),
-                "ortografia": cv_diagnosis.get("spelling_style_score"),
-            },
-            # Incluir analysis_json completo para el frontend
-            "analysis_json": {
-                "structure_score": cv_diagnosis.get("structure_score"),
-                "clarity_score": cv_diagnosis.get("clarity_score"),
-                "coherence_score": cv_diagnosis.get("coherence_score"),
-                "key_info_score": cv_diagnosis.get("key_info_score"),
-                "spelling_style_score": cv_diagnosis.get("spelling_style_score"),
-                "evidence": cv_diagnosis.get("evidence", {}),
-                "corrections": cv_diagnosis.get("corrections", []),
-                "reordering_suggestions": cv_diagnosis.get("reordering_suggestions", []),
-                "observations": cv_diagnosis.get("observations", [])
-            }
-        },
-        "improvement_areas": [
-            {"area": a, "score": 0} for a in improvement_areas
-        ],
-        "environments": [
-            "Entorno inclusivo y flexible",
-            "Equipos con acompañamiento profesional",
-        ],
-        "suggested_roles": [
-            {"role": "Asistente administrativo/a", "seniority": "Junior", "remote_viable": True, "reason": "perfil en desarrollo con potencial"},
-            {"role": "Auxiliar de soporte", "seniority": "Junior", "remote_viable": True, "reason": "competencias transferibles"},
-        ],
-        "action_plan": {
-            "short_term": action_plan.get("corto_plazo", []),
-            "medium_term": action_plan.get("medio_plazo", []),
-            "long_term": action_plan.get("largo_plazo", []),
-        },
-        "job_search_advice": {
-            "tips": job_search_advice.get("cv_optimization", []),
-            "ats_keywords": ["data entry", "calidad de datos", "Excel"],
-        },
-        "tools": {
-            "productivity": ["Excel", "Google Sheets", "Notion/Airtable"],
-            "job_search": ["LinkedIn", "Indeed"],
-            "learning": ["Coursera", "Udemy"],
-        },
-        "completed_games": completed_games,
-        "frase_final": "Cada paso en tu desarrollo profesional suma. Mantén una actitud proactiva y confía en tu potencial.",
-    }
+    preferred_platforms = job_pref_payload.get("preferred_platforms") or []
+    if preferred_platforms:
+        report.job_search_advice.recommended_platforms = [str(p) for p in preferred_platforms if p]
 
-    return {
-        "report": report_obj,
-        "recommendations": {
-            "datos_personales": personal_data,
-            "resumen_perfil": profile_summary,
-            "resumen_cv": cv_summary,
-            "fortalezas_clave": strengths,
-            "areas_mejora": improvement_areas,
-            "diagnostico_cv": cv_diagnosis,
-            "entornos_ideales": "Entorno inclusivo con acompañamiento profesional y flexibilidad",
-            "roles_sugeridos": suggested_roles,
-            "plan_accion": action_plan,
-            "consejos_busqueda": job_search_advice,
-            "herramientas_utiles": useful_tools,
-            "juegos_completados": completed_games,
-            "frase_final": "Cada paso en tu desarrollo profesional suma. Mantén una actitud proactiva y confía en tu potencial.",
-        },
-        "employabilityScore": employability_score,
-        "level": level,
-        "summary": f"El informe analiza la empleabilidad de {personal_data['name']}, quien presenta un perfil {level.lower()} con puntuación {employability_score}/100.",
-    }
+    work_mode = job_pref_payload.get("workMode")
+    areas = job_pref_payload.get("areas") or []
+    ideal_parts = []
+    if work_mode:
+        ideal_parts.append(f"Modalidad preferida: {work_mode}")
+    if areas:
+        ideal_parts.append("Áreas de interés: " + ", ".join(str(a) for a in areas if a))
+    if ideal_parts:
+        report.ideal_work_environment = ". ".join(ideal_parts)
+
+    report.final_message = (
+        f"{full_name}, tu nivel de empleabilidad actual es {level_label.lower()}. "
+        "Aplica el plan de acción priorizado y mantén una rutina de aprendizaje continuo "
+        "para acelerar tus oportunidades laborales."
+    )
+
+    return report
 
 # ----------------------------
 # Núcleo público
@@ -453,20 +513,19 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
     Nunca devuelve None. Nunca accede a .get() sobre valores no dict.
     """
     if prompt is None:
-        # Fallback ultra seguro
-        return {
-            "report": {
-                "resumen_ejecutivo": "No se recibió información suficiente.",
-                "soft_skills": [],
-                "cv_analizado": "Sin análisis.",
-                "preferencias_laborales": "No especificadas.",
-                "juegos_completados": [],
-                "frase_final": "Define un objetivo profesional y comienza por acciones concretas la próxima semana.",
-            },
-            "recommendations": [],
-            "level": "Bajo",
-            "employabilityScore": 0,
-        }
+        fallback_report = create_default_report("Usuario", [], {}, {})
+        fallback_report.summary = "No se recibió información suficiente."
+        fallback_report.profile_summary = "No se recibió información suficiente."
+        fallback_report.cv_summary = "Sin análisis disponible."
+        fallback_report.soft_skills = []
+        fallback_report.strengths = []
+        fallback_report.improvement_areas = []
+        fallback_report.employability_score = 0
+        fallback_report.completed_games = []
+        fallback_report.final_message = (
+            "Define un objetivo profesional y comienza por acciones concretas la próxima semana."
+        )
+        return fallback_report.dict()
 
     # Si llega un dict (payload estructurado del frontend), mapearlo directamente
     if isinstance(prompt, dict):
@@ -500,6 +559,33 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
                     soft_skills_data.append({"skill": skill, "score": score, "level": level})
                     scores.append(score)
             soft_avg = int(round(sum(scores) / len(scores))) if scores else 0
+
+            provided_score = data.get("employabilityScore")
+            if provided_score is None:
+                provided_score = data.get("employability_score")
+
+            override_score = None
+            for key in ("employabilityScoreOverride", "employability_score_override"):
+                candidate = data.get(key)
+                if isinstance(candidate, str):
+                    candidate = candidate.strip()
+                if candidate in (None, "", []):
+                    continue
+                override_score = candidate
+                break
+
+            if override_score is not None:
+                try:
+                    soft_avg = int(round(float(override_score)))
+                except (TypeError, ValueError):
+                    pass
+            elif not scores and provided_score not in (None, "", []):
+                try:
+                    soft_avg = int(round(float(provided_score)))
+                except (TypeError, ValueError):
+                    pass
+
+            soft_avg = max(0, min(100, soft_avg))
             nivel = _score_to_level(soft_avg)
 
             # CV data (tomar lo disponible)
@@ -532,6 +618,13 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
                     or []
                 )
 
+                analysis_json = (
+                    cv_raw.get("analysis_json")
+                    or cv_raw.get("cv_analysis_structured")
+                    or cv_raw.get("analysis")
+                    or {}
+                )
+
                 cv_data = {
                     "rawText": cv_raw.get("raw_text") or "",
                     "languages": cv_raw.get("languages") or [],
@@ -544,24 +637,37 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
                         "phones": phones,
                         "location": loc,
                     },
-                    "diagnostico_cv": {
-                        "structure_score": 1,
-                        "clarity_score": 1,
-                        "coherence_score": 1,
-                        "key_info_score": 1,
-                        "spelling_style_score": 1,
-                    }
+                    "analysis_json": analysis_json,
                 }
 
             # Preferencias laborales
             jp_raw = data.get("jobPreferences") or {}
             job_preferences_data = {}
             if isinstance(jp_raw, dict):
+                work_mode = jp_raw.get("workMode") or jp_raw.get("work_mode") or ""
+                desired = jp_raw.get("areas") or jp_raw.get("desired_roles") or []
+                if not isinstance(desired, list):
+                    desired = [desired]
+                preferred_platforms = (
+                    jp_raw.get("preferred_platforms")
+                    or jp_raw.get("preferredPlatforms")
+                    or jp_raw.get("platforms")
+                    or []
+                )
+                if not isinstance(preferred_platforms, list):
+                    preferred_platforms = [preferred_platforms]
                 job_preferences_data = {
-                    "desired_roles": jp_raw.get("areas") or [],
-                    "desired_sectors": [],
-                    "work_mode": jp_raw.get("workMode") or jp_raw.get("work_mode") or "",
+                    "areas": desired,
+                    "desired_roles": desired,
+                    "workMode": work_mode,
+                    "work_mode": work_mode,
+                    "preferred_platforms": preferred_platforms,
+                    "seniority": jp_raw.get("seniority") or jp_raw.get("level"),
+                    "location": jp_raw.get("location"),
+                    "hasDisabilityCert": jp_raw.get("hasDisabilityCert"),
                 }
+                if jp_raw.get("seniority"):
+                    candidate_data["seniority"] = jp_raw.get("seniority")
 
             completed_games = data.get("completedGames") or []
             if not isinstance(completed_games, list):
@@ -576,7 +682,7 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
                 soft_avg,
                 nivel,
                 completed_games,
-            )
+            ).dict()
         except Exception:
             # Fallback: serializar a texto y seguir con la lógica basada en prompt
             prompt = json.dumps(prompt, ensure_ascii=False)
@@ -627,7 +733,7 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
         )
         
         if modern_report:
-            return modern_report
+            return modern_report.dict()
             
     except Exception as e:
         # Si falla la nueva lógica, continuar con la antigua
@@ -688,12 +794,15 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
         "frase_final": cierre,                        # cierre breve
     }
 
+    if nombre:
+        report["fullName"] = nombre
+
     # Puntuación global basada en las soft skills
     employability = int(soft_avg)
-
-    return {
+    legacy_payload = {
         "report": report,
         "recommendations": recs,
-        "level": nivel,
         "employabilityScore": employability,
     }
+
+    return convert_old_format_to_new(legacy_payload).dict()

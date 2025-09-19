@@ -12,6 +12,8 @@ import ReactMarkdown from 'react-markdown';
 import remarkGfm from 'remark-gfm';
 import { useMemo } from 'react';
 import type { CvAnalysis } from '@/types/report';
+import type { JobPreference } from '@/types/preferences';
+import { resolveJobPreferences } from '@/utils/jobPreferences';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
 import '../styles/stars.css'; // Importar estilos para estrellas
@@ -20,7 +22,7 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
-import { convertBackendResponseToNewFormat, generateNewFormatReport } from '../config/reportConfig';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData } from '../config/reportConfig';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -31,7 +33,8 @@ type CvStars = 1|2|3|4|5;
 
 // Tipo para los datos del radar
 interface RadarDataItem {
-  skill: string;
+  skill?: string;
+  softskill?: string;
   score: number;
   [key: string]: unknown;
 }
@@ -54,6 +57,7 @@ function extractRadarData(markdown: string): RadarDataItem[] {
   }
   return [];
 }
+
 
 // Función helper para mapeo seguro
 
@@ -100,12 +104,14 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
   );
 };
 
-
-
-
-
-
-
+// Componente para mostrar el puntaje global de empleabilidad
+const ScoreBadge: React.FC<{ value?: number }> = ({ value }) => (
+  <div className="flex justify-end mb-4">
+    <div className="bg-blue-600 text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl">
+      {typeof value === "number" ? `${value}%` : "-"}
+    </div>
+  </div>
+);
 
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -114,6 +120,7 @@ const ResultadosPage: React.FC = () => {
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
+  const [info, setInfo] = useState<NewReportSchema | null>(null);
 
   // Hook de valoración (alias para evitar choque de nombres)
   const uid = report?.userId ?? '';
@@ -258,16 +265,8 @@ const ResultadosPage: React.FC = () => {
           confidence: 80,
         }];
 
-        const cvAnalysisPayload: CvAnalysis | null = cvAnalysis ? {
-          structure_score: cvAnalysis.structure_score,
-          coherence_score: cvAnalysis.coherence_score,
-          key_info_score: cvAnalysis.key_info_score,
-          clarity_score: cvAnalysis.clarity_score,
-          style_score: cvAnalysis.style_score,
-          evidence: cvAnalysis.evidence,
-          corrections: cvAnalysis.corrections ?? [],
-          reordering_suggestions: cvAnalysis.reordering_suggestions ?? [],
-        } : null;
+        const cvAnalysisPayload: CvAnalysis | null = cvAnalysis ? cvAnalysis : null;
+        const jp: JobPreference = resolveJobPreferences(personal);
 
         const requestBody = {
           userId: report?.userId || 'user',
@@ -277,7 +276,7 @@ const ResultadosPage: React.FC = () => {
           email: personal.email || undefined,
           phone: personal.whatsapp || undefined,
           cvAnalysis: cvAnalysisPayload,
-          jobPreferences: personal.jobPreferences || report?.jobPreferences || null,
+          jobPreferences: jp,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
           completedGames: (Array.isArray(game?.completedGames) && game.completedGames.length > 0)
             ? game.completedGames
@@ -376,7 +375,7 @@ const ResultadosPage: React.FC = () => {
           const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
             || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
             || {} as Record<string, unknown>;
-          const dp = {
+          const dp: PersonalData = {
             name: (dpSrc?.['name'] as string) || candidateName,
             location: (dpSrc?.['location'] as string) || 'No consta',
             email: (dpSrc?.['email'] as string) || '',
@@ -386,9 +385,17 @@ const ResultadosPage: React.FC = () => {
               : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
           };
 
-          let normalized;
+          let normalized: NewReportSchema;
           try {
             normalized = convertBackendResponseToNewFormat(data);
+            // Merge user-provided personal data when backend values are missing
+            for (const key of Object.keys(dp) as (keyof PersonalData)[]) {
+              const backendVal = normalized.personal_data?.[key];
+              if (backendVal === undefined || backendVal === null || backendVal === '') {
+                normalized.personal_data[key] = dp[key];
+              }
+            }
+            setInfo(normalized);
           } catch (error) {
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console
@@ -431,16 +438,85 @@ const ResultadosPage: React.FC = () => {
               if (/decisiones/.test(n)) return 'toma de decisiones';
               return String(val || 'fortalezas');
             };
-            const sorted = [...(softSkillsToSend || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
+            const sorted = [...(normalized.soft_skills || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
             const s1 = normalize(sorted[0]?.skill);
             const s2 = normalize(sorted[1]?.skill);
-            const remotePref = (report?.jobPreferences as any)?.remoteWork ? 'el trabajo remoto' : 'los entornos presenciales';
-            const rolesArr: any[] = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
-            const roleName = (r:any)=> (r?.name||r?.title||r?.role||r?.label||r?.position||r?.jobTitle||'');
-            const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0,2).join(' y ') || 'roles administrativos';
-            const improv: any[] = Array.isArray((data as any)?.report?.improvement_areas) ? (data as any).report.improvement_areas : [];
-            const clean = (v:string)=> String(v||'').replace(/\s*\((?:\d+%?|\d+\s*\/\s*\d+)\)\s*/g,'').trim();
-            const improvementAreas = improv.map(a=> clean(a?.area||a?.name||'')).filter(Boolean).slice(0,2).join(' y ') || 'tus áreas de mejora';
+            const normalizeMode = (value: unknown): 'remoto' | 'híbrido' | 'presencial' | '' => {
+              if (typeof value !== 'string') return '';
+              const raw = value.trim();
+              if (!raw) return '';
+              const lower = raw
+                .toLowerCase()
+                .normalize('NFD')
+                .replace(/[\u0300-\u036f]/g, '');
+              if (/(hibrid|mixt|combin|flexib|dual|semipresenc)/.test(lower)) return 'híbrido';
+              if (/(remot|teletrab|home\s*office|desde casa|work from home)/.test(lower)) return 'remoto';
+              if (/(presenc|oficina|onsite|en sitio|en-sitio|cara a cara|oficinas)/.test(lower)) return 'presencial';
+              return '';
+            };
+
+            const jobPreferences = (
+              (report?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
+              ((report as Record<string, unknown> | undefined)?.['job_preferences'] as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
+              (personal?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined)
+            );
+
+            const resolvedPersonalPrefs = resolveJobPreferences({
+              jobPreferences: personal?.jobPreferences as Partial<JobPreference> | string | undefined,
+              workMode: personal?.workMode,
+              availability: personal?.availability,
+              willingToRelocate: personal?.willingToRelocate,
+              hasDisabilityCert: personal?.hasDisabilityCert,
+            });
+
+            const personalJobPreferences = personal?.jobPreferences;
+            const personalHasPreferences = Boolean(
+              (typeof personalJobPreferences === 'string' && personalJobPreferences.trim().length > 0) ||
+              (personalJobPreferences && typeof personalJobPreferences === 'object') ||
+              personal?.completed
+            );
+
+            const normalizedWorkEnvironment = normalizeMode(normalized?.ideal_work_environment);
+
+            const preferredMode =
+              normalizeMode(jobPreferences?.['workMode']) ||
+              normalizeMode(jobPreferences?.['work_mode']) ||
+              normalizeMode(jobPreferences?.['preferredMode']) ||
+              normalizeMode(jobPreferences?.['preferred_mode']) ||
+              normalizeMode(jobPreferences?.['mode']) ||
+              (personalHasPreferences ? normalizeMode(resolvedPersonalPrefs.workMode) : '') ||
+              normalizedWorkEnvironment;
+
+            const remotePref = (() => {
+              if (preferredMode === 'remoto') return 'el trabajo remoto';
+              if (preferredMode === 'híbrido') return 'los entornos híbridos';
+              if (preferredMode === 'presencial') return 'los entornos presenciales';
+              const remoteWork = jobPreferences?.['remoteWork'];
+              if (remoteWork === true) return 'el trabajo remoto';
+              return 'los entornos presenciales';
+            })();
+            const normalizedRoles = Array.isArray(normalized?.suggested_roles) ? normalized.suggested_roles : [];
+            const legacyRoles = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
+            const rolesArr = normalizedRoles.length > 0 ? normalizedRoles : legacyRoles;
+            const roleName = (r: any) => {
+              if (!r) return '';
+              if (typeof r === 'string') return r;
+              return r?.role || r?.name || r?.title || r?.label || r?.position || r?.jobTitle || '';
+            };
+            const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0, 2).join(' y ') || 'roles administrativos';
+            const normalizedImprovements = Array.isArray(normalized?.improvement_areas) ? normalized.improvement_areas : [];
+            const legacyImprovements = Array.isArray((data as any)?.report?.improvement_areas) ? (data as any).report.improvement_areas : [];
+            const improv = normalizedImprovements.length > 0 ? normalizedImprovements : legacyImprovements;
+            const clean = (v: string) => String(v || '').replace(/\s*\((?:\d+%?|\d+\s*\/\s*\d+)\)\s*/g, '').trim();
+            const improvementAreas = improv
+              .map((a: any) => {
+                if (!a) return '';
+                if (typeof a === 'string') return clean(a);
+                return clean(a?.area || a?.name || '');
+              })
+              .filter(Boolean)
+              .slice(0, 2)
+              .join(' y ') || 'tus áreas de mejora';
             const fortalezas = s1 && s2 ? `Aprovecha tu ${s1} y ${s2} para avanzar hacia tus objetivos profesionales.` : s1 ? `Aprovecha tu ${s1} para avanzar hacia tus objetivos profesionales.` : 'Aprovecha tus fortalezas para avanzar hacia tus objetivos profesionales.';
             return `Este informe ha sido elaborado a partir de tus preferencias laborales, los resultados de los minijuegos y tu CV.\n\n${firstName}, tu perfil muestra una base sólida de habilidades y una clara orientación al crecimiento.\n\n${fortalezas} Además, ${remotePref} y ${roleHint} encajan con tus competencias. Continúa desarrollando ${improvementAreas} y mantén la motivación: tu potencial está en constante evolución.`;
           })();
@@ -617,38 +693,6 @@ const ResultadosPage: React.FC = () => {
     window.print();
   };
 
-  // 1. Portada
-  const portada = (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
-      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4 print-shadow-none" />
-      <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Informe de Empleabilidad</h1>
-      <h2 className="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100">{report?.firstName} {report?.lastName}</h2>
-      <p className="text-gray-900 dark:text-gray-100">{fecha}</p>
-      
-      {/* Botones de acción */}
-      <div className="flex gap-4 mt-6 print-hidden">
-        <button
-          onClick={handlePrint}
-          disabled={!iaReport}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            !iaReport
-              ? 'bg-gray-300 text-gray-900 cursor-not-allowed'
-              : 'bg-[#374ba6] text-white hover:bg-[#2d3f96]'
-          }`}
-        >
-          <span className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Descargar Informe
-          </span>
-        </button>
-      </div>
-      
-      {/* Eliminado: mensaje de error del PDF */}
-    </div>
-  );
-
   // 2. Mapa de habilidades (Radar + resumen)
   // Usar useMemo para evitar recalcular en cada render
   const radarDataFromIa = useMemo(() => iaReport ? extractRadarData(iaReport) : [], [iaReport]);
@@ -685,8 +729,11 @@ const ResultadosPage: React.FC = () => {
     });
   };
 
-  const mergedSoftSkills = useMemo(() => {
-    // Merge de soft skills de juegos (game.softSkills) con personal.softSkills
+  const softSkillsData = useMemo(() => {
+    if (info?.soft_skills && info.soft_skills.length > 0) {
+      return info.soft_skills;
+    }
+    // Merge de soft skills de juegos (game.softSkills) con personal.softSkills como fallback
     const personalSkills = filterValidSoftSkills(personal.softSkills || []);
     const gameSkills = Array.isArray(game?.softSkills) ? game.softSkills : [];
     const mappedGame = gameSkills.map((s:any) => {
@@ -705,18 +752,50 @@ const ResultadosPage: React.FC = () => {
       }
     }
     return Object.values(byName);
-  }, [personal.softSkills, game?.softSkills]);
+  }, [info?.soft_skills, personal.softSkills, game?.softSkills]);
   const computedScore = useMemo(() => {
-    if (!mergedSoftSkills || mergedSoftSkills.length === 0) return undefined;
-    const sum = mergedSoftSkills.reduce((acc, s) => acc + (Number(s.score) || 0), 0);
-    const avg = sum / mergedSoftSkills.length;
+    if (!softSkillsData || softSkillsData.length === 0) return undefined;
+    const sum = softSkillsData.reduce((acc, s) => acc + (Number(s.score) || 0), 0);
+    const avg = sum / softSkillsData.length;
     // Evitar 0 en gráficas si hay datos; mínimo 10
     return Math.max(10, Math.round(avg));
-  }, [mergedSoftSkills]);
-  const globalScore = iaScore ?? report?.employabilityScore ?? computedScore;
+  }, [softSkillsData]);
+  const globalScore = iaScore ?? info?.employability_score ?? report?.employabilityScore ?? computedScore;
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
-    : processRadarData(mergedSoftSkills);
+    : processRadarData(softSkillsData);
+  // 1. Portada
+  const portada = (
+    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
+      <ScoreBadge value={globalScore} />
+      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4 print-shadow-none" />
+      <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Informe de Empleabilidad</h1>
+      <h2 className="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100">{report?.firstName} {report?.lastName}</h2>
+      <p className="text-gray-900 dark:text-gray-100">{fecha}</p>
+
+      {/* Botones de acción */}
+      <div className="flex gap-4 mt-6 print-hidden">
+        <button
+          onClick={handlePrint}
+          disabled={!iaReport}
+          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
+            !iaReport
+              ? 'bg-gray-300 text-gray-900 cursor-not-allowed'
+              : 'bg-[#374ba6] text-white hover:bg-[#2d3f96]'
+          }`}
+        >
+          <span className="flex items-center gap-2">
+            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
+            </svg>
+            Descargar Informe
+          </span>
+        </button>
+      </div>
+
+      {/* Eliminado: mensaje de error del PDF */}
+    </div>
+  );
   // Color de etiquetas del radar según modo (claro/oscuro)
   // Modo claro: etiquetas oscuras para legibilidad contra fondo blanco
   // Modo oscuro: etiquetas blancas para legibilidad contra fondo oscuro
@@ -733,6 +812,7 @@ const ResultadosPage: React.FC = () => {
 
   const radar = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
+          <ScoreBadge value={globalScore} />
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-3/5 h-96" ref={radarBoxRef}>
@@ -786,8 +866,10 @@ const ResultadosPage: React.FC = () => {
           <ul className="space-y-1 text-sm">
             {(() => {
               try {
-                const validSkills = filterValidSoftSkills(personal.softSkills || []);
-                return validSkills.map((skill, idx: number) => (
+                const validSkills = info?.soft_skills?.length
+                  ? info.soft_skills
+                  : filterValidSoftSkills(personal.softSkills || []);
+                return validSkills.map((skill: any, idx: number) => (
                   <li key={idx}>
                     <span className="font-medium text-gray-900 dark:text-gray-100">{skill.skill}:</span> {skill.score}%
                   </li>
@@ -798,7 +880,7 @@ const ResultadosPage: React.FC = () => {
             })()}
           </ul>
           <p className="font-semibold mt-2 text-gray-900 dark:text-gray-100 text-sm">
-            Puntaje global de empleabilidad: {globalScore ?? report?.employabilityScore ?? '-'}
+            Puntaje global de empleabilidad: {globalScore ?? '-'}
           </p>
         </div>
       </div>
@@ -1156,7 +1238,7 @@ const ResultadosPage: React.FC = () => {
           <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg p-4 transition-colors">
             <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Resumen de Evaluación</h3>
             <p className="text-gray-900 dark:text-gray-100"><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
-            <p className="text-gray-900 dark:text-gray-100"><strong>Puntaje de empleabilidad:</strong> {report?.employabilityScore ?? 'Calculando...'}</p>
+            <p className="text-gray-900 dark:text-gray-100"><strong>Puntaje de empleabilidad:</strong> {info?.employability_score ?? report?.employabilityScore ?? 'Calculando...'}</p>
             
             
             

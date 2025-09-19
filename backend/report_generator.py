@@ -1,192 +1,301 @@
-# report_generator.py
-from typing import Dict, Any, List
+from typing import Any, Dict, List, Sequence
 
 STAR = "★"
 EMPTY = "☆"
+
 
 def stars(n: int) -> str:
     n = max(0, min(5, int(n)))
     return STAR * n + EMPTY * (5 - n)
 
-def compute_cv_stars(cv_info: Dict[str, Any]) -> Dict[str, int]:
-    """
-    Heurística determinista: asigna 1–5 estrellas por apartado.
-    Si no hay datos, cae a valores conservadores.
-    """
-    if not cv_info:
-        return {"formato": 3, "claridad": 3, "coherencia": 3, "informacion": 2, "ortografia": 3}
 
-    # Presencias y señales simples
-    has_contact = bool(cv_info.get("contacto"))
-    has_exp = bool(cv_info.get("experiencia"))
-    has_edu = bool(cv_info.get("educacion"))
-    has_languages = bool(cv_info.get("idiomas"))
-    has_tools = bool(cv_info.get("software"))
+def _first_non_empty(data: Dict[str, Any], keys: Sequence[str]) -> str:
+    for key in keys:
+        value = data.get(key)
+        if value:
+            text = str(value).strip()
+            if text:
+                return text
+    return ""
 
-    # Reglas deterministas
-    formato = 2 + int(has_contact) + int(has_exp) + int(has_edu)  # 2–5
-    claridad = 3 + int(has_exp and has_edu)                       # 3–5
-    coherencia = 2 + int(has_exp) + int(has_edu)                  # 2–4 (luego cap a 5)
-    informacion = 1 + int(has_contact) + int(has_exp) + int(has_edu) + int(has_languages or has_tools)  # 1–5
-    ortografia = 3  # sin NLP, valor razonable; se puede mejorar luego
 
-    return {
-        "formato": min(5, formato),
-        "claridad": min(5, claridad),
-        "coherencia": min(5, coherencia),
-        "informacion": min(5, informacion),
-        "ortografia": min(5, ortografia),
-    }
+def _as_list(items: Any) -> List[Any]:
+    if not items:
+        return []
+    if isinstance(items, list):
+        return [item for item in items if item is not None]
+    if isinstance(items, tuple):
+        return [item for item in items if item is not None]
+    return [items]
 
-def render_informe_estructurado(
-    profile: Dict[str, Any],
-    cv_info: Dict[str, Any],
-    soft_skills: List[Dict[str, Any]],
-    job_prefs: Dict[str, Any],
-    juegos: List[str],
-) -> str:
-    """
-    Devuelve el informe EXACTO que pediste, incluyendo el bloque de estrellas.
-    """
-    nombre = profile.get("fullName") or profile.get("nombre") or "No consta"
-    ubicacion = (cv_info.get("contacto") or {}).get("location") or "No consta"
-    email = (cv_info.get("contacto") or {}).get("email") or profile.get("email") or "No consta"
-    telefono = (cv_info.get("contacto") or {}).get("phone") or profile.get("phone") or "No consta"
-    discapacidad = "Sí" if (job_prefs or {}).get("hasDisabilityCert") else "No"
 
-    # Fortalezas / Áreas de mejora a partir de soft_skills
-    # Con puntajes al estilo que ya tienes (0–100)
-    strengths_sorted = sorted(soft_skills, key=lambda s: s.get("score", 0), reverse=True)
-    fortalezas = []
-    mejoras = []
-    for s in strengths_sorted:
-        label = f"{s.get('skill') or s.get('habilidad')} ({s.get('score', 0)}/100)"
-        if s.get("score", 0) >= 60:
-            fortalezas.append(label)
-        elif s.get("score", 0) <= 50:
-            mejoras.append((label, s.get("skill") or ""))
+def _format_experience_entry(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        title = _first_non_empty(item, ["title", "cargo", "position", "role", "puesto"])
+        company = _first_non_empty(item, ["company", "empresa", "organization", "organizacion"])
+        period = _first_non_empty(item, ["period", "duration"])
+        if not period:
+            start = _first_non_empty(item, ["start_date", "fecha_inicio", "inicio"])
+            end = _first_non_empty(item, ["end_date", "fecha_fin", "fin"])
+            if not end and str(item.get("current") or item.get("actual") or "").lower() in {"true", "1", "si", "sí"}:
+                end = "Actualidad"
+            if start or end:
+                period = " - ".join(part for part in [start, end] if part)
+        description = _first_non_empty(item, ["description", "descripcion"])
+        components = [comp for comp in [title, company] if comp]
+        if period:
+            components.append(period)
+        line = " — ".join(components).strip()
+        if not line and description:
+            line = description
+        return line.strip()
+    if item is None:
+        return ""
+    return str(item).strip()
 
-    # Diagnóstico CV (estrellas)
-    cv_stars = compute_cv_stars(cv_info)
-    estrellas = {
-        "Formato": stars(cv_stars["formato"]),
-        "Claridad": stars(cv_stars["claridad"]),
-        "Coherencia": stars(cv_stars["coherencia"]),
-        "Información clave": stars(cv_stars["informacion"]),
-        "Ortografía": stars(cv_stars["ortografia"]),
-    }
 
-    # Experiencia (selección)
-    exp_lines = []
-    for e in (cv_info.get("experiencia") or []):
-        if isinstance(e, dict):
-            line = f"{e.get('position') or e.get('title') or ''}, {e.get('company') or ''} ({e.get('period') or ''})"
-        else:
-            line = str(e)
-        if line.strip():
-            exp_lines.append(line)
+def _format_education_entry(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        degree = _first_non_empty(item, ["degree", "titulo", "title", "program"])
+        institution = _first_non_empty(item, ["institution", "institucion", "school", "centro"])
+        level = _first_non_empty(item, ["level", "nivel"])
+        period = _first_non_empty(item, ["period", "duration"])
+        if not period:
+            start = _first_non_empty(item, ["start_date", "fecha_inicio", "inicio"])
+            end = _first_non_empty(item, ["end_date", "fecha_fin", "fin"])
+            if start or end:
+                period = " - ".join(part for part in [start, end] if part)
+        description = _first_non_empty(item, ["description", "descripcion"])
+        components = [comp for comp in [degree, institution] if comp]
+        if period:
+            components.append(period)
+        elif level:
+            components.append(level)
+        line = " — ".join(components).strip()
+        if not line and description:
+            line = description
+        return line.strip()
+    if item is None:
+        return ""
+    return str(item).strip()
 
-    # Formación (selección)
-    edu_lines = []
-    for ed in (cv_info.get("educacion") or []):
-        if isinstance(ed, dict):
-            line = f"{ed.get('title') or ''} – {ed.get('institution') or ''} ({ed.get('year') or ''})"
-        else:
-            line = str(ed)
-        if line.strip():
-            edu_lines.append(line)
 
-    # Idiomas y software
-    idiomas = cv_info.get("idiomas") or []
-    software = cv_info.get("software") or []
+def _format_language_entry(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        language = _first_non_empty(item, ["language", "idioma", "name"])
+        level = _first_non_empty(item, ["level", "nivel", "proficiency"])
+        components = [comp for comp in [language, level] if comp]
+        line = " — ".join(components).strip()
+        return line
+    if item is None:
+        return ""
+    return str(item).strip()
 
-    # Resumen ejecutivo (con tu wording)
-    # Ajusta aquí si quieres exactas tus cifras preferidas.
-    liderazgo = next((s for s in soft_skills if (s.get("skill") or "").lower().startswith("lider")), None)
-    liderazgo_score = liderazgo.get("score", 60) if liderazgo else 60
 
-    resumen_ejecutivo = (
-        f"Perfil con alta orientación al liderazgo ({liderazgo_score}/100) y base sólida en pensamiento "
-        f"analítico, creatividad, resiliencia y pensamiento crítico (60/100). Preferencia por trabajo remoto, "
-        f"disponibilidad completa y apertura a relocalización. "
-        f"Experiencia reciente liderando iniciativas de inclusión laboral y trayectoria previa en grabación y "
-        f"transcripción de datos. Áreas a potenciar: toma de decisiones e influencia social."
-    )
+def _format_software_entry(item: Any) -> str:
+    if isinstance(item, str):
+        return item.strip()
+    if isinstance(item, dict):
+        name = _first_non_empty(item, ["name", "tool", "herramienta", "technology", "software"])
+        level = _first_non_empty(item, ["level", "nivel", "proficiency"])
+        description = _first_non_empty(item, ["description", "descripcion"])
+        components = [comp for comp in [name, level] if comp]
+        line = " — ".join(components).strip()
+        if not line and description:
+            line = description
+        return line.strip()
+    if item is None:
+        return ""
+    return str(item).strip()
 
-    # Construcción final
-    out = []
+
+def _format_section_items(items: Any, formatter) -> List[str]:
+    formatted: List[str] = []
+    for raw in _as_list(items):
+        text = formatter(raw)
+        if text:
+            formatted.append(text)
+    return formatted
+
+
+def render_informe_estructurado(report: Dict[str, Any]) -> str:
+    """Renderiza un informe estructurado en texto/markdown usando NewReportSchema."""
+    personal = report.get("personal_data") or {}
+    cv_analysis = report.get("cv_analysis") or {}
+    cv_details = report.get("cv_details") or {}
+
+    out: List[str] = []
+
     out.append("Resumen ejecutivo\n")
-    out.append(resumen_ejecutivo + "\n")
+    out.append(f"{report.get('summary', '')}\n")
+
     out.append("Datos personales\n")
-    out.append(f"Nombre: {nombre}\n")
-    out.append(f"Ubicación: {ubicacion}\n")
-    out.append(f"Email: {email}\n")
-    out.append(f"Teléfono: {telefono}\n")
-    out.append("LinkedIn: (no especificado; recomendado crear/actualizar)\n")
+    out.append(f"Nombre: {personal.get('name', 'No consta')}\n")
+    out.append(f"Ubicación: {personal.get('location', 'No consta')}\n")
+    out.append(f"Email: {personal.get('email', 'No consta')}\n")
+    out.append(f"Teléfono: {personal.get('phone', 'No consta')}\n")
+    out.append(f"Certificado de discapacidad: {personal.get('disability_certificate', 'No')}\n")
 
     out.append("\nResumen de perfil\n")
-    out.append(
-        "Profesional orientada a la precisión y la organización, con experiencia en captura y limpieza de datos, "
-        "transcripción y gestión de información. Ha liderado proyectos y asociaciones de impacto social (Teamworkz) "
-        "demostrando autonomía, planificación y responsabilidad. Busca consolidarse en operaciones de datos y "
-        "administración remota, aplicando su conocimiento de Microsoft Office y herramientas digitales.\n"
-    )
+    out.append(f"{report.get('profile_summary', '')}\n")
 
     out.append("\nResumen del CV\n")
-    if exp_lines:
-        out.append("Experiencia (selección)\n")
-        for l in exp_lines[:5]:
-            out.append(f"- {l}\n")
-    if edu_lines:
-        out.append("\nFormación (selección)\n")
-        for l in edu_lines[:6]:
-            out.append(f"- {l}\n")
-    out.append(f"\nIdiomas: {', '.join(idiomas) if idiomas else 'No especificado'}\n")
-    out.append(f"Software: {', '.join(software) if software else 'No especificado'}\n")
+    out.append(f"{report.get('cv_summary', '')}\n")
+
+    sections = [
+        (
+            "Experiencia",
+            _format_section_items(
+                cv_analysis.get("experience") or cv_details.get("experience"),
+                _format_experience_entry,
+            ),
+            "No se registró experiencia disponible.",
+        ),
+        (
+            "Educación",
+            _format_section_items(
+                cv_analysis.get("education") or cv_details.get("education"),
+                _format_education_entry,
+            ),
+            "No se registró formación educativa disponible.",
+        ),
+        (
+            "Idiomas",
+            _format_section_items(
+                cv_analysis.get("languages") or cv_details.get("languages"),
+                _format_language_entry,
+            ),
+            "No se registraron idiomas.",
+        ),
+        (
+            "Software",
+            _format_section_items(
+                cv_analysis.get("software") or cv_details.get("tools"),
+                _format_software_entry,
+            ),
+            "No se registraron herramientas destacadas.",
+        ),
+    ]
+
+    for title, items, fallback in sections:
+        out.append(f"\n{title}\n")
+        if items:
+            for entry in items:
+                out.append(f"- {entry}\n")
+        else:
+            out.append(f"- {fallback}\n")
+    cv_details = report.get("cv_details") or {}
+
+    def _render_detail_section(title: str, items: Any) -> None:
+        values = []
+        if isinstance(items, list):
+            values = [str(item) for item in items if item not in (None, "")]
+        elif items:
+            values = [str(items)]
+        if not values:
+            return
+        out.append(f"\n{title}\n")
+        for entry in values:
+            out.append(f"- {entry}\n")
+
+    _render_detail_section("Experiencia destacada", cv_details.get("experience"))
+    _render_detail_section("Formación", cv_details.get("education"))
+    _render_detail_section("Idiomas", cv_details.get("languages"))
+    _render_detail_section("Herramientas y tecnología", cv_details.get("tools"))
 
     out.append("\nFortalezas clave\n")
-    for f in fortalezas[:6]:
+    for f in report.get("strengths", []):
         out.append(f"- {f}\n")
 
     out.append("\nÁreas de mejora priorizadas\n")
-    for (m, sk) in mejoras[:3]:
-        out.append(f"- {m}\n")
+    for area in report.get("improvement_areas", []):
+        if isinstance(area, dict):
+            label = area.get("area")
+            action = area.get("suggested_action")
+            if label and action:
+                out.append(f"- {label}: {action}\n")
+            elif label:
+                out.append(f"- {label}\n")
+        else:
+            out.append(f"- {area}\n")
 
     out.append("\nDiagnóstico del CV (estrellas)\n")
-    for k, v in estrellas.items():
-        out.append(f"{k}: {v}\n")
+    out.append(f"Estructura: {stars(cv_analysis.get('structure_score', 0))}\n")
+    out.append(f"Claridad: {stars(cv_analysis.get('clarity_score', 0))}\n")
+    out.append(f"Coherencia: {stars(cv_analysis.get('coherence_score', 0))}\n")
+    out.append(f"Información clave: {stars(cv_analysis.get('key_info_score', 0))}\n")
+    out.append(f"Estilo: {stars(cv_analysis.get('style_score', 0))}\n")
 
     out.append("\nEntornos de trabajo ideales\n")
-    out.append(
-        "Tareas estructuradas y métricas claras (volumen diario, precisión, SLA). Remoto asíncrono, comunicación "
-        "escrita (email/Slack/Teams). Cultura inclusiva y neurodiversidad-friendly, con feedback breve y regular.\n"
-    )
+    out.append(f"{report.get('ideal_work_environment', '')}\n")
 
     out.append("\nRoles sugeridos\n")
-    out.append("- Grabadora de datos / Data Entry — Junior–Mid — 100% remoto.\n")
-    out.append("- Asistente administrativo/a remoto / Back-office — Junior–Mid — Remoto viable.\n")
-    out.append("- Transcriptor/a y Etiquetado de datos (Data Labeling/Annotation) — Junior — Remoto.\n")
-    out.append("- Operario/a de control de calidad de datos (Data QA) — Junior — Remoto.\n")
-    out.append("- Coordinación de proyectos pequeños (Operations Assistant) — Junior — Híbrido/Remoto.\n")
+    for r in report.get("suggested_roles", []):
+        if isinstance(r, dict):
+            line = f"- {r.get('role')} — {r.get('seniority')} — Remoto: {r.get('remote_viable')}"
+            if r.get("reason"):
+                line += f". Razón: {r.get('reason')}"
+            out.append(line + "\n")
+        else:
+            out.append(f"- {r}\n")
 
     out.append("\nPlan de acción (30–60–90 días)\n")
-    out.append("0–30 días (bases)\n- Reescribir CV con logros y métricas; crear LinkedIn claro.\n")
-    out.append("31–60 días (tracción)\n- 10–15 candidaturas/semana; aprender OCR/Airtable/Notion.\n")
-    out.append("61–90 días (consolidación)\n- Objetivo: 2–3 clientes/proyectos o 1 contrato estable; KPIs documentados.\n")
+    plan = report.get("action_plan") or {}
+    short = plan.get("short_term", [])
+    medium = plan.get("medium_term", [])
+    long_term = plan.get("long_term", [])
+    if short:
+        out.append("0–30 días (bases)\n")
+        for it in short:
+            out.append(f"- {it}\n")
+    if medium:
+        out.append("31–60 días (tracción)\n")
+        for it in medium:
+            out.append(f"- {it}\n")
+    if long_term:
+        out.append("61–90 días (consolidación)\n")
+        for it in long_term:
+            out.append(f"- {it}\n")
 
-    out.append("\nConsejos prácticos de búsqueda\n- Filtro por 'remoto' + 'data entry', 'back office', 'data quality'.\n")
-    out.append("Herramientas útiles\n- Excel/Sheets; Airtable/Notion; OCR básico; Trello/Asana; Gmail/Slack/Teams.\n")
+    out.append("\nConsejos prácticos de búsqueda\n")
+    advice = report.get("job_search_advice") or {}
+    cv_opt = advice.get("cv_optimization")
+    if cv_opt:
+        if isinstance(cv_opt, list):
+            out.append(f"CV: {', '.join(cv_opt)}\n")
+        else:
+            out.append(f"CV: {cv_opt}\n")
+    letters = advice.get("letters_portfolio")
+    if letters:
+        out.append(f"Cartas/portfolio: {letters}\n")
+    platforms = advice.get("recommended_platforms")
+    if platforms:
+        out.append(f"Plataformas: {', '.join(platforms)}\n")
+    networking = advice.get("networking")
+    if networking:
+        out.append(f"Networking: {networking}\n")
+    interview = advice.get("interview_tips")
+    if interview:
+        out.append(f"Entrevistas: {interview}\n")
+
+    out.append("Herramientas útiles\n")
+    tools = report.get("useful_tools") or {}
+    for key in ["productivity", "job_search", "learning", "accessibility"]:
+        vals = tools.get(key)
+        if vals:
+            out.append(f"{key.replace('_', ' ').title()}: {', '.join(vals)}\n")
 
     out.append("\nJuegos completados y cómo capitalizarlos\n")
-    out.append("- Liderazgo: coordinar micro-tareas.\n- Analítico: checks de calidad.\n- Creatividad: mejoras de plantillas.\n- Resiliencia: disponibilidad internacional.\n")
-
-    out.append("\nMiniplan mejora: decisiones e influencia social\n")
-    out.append("- Decisiones: matriz Impacto×Esfuerzo y límite de 10 min.\n- Influencia: pitch de 3 líneas + prueba antes/después.\n")
-
-    out.append("\nFrases listas (para propuestas y LinkedIn)\n")
-    out.append("Titular: Data Entry | QA de Datos | Back-office (100% remoto)\n")
-    out.append("Acerca de: \"Capturo y depuro datos con precision y SLA fiables...\"\n")
+    for j in report.get("completed_games", []):
+        out.append(f"- {j}\n")
 
     out.append("\nMensaje final\n")
-    out.append("Tienes base excelente para datos/operaciones remotas. Con CV cuantificado, LinkedIn claro y 2–3 pruebas de valor, puedes cerrar contratos estables en 8–12 semanas.\n")
+    out.append(f"{report.get('final_message', '')}\n")
     return "\n".join(out)
+
