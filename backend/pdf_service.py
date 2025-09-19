@@ -1,10 +1,13 @@
 # backend/pdf_service.py
 from io import BytesIO
-from typing import Any, Dict, List, Optional
+from typing import Any, Dict, List, Optional, Tuple
+from datetime import date
+import math
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
 from reportlab.lib.units import mm
+from reportlab.lib import colors
 
 # Helpers
 def _draw_wrapped_text(c: canvas.Canvas, x: float, y: float, text: str, max_width: float, leading: float = 12) -> float:
@@ -32,6 +35,135 @@ def _draw_wrapped_text(c: canvas.Canvas, x: float, y: float, text: str, max_widt
         y -= leading
     return y
 
+# Renderiza una lista con viñetas; cada item puede ser str o dict (con claves comunes)
+def _draw_bulleted_list(
+    c: canvas.Canvas,
+    x: float,
+    y: float,
+    items: List[Any],
+    max_width: float,
+    leading: float = 12,
+) -> float:
+    if not items:
+        return y
+    for it in items:
+        if it is None:
+            continue
+        if isinstance(it, dict):
+            # Intentar construir una línea legible a partir de claves comunes
+            label_parts: List[str] = []
+            for k in ("title", "degree", "role", "area", "name", "label"):
+                v = it.get(k)
+                if v:
+                    label_parts.append(str(v))
+                    break
+            # info secundaria
+            secondary: List[str] = []
+            for k in ("company", "center", "year", "seniority", "reason"):
+                v = it.get(k)
+                if v:
+                    secondary.append(str(v))
+            line = " • " + (" ".join(label_parts) if label_parts else str(it))
+            if secondary:
+                line += " — " + ", ".join(secondary)
+            y = _draw_wrapped_text(c, x, y, line, max_width, leading)
+        else:
+            y = _draw_wrapped_text(c, x, y, f"• {str(it)}", max_width, leading)
+    return y
+
+# Crea una nueva página si falta espacio
+def _ensure_space(c: canvas.Canvas, y: float, needed: float, margin_top: float, margin_bottom: float) -> float:
+    if y - needed < margin_bottom:
+        c.showPage()
+        c.setFont("Helvetica", 10)
+        return A4[1] - margin_top
+    return y
+
+# Radar simple para soft skills (0..100)
+def _draw_radar_chart(
+    c: canvas.Canvas,
+    center_x: float,
+    center_y: float,
+    radius: float,
+    data: List[Dict[str, Any]],
+    levels: int = 5,
+    label_color = colors.grey,
+) -> None:
+    if not data:
+        return
+    # Normalizar a pares (label, score)
+    pairs: List[Tuple[str, float]] = []
+    for item in data:
+        if isinstance(item, dict):
+            label = str(item.get("skill") or item.get("name") or item.get("label") or "").strip()
+            try:
+                score = float(item.get("score"))
+            except Exception:
+                score = 0.0
+            if label:
+                pairs.append((label, max(0.0, min(100.0, score))))
+        elif isinstance(item, str):
+            pairs.append((item, 50.0))
+    if not pairs:
+        return
+    n = len(pairs)
+    # Ejes y anillos
+    c.setStrokeColor(colors.grey)
+    c.setLineWidth(0.6)
+    for lvl in range(1, levels + 1):
+        r = radius * (lvl / levels)
+        # Polígono concéntrico
+        pts: List[Tuple[float, float]] = []
+        for i in range(n):
+            angle = (i / n) * 6.283185307179586  # 2*pi
+            x = center_x + r * math.cos(angle - 1.57079632679)  # rotar 90º
+            y = center_y + r * math.sin(angle - 1.57079632679)
+            pts.append((x, y))
+        # Dibujar
+        for i in range(n):
+            x1, y1 = pts[i]
+            x2, y2 = pts[(i + 1) % n]
+            c.line(x1, y1, x2, y2)
+    # Ejes y etiquetas
+    c.setStrokeColor(colors.lightgrey)
+    for i, (label, _score) in enumerate(pairs):
+        angle = (i / n) * 6.283185307179586
+        x2 = center_x + radius * math.cos(angle - 1.57079632679)
+        y2 = center_y + radius * math.sin(angle - 1.57079632679)
+        c.line(center_x, center_y, x2, y2)
+        # Etiqueta
+        lx = center_x + (radius + 6 * mm) * math.cos(angle - 1.57079632679)
+        ly = center_y + (radius + 6 * mm) * math.sin(angle - 1.57079632679)
+        c.setFillColor(label_color)
+        c.setFont("Helvetica", 8)
+        c.drawCentredString(lx, ly, label[:22])
+    # Polígono de datos
+    c.setFillColorRGB(0.2, 0.45, 0.85, alpha=0.25)
+    c.setStrokeColorRGB(0.2, 0.45, 0.85)
+    c.setLineWidth(1.2)
+    first: Optional[Tuple[float, float]] = None
+    prev: Optional[Tuple[float, float]] = None
+    for i, (_label, score) in enumerate(pairs):
+        r = radius * (score / 100.0)
+        angle = (i / n) * 6.283185307179586
+        x = center_x + r * math.cos(angle - 1.57079632679)
+        y = center_y + r * math.sin(angle - 1.57079632679)
+        if prev is not None:
+            c.line(prev[0], prev[1], x, y)
+        else:
+            first = (x, y)
+        prev = (x, y)
+    if prev and first:
+        c.line(prev[0], prev[1], first[0], first[1])
+    # Puntos
+    c.setFillColorRGB(0.2, 0.45, 0.85)
+    for i, (_label, score) in enumerate(pairs):
+        r = radius * (score / 100.0)
+        angle = (i / n) * 6.283185307179586
+        x = center_x + r * math.cos(angle - 1.57079632679)
+        y = center_y + r * math.sin(angle - 1.57079632679)
+        c.circle(x, y, 1.6, stroke=0, fill=1)
+
 def _stars(val: Optional[int]) -> str:
     n = int(val or 0)
     if n < 0: n = 0
@@ -40,145 +172,259 @@ def _stars(val: Optional[int]) -> str:
 
 def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     """
-    Construye un PDF con los campos clave del informe IA + CV.
-    Puede recibir directamente un diccionario compatible con `NewReportSchema`
-    (claves `summary`, `personal_data`, `cv_analysis`, etc.) o el formato legado
-    `{ "report": {...}, "cvAnalysis": {...} }`.
+    Construye un PDF multi-sección con datos REALES del payload.
+    - Usa, si existen: report.personal_data, report.cv_analysis, report.strengths,
+      report.improvement_areas, report.suggested_roles, report.action_plan,
+      report.job_search_advice, report.tools, report.completed_games.
+    - Acepta además: softSkills, jobPreferences, completedGames, cvAnalysis.
     """
-    # Validar payload
     if not isinstance(payload, dict):
         raise ValueError("Payload debe ser un diccionario")
-    
-    buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4, pageCompression=0)
-    width, height = A4
 
-    margin_x = 20 * mm
-    y = height - 20 * mm
-    line_w = width - 40 * mm
-
-    title = f"Informe de Empleabilidad"
-    c.setFont("Helvetica-Bold", 16)
-    c.drawString(margin_x, y, title)
-    y -= 16
-
-    # Determinar si el payload ya viene en el nuevo formato
-    report_data: Dict[str, Any] = {}
-    cv_data: Dict[str, Any] = {}
-    if isinstance(payload, dict):
-        if isinstance(payload.get("summary"), str) and isinstance(payload.get("personal_data"), dict):
-            report_data = payload
-            cv_data = payload.get("cv_analysis") if isinstance(payload.get("cv_analysis"), dict) else {}
-        else:
-            report_candidate = payload.get("report")
-            if isinstance(report_candidate, dict):
-                report_data = report_candidate
-            cv_candidate = payload.get("cvAnalysis")
-            if isinstance(cv_candidate, dict):
-                cv_data = cv_candidate
-
+    # ---------- Extracción de datos robusta ----------
+    report_data = {}
+    cv_data = {}
+    soft_skills = []
+    job_prefs = payload.get("jobPreferences") or {}
+    completed_games = payload.get("completedGames") or []
+    if isinstance(payload.get("summary"), str) and isinstance(payload.get("personal_data"), dict):
+        report_data = payload
+        cv_data = report_data.get("cv_analysis") or {}
+    else:
+        report_data = payload.get("report") or {}
+        cv_data = payload.get("cvAnalysis") or report_data.get("cv_analysis") or {}
     if not isinstance(report_data, dict):
         report_data = {}
     if not isinstance(cv_data, dict):
         cv_data = {}
+    soft_skills = payload.get("softSkills") or report_data.get("soft_skills") or []
+    if not isinstance(soft_skills, list):
+        soft_skills = []
 
-    legacy_recs = payload.get("recommendations") if isinstance(payload.get("recommendations"), dict) else {}
-    if not report_data.get("summary"):
-        legacy_summary = report_data.get("resumen_ejecutivo") or legacy_recs.get("resumen_perfil")
-        if legacy_summary:
-            report_data["summary"] = legacy_summary
-    if not report_data.get("strengths"):
-        rec_strengths = legacy_recs.get("fortalezas_clave") if isinstance(legacy_recs, dict) else None
-        if isinstance(rec_strengths, list):
-            report_data["strengths"] = [str(item) for item in rec_strengths]
-        elif isinstance(report_data.get("soft_skills"), list):
-            report_data["strengths"] = [
-                str(item.get("skill") or item.get("name") or item)
-                for item in report_data.get("soft_skills")
-                if item
-            ]
-    if not report_data.get("final_message"):
-        legacy_message = report_data.get("frase_final") or (legacy_recs.get("frase_final") if isinstance(legacy_recs, dict) else None)
-        if legacy_message:
-            report_data["final_message"] = legacy_message
+    # Datos personales básicos
+    full_name = (
+        payload.get("fullName")
+        or (report_data.get("personal_data") or {}).get("name")
+        or payload.get("userId")
+        or "Usuario"
+    )
+    personal = report_data.get("personal_data") or {}
+    if not isinstance(personal, dict):
+        personal = {}
+    # Enriquecer con contacto del CV si falta
+    contact = (cv_data.get("contact") if isinstance(cv_data, dict) else {}) or {}
+    if isinstance(contact, dict):
+        if not personal.get("email") and isinstance(contact.get("emails"), list) and contact.get("emails"):
+            personal["email"] = contact.get("emails")[0]
+        if not personal.get("phone") and isinstance(contact.get("phones"), list) and contact.get("phones"):
+            personal["phone"] = contact.get("phones")[0]
+        if not personal.get("location") and isinstance(contact.get("location"), str):
+            personal["location"] = contact.get("location")
 
-    personal = report_data.get("personal_data") if isinstance(report_data.get("personal_data"), dict) else {}
-    full_name = str(payload.get("fullName") or personal.get("name") or "Usuario")
+    # Puntuación global
+    global_score = int(payload.get("employabilityScore") or report_data.get("employabilityScore") or 0)
 
-    c.setFont("Helvetica", 11)
+    # ---------- Render PDF ----------
+    buf = BytesIO()
+    c = canvas.Canvas(buf, pagesize=A4, pageCompression=0)
+    width, height = A4
+    margin_x = 20 * mm
+    margin_top = 20 * mm
+    margin_bottom = 18 * mm
+    y = height - margin_top
+    line_w = width - 2 * margin_x
+
+    # Cabecera
+    c.setFont("Helvetica-Bold", 18)
+    c.drawString(margin_x, y, "Informe de Empleabilidad")
+    y -= 16
+    c.setFont("Helvetica", 10)
+    today = date.today().strftime("%d/%m/%Y")
     y = _draw_wrapped_text(c, margin_x, y, f"Nombre: {full_name}", line_w, leading=14)
-    if personal:
-        if personal.get("location"):
-            y = _draw_wrapped_text(c, margin_x, y, f"Ubicación: {personal.get('location')}", line_w, leading=14)
-        if personal.get("email"):
-            y = _draw_wrapped_text(c, margin_x, y, f"Email: {personal.get('email')}", line_w, leading=14)
-        if personal.get("phone"):
-            y = _draw_wrapped_text(c, margin_x, y, f"Teléfono: {personal.get('phone')}", line_w, leading=14)
-    y -= 4
+    y = _draw_wrapped_text(c, margin_x, y, f"Fecha: {today}", line_w, leading=12)
+    y -= 6
 
+    # Bloque: Mapa de habilidades (radar) + resumen de puntuaciones + puntaje global
+    import math  # local import para evitar dependencia global si no se usa
+    chart_radius = 45 * mm
+    center_x = margin_x + chart_radius + 5 * mm
+    center_y = y - chart_radius - 4 * mm
+    # Título
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(margin_x, y, "Mapa de habilidades")
+    y -= 14
+    # Radar
+    try:
+        _draw_radar_chart(c, center_x, center_y, chart_radius, soft_skills)
+    except Exception:
+        pass
+    # Resumen de soft skills a la derecha
+    c.setFont("Helvetica", 9)
+    col_x = center_x + chart_radius + 14 * mm
+    y_list_top = y - 4
+    y2 = y_list_top
+    if soft_skills:
+        top_list = []
+        for it in soft_skills:
+            if isinstance(it, dict):
+                nm = str(it.get("skill") or it.get("name") or "").strip()
+                sc = it.get("score")
+                try:
+                    sc_int = int(sc)
+                except Exception:
+                    sc_int = 0
+                if nm:
+                    top_list.append(f"{nm}: {sc_int}/100")
+        y2 = _draw_wrapped_text(c, col_x, y2, "Resumen de puntuaciones:", width - col_x - margin_x, leading=12)
+        c.setFont("Helvetica", 9)
+        for ln in top_list[:12]:
+            y2 = _draw_wrapped_text(c, col_x, y2, f"• {ln}", width - col_x - margin_x, leading=12)
+
+    # Burbuja de score global (si existe)
+    if global_score:
+        badge_x = width - margin_x - 22 * mm
+        badge_y = center_y - chart_radius + 8 * mm
+        c.setFillColorRGB(0.15, 0.18, 0.22)
+        c.roundRect(badge_x, badge_y, 22 * mm, 12 * mm, 6, stroke=0, fill=1)
+        c.setFillColor(colors.white)
+        c.setFont("Helvetica", 9)
+        c.drawCentredString(badge_x + 11 * mm, badge_y + 4, f"{global_score}%")
+        c.setFillColor(colors.black)
+
+    y = center_y - chart_radius - 8 * mm
+    y = _ensure_space(c, y, 30 * mm, margin_top, margin_bottom)
+
+    # Página 2: Resumen ejecutivo, Datos personales, Resumen del CV
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin_x, y, "Resumen ejecutivo")
     y -= 14
     c.setFont("Helvetica", 10)
-    y = _draw_wrapped_text(c, margin_x, y, report_data.get("summary") or "", line_w)
+    y = _draw_wrapped_text(c, margin_x, y, report_data.get("summary") or report_data.get("resumen_ejecutivo") or "", line_w)
 
-    cv_analysis = report_data.get("cv_analysis") or cv_data
-    if not isinstance(cv_analysis, dict):
-        cv_analysis = {}
-    y -= 8
+    y -= 6
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Diagnóstico del CV")
+    c.drawString(margin_x, y, "Datos personales")
     y -= 14
     c.setFont("Helvetica", 10)
-    y = _draw_wrapped_text(c, margin_x, y, f"Estructura: {_stars(cv_analysis.get('structure_score'))}", line_w)
-    y = _draw_wrapped_text(c, margin_x, y, f"Claridad: {_stars(cv_analysis.get('clarity_score'))}", line_w)
-    y = _draw_wrapped_text(c, margin_x, y, f"Coherencia: {_stars(cv_analysis.get('coherence_score'))}", line_w)
-    y = _draw_wrapped_text(c, margin_x, y, f"Información clave: {_stars(cv_analysis.get('key_info_score'))}", line_w)
-    y = _draw_wrapped_text(c, margin_x, y, f"Estilo: {_stars(cv_analysis.get('style_score'))}", line_w)
+    pd_lines: List[str] = []
+    if personal.get("name") or full_name:
+        pd_lines.append(f"Nombre: {personal.get('name') or full_name}")
+    if personal.get("location"):
+        pd_lines.append(f"Ubicación: {personal.get('location')}")
+    if personal.get("email"):
+        pd_lines.append(f"Email: {personal.get('email')}")
+    if personal.get("phone"):
+        pd_lines.append(f"Teléfono: {personal.get('phone')}")
+    y = _draw_bulleted_list(c, margin_x, y, pd_lines, line_w)
 
-    y -= 8
+    # Resumen del CV (experiencia/educación/idiomas/software)
+    y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom)
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Fortalezas")
+    c.drawString(margin_x, y, "Resumen del CV")
     y -= 14
     c.setFont("Helvetica", 10)
-    for strength in report_data.get("strengths", []) or []:
-        y = _draw_wrapped_text(c, margin_x, y, f"• {strength}", line_w)
+    # Experiencia
+    y = _draw_wrapped_text(c, margin_x, y, "Experiencia (selección)", line_w)
+    xp = (cv_data.get("experience") or cv_data.get("experience_detailed") or [])
+    y = _draw_bulleted_list(c, margin_x, y, xp[:8], line_w)
+    # Educación
+    y -= 6
+    y = _draw_wrapped_text(c, margin_x, y, "Formación (selección)", line_w)
+    edu = cv_data.get("education") or cv_data.get("education_detailed") or []
+    y = _draw_bulleted_list(c, margin_x, y, edu[:8], line_w)
+    # Idiomas
+    langs = cv_data.get("languages") or []
+    if langs:
+        y -= 6
+        y = _draw_wrapped_text(c, margin_x, y, "Idiomas", line_w)
+        items = []
+        for it in langs:
+            if isinstance(it, dict):
+                nm = it.get("name") or it.get("language") or "Idioma"
+                lvl = it.get("level") or it.get("nivel") or ""
+                items.append(f"{nm} — {lvl}".strip(" —"))
+            else:
+                items.append(str(it))
+        y = _draw_bulleted_list(c, margin_x, y, items, line_w)
+    # Software / herramientas
+    sw = cv_data.get("software") or cv_data.get("skills") or []
+    if sw:
+        y -= 6
+        y = _draw_wrapped_text(c, margin_x, y, "Herramientas/Software", line_w)
+        y = _draw_bulleted_list(c, margin_x, y, sw[:12], line_w)
 
-    y -= 8
+    # Página 3: Áreas de mejora priorizadas
+    y = _ensure_space(c, y, 60 * mm, margin_top, margin_bottom)
     c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Áreas de mejora")
+    c.drawString(margin_x, y, "Áreas de mejora priorizadas")
     y -= 14
     c.setFont("Helvetica", 10)
-    for area in report_data.get("improvement_areas", []) or []:
-        if isinstance(area, dict):
-            label = area.get("area") or ""
-            action = area.get("suggested_action") or ""
-            line = label if not action else f"{label}: {action}"
-            y = _draw_wrapped_text(c, margin_x, y, f"• {line}", line_w)
+    improvements = report_data.get("improvement_areas") or []
+    formatted_improvements: List[str] = []
+    for it in improvements:
+        if isinstance(it, dict):
+            label = it.get("area") or it.get("name") or str(it)
+            action = it.get("suggested_action") or it.get("action") or ""
+            score = it.get("score")
+            line = f"{label}"
+            if isinstance(score, int):
+                line += f": ({score}/100)"
+            if action:
+                line += f". Acción: {action}"
+            formatted_improvements.append(line)
         else:
-            y = _draw_wrapped_text(c, margin_x, y, f"• {area}", line_w)
+            formatted_improvements.append(str(it))
+    if not formatted_improvements and isinstance(soft_skills, list):
+        for it in soft_skills:
+            if isinstance(it, dict):
+                try:
+                    sc = int(it.get("score") or 0)
+                except Exception:
+                    sc = 0
+                if sc <= 50:
+                    formatted_improvements.append(f"{it.get('skill') or it.get('name')}: ({sc}/100). Acción: Definir un micro-plan de mejora")
+    y = _draw_bulleted_list(c, margin_x, y, formatted_improvements[:12], line_w)
 
-    roles = report_data.get("suggested_roles", []) or []
+    # Página 4: Entornos ideales, Roles sugeridos, Plan de acción
+    y = _ensure_space(c, y, 80 * mm, margin_top, margin_bottom)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(margin_x, y, "Entornos de trabajo ideales")
+    y -= 14
+    c.setFont("Helvetica", 10)
+    env_txt = ""
+    if isinstance(report_data.get("environments"), list) and report_data.get("environments"):
+        env_txt = ", ".join(str(x) for x in report_data.get("environments") if x)
+    elif isinstance(job_prefs, dict):
+        wm = job_prefs.get("workMode") or job_prefs.get("work_mode") or ""
+        roles = job_prefs.get("areas") or job_prefs.get("desired_roles") or []
+        env_txt = f"Modalidad preferida: {wm}. Áreas/roles de interés: {', '.join(roles) if roles else 'No especificado'}."
+    y = _draw_wrapped_text(c, margin_x, y, env_txt, line_w)
+
+    # Roles sugeridos
+    roles = report_data.get("suggested_roles") or []
     if roles:
         y -= 8
         c.setFont("Helvetica-Bold", 12)
         c.drawString(margin_x, y, "Roles sugeridos")
         y -= 14
         c.setFont("Helvetica", 10)
-        for role in roles:
-            if isinstance(role, dict):
-                linea = f"• {role.get('role')} — {role.get('seniority')} — Remoto: {role.get('remote_viable')}"
-                y = _draw_wrapped_text(c, margin_x, y, linea, line_w)
-                if role.get("reason"):
-                    y = _draw_wrapped_text(c, margin_x + 8, y, f"   Razón: {role.get('reason')}", line_w - 8)
+        pretty_roles: List[str] = []
+        for r in roles:
+            if isinstance(r, dict):
+                line = f"{r.get('role')} — {r.get('seniority')} — 100% remoto" if r.get('remote_viable') else f"{r.get('role')} — {r.get('seniority')}"
+                if r.get("reason"):
+                    line += f". Razón: {r.get('reason')}"
+                pretty_roles.append(line)
             else:
-                y = _draw_wrapped_text(c, margin_x, y, f"• {role}", line_w)
+                pretty_roles.append(str(r))
+        y = _draw_bulleted_list(c, margin_x, y, pretty_roles, line_w)
 
+    # Plan de acción
     plan = report_data.get("action_plan") or {}
     bloques = [
-        ("Corto plazo (0–30 días)", plan.get("short_term", [])),
-        ("Medio plazo (1–3 meses)", plan.get("medium_term", [])),
-        ("Largo plazo (3–6+ meses)", plan.get("long_term", [])),
+        ("Corto plazo (0-30 días)", plan.get("short_term", [])),
+        ("Medio plazo (1-3 meses)", plan.get("mid_term", []) or plan.get("medium_term", [])),
+        ("Largo plazo (3-6+ meses)", plan.get("long_term", [])),
     ]
     for titulo, items in bloques:
         if not items:
@@ -188,103 +434,86 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         c.drawString(margin_x, y, titulo)
         y -= 14
         c.setFont("Helvetica", 10)
-        for it in items:
-            y = _draw_wrapped_text(c, margin_x, y, f"• {it}", line_w)
+        y = _draw_bulleted_list(c, margin_x, y, items, line_w)
 
-    ideal_env = report_data.get("ideal_work_environment")
-    if ideal_env:
+    # Página 5: Estrategias de búsqueda + Minijuegos + Herramientas
+    y = _ensure_space(c, y, 90 * mm, margin_top, margin_bottom)
+    advice = report_data.get("job_search_advice") or {}
+    if advice:
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(margin_x, y, "Estrategias de búsqueda de empleo")
+        y -= 14
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(margin_x, y, "Optimización del CV")
+        y -= 12
+        c.setFont("Helvetica", 10)
+        y = _draw_bulleted_list(c, margin_x, y, advice.get("cv_optimization") or advice.get("tips") or [], line_w)
+        if advice.get("letters_portfolio"):
+            y -= 6
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(margin_x, y, "Cartas y portfolio/casos")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_wrapped_text(c, margin_x, y, str(advice.get("letters_portfolio")), line_w)
+        if advice.get("recommended_platforms"):
+            y -= 6
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(margin_x, y, "Plataformas")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_bulleted_list(c, margin_x, y, advice.get("recommended_platforms"), line_w)
+        if advice.get("networking"):
+            y -= 6
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(margin_x, y, "Networking dirigido")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_wrapped_text(c, margin_x, y, str(advice.get("networking")), line_w)
+
+    # Minijuegos completados
+    games = completed_games or report_data.get("completed_games") or []
+    if games:
         y -= 8
         c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Entornos de trabajo ideales")
+        c.drawString(margin_x, y, "Resultados de minijuegos")
         y -= 14
         c.setFont("Helvetica", 10)
-        y = _draw_wrapped_text(c, margin_x, y, str(ideal_env), line_w)
+        pretty_games: List[str] = []
+        for g in games:
+            if isinstance(g, dict):
+                nm = g.get("name") or g.get("id") or "Juego"
+                score = g.get("score")
+                if score is not None:
+                    pretty_games.append(f"{nm}: {score}")
+                else:
+                    pretty_games.append(str(nm))
+            else:
+                pretty_games.append(str(g))
+        y = _draw_bulleted_list(c, margin_x, y, pretty_games, line_w)
 
-    job_advice = report_data.get("job_search_advice")
-    advice_lines: List[str] = []
-    if isinstance(job_advice, dict):
-        def _fmt(value: Any) -> str:
-            if isinstance(value, (list, tuple, set)):
-                return ", ".join(str(v) for v in value if v)
-            return str(value)
-
-        if job_advice.get("cv_optimization"):
-            advice_lines.append(f"• CV: {_fmt(job_advice.get('cv_optimization'))}")
-        if job_advice.get("letters_portfolio"):
-            advice_lines.append(f"• Cartas/portfolio: {_fmt(job_advice.get('letters_portfolio'))}")
-        if job_advice.get("recommended_platforms"):
-            advice_lines.append(
-                f"• Plataformas: {_fmt(job_advice.get('recommended_platforms'))}"
-            )
-        if job_advice.get("networking"):
-            advice_lines.append(f"• Networking: {_fmt(job_advice.get('networking'))}")
-        if job_advice.get("interview_tips"):
-            advice_lines.append(f"• Entrevistas: {_fmt(job_advice.get('interview_tips'))}")
-
-    if advice_lines:
-        y -= 8
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Consejos de búsqueda de empleo")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        for line in advice_lines:
-            y = _draw_wrapped_text(c, margin_x, y, line, line_w)
-
-    tools = report_data.get("useful_tools")
-    tool_lines: List[str] = []
-    if isinstance(tools, dict):
-        labels = {
-            "productivity": "Productividad",
-            "job_search": "Búsqueda de empleo",
-            "learning": "Aprendizaje",
-            "accessibility": "Accesibilidad",
-        }
-
-        def _fmt_tools(val: Any) -> str:
-            if isinstance(val, (list, tuple, set)):
-                return ", ".join(str(v) for v in val if v)
-            return str(val)
-
-        for key, label in labels.items():
-            value = tools.get(key)
-            if value:
-                tool_lines.append(f"• {label}: {_fmt_tools(value)}")
-
-    if tool_lines:
+    # Herramientas útiles
+    tools = report_data.get("tools") or {}
+    if tools:
         y -= 8
         c.setFont("Helvetica-Bold", 12)
         c.drawString(margin_x, y, "Herramientas útiles")
         y -= 14
         c.setFont("Helvetica", 10)
-        for line in tool_lines:
-            y = _draw_wrapped_text(c, margin_x, y, line, line_w)
+        for title, items in tools.items():
+            c.setFont("Helvetica-Bold", 10)
+            y = _draw_wrapped_text(c, margin_x, y, title.capitalize(), line_w)
+            c.setFont("Helvetica", 10)
+            y = _draw_bulleted_list(c, margin_x, y, items, line_w)
 
-    games = report_data.get("completed_games")
-    if games:
-        y -= 8
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Juegos completados")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        for game in games:
-            if isinstance(game, dict):
-                nombre = game.get("name") or game.get("title") or ""
-                detalle = game.get("insight") or game.get("summary") or ""
-                base = nombre
-                if detalle:
-                    base = f"{nombre}: {detalle}" if nombre else detalle
-                if base:
-                    y = _draw_wrapped_text(c, margin_x, y, f"• {base}", line_w)
-            else:
-                y = _draw_wrapped_text(c, margin_x, y, f"• {game}", line_w)
-
-    if report_data.get("final_message"):
-        y -= 8
+    # Página final: Mensaje
+    msg = report_data.get("final_message") or report_data.get("frase_final")
+    if msg:
+        y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom)
         c.setFont("Helvetica-Bold", 12)
         c.drawString(margin_x, y, "Mensaje final")
         y -= 14
         c.setFont("Helvetica", 10)
-        y = _draw_wrapped_text(c, margin_x, y, report_data.get("final_message"), line_w)
+        y = _draw_wrapped_text(c, margin_x, y, str(msg), line_w)
 
     c.showPage()
     c.save()
