@@ -197,6 +197,34 @@ def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> tuple[str, Dict[str, An
         except Exception:  # pragma: no cover - cleanup defensivo
             pass
 
+
+_JSON_CODE_BLOCK_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL | re.IGNORECASE)
+
+
+def _normalize_ai_json_response(content: str) -> str:
+    """Normaliza la respuesta de Azure OpenAI para extraer únicamente el JSON."""
+
+    if not isinstance(content, str):
+        return str(content)
+
+    cleaned = content.strip()
+
+    block_match = _JSON_CODE_BLOCK_RE.search(cleaned)
+    if block_match:
+        return block_match.group(1).strip()
+
+    lowered = cleaned.lower()
+    if lowered.startswith("json"):
+        cleaned = cleaned[4:].strip(": \n\r\t")
+
+    first_brace = cleaned.find("{")
+    last_brace = cleaned.rfind("}")
+    if first_brace != -1 and last_brace != -1 and last_brace >= first_brace:
+        return cleaned[first_brace:last_brace + 1].strip()
+
+    return cleaned
+
+
 def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
     """
     Analiza el CV usando IA para extraer información de manera inteligente
@@ -324,22 +352,23 @@ IMPORTANTE:
         
         print("📥 Respuesta recibida de Azure OpenAI")
         
-        # Extraer el contenido de la respuesta
+        # Extraer y normalizar el contenido de la respuesta
         content = response.choices[0].message.content
         if content is None:
             raise ValueError("Respuesta vacía de Azure OpenAI")
-        content = content.strip()
-        
+        normalized_content = _normalize_ai_json_response(content)
+
         # Intentar parsear el JSON
         try:
-            import json
-            cv_data = json.loads(content)
+            cv_data = json.loads(normalized_content)
             print("✅ JSON parseado correctamente")
             return cv_data
-        except json.JSONDecodeError as e:
+        except (json.JSONDecodeError, TypeError) as e:
             print(f"⚠️ Error parseando JSON: {e}")
-            print(f"📝 Contenido recibido: {content[:200]}...")
-            
+            print(f"📝 Contenido recibido: {str(content)[:200]}...")
+            if normalized_content != content:
+                print(f"🧹 Contenido normalizado: {normalized_content[:200]}...")
+
             # Fallback: intentar extraer información básica del texto
             return extract_basic_cv_data_from_text(text)
             
