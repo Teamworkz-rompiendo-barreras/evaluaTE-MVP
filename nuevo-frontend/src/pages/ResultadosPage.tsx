@@ -1035,11 +1035,29 @@ const ResultadosPage: React.FC = () => {
                       {children}
                     </code>
                   ),
-                  pre: ({ children, ...props }) => (
-                    <pre {...props} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600">
-                      {children}
-                    </pre>
-                  ),
+                  pre: ({ children, ...props }) => {
+                    // Ocultar el bloque JSON embebido usado solo para extraer radarData
+                    const toText = (node: any): string => {
+                      if (node == null) return '';
+                      if (typeof node === 'string' || typeof node === 'number') return String(node);
+                      if (Array.isArray(node)) return node.map(toText).join('');
+                      // @ts-expect-error acceso seguro a props.children
+                      if (typeof node === 'object' && node.props && node.props.children) {
+                        // @ts-expect-error children puede ser nodo o array
+                        return toText(node.props.children);
+                      }
+                      return '';
+                    };
+                    const text = toText(children);
+                    if (/"radarData"\s*:/.test(text)) {
+                      return null;
+                    }
+                    return (
+                      <pre {...props} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600">
+                        {children}
+                      </pre>
+                    );
+                  },
                   table: ({ children, ...props }) => (
                     <div className="overflow-x-auto mb-4">
                       <table {...props} className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
