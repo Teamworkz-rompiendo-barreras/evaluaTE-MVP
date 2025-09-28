@@ -16,7 +16,7 @@ jobs:
       - name: Checkout
         uses: actions/checkout@v4
         with:
-          ref: ${{ github.event.inputs.ref || \u0027main\u0027 }}
+          ref: ${{ github.event.inputs.ref || 'main' }}
           fetch-depth: 0
 
       - name: Setup Node.js
