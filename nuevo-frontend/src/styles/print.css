@@ -1,5 +1,11 @@
 /* Estilos para impresión del informe de empleabilidad */
 
+/* Reglas de visibilidad base para pantalla */
+@media screen {
+  .screen-only { display: block !important; }
+  .print-only { display: none !important; }
+}
+
 @media print {
   /* Asegurar fondo blanco y texto negro para todo el documento impreso */
   html, body {
@@ -8,6 +14,9 @@
     background: #ffffff !important;
     color: #000000 !important;
   }
+  /* Alternar visibilidad en impresión */
+  .screen-only { display: none !important; }
+  .print-only { display: block !important; }
   /* Ocultar elementos que no deben aparecer en la impresión */
   .print-hidden {
     display: none !important;
