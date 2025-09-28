@@ -1,6 +1,27 @@
 {
   "routes": [
     {
+      "route": "/",
+      "allowedRoles": ["anonymous"],
+      "headers": {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+      }
+    },
+    {
+      "route": "/index.html",
+      "allowedRoles": ["anonymous"],
+      "headers": {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+      }
+    },
+    {
+      "route": "/*.html",
+      "allowedRoles": ["anonymous"],
+      "headers": {
+        "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0"
+      }
+    },
+    {
       "route": "/api/*",
       "allowedRoles": ["anonymous"]
     },
@@ -55,6 +76,7 @@
     }
   },
   "globalHeaders": {
+    "Cache-Control": "no-store, no-cache, must-revalidate, max-age=0",
     "X-Content-Type-Options": "nosniff",
     "X-Frame-Options": "DENY",
     "X-XSS-Protection": "1; mode=block",
