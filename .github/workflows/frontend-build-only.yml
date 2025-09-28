@@ -1,0 +1,49 @@
+name: Frontend Build Only (manual)
+
+on:
+  workflow_dispatch:
+    inputs:
+      ref:
+        description: "Branch or tag to build"
+        required: false
+        default: "main"
+
+jobs:
+  build_only:
+    name: Build Frontend and Upload Artifact
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          ref: ${{ github.event.inputs.ref || \u0027main\u0027 }}
+          fetch-depth: 0
+
+      - name: Setup Node.js
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20.x"
+
+      - name: Install dependencies
+        working-directory: ./nuevo-frontend
+        run: npm ci || npm install --no-audit --no-fund --prefer-offline
+
+      - name: TypeScript check
+        working-directory: ./nuevo-frontend
+        run: npx tsc --noEmit
+
+      - name: Lint
+        working-directory: ./nuevo-frontend
+        run: npm run lint --if-present
+
+      - name: Build
+        working-directory: ./nuevo-frontend
+        run: npm run build
+
+      - name: Upload dist as artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: frontend-dist
+          path: nuevo-frontend/dist
+          if-no-files-found: error
+          retention-days: 7
