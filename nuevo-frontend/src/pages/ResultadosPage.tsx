@@ -1041,10 +1041,8 @@ const ResultadosPage: React.FC = () => {
                       if (node == null) return '';
                       if (typeof node === 'string' || typeof node === 'number') return String(node);
                       if (Array.isArray(node)) return node.map(toText).join('');
-                      // @ts-expect-error acceso seguro a props.children
-                      if (typeof node === 'object' && node.props && node.props.children) {
-                        // @ts-expect-error children puede ser nodo o array
-                        return toText(node.props.children);
+                      if (typeof node === 'object' && (node as any)?.props?.children) {
+                        return toText((node as any).props.children);
                       }
                       return '';
                     };
@@ -1088,10 +1086,8 @@ const ResultadosPage: React.FC = () => {
                       if (node == null) return '';
                       if (typeof node === 'string' || typeof node === 'number') return String(node);
                       if (Array.isArray(node)) return node.map(extractText).join('');
-                      // @ts-expect-error - acceso seguro a props.children si existe
-                      if (typeof node === 'object' && node.props && node.props.children) {
-                        // @ts-expect-error - children puede ser nodo o array
-                        return extractText(node.props.children);
+                      if (typeof node === 'object' && (node as any)?.props?.children) {
+                        return extractText((node as any).props.children);
                       }
                       return '';
                     };
