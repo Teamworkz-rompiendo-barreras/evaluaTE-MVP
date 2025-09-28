@@ -760,7 +760,14 @@ const ResultadosPage: React.FC = () => {
     // Evitar 0 en gráficas si hay datos; mínimo 10
     return Math.max(10, Math.round(avg));
   }, [softSkillsData]);
-  const globalScore = iaScore ?? info?.employability_score ?? report?.employabilityScore ?? computedScore;
+  const pickScore = (v: unknown): number | undefined => {
+    const n = typeof v === 'number' ? v : Number(v);
+    return Number.isFinite(n) && n > 0 ? Math.round(n) : undefined;
+  };
+  const globalScore = pickScore(iaScore)
+    ?? pickScore(info?.employability_score)
+    ?? pickScore(report?.employabilityScore)
+    ?? computedScore;
   const radarData = radarDataFromIa.length > 0
     ? processRadarData(radarDataFromIa)
     : processRadarData(softSkillsData);
@@ -1184,6 +1191,7 @@ const ResultadosPage: React.FC = () => {
   // === NUEVO: dividir el markdown para insertar el análisis justo después de "Áreas de mejora" ===
   const splitReport = useMemo(() => {
     if (!iaReport) return { before: '', improvements: '', after: '' };
+    // 1) Cortar "Áreas de mejora"
     const headerRegex = /(\n|^)#\s*[^\n]*Áreas de mejora[^\n]*\n/;
     const match = iaReport.match(headerRegex);
     if (!match || match.index == null) return { before: '', improvements: '', after: iaReport };
@@ -1192,12 +1200,17 @@ const ResultadosPage: React.FC = () => {
     const nextHeader = /\n#[^\n]*/g;
     nextHeader.lastIndex = afterHeaderIndex;
     const nextMatch = nextHeader.exec(iaReport);
-    const endIndex = nextMatch ? nextMatch.index : iaReport.length;
-    return {
-      before: iaReport.slice(0, headerIndex),
-      improvements: iaReport.slice(headerIndex, endIndex),
-      after: iaReport.slice(endIndex)
-    };
+    let endIndex = nextMatch ? nextMatch.index : iaReport.length;
+
+    let before = iaReport.slice(0, headerIndex);
+    const improvements = iaReport.slice(headerIndex, endIndex);
+    let after = iaReport.slice(endIndex);
+
+    // 2) Eliminar del bloque "after" la sección generada "## 6. Análisis del CV con puntuación 1–5"
+    const analysisHeader = /(\n|^)##\s*6\.\s*Análisis del CV con puntuación 1–5[\s\S]*?(?=\n##\s|$)/;
+    after = after.replace(analysisHeader, '\n');
+
+    return { before, improvements, after };
   }, [iaReport]);
 
   // Renderizado final
