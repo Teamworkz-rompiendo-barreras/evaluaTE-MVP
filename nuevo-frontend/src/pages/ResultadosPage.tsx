@@ -786,12 +786,12 @@ const ResultadosPage: React.FC = () => {
     }
     return Object.values(byName);
   }, [info?.soft_skills, personal.softSkills, game?.softSkills]);
-  const computedScore = useMemo(() => {
+  const computedScore = useMemo<number | undefined>(() => {
     if (!softSkillsData || softSkillsData.length === 0) return undefined;
-    const sum = softSkillsData.reduce((acc, s) => acc + (Number(s.score) || 0), 0);
+    const sum = softSkillsData.reduce((acc: number, s: any) => acc + (Number(s?.score) || 0), 0);
     const avg = sum / softSkillsData.length;
-    // Evitar 0 en gráficas si hay datos; mínimo 10
-    return Math.max(10, Math.round(avg));
+    const val = Math.round(avg);
+    return val > 0 ? val : undefined;
   }, [softSkillsData]);
   const pickScore = (v: unknown): number | undefined => {
     const n = typeof v === 'number' ? v : Number(v);
