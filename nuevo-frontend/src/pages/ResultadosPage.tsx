@@ -1358,9 +1358,15 @@ const ResultadosPage: React.FC = () => {
           <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none">
             <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none">
               {(() => {
-                // Si no podemos dividir, renderizamos como antes sin insertar el análisis
+                // Si no podemos dividir, usamos siempre la versión limpiada (splitReport.after)
+                // y añadimos nuestro bloque nativo de análisis para evitar duplicados.
                 if (!splitReport.improvements) {
-                  return renderMarkdown(iaReport);
+                  return (
+                    <>
+                      {renderMarkdown(splitReport.after || iaReport)}
+                      {renderCvAnalysisSection()}
+                    </>
+                  );
                 }
                 return (
                   <>
