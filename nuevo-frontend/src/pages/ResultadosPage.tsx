@@ -1000,7 +1000,7 @@ const ResultadosPage: React.FC = () => {
                 <span className="text-lg"><StarsGold n={keyInfoScore} /></span>
               </div>
               <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900 dark:text-gray-800">Estilo:</span>
+                <span className="font-semibold text-gray-900 dark:text-gray-800">Ortografía:</span>
                 <span className="text-lg"><StarsGold n={styleScore} /></span>
               </div>
             </div>
@@ -1016,7 +1016,7 @@ const ResultadosPage: React.FC = () => {
               <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Coherencia:</strong> {evidence.coherence}</li>
               <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Información clave:</strong> {evidence.key_info}</li>
               <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Claridad:</strong> {evidence.clarity}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Estilo:</strong> {evidence.style}</li>
+              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Ortografía y estilo:</strong> {evidence.style}</li>
             </ul>
           </div>
         )}
@@ -1257,24 +1257,35 @@ const ResultadosPage: React.FC = () => {
   // === NUEVO: dividir el markdown para insertar el análisis justo después de "Áreas de mejora" ===
   const splitReport = useMemo(() => {
     if (!iaReport) return { before: '', improvements: '', after: '' };
+
+    // 0) Eliminar cualquier sección generada por IA de "Análisis del CV" para evitar duplicados
+    const stripCvAnalysisSections = (text: string): string => {
+      if (!text) return text;
+      // Coincide títulos como: "## 6. Análisis del CV con puntuación 1–5" o "## Análisis del CV (...)"
+      const cvAnalysisSection = /(\n|^)#{1,6}\s*(?:\d+\.\s*)?Análisis del CV(?:\s*\([^\)]*\))?[\s\S]*?(?=(\n#{1,6}\s)|$)/g;
+      return text.replace(cvAnalysisSection, '\n');
+    };
+
+    const cleaned = stripCvAnalysisSections(iaReport);
+
     // 1) Cortar "Áreas de mejora"
     const headerRegex = /(\n|^)#\s*[^\n]*Áreas de mejora[^\n]*\n/;
-    const match = iaReport.match(headerRegex);
-    if (!match || match.index == null) return { before: '', improvements: '', after: iaReport };
+    const match = cleaned.match(headerRegex);
+    if (!match || match.index == null) return { before: '', improvements: '', after: cleaned };
     const headerIndex = match.index;
     const afterHeaderIndex = headerIndex + match[0].length;
     const nextHeader = /\n#[^\n]*/g;
     nextHeader.lastIndex = afterHeaderIndex;
-    const nextMatch = nextHeader.exec(iaReport);
-    let endIndex = nextMatch ? nextMatch.index : iaReport.length;
+    const nextMatch = nextHeader.exec(cleaned);
+    let endIndex = nextMatch ? nextMatch.index : cleaned.length;
 
-    let before = iaReport.slice(0, headerIndex);
-    const improvements = iaReport.slice(headerIndex, endIndex);
-    let after = iaReport.slice(endIndex);
+    let before = cleaned.slice(0, headerIndex);
+    const improvements = cleaned.slice(headerIndex, endIndex);
+    let after = cleaned.slice(endIndex);
 
-    // 2) Eliminar del bloque "after" la sección generada "## 6. Análisis del CV con puntuación 1–5"
+    // 2) Asegurar de nuevo: eliminar cualquier resto de sección de Análisis del CV
     const analysisHeader = /(\n|^)##\s*6\.\s*Análisis del CV con puntuación 1–5[\s\S]*?(?=\n##\s|$)/;
-    after = after.replace(analysisHeader, '\n');
+    after = stripCvAnalysisSections(after).replace(analysisHeader, '\n');
 
     return { before, improvements, after };
   }, [iaReport]);
