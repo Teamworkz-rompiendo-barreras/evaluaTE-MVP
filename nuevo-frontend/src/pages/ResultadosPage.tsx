@@ -699,34 +699,67 @@ const ResultadosPage: React.FC = () => {
 
   // Función para eliminar duplicados y asegurar claves únicas
   const processRadarData = (data: Array<{ skill?: string; softskill?: string; score: number }>) => {
+    const ALL_SKILLS = [
+      'Toma de decisiones',
+      'Pensamiento analítico',
+      'Creatividad',
+      'Influencia social',
+      'Curiosidad y aprendizaje',
+      'Resiliencia y flexibilidad',
+      'Autoconciencia',
+      'Empatía',
+      'Pensamiento Crítico',
+      'Liderazgo',
+    ];
+
+    const normalize = (s: unknown): string => {
+      const str = String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
+      return str;
+    };
+
+    // Mapeo de sinónimos comunes que puede devolver la IA
+    const SYNONYMS: Record<string, string> = {
+      'capacidad de aprendizaje': 'Curiosidad y aprendizaje',
+      'aprendizaje': 'Curiosidad y aprendizaje',
+      'adaptabilidad': 'Resiliencia y flexibilidad',
+      'adaptabilidad al cambio': 'Resiliencia y flexibilidad',
+      'trabajo en equipo': 'Influencia social',
+      'comunicacion': 'Influencia social',
+      'resolucion de problemas': 'Pensamiento analítico',
+      'pensamiento analitico': 'Pensamiento analítico',
+      'pensamiento critico': 'Pensamiento Crítico',
+      'liderazgo de equipos': 'Liderazgo',
+      'autoconocimiento': 'Autoconciencia',
+    };
+
     if (!Array.isArray(data)) {
       // Evitar logs en producción
       return [];
     }
     
-    const seen = new Set();
-    const processedData = data
-      .map(item => ({
-        softskill: String(item.skill || item.softskill || '').trim(),
-        score: Math.max(0, Math.min(100, Math.round(Number(item.score) || 0))),
-      }))
-      .filter(item => {
-        if (seen.has(item.softskill)) {
-          return false; // Eliminar duplicados
-        }
-        seen.add(item.softskill);
-        return item.score > 0; // Solo elementos con score válido
-      });
-    
-    // Intercambiar solo "Pensamiento analítico" y "Liderazgo"
-    return processedData.map(item => {
-      if (item.softskill === "Pensamiento analítico") {
-        return { ...item, softskill: "Liderazgo" };
-      } else if (item.softskill === "Liderazgo") {
-        return { ...item, softskill: "Pensamiento analítico" };
+    const seen = new Set<string>();
+    const byName: Record<string, number> = {};
+    for (const raw of data) {
+      const labelRaw = String(raw?.skill || raw?.softskill || '');
+      const key = normalize(labelRaw);
+      const canonical = SYNONYMS[key] || ALL_SKILLS.find(s => normalize(s) === key) || labelRaw.trim();
+      const score = Math.max(0, Math.min(100, Math.round(Number((raw as any)?.score) || 0)));
+      if (!canonical) continue;
+      if (!seen.has(canonical)) {
+        seen.add(canonical);
+        byName[canonical] = score;
+      } else {
+        byName[canonical] = Math.max(byName[canonical], score);
       }
-      return item;
-    });
+    }
+
+    // Construir la lista completa en el orden fijo para que siempre haya 10 ejes
+    const full = ALL_SKILLS.map(label => ({
+      softskill: label,
+      score: Number.isFinite(byName[label]) ? byName[label] : 0,
+    }));
+
+    return full;
   };
 
   const softSkillsData = useMemo(() => {
