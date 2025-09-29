@@ -724,11 +724,6 @@ const ResultadosPage: React.FC = () => {
 
   // Eliminado: lógica de descarga de PDF
 
-  // Función para imprimir
-  const handlePrint = () => {
-    window.print();
-  };
-
   // 2. Mapa de habilidades (Radar + resumen)
   // Usar useMemo para evitar recalcular en cada render
   const radarDataFromIa = useMemo(() => iaReport ? extractRadarData(iaReport) : [], [iaReport]);

@@ -87,21 +87,24 @@ fi
 
 log "✅ Paquete listo: ${PACKAGE_PATH}"
 
-log "🚀 Subiendo paquete a Azure Static Web Apps..."
-if az staticwebapp upload \
+log "🚀 Desplegando con Static Web Apps CLI (swa deploy)..."
+# Usamos npx para no requerir instalación global previa
+if npx --yes @azure/static-web-apps-cli@latest deploy "${DIST_DIR}" \
+  --app-name "${STATIC_WEB_APP}" \
   --resource-group "${RESOURCE_GROUP}" \
-  --name "${STATIC_WEB_APP}" \
-  --source "${DIST_DIR}"; then
-  log "✅ Paquete subido correctamente. Eliminando artefacto temporal..."
+  --subscription-id "${SUBSCRIPTION_ID}" \
+  --deployment-token "${DEPLOYMENT_TOKEN}" \
+  --env production; then
+  log "✅ Frontend desplegado correctamente. Eliminando artefacto temporal..."
   rm -f "${PACKAGE_PATH}"
 else
-  upload_exit_code=$?
-  echo "❌ Error al subir el paquete (az staticwebapp upload exit ${upload_exit_code})." >&2
+  deploy_exit_code=$?
+  echo "❌ Error al desplegar con swa (exit ${deploy_exit_code})." >&2
   echo "ℹ️ El artefacto ${PACKAGE_PATH} se conserva para diagnóstico." >&2
-  exit "${upload_exit_code}"
+  exit "${deploy_exit_code}"
 fi
 
-default_hostname=$(az staticwebapp show --name "${STATIC_WEB_APP}" --resource-group "${RESOURCE_GROUP}" --query "defaultHostname" -o tsv)
+default_hostname=$(az staticwebapp show --name "${STATIC_WEB_APP}" --resource-group "${RESOURCE_GROUP}" --query "defaultHostname" -o tsv 2>/dev/null)
 
 log ""
 log "🎉 Frontend desplegado correctamente!"
