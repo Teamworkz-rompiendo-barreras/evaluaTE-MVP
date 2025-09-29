@@ -1262,7 +1262,7 @@ const ResultadosPage: React.FC = () => {
     const stripCvAnalysisSections = (text: string): string => {
       if (!text) return text;
       // Coincide títulos como: "## 6. Análisis del CV con puntuación 1–5" o "## Análisis del CV (...)"
-      const cvAnalysisSection = /(\n|^)#{1,6}\s*(?:\d+\.\s*)?Análisis del CV(?:\s*\([^\)]*\))?[\s\S]*?(?=(\n#{1,6}\s)|$)/g;
+      const cvAnalysisSection = /(\n|^)#{1,6}\s*(?:\d+\.\s*)?Análisis del CV(?:\s*\([^)]*\))?[\s\S]*?(?=(\n#{1,6}\s)|$)/g;
       return text.replace(cvAnalysisSection, '\n');
     };
 
