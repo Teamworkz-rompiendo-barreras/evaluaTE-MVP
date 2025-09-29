@@ -3,6 +3,7 @@ from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import date
 import math
+import unicodedata
 
 from reportlab.lib.pagesizes import A4
 from reportlab.pdfgen import canvas
@@ -170,6 +171,165 @@ def _stars(val: Optional[int]) -> str:
     if n > 5: n = 5
     return "★" * n + "☆" * (5 - n)
 
+# Dibuja una estrella de 5 puntas
+def _draw_star_shape(c: canvas.Canvas, cx: float, cy: float, outer_r: float, inner_r: float, filled: bool = True) -> None:
+    path = c.beginPath()
+    for i in range(10):
+        ang = (i * 36 - 90) * 3.141592653589793 / 180.0
+        r = outer_r if i % 2 == 0 else inner_r
+        x = cx + r * math.cos(ang)
+        y = cy + r * math.sin(ang)
+        if i == 0:
+            path.moveTo(x, y)
+        else:
+            path.lineTo(x, y)
+    path.close()
+    c.drawPath(path, stroke=1, fill=1 if filled else 0)
+
+def _draw_star_rating_line(c: canvas.Canvas, x: float, y: float, label: str, rating: int, size: float = 3.0 * mm) -> float:
+    c.setFont("Helvetica", 10)
+    c.drawString(x, y, label)
+    start_x = x + c.stringWidth(label) + 6
+    cy = y + 3
+    filled = max(0, min(5, int(rating)))
+    for i in range(5):
+        cx = start_x + i * (size + 2)
+        # Borde en negro para todas
+        c.setStrokeColor(colors.black)
+        c.setFillColor(colors.black if i < filled else colors.white)
+        _draw_star_shape(c, cx, cy, size / 2, size / 5 * 2, filled=(i < filled))
+    return y - 12
+
+def _draw_star_rating_block(c: canvas.Canvas, x: float, y: float, items: List[Tuple[str, int]], size: float = 3.0 * mm) -> float:
+    """Dibuja un bloque de N líneas de calificación con estrellas alineadas.
+    Calcula el ancho máximo de etiqueta para alinear las 5 estrellas en una misma columna.
+    Devuelve la nueva coordenada y.
+    """
+    if not items:
+        return y
+    c.setFont("Helvetica", 10)
+    label_widths = [c.stringWidth(label + " ") for label, _ in items]
+    pad = 6
+    align_x = x + (max(label_widths) if label_widths else 0) + pad
+    for label, rating in items:
+        # etiqueta
+        c.drawString(x, y, label)
+        # estrellas
+        cy = y + 3
+        filled = max(0, min(5, int(rating)))
+        for i in range(5):
+            cx = align_x + i * (size + 2)
+            c.setStrokeColor(colors.black)
+            c.setFillColor(colors.black if i < filled else colors.white)
+            _draw_star_shape(c, cx, cy, size / 2, size / 5 * 2, filled=(i < filled))
+        y -= 12
+    return y
+
+# Canon de habilidades (10 ejes fijos)
+ALL_SOFT_SKILLS: List[str] = [
+    "Toma de decisiones",
+    "Pensamiento analítico",
+    "Creatividad",
+    "Influencia social",
+    "Curiosidad y aprendizaje",
+    "Resiliencia y flexibilidad",
+    "Autoconciencia",
+    "Empatía",
+    "Pensamiento Crítico",
+    "Liderazgo",
+]
+
+def _normalize_text(value: str) -> str:
+    txt = unicodedata.normalize("NFD", value or "").encode("ascii", "ignore").decode("ascii")
+    return txt.strip().lower()
+
+def _normalize_soft_skills(raw: Any) -> List[Dict[str, Any]]:
+    """Devuelve exactamente 10 habilidades canónicas con puntuación 0–100.
+    - Acepta lista de dicts/strings; usa máximos cuando hay duplicados/sinónimos.
+    - Rellena faltantes con 0.
+    """
+    synonyms: Dict[str, str] = {
+        "capacidad de aprendizaje": "Curiosidad y aprendizaje",
+        "aprendizaje": "Curiosidad y aprendizaje",
+        "adaptabilidad": "Resiliencia y flexibilidad",
+        "adaptabilidad al cambio": "Resiliencia y flexibilidad",
+        "trabajo en equipo": "Influencia social",
+        "comunicacion": "Influencia social",
+        "resolucion de problemas": "Pensamiento analitico",
+        "pensamiento analitico": "Pensamiento analítico",
+        "pensamiento critico": "Pensamiento Crítico",
+        "liderazgo de equipos": "Liderazgo",
+        "autoconocimiento": "Autoconciencia",
+        # Slugs comunes de juegos
+        "decision-making": "Toma de decisiones",
+        "analytical-thinking": "Pensamiento analítico",
+        "creativity": "Creatividad",
+        "social-influence": "Influencia social",
+        "curiosity-learning": "Curiosidad y aprendizaje",
+        "resilience-flexibility": "Resiliencia y flexibilidad",
+        "self-awareness": "Autoconciencia",
+        "empathy": "Empatía",
+        "critical-thinking": "Pensamiento Crítico",
+        "leadership": "Liderazgo",
+    }
+
+    # Índice de normalización para los nombres canónicos
+    canonical_index: Dict[str, str] = {}
+    for label in ALL_SOFT_SKILLS:
+        canonical_index[_normalize_text(label)] = label
+
+    scores: Dict[str, float] = {}
+    if isinstance(raw, list):
+        for item in raw:
+            if isinstance(item, dict):
+                label = str(item.get("skill") or item.get("name") or item.get("label") or "").strip()
+                if not label:
+                    continue
+                key = _normalize_text(label)
+                # Resolver sinónimos
+                mapped = synonyms.get(key) or synonyms.get(label)  # por si viene ya acentuado
+                if mapped:
+                    key = _normalize_text(mapped)
+                # Mapear a canónico si coincide
+                if key not in canonical_index:
+                    # Intentar coincidencia exacta con las canónicas sin acentos
+                    if key in canonical_index:
+                        canon = canonical_index[key]
+                    else:
+                        # Intento final: si coincide texto exacto sin normalizar con alguna canónica
+                        canon = next((c for c in ALL_SOFT_SKILLS if _normalize_text(c) == key), label)
+                else:
+                    canon = canonical_index[key]
+                try:
+                    sv = float(item.get("score"))
+                except Exception:
+                    sv = 0.0
+                sv = max(0.0, min(100.0, sv))
+                prev = scores.get(canon, 0.0)
+                if sv > prev:
+                    scores[canon] = sv
+            elif isinstance(item, str):
+                label = item.strip()
+                if not label:
+                    continue
+                key = _normalize_text(label)
+                mapped = synonyms.get(key) or synonyms.get(label)
+                canon = canonical_index.get(_normalize_text(mapped or label)) or label
+                prev = scores.get(canon, 0.0)
+                if prev <= 0:
+                    scores[canon] = 0.0
+
+    # Construir lista ordenada fija de 10
+    result: List[Dict[str, Any]] = []
+    for label in ALL_SOFT_SKILLS:
+        val = scores.get(label, 0.0)
+        try:
+            ival = int(round(val))
+        except Exception:
+            ival = 0
+        result.append({"skill": label, "score": ival})
+    return result
+
 def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     """
     Construye un PDF multi-sección con datos REALES del payload.
@@ -234,15 +394,19 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     y = height - margin_top
     line_w = width - 2 * margin_x
 
-    # Cabecera
+    # Cabecera (franja superior oscura con título, nombre y fecha)
+    header_h = 22 * mm
+    c.setFillColorRGB(0.12, 0.14, 0.18)
+    c.rect(0, height - header_h, width, header_h, stroke=0, fill=1)
+    c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 18)
-    c.drawString(margin_x, y, "Informe de Empleabilidad")
-    y -= 16
+    c.drawString(margin_x, height - header_h + 12 * mm, "Informe de Empleabilidad")
     c.setFont("Helvetica", 10)
     today = date.today().strftime("%d/%m/%Y")
-    y = _draw_wrapped_text(c, margin_x, y, f"Nombre: {full_name}", line_w, leading=14)
-    y = _draw_wrapped_text(c, margin_x, y, f"Fecha: {today}", line_w, leading=12)
-    y -= 6
+    c.drawString(margin_x, height - header_h + 7 * mm, f"Nombre: {full_name}")
+    c.drawString(margin_x, height - header_h + 3 * mm, f"Fecha: {today}")
+    c.setFillColor(colors.black)
+    y = height - header_h - 6 * mm
 
     # Bloque: Mapa de habilidades (radar) + resumen de puntuaciones + puntaje global
     import math  # local import para evitar dependencia global si no se usa
@@ -255,7 +419,9 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     y -= 14
     # Radar
     try:
-        _draw_radar_chart(c, center_x, center_y, chart_radius, soft_skills)
+        # Normalizar a 10 habilidades canónicas
+        normalized_soft_skills = _normalize_soft_skills(soft_skills)
+        _draw_radar_chart(c, center_x, center_y, chart_radius, normalized_soft_skills)
     except Exception:
         pass
     # Resumen de soft skills a la derecha
@@ -265,7 +431,7 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     y2 = y_list_top
     if soft_skills:
         top_list = []
-        for it in soft_skills:
+        for it in _normalize_soft_skills(soft_skills):
             if isinstance(it, dict):
                 nm = str(it.get("skill") or it.get("name") or "").strip()
                 sc = it.get("score")
@@ -291,8 +457,10 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         c.drawCentredString(badge_x + 11 * mm, badge_y + 4, f"{global_score}%")
         c.setFillColor(colors.black)
 
-    y = center_y - chart_radius - 8 * mm
-    y = _ensure_space(c, y, 30 * mm, margin_top, margin_bottom)
+    # Salto de página explícito tras el bloque del radar para igualar la maqueta
+    c.showPage()
+    c.setFont("Helvetica", 10)
+    y = A4[1] - margin_top
 
     # Página 2: Resumen ejecutivo, Datos personales, Resumen del CV
     c.setFont("Helvetica-Bold", 12)
@@ -353,7 +521,16 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         y = _draw_wrapped_text(c, margin_x, y, "Herramientas/Software", line_w)
         y = _draw_bulleted_list(c, margin_x, y, sw[:12], line_w)
 
-    # Página 3: Áreas de mejora priorizadas
+    # Fortalezas clave
+    y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom)
+    c.setFont("Helvetica-Bold", 12)
+    c.drawString(margin_x, y, "Fortalezas clave")
+    y -= 14
+    c.setFont("Helvetica", 10)
+    strengths = report_data.get("strengths") or []
+    y = _draw_bulleted_list(c, margin_x, y, strengths[:12], line_w)
+
+    # Áreas de mejora priorizadas
     y = _ensure_space(c, y, 60 * mm, margin_top, margin_bottom)
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin_x, y, "Áreas de mejora priorizadas")
@@ -385,7 +562,60 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
                     formatted_improvements.append(f"{it.get('skill') or it.get('name')}: ({sc}/100). Acción: Definir un micro-plan de mejora")
     y = _draw_bulleted_list(c, margin_x, y, formatted_improvements[:12], line_w)
 
-    # Página 4: Entornos ideales, Roles sugeridos, Plan de acción
+    # Página 4: Análisis del CV (1–5) + Entornos ideales, Roles sugeridos, Plan de acción
+    y = _ensure_space(c, y, 80 * mm, margin_top, margin_bottom)
+    # Bloque: Análisis del CV con estrellas y observaciones
+    if isinstance(report_data.get("cv_analysis"), dict) or isinstance(cv_data, dict):
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(margin_x, y, "Análisis del CV (con puntuación 1–5 por apartado)")
+        y -= 14
+        c.setFont("Helvetica", 10)
+        scores = (report_data.get("cv_analysis") or cv_data) or {}
+        # Dibujar las 5 líneas con estrellas vectoriales alineadas
+        def get_int(key: str) -> int:
+            try:
+                return int(scores.get(key) or 0)
+            except Exception:
+                return 0
+        rating_items: List[Tuple[str, int]] = [
+            ("Formato:", get_int("structure_score")),
+            ("Claridad:", get_int("clarity_score")),
+            ("Coherencia:", get_int("coherence_score")),
+            ("Información clave:", get_int("key_info_score")),
+            ("Ortografía y estilo:", get_int("style_score")),
+        ]
+        y = _draw_star_rating_block(c, margin_x, y, rating_items)
+        evidence = (scores.get("evidence") if isinstance(scores, dict) else {}) or {}
+        if isinstance(evidence, dict) and any(evidence.values()):
+            y -= 6
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(margin_x, y, "Observaciones del análisis:")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            items: List[str] = []
+            if evidence.get("structure"): items.append(f"Formato: {evidence.get('structure')}")
+            if evidence.get("coherence"): items.append(f"Coherencia: {evidence.get('coherence')}")
+            if evidence.get("key_info"): items.append(f"Información clave: {evidence.get('key_info')}")
+            if evidence.get("clarity"): items.append(f"Claridad: {evidence.get('clarity')}")
+            if evidence.get("style"): items.append(f"Estilo: {evidence.get('style')}")
+            y = _draw_bulleted_list(c, margin_x, y, items, line_w)
+        corrections = scores.get("corrections") if isinstance(scores, dict) else []
+        if isinstance(corrections, list) and corrections:
+            y -= 6
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(margin_x, y, "Correcciones/Acciones:")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_bulleted_list(c, margin_x, y, corrections, line_w)
+        reorders = scores.get("reordering_suggestions") if isinstance(scores, dict) else []
+        if isinstance(reorders, list) and reorders:
+            y -= 6
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(margin_x, y, "Reordenación sugerida:")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_bulleted_list(c, margin_x, y, reorders, line_w)
+
     y = _ensure_space(c, y, 80 * mm, margin_top, margin_bottom)
     c.setFont("Helvetica-Bold", 12)
     c.drawString(margin_x, y, "Entornos de trabajo ideales")
@@ -469,6 +699,17 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
             y -= 12
             c.setFont("Helvetica", 10)
             y = _draw_wrapped_text(c, margin_x, y, str(advice.get("networking")), line_w)
+
+    # Lecturas recomendadas (si existen)
+    recs_block = report_data.get("readings") or {}
+    links = recs_block.get("links") if isinstance(recs_block, dict) else []
+    if links:
+        y -= 8
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(margin_x, y, "Lecturas recomendadas")
+        y -= 14
+        c.setFont("Helvetica", 10)
+        y = _draw_bulleted_list(c, margin_x, y, links, line_w)
 
     # Minijuegos completados
     games = completed_games or report_data.get("completed_games") or []

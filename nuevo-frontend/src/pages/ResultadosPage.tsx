@@ -658,7 +658,43 @@ const ResultadosPage: React.FC = () => {
   // Estado para el progreso de la barra
   const [progress, setProgress] = useState(0);
 
-  // Eliminado: descarga de PDF (se usará impresión para descargar informe)
+  // Descarga de PDF (usa el servicio del backend). Mantiene window.print como fallback
+  const handleDownloadPdf = async () => {
+    try {
+      // Requerimos un informe normalizado. Si aún no existe, intentamos construirlo rápido
+      if (!info) {
+        if (!iaReport) {
+          // Si no hay datos suficientes, usar impresión como alternativa inmediata
+          window.print();
+          return;
+        }
+      }
+      const payload = info ?? null;
+      const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_GENERATE), {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(payload ?? {}),
+      });
+      if (!res.ok) {
+        // Fallback suave a impresión si el backend no responde
+        window.print();
+        return;
+      }
+      const blob = await res.blob();
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      const safeName = `${(report?.firstName || 'Informe')}_${(report?.lastName || 'EvaluaTE')}_CV.pdf`;
+      a.download = safeName.replace(/\s+/g, '_');
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+    } catch {
+      // Último recurso: impresión del informe HTML
+      window.print();
+    }
+  };
 
   // Efecto para animar la barra de progreso
   useEffect(() => {
@@ -818,7 +854,7 @@ const ResultadosPage: React.FC = () => {
       {/* Botones de acción */}
       <div className="flex gap-4 mt-6 print-hidden">
         <button
-          onClick={handlePrint}
+          onClick={handleDownloadPdf}
           disabled={!iaReport}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
             !iaReport
