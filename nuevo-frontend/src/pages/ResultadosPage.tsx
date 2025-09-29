@@ -749,7 +749,9 @@ const ResultadosPage: React.FC = () => {
         seen.add(canonical);
         byName[canonical] = score;
       } else {
-        byName[canonical] = Math.max(byName[canonical], score);
+        const prev = byName[canonical];
+        const safePrev = typeof prev === 'number' && Number.isFinite(prev) ? prev : 0;
+        byName[canonical] = Math.max(safePrev, score);
       }
     }
 
