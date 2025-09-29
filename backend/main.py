@@ -39,6 +39,13 @@ allowed_origins_env = os.getenv(
 )
 ALLOWED_ORIGINS = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
 
+# Permitir por regex cualquier dominio de Azure Static Web Apps
+# Ejemplo: https://<random>.<zone>.azurestaticapps.net
+ALLOW_ORIGIN_REGEX = os.getenv(
+    "ALLOW_ORIGIN_REGEX",
+    r"https://.*\\.azurestaticapps\\.net$",
+)
+
 # En producción, permitir también dominios de Azure Static Web Apps
 if os.getenv("PRODUCTION", "false").lower() == "true":
     # Agregar dominios de Azure Static Web Apps si no están ya incluidos
@@ -53,6 +60,7 @@ if os.getenv("PRODUCTION", "false").lower() == "true":
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS or ["*"],
+    allow_origin_regex=ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],
