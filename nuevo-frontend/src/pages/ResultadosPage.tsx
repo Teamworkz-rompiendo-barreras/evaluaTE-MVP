@@ -937,20 +937,11 @@ const ResultadosPage: React.FC = () => {
         <div className="w-full md:w-2/5">
           <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-sm">Resumen de puntuaciones:</h3>
           <ul className="space-y-1 text-sm">
-            {(() => {
-              try {
-                const validSkills = info?.soft_skills?.length
-                  ? info.soft_skills
-                  : filterValidSoftSkills(personal.softSkills || []);
-                return validSkills.map((skill: any, idx: number) => (
-                  <li key={idx}>
-                    <span className="font-medium text-gray-900 dark:text-gray-100">{skill.skill}:</span> {skill.score}%
-                  </li>
-                ));
-              } catch (e) {
-                return <li key="error" className="text-gray-900 dark:text-gray-100">Error al cargar habilidades</li>;
-              }
-            })()}
+            {radarData.map((item, idx) => (
+              <li key={idx}>
+                <span className="font-medium text-gray-900 dark:text-gray-100">{item.softskill}:</span> {item.score}%
+              </li>
+            ))}
           </ul>
           <p className="font-semibold mt-2 text-gray-900 dark:text-gray-100 text-sm">
             Puntaje global de empleabilidad: {globalScore ?? '-'}

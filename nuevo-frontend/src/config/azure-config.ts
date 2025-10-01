@@ -47,17 +47,16 @@ export const AZURE_CONFIG = {
       return AZURE_CONFIG.AZURE_BACKEND_URL;
     }
 
-    // Desarrollo/local: priorizar backend local
+    // Desarrollo/local: usar PROXY de Vite (mismo origen) para evitar CORS
     const host = (typeof window !== 'undefined' ? window.location.hostname : '') || '';
     const isLocalHost = host === 'localhost' || host === '127.0.0.1' || host === '::1';
     if (isLocalHost || import.meta.env.MODE !== 'production') {
-      // Heurística simple: usar primero localhost:8080
-      const localUrl = AZURE_CONFIG.LOCAL_BACKEND_URLS[0] || 'http://localhost:8080';
       if (import.meta.env.MODE !== 'production') {
         // eslint-disable-next-line no-console
-        console.log('✅ DEBUG - Usando backend LOCAL:', localUrl);
+        console.log('✅ DEBUG - Entorno local: usando \'same-origin\' (ruta /api → proxy Vite)');
       }
-      return localUrl;
+      // Devolvemos cadena vacía para construir URLs relativas: /api/...
+      return '';
     }
 
     // Fallback seguro: Azure público
