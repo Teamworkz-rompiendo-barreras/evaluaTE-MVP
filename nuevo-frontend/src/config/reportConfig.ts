@@ -680,9 +680,6 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     '',
     '## 12. Juegos completados',
     ...prettyGames.map((g) => `- ${g}`),
-    '',
-    '## 13. Frase final de cierre',
-    data.final_message,
   ];
 
   return lines.join('\n');
