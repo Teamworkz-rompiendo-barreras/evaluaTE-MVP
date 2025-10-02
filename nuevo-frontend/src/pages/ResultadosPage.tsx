@@ -105,7 +105,7 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
 };
 
 // Componente para mostrar el puntaje global de empleabilidad (oculto)
-const ScoreBadge: React.FC<{ value?: number }> = ({ value }) => null;
+const ScoreBadge: React.FC<{ value?: number }> = () => null;
 
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
