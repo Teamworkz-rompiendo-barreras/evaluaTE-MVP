@@ -53,9 +53,9 @@ export const AZURE_CONFIG = {
     if (isLocalHost || import.meta.env.MODE !== 'production') {
       if (import.meta.env.MODE !== 'production') {
         // eslint-disable-next-line no-console
-        console.log('✅ DEBUG - Entorno local: usando \'same-origin\' (ruta /api → proxy Vite)');
+        console.log('✅ DEBUG - Entorno local: usando "same-origin" (ruta /api → proxy Vite)');
       }
-      // Devolvemos cadena vacía para construir URLs relativas: /api/...
+      // Construir URLs relativas: /api/...
       return '';
     }
 
