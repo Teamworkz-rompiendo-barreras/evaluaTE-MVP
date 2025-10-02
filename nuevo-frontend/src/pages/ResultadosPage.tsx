@@ -104,14 +104,8 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
   );
 };
 
-// Componente para mostrar el puntaje global de empleabilidad
-const ScoreBadge: React.FC<{ value?: number }> = ({ value }) => (
-  <div className="flex justify-end mb-4">
-    <div className="bg-blue-600 text-white rounded-full w-16 h-16 flex items-center justify-center font-bold text-xl">
-      {typeof value === "number" ? `${value}%` : "-"}
-    </div>
-  </div>
-);
+// Componente para mostrar el puntaje global de empleabilidad (oculto)
+const ScoreBadge: React.FC<{ value?: number }> = ({ value }) => null;
 
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
