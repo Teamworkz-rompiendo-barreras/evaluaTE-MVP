@@ -104,8 +104,7 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
   );
 };
 
-// Componente para mostrar el puntaje global de empleabilidad (oculto)
-const ScoreBadge: React.FC<{ value?: number }> = () => null;
+// Eliminado: indicador circular de porcentaje (ScoreBadge)
 
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
@@ -834,7 +833,7 @@ const ResultadosPage: React.FC = () => {
   // 1. Portada
   const portada = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
-      <ScoreBadge value={globalScore} />
+      {/* ScoreBadge eliminado */}
       <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4 print-shadow-none" />
       <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Informe de Empleabilidad</h1>
       <h2 className="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100">{report?.firstName} {report?.lastName}</h2>
@@ -879,7 +878,7 @@ const ResultadosPage: React.FC = () => {
 
   const radar = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
-          <ScoreBadge value={globalScore} />
+          {/* ScoreBadge eliminado */}
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-3/5 h-96" ref={radarBoxRef}>
