@@ -789,6 +789,11 @@ const ResultadosPage: React.FC = () => {
   };
 
   const softSkillsData = useMemo(() => {
+    const normalizeKey = (value: unknown): string =>
+      String(value ?? '')
+        .trim()
+        .toLowerCase();
+
     // Siempre obtener datos de minijuegos como base
     const personalSkills = filterValidSoftSkills(personal.softSkills || []);
     const gameSkills = Array.isArray(game?.softSkills) ? game.softSkills : [];
@@ -798,27 +803,50 @@ const ResultadosPage: React.FC = () => {
       const conf = typeof s?.confidence === 'number' && s.confidence <= 1
         ? Math.round(s.confidence * 100)
         : Math.round(Number(s?.confidence) || 80);
-      return { skill: String(s?.name || s?.softSkill || 'Habilidad'), score, level, confidence: conf };
+      const skillName = String(s?.name || s?.softSkill || 'Habilidad').trim();
+      return { skill: skillName, score, level, confidence: conf };
     });
-    
+
     // Crear mapa base con datos de minijuegos
     const byName: Record<string, any> = {};
     for (const s of [...personalSkills, ...mappedGame]) {
       if (!s || !s.skill) continue;
-      if (!byName[s.skill] || (Number(s.score) || 0) > (Number(byName[s.skill].score) || 0)) {
-        byName[s.skill] = s;
+      const trimmedName = String(s.skill).trim();
+      if (!trimmedName) continue;
+      const key = normalizeKey(trimmedName);
+      const existing = byName[key];
+      const score = Math.round(Number(s?.score) || 0);
+      if (!existing || score > (Number(existing?.score) || 0)) {
+        byName[key] = { ...s, skill: trimmedName, score };
       }
     }
-    
+
     // Si hay datos de IA, combinarlos priorizando la IA pero manteniendo datos de minijuegos faltantes
     if (info?.soft_skills && info.soft_skills.length > 0) {
       for (const iaSkill of info.soft_skills) {
-        if (iaSkill && iaSkill.skill) {
-          byName[iaSkill.skill] = iaSkill;
+        if (!iaSkill) continue;
+        const trimmedName = String(iaSkill.skill ?? '').trim();
+        if (!trimmedName) continue;
+        const key = normalizeKey(trimmedName);
+        const existing = byName[key];
+        const iaSkillAny = iaSkill as any;
+        const iaScore = Math.max(0, Math.min(100, Math.round(Number(iaSkillAny?.score) || 0)));
+        const currentScore = Number(existing?.score) || 0;
+        if (!existing || iaScore > currentScore) {
+          const level = iaSkillAny?.level ?? existing?.level;
+          const confidence = iaSkillAny?.confidence ?? existing?.confidence;
+          byName[key] = {
+            ...existing,
+            ...iaSkillAny,
+            skill: trimmedName || existing?.skill,
+            score: iaScore,
+            ...(level !== undefined ? { level } : {}),
+            ...(confidence !== undefined ? { confidence } : {}),
+          };
         }
       }
     }
-    
+
     return Object.values(byName);
   }, [info?.soft_skills, personal.softSkills, game?.softSkills]);
   const computedScore = useMemo<number | undefined>(() => {
@@ -838,35 +866,11 @@ const ResultadosPage: React.FC = () => {
     ?? computedScore;
   // Combinar datos de IA con datos de minijuegos para el radar
   const radarData = useMemo(() => {
-    const iaData = radarDataFromIa.length > 0 ? processRadarData(radarDataFromIa) : [];
-    const gameData = processRadarData(softSkillsData);
-    
-    // Si no hay datos de IA, usar solo datos de minijuegos
-    if (iaData.length === 0) {
-      return gameData;
-    }
-    
-    // Crear mapa de datos de IA por nombre de habilidad
-    const iaDataMap = new Map();
-    iaData.forEach(item => {
-      const skillName = item.softskill;
-      if (skillName) {
-        iaDataMap.set(skillName, item);
-      }
-    });
-    
-    // Combinar: priorizar IA pero completar con datos de minijuegos
-    const combinedData = [...iaData];
-    
-    gameData.forEach(gameItem => {
-      const skillName = gameItem.softskill;
-      if (skillName && !iaDataMap.has(skillName)) {
-        combinedData.push(gameItem);
-      }
-    });
-    
-    return combinedData;
-  }, [radarDataFromIa, softSkillsData]);
+    const combined: Array<{ skill?: string; softskill?: string; score: number }> = [];
+    if (Array.isArray(softSkillsData)) combined.push(...softSkillsData);
+    if (Array.isArray(radarDataFromIa) && radarDataFromIa.length > 0) combined.push(...radarDataFromIa);
+    return processRadarData(combined);
+  }, [softSkillsData, radarDataFromIa]);
   // 1. Portada
   const portada = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
