@@ -13,7 +13,7 @@ set -euo pipefail
 # CI/CD.
 # -----------------------------------------------------------------------------
 
-RESOURCE_GROUP="evaluador-frontend_group"
+RESOURCE_GROUP="evaluador-frontend-fzbhemgtetfeeme6_group"
 STATIC_WEB_APP="evaluador-frontend-fzbhemgtetfeeme6"
 SUBSCRIPTION_ID="824553b7-ed65-481c-bd34-5b6bcb6b360b"
 
