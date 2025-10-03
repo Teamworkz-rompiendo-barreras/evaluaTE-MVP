@@ -1261,9 +1261,9 @@ const ResultadosPage: React.FC = () => {
     const nextHeader = /\n#[^\n]*/g;
     nextHeader.lastIndex = afterHeaderIndex;
     const nextMatch = nextHeader.exec(cleaned);
-    let endIndex = nextMatch ? nextMatch.index : cleaned.length;
+    const endIndex = nextMatch ? nextMatch.index : cleaned.length;
 
-    let before = cleaned.slice(0, headerIndex);
+    const before = cleaned.slice(0, headerIndex);
     const improvements = cleaned.slice(headerIndex, endIndex);
     let after = cleaned.slice(endIndex);
 
