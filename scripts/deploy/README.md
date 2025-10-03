@@ -9,8 +9,8 @@ secret **must not** be committed to the repository. Operators have two options:
 
    ```bash
    export DEPLOYMENT_TOKEN="$(az staticwebapp secrets list \
-     --name evaluador-web \
-     --resource-group evaluador-web_group \
+     --name evaluador-frontend-fzbhemgtetfeeme6 \
+     --resource-group evaluador-frontend_group \
      --query properties.apiKey \
      -o tsv)"
    ./scripts/deploy/deploy-frontend.sh
