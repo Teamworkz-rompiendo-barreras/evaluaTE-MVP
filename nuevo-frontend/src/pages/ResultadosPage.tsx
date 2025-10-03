@@ -849,7 +849,7 @@ const ResultadosPage: React.FC = () => {
     // Crear mapa de datos de IA por nombre de habilidad
     const iaDataMap = new Map();
     iaData.forEach(item => {
-      const skillName = item.skill || item.softskill;
+      const skillName = item.softskill;
       if (skillName) {
         iaDataMap.set(skillName, item);
       }
@@ -859,7 +859,7 @@ const ResultadosPage: React.FC = () => {
     const combinedData = [...iaData];
     
     gameData.forEach(gameItem => {
-      const skillName = gameItem.skill || gameItem.softskill;
+      const skillName = gameItem.softskill;
       if (skillName && !iaDataMap.has(skillName)) {
         combinedData.push(gameItem);
       }
