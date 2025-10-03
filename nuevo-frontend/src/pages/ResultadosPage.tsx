@@ -789,10 +789,7 @@ const ResultadosPage: React.FC = () => {
   };
 
   const softSkillsData = useMemo(() => {
-    if (info?.soft_skills && info.soft_skills.length > 0) {
-      return info.soft_skills;
-    }
-    // Merge de soft skills de juegos (game.softSkills) con personal.softSkills como fallback
+    // Siempre obtener datos de minijuegos como base
     const personalSkills = filterValidSoftSkills(personal.softSkills || []);
     const gameSkills = Array.isArray(game?.softSkills) ? game.softSkills : [];
     const mappedGame = gameSkills.map((s:any) => {
@@ -803,6 +800,8 @@ const ResultadosPage: React.FC = () => {
         : Math.round(Number(s?.confidence) || 80);
       return { skill: String(s?.name || s?.softSkill || 'Habilidad'), score, level, confidence: conf };
     });
+    
+    // Crear mapa base con datos de minijuegos
     const byName: Record<string, any> = {};
     for (const s of [...personalSkills, ...mappedGame]) {
       if (!s || !s.skill) continue;
@@ -810,6 +809,16 @@ const ResultadosPage: React.FC = () => {
         byName[s.skill] = s;
       }
     }
+    
+    // Si hay datos de IA, combinarlos priorizando la IA pero manteniendo datos de minijuegos faltantes
+    if (info?.soft_skills && info.soft_skills.length > 0) {
+      for (const iaSkill of info.soft_skills) {
+        if (iaSkill && iaSkill.skill) {
+          byName[iaSkill.skill] = iaSkill;
+        }
+      }
+    }
+    
     return Object.values(byName);
   }, [info?.soft_skills, personal.softSkills, game?.softSkills]);
   const computedScore = useMemo<number | undefined>(() => {
@@ -827,9 +836,37 @@ const ResultadosPage: React.FC = () => {
     ?? pickScore(info?.employability_score)
     ?? pickScore(report?.employabilityScore)
     ?? computedScore;
-  const radarData = radarDataFromIa.length > 0
-    ? processRadarData(radarDataFromIa)
-    : processRadarData(softSkillsData);
+  // Combinar datos de IA con datos de minijuegos para el radar
+  const radarData = useMemo(() => {
+    const iaData = radarDataFromIa.length > 0 ? processRadarData(radarDataFromIa) : [];
+    const gameData = processRadarData(softSkillsData);
+    
+    // Si no hay datos de IA, usar solo datos de minijuegos
+    if (iaData.length === 0) {
+      return gameData;
+    }
+    
+    // Crear mapa de datos de IA por nombre de habilidad
+    const iaDataMap = new Map();
+    iaData.forEach(item => {
+      const skillName = item.skill || item.softskill;
+      if (skillName) {
+        iaDataMap.set(skillName, item);
+      }
+    });
+    
+    // Combinar: priorizar IA pero completar con datos de minijuegos
+    const combinedData = [...iaData];
+    
+    gameData.forEach(gameItem => {
+      const skillName = gameItem.skill || gameItem.softskill;
+      if (skillName && !iaDataMap.has(skillName)) {
+        combinedData.push(gameItem);
+      }
+    });
+    
+    return combinedData;
+  }, [radarDataFromIa, softSkillsData]);
   // 1. Portada
   const portada = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
