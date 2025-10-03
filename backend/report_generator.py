@@ -131,6 +131,16 @@ def render_informe_estructurado(report: Dict[str, Any]) -> str:
     cv_details = report.get("cv_details") or {}
 
     out: List[str] = []
+    
+    # Agregar bloque JSON con radarData para el frontend
+    soft_skills = report.get("soft_skills", [])
+    if soft_skills:
+        import json
+        radar_data = [{"softskill": skill.get("skill", ""), "score": skill.get("score", 0)} for skill in soft_skills]
+        out.append("```json")
+        out.append(json.dumps({"radarData": radar_data}, ensure_ascii=False))
+        out.append("```")
+        out.append("")
 
     out.append("Resumen ejecutivo\n")
     out.append(f"{report.get('summary', '')}\n")
