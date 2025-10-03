@@ -10,7 +10,7 @@ const http = require('http');
 
 // URLs de prueba
 const BACKEND_URL = 'https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net';
-const FRONTEND_URL = 'https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net';
+const FRONTEND_URL = 'https://yellow-mud-0b6281c1e.6.azurestaticapps.net';
 
 console.log('=== Prueba de Configuración CORS ===\n');
 

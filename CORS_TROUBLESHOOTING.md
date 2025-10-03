@@ -8,7 +8,7 @@ El backend está configurado para permitir solo orígenes locales en CORS, lo qu
 
 ```
 Access to fetch at 'https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net/api/informe-ia' 
-from origin 'https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net' 
+from origin 'https://yellow-mud-0b6281c1e.6.azurestaticapps.net' 
 has been blocked by CORS policy: Response to preflight request doesn't pass access control check: 
 It does not have HTTP ok status.
 ```
@@ -28,7 +28,7 @@ El archivo `backend/main.py` ha sido actualizado para:
 Configurar en Azure App Service las siguientes variables:
 
 ```bash
-ALLOWED_ORIGINS=http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net
+ALLOWED_ORIGINS=http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://yellow-mud-0b6281c1e.6.azurestaticapps.net
 PRODUCTION=true
 HOST=0.0.0.0
 PORT=8080
@@ -42,7 +42,7 @@ PORT=8080
 2. Navega a tu App Service: `evaluador-backend-fzbhemgtetfeeme6`
 3. Ve a **Settings** > **Configuration** > **Application settings**
 4. Agrega o actualiza las variables:
-   - `ALLOWED_ORIGINS`: `http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net`
+   - `ALLOWED_ORIGINS`: `http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://yellow-mud-0b6281c1e.6.azurestaticapps.net`
    - `PRODUCTION`: `true`
    - `HOST`: `0.0.0.0`
    - `PORT`: `8080`
@@ -55,7 +55,7 @@ PORT=8080
 az webapp config appsettings set \
   --name evaluador-backend-fzbhemgtetfeeme6 \
   --resource-group evaluador-rg \
-  --settings ALLOWED_ORIGINS="http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net"
+  --settings ALLOWED_ORIGINS="http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://yellow-mud-0b6281c1e.6.azurestaticapps.net"
 
 # Configurar modo producción
 az webapp config appsettings set \
@@ -81,12 +81,12 @@ node test-cors-configuration.js
 
 1. **Health Check**: `https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net/health`
 2. **Preflight Request**: Usar las herramientas de desarrollador del navegador
-3. **Frontend**: Probar la funcionalidad completa en `https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net`
+3. **Frontend**: Probar la funcionalidad completa en `https://yellow-mud-0b6281c1e.6.azurestaticapps.net`
 
 ### 5. URLs Importantes
 
 - **Backend**: `https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net`
-- **Frontend**: `https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net`
+- **Frontend**: `https://yellow-mud-0b6281c1e.6.azurestaticapps.net`
 - **Health Check**: `https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net/health`
 
 ### 6. Monitoreo
