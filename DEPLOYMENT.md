@@ -57,7 +57,7 @@ cp backend/env.example backend/.env
 ## 📊 Verificación del Despliegue
 
 ### URLs de las Aplicaciones
-- **Frontend**: https://yellow-mud-0b6281c1e.6.azurestaticapps.net
+- **Frontend**: https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net
 - **Backend**: https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net
 
 ### Verificar Estado

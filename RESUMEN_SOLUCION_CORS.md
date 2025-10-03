@@ -27,7 +27,7 @@ Los errores de CORS preflight (503) se deben a que:
 Ve al [Portal de Azure](https://portal.azure.com) > App Service > Configuration > Application settings:
 
 ```bash
-ALLOWED_ORIGINS=http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://yellow-mud-0b6281c1e.6.azurestaticapps.net
+ALLOWED_ORIGINS=http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net
 PRODUCTION=true
 HOST=0.0.0.0
 PORT=8080
@@ -65,7 +65,7 @@ az webapp config appsettings set \
   --name evaluador-backend-fzbhemgtetfeeme6 \
   --resource-group evaluador-rg \
   --settings \
-    ALLOWED_ORIGINS="http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://yellow-mud-0b6281c1e.6.azurestaticapps.net" \
+    ALLOWED_ORIGINS="http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net" \
     PRODUCTION=true \
     HOST=0.0.0.0 \
     PORT=8080 \
@@ -82,12 +82,12 @@ az webapp restart \
 1. **Espera 2-3 minutos** después del reinicio
 2. **Prueba el health check**: `curl https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net/health`
 3. **Debería devolver**: `{"status": "ok"}`
-4. **Prueba el frontend**: https://yellow-mud-0b6281c1e.6.azurestaticapps.net
+4. **Prueba el frontend**: https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net
 
 ## 🔍 URLs Importantes
 
 - **Backend**: https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net
-- **Frontend**: https://yellow-mud-0b6281c1e.6.azurestaticapps.net
+- **Frontend**: https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net
 - **Health Check**: https://evaluador-backend-fzbhemgtetfeeme6.spaincentral-01.azurewebsites.net/health
 - **Portal Azure**: https://portal.azure.com
 
