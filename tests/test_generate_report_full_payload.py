@@ -112,6 +112,12 @@ def test_generar_informe_with_complete_payload(
         assert area in report.ideal_work_environment
     assert sample_job_preferences["workMode"] in report.ideal_work_environment
     assert report.job_search_advice.recommended_platforms == sample_job_preferences["preferredPlatforms"]
+    assert report.job_preferences.areas == sample_job_preferences["areas"]
+    assert report.job_preferences.work_mode == sample_job_preferences["workMode"]
+    assert report.job_preferences.preferred_platforms == sample_job_preferences["preferredPlatforms"]
+    assert report.job_preferences.seniority == sample_job_preferences["seniority"]
+    assert report.job_preferences.location == sample_job_preferences["location"]
+    assert report.job_preferences.has_disability_cert is True
 
     # CV analysis information is mapped into the structured report
     assert report.cv_analysis.structure_score == sample_cv_analysis["analysis_json"]["structure_score"]

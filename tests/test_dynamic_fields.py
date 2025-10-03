@@ -27,6 +27,10 @@ def test_default_report_uses_inputs_for_sections():
     assert report.useful_tools.accessibility == ["Microsoft Immersive Reader", "Grammarly", "ColorZilla"]
     assert report.suggested_roles[0].role == "Data Scientist"
     assert any("Python" in item for item in report.cv_details.tools)
+    assert report.job_preferences.areas == ["Data Scientist"]
+    assert report.job_preferences.work_mode == "remoto"
+    assert report.job_preferences.preferred_platforms == ["LinkedIn", "Indeed"]
+    assert report.job_preferences.seniority == "Senior"
 
 
 def test_frontend_data_uses_inputs_for_sections():
@@ -49,3 +53,7 @@ def test_frontend_data_uses_inputs_for_sections():
     assert data["useful_tools"]["accessibility"] == ["Microsoft Immersive Reader", "Grammarly", "ColorZilla"]
     assert data["suggested_roles"][0]["role"] == "Data Scientist"
     assert data["cv_details"]["tools"] == ["Python", "Excel"]
+    assert data["job_preferences"]["areas"] == ["Data Scientist"]
+    assert data["job_preferences"]["work_mode"] == "remoto"
+    assert data["job_preferences"]["preferred_platforms"] == ["LinkedIn", "Indeed"]
+    assert data["job_preferences"]["seniority"] == "Senior"

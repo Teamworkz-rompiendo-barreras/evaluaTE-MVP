@@ -21,6 +21,9 @@ def test_create_default_report_missing_job_preferences():
     assert isinstance(report.employability_score, int)
     assert isinstance(report.cv_details.experience, list)
     assert isinstance(report.cv_details.languages, list)
+    assert report.job_preferences.areas == []
+    assert report.job_preferences.work_mode == ""
+    assert report.job_preferences.has_disability_cert is False
 
 
 def test_create_frontend_compatible_data_missing_cv_analysis():
@@ -37,6 +40,8 @@ def test_create_frontend_compatible_data_missing_cv_analysis():
     assert "softSkills" in data
     assert isinstance(data["softSkills"], list)
     assert len(data["softSkills"]) > 0
+    assert "job_preferences" in data
+    assert isinstance(data["job_preferences"], dict)
 
 
 def test_create_default_report_reflects_inputs():
@@ -82,6 +87,10 @@ def test_create_default_report_reflects_inputs():
     assert "- Grado — Uni" in report.cv_summary
     assert "- Inglés — B2" in report.cv_summary
     assert "- Python" in report.cv_summary
+    assert report.job_preferences.areas == ["Analista"]
+    assert report.job_preferences.work_mode == "remoto"
+    assert report.job_preferences.seniority == "Senior"
+    assert report.job_preferences.has_disability_cert is True
 
 
 def test_convert_old_format_to_new_employability_score():
@@ -115,3 +124,6 @@ def test_create_frontend_compatible_data_reflects_inputs():
     assert data["suggested_roles"][0]["remote_viable"] is True
     assert data["cv_details"]["experience"][0].startswith("Proyecto X")
     assert "Inglés" in data["cv_details"]["languages"][0]
+    assert data["job_preferences"]["areas"] == ["Analista"]
+    assert data["job_preferences"]["work_mode"] == "remoto"
+    assert data["job_preferences"]["seniority"] == "Senior"
