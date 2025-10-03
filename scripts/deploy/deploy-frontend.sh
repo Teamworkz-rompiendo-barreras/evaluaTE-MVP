@@ -13,8 +13,8 @@ set -euo pipefail
 # CI/CD.
 # -----------------------------------------------------------------------------
 
-RESOURCE_GROUP="evaluador-frontend_group"
-STATIC_WEB_APP="evaluador-frontend-fzbhemgtetfeeme6"
+RESOURCE_GROUP="evaluador-web_group"
+STATIC_WEB_APP="evaluador-web"
 SUBSCRIPTION_ID="824553b7-ed65-481c-bd34-5b6bcb6b360b"
 
 SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"

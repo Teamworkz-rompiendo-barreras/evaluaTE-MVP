@@ -63,7 +63,7 @@ cp backend/env.example backend/.env
 ### Verificar Estado
 ```bash
 # Estado del frontend
-az staticwebapp show --name evaluador-frontend-fzbhemgtetfeeme6 --resource-group evaluador-frontend-fzbhemgtetfeeme6_group
+az staticwebapp show --name evaluador-web --resource-group evaluador-web_group
 
 # Estado del backend
 az webapp show --name evaluador-backend --resource-group evaluador-backend_group
@@ -77,7 +77,7 @@ az webapp show --name evaluador-backend --resource-group evaluador-backend_group
 az webapp log tail --name evaluador-backend --resource-group evaluador-backend_group
 
 # Logs del frontend
-az staticwebapp show --name evaluador-frontend-fzbhemgtetfeeme6 --resource-group evaluador-frontend-fzbhemgtetfeeme6_group
+az staticwebapp show --name evaluador-web --resource-group evaluador-web_group
 ```
 
 ### Reiniciar Aplicaciones

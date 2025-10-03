@@ -78,7 +78,7 @@ print_status "RESUMEN DEL DESPLIEGUE:"
 echo ""
 
 # Frontend info
-FRONTEND_URL=$(az staticwebapp show --name evaluador-frontend-fzbhemgtetfeeme6 --resource-group evaluador-frontend_group --query "defaultHostname" -o tsv)
+FRONTEND_URL=$(az staticwebapp show --name evaluador-web --resource-group evaluador-web_group --query "defaultHostname" -o tsv)
 print_success "Frontend: https://${FRONTEND_URL}"
 
 # Backend info
@@ -87,9 +87,9 @@ print_success "Backend: https://${BACKEND_URL}"
 
 echo ""
 print_status "COMANDOS ÚTILES:"
-echo "• Ver logs del frontend: az staticwebapp show --name evaluador-frontend-fzbhemgtetfeeme6 --resource-group evaluador-frontend_group"
+echo "• Ver logs del frontend: az staticwebapp show --name evaluador-web --resource-group evaluador-web_group"
 echo "• Ver logs del backend: az webapp log tail --name evaluador-backend --resource-group evaluador-backend_group"
-echo "• Estado del frontend: az staticwebapp show --name evaluador-frontend-fzbhemgtetfeeme6 --resource-group evaluador-frontend_group --query state"
+echo "• Estado del frontend: az staticwebapp show --name evaluador-web --resource-group evaluador-web_group --query state"
 echo "• Estado del backend: az webapp show --name evaluador-backend --resource-group evaluador-backend_group --query state"
 
 echo ""
