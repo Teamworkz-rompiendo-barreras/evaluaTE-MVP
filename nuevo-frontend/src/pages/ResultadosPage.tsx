@@ -723,11 +723,7 @@ const ResultadosPage: React.FC = () => {
   // Usar useMemo para evitar recalcular en cada render
   const radarDataFromIa = useMemo(() => iaReport ? extractRadarData(iaReport) : [], [iaReport]);
 
-<<<<<<< HEAD
-=======
-  // Función para eliminar duplicados y asegurar claves únicas
-
->>>>>>> dbc0c0f (feat(frontend): extraer processRadarData a módulo e importar en ResultadosPage)
+  // Procesamiento de datos del radar extraído en processRadarData.ts
   const softSkillsData = useMemo(() => {
     const normalizeKey = (value: unknown): string =>
       String(value ?? '')
@@ -925,13 +921,8 @@ const ResultadosPage: React.FC = () => {
         </div>
         <div className="w-full md:w-2/5 max-h-[26rem]">
           <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-sm">Resumen de puntuaciones:</h3>
-<<<<<<< HEAD
           <ul className="space-y-1 text-sm max-h-[22rem] overflow-y-auto pr-2">
-            {radarData.map((item, idx) => (
-=======
-          <ul className="space-y-1 text-sm">
             {radarData.map((item: { softskill: string; score: number }, idx: number) => (
->>>>>>> dbc0c0f (feat(frontend): extraer processRadarData a módulo e importar en ResultadosPage)
               <li key={idx}>
                 <span className="font-medium text-gray-900 dark:text-gray-100">{item.softskill}:</span> {item.score}%
               </li>
