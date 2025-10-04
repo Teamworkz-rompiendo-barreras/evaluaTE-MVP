@@ -23,6 +23,7 @@ import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
 import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData } from '../config/reportConfig';
+import { processRadarData } from './processRadarData';
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -721,73 +722,6 @@ const ResultadosPage: React.FC = () => {
   // Usar useMemo para evitar recalcular en cada render
   const radarDataFromIa = useMemo(() => iaReport ? extractRadarData(iaReport) : [], [iaReport]);
 
-  // Función para eliminar duplicados y asegurar claves únicas
-  const processRadarData = (data: Array<{ skill?: string; softskill?: string; score: number }>) => {
-    const ALL_SKILLS = [
-      'Toma de decisiones',
-      'Pensamiento analítico',
-      'Creatividad',
-      'Influencia social',
-      'Curiosidad y aprendizaje',
-      'Resiliencia y flexibilidad',
-      'Autoconciencia',
-      'Empatía',
-      'Pensamiento Crítico',
-      'Liderazgo',
-    ];
-
-    const normalize = (s: unknown): string => {
-      const str = String(s || '').toLowerCase().normalize('NFD').replace(/[\u0300-\u036f]/g, '').trim();
-      return str;
-    };
-
-    // Mapeo de sinónimos comunes que puede devolver la IA
-    const SYNONYMS: Record<string, string> = {
-      'capacidad de aprendizaje': 'Curiosidad y aprendizaje',
-      'aprendizaje': 'Curiosidad y aprendizaje',
-      'adaptabilidad': 'Resiliencia y flexibilidad',
-      'adaptabilidad al cambio': 'Resiliencia y flexibilidad',
-      'trabajo en equipo': 'Influencia social',
-      'comunicacion': 'Influencia social',
-      'resolucion de problemas': 'Pensamiento analítico',
-      'pensamiento analitico': 'Pensamiento analítico',
-      'pensamiento critico': 'Pensamiento Crítico',
-      'liderazgo de equipos': 'Liderazgo',
-      'autoconocimiento': 'Autoconciencia',
-    };
-
-    if (!Array.isArray(data)) {
-      // Evitar logs en producción
-      return [];
-    }
-    
-    const seen = new Set<string>();
-    const byName: Record<string, number> = {};
-    for (const raw of data) {
-      const labelRaw = String(raw?.skill || raw?.softskill || '');
-      const key = normalize(labelRaw);
-      const canonical = SYNONYMS[key] || ALL_SKILLS.find(s => normalize(s) === key) || labelRaw.trim();
-      const score = Math.max(0, Math.min(100, Math.round(Number((raw as any)?.score) || 0)));
-      if (!canonical) continue;
-      if (!seen.has(canonical)) {
-        seen.add(canonical);
-        byName[canonical] = score;
-      } else {
-        const prev = byName[canonical];
-        const safePrev = typeof prev === 'number' && Number.isFinite(prev) ? prev : 0;
-        byName[canonical] = Math.max(safePrev, score);
-      }
-    }
-
-    // Construir la lista completa en el orden fijo para que siempre haya 10 ejes
-    const full = ALL_SKILLS.map(label => ({
-      softskill: label,
-      score: Number.isFinite(byName[label]) ? byName[label] : 0,
-    }));
-
-    return full;
-  };
-
   const softSkillsData = useMemo(() => {
     const normalizeKey = (value: unknown): string =>
       String(value ?? '')
@@ -926,7 +860,7 @@ const ResultadosPage: React.FC = () => {
           {/* ScoreBadge eliminado */}
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
-        <div className="w-full md:w-3/5 h-96 min-h-[24rem]" ref={radarBoxRef}>
+        <div className="w-full md:w-3/5 h-[26rem] min-h-[26rem]" ref={radarBoxRef}>
           <div className="h-full relative print:hidden">
             {radarData.length > 0 ? (
               <>
@@ -934,7 +868,7 @@ const ResultadosPage: React.FC = () => {
                   data={radarData}
                   keys={["score"]}
                   indexBy="softskill"
-                  margin={{ top: 40, right: 100, bottom: 40, left: 100 }}
+                  margin={{ top: 50, right: 120, bottom: 50, left: 120 }}
                   maxValue={100}
                   gridLevels={5}
                   theme={{
@@ -953,7 +887,7 @@ const ResultadosPage: React.FC = () => {
                     crosshair: { line: { stroke: '#F3F4F6' } },
                   }}
                   borderColor="#3B82F6"
-                  gridLabelOffset={25}
+                  gridLabelOffset={32}
                   dotSize={12}
                   dotColor="#3B82F6"
                   dotBorderWidth={2}
@@ -980,12 +914,12 @@ const ResultadosPage: React.FC = () => {
             )}
           </div>
           {radarImg && (
-            <img src={radarImg} alt="Mapa de habilidades" className="hidden print:block w-full h-96 object-contain" />
+            <img src={radarImg} alt="Mapa de habilidades" className="hidden print:block w-full h-[26rem] object-contain" />
           )}
         </div>
-        <div className="w-full md:w-2/5">
+        <div className="w-full md:w-2/5 max-h-[26rem]">
           <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-sm">Resumen de puntuaciones:</h3>
-          <ul className="space-y-1 text-sm">
+          <ul className="space-y-1 text-sm max-h-[22rem] overflow-y-auto pr-2">
             {radarData.map((item, idx) => (
               <li key={idx}>
                 <span className="font-medium text-gray-900 dark:text-gray-100">{item.softskill}:</span> {item.score}%
