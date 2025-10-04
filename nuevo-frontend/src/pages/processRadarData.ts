@@ -1,12 +1,18 @@
-type RadarInput = Array<{ skill?: string; softskill?: string; score: number }>;
+// src/pages/processRadarData.ts
 
-export interface ProcessedRadarDataItem {
+export interface RadarInputItem {
+  skill?: string;
+  softskill?: string;
+  score: number;
+}
+
+export interface RadarOutputItem {
   softskill: string;
   score: number;
   [key: string]: unknown;
 }
 
-const ALL_RADAR_SKILLS = [
+export const ALL_RADAR_SKILLS = [
   'Toma de decisiones',
   'Pensamiento analítico',
   'Creatividad',
@@ -40,9 +46,9 @@ const RADAR_SYNONYMS: Record<string, string> = {
   'autoconocimiento': 'Autoconciencia',
 };
 
-export const processRadarData = (data: RadarInput): ProcessedRadarDataItem[] => {
+export function processRadarData(data: Array<RadarInputItem>): RadarOutputItem[] {
   if (!Array.isArray(data)) {
-    return ALL_RADAR_SKILLS.map(label => ({ softskill: label, score: 0 }));
+    return ALL_RADAR_SKILLS.map((label) => ({ softskill: label, score: 0 }));
   }
 
   const canonicalEntries = new Map<string, { label: string; score: number }>();
@@ -66,7 +72,8 @@ export const processRadarData = (data: RadarInput): ProcessedRadarDataItem[] => 
     if (!labelRaw) continue;
 
     const rawKey = normalizeRadarLabel(labelRaw);
-    const canonicalLabel = RADAR_SYNONYMS[rawKey] || ALL_RADAR_SKILLS.find(s => normalizeRadarLabel(s) === rawKey) || labelRaw;
+    const canonicalLabel =
+      RADAR_SYNONYMS[rawKey] || ALL_RADAR_SKILLS.find((s) => normalizeRadarLabel(s) === rawKey) || labelRaw;
     const canonicalKey = normalizeRadarLabel(canonicalLabel);
     const score = Math.max(0, Math.min(100, Math.round(Number((raw as any)?.score) || 0)));
 
@@ -78,7 +85,7 @@ export const processRadarData = (data: RadarInput): ProcessedRadarDataItem[] => 
     ensureUnion(canonicalLabel, unionLabels, unionSeen);
   }
 
-  return unionLabels.map(label => {
+  return unionLabels.map((label) => {
     const key = normalizeRadarLabel(label);
     const entry = canonicalEntries.get(key);
     return {
@@ -86,6 +93,6 @@ export const processRadarData = (data: RadarInput): ProcessedRadarDataItem[] => 
       score: entry?.score ?? 0,
     };
   });
-};
+}
 
-export { ALL_RADAR_SKILLS };
+export default processRadarData;

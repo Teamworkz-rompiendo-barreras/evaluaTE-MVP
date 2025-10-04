@@ -2,6 +2,7 @@
 /* eslint-disable @typescript-eslint/no-explicit-any */
 // src/pages/ResultadosPage.tsx
 import React, { useEffect, useState, useRef } from 'react';
+import processRadarData from './processRadarData';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { buildApiUrl, API_CONFIG } from '../config/api';
@@ -23,7 +24,7 @@ import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
 import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData } from '../config/reportConfig';
-import { processRadarData } from './processRadarData';
+// (import duplicado eliminado)
 
 // Definir tipos locales para evitar importaciones problemáticas
 
@@ -722,6 +723,11 @@ const ResultadosPage: React.FC = () => {
   // Usar useMemo para evitar recalcular en cada render
   const radarDataFromIa = useMemo(() => iaReport ? extractRadarData(iaReport) : [], [iaReport]);
 
+<<<<<<< HEAD
+=======
+  // Función para eliminar duplicados y asegurar claves únicas
+
+>>>>>>> dbc0c0f (feat(frontend): extraer processRadarData a módulo e importar en ResultadosPage)
   const softSkillsData = useMemo(() => {
     const normalizeKey = (value: unknown): string =>
       String(value ?? '')
@@ -865,7 +871,7 @@ const ResultadosPage: React.FC = () => {
             {radarData.length > 0 ? (
               <>
                 <ResponsiveRadar
-                  data={radarData}
+                  data={radarData as unknown as Array<Record<string, unknown>>}
                   keys={["score"]}
                   indexBy="softskill"
                   margin={{ top: 50, right: 120, bottom: 50, left: 120 }}
@@ -919,8 +925,13 @@ const ResultadosPage: React.FC = () => {
         </div>
         <div className="w-full md:w-2/5 max-h-[26rem]">
           <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-sm">Resumen de puntuaciones:</h3>
+<<<<<<< HEAD
           <ul className="space-y-1 text-sm max-h-[22rem] overflow-y-auto pr-2">
             {radarData.map((item, idx) => (
+=======
+          <ul className="space-y-1 text-sm">
+            {radarData.map((item: { softskill: string; score: number }, idx: number) => (
+>>>>>>> dbc0c0f (feat(frontend): extraer processRadarData a módulo e importar en ResultadosPage)
               <li key={idx}>
                 <span className="font-medium text-gray-900 dark:text-gray-100">{item.softskill}:</span> {item.score}%
               </li>
