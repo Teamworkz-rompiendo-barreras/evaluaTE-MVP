@@ -138,8 +138,13 @@ jobs:
           [ -f "dist/staticwebapp.config.json" ] && echo "✅ staticwebapp.config.json listo" || (echo "❌ staticwebapp.config.json faltante" && exit 1)
           echo "✅ Artefactos verificados"
 
+      - name: Fail if deploy token missing
+        if: ${{ env.DEPLOY_TOKEN == '' }}
+        run: |
+          echo "❌ Falta AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND"
+          exit 1
+
       - name: Deploy to Azure Static Web Apps (Optimizado)
-        if: ${{ env.DEPLOY_TOKEN != '' }}
         uses: Azure/static-web-apps-deploy@v1
         with:
           azure_static_web_apps_api_token: ${{ env.DEPLOY_TOKEN }}
@@ -153,10 +158,6 @@ jobs:
           # Configuraciones adicionales para evitar deploy cancelado
           deployment_environment: production
           is_static_export: true
-
-      - name: Skip deploy (missing secret)
-        if: ${{ env.DEPLOY_TOKEN == '' }}
-        run: echo "Secreto AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND no definido. ⏭️  Saltando deploy."
 
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
