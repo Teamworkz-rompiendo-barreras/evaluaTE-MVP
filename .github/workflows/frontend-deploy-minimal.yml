@@ -8,6 +8,7 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy to Azure
     env:
+      # Convención: todos los deploys de SWA usan este secreto compartido
       DEPLOY_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND }}
     
     steps:

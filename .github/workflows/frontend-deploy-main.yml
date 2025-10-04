@@ -117,6 +117,7 @@ jobs:
     name: Deploy to Azure
     timeout-minutes: 10
     env:
+      # Convención: todos los deploys de SWA usan este secreto compartido
       DEPLOY_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND }}
     
     steps:
@@ -163,6 +164,7 @@ jobs:
     name: Close PR Environment
     timeout-minutes: 5
     env:
+      # Convención: todos los deploys/cierres de SWA usan este secreto compartido
       DEPLOY_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND }}
     
     steps:
