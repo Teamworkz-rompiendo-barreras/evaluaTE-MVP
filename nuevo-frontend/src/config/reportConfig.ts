@@ -394,18 +394,42 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         reordering_suggestions: Array.isArray(analysisJson?.reordering_suggestions) ? analysisJson.reordering_suggestions : [],
       } as CvAnalysis;
 
-      // Soft skills
+      // Soft skills (capturar múltiples variantes de estructura y nombres de campos)
       let soft_skills: Array<{ skill: string; score: number }> = [];
+      const toName = (obj: Record<string, unknown>): string => {
+        const candidates = [obj['skill'], obj['name'], obj['softskill'], obj['label'], obj['title']];
+        for (const c of candidates) {
+          const v = typeof c === 'string' ? c.trim() : (typeof c === 'number' ? String(c) : '');
+          if (v) return v;
+        }
+        return '';
+      };
+      const toScore = (obj: Record<string, unknown>): number => {
+        const candidates = [obj['score'], obj['value'], obj['percent'], obj['percentage'], obj['puntuacion'], obj['puntaje'], obj['val']];
+        for (const c of candidates) {
+          const n = Number(c);
+          if (!Number.isNaN(n)) return Math.max(0, Math.min(100, Math.round(n <= 1 ? n * 100 : n)));
+        }
+        return 0;
+      };
+      const mapSkills = (arr: Array<Record<string, unknown>> | unknown): Array<{ skill: string; score: number }> => {
+        if (!Array.isArray(arr)) return [];
+        return arr.map((s) => {
+          const obj = (s && typeof s === 'object') ? (s as Record<string, unknown>) : {};
+          return { skill: toName(obj), score: toScore(obj) };
+        }).filter((s) => s.skill !== '');
+      };
+
       if (Array.isArray(report.soft_skills)) {
-        soft_skills = (report.soft_skills as Array<Record<string, unknown>>).map((s) => ({
-          skill: String(s['skill'] ?? s['name'] ?? ''),
-          score: Number(s['score'] ?? 0),
-        }));
-      } else if (Array.isArray(data.softSkills)) {
-        soft_skills = (data.softSkills as Array<Record<string, unknown>>).map((s) => ({
-          skill: String(s['skill'] ?? s['name'] ?? ''),
-          score: Number(s['score'] ?? 0),
-        }));
+        soft_skills = mapSkills(report.soft_skills as Array<Record<string, unknown>>);
+      } else if (Array.isArray((data as any).softSkills)) {
+        soft_skills = mapSkills((data as any).softSkills as Array<Record<string, unknown>>);
+      } else if (Array.isArray((data as any).soft_skills)) {
+        soft_skills = mapSkills((data as any).soft_skills as Array<Record<string, unknown>>);
+      } else if (Array.isArray((report as any)?.ui?.soft_skills)) {
+        soft_skills = mapSkills((report as any).ui.soft_skills as Array<Record<string, unknown>>);
+      } else if (Array.isArray((recs as any)?.soft_skills)) {
+        soft_skills = mapSkills((recs as any).soft_skills as Array<Record<string, unknown>>);
       }
 
       // Fortalezas
