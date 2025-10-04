@@ -926,8 +926,8 @@ const ResultadosPage: React.FC = () => {
           {/* ScoreBadge eliminado */}
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
-        <div className="w-full md:w-3/5 h-96" ref={radarBoxRef}>
-          <div className="screen-only h-full relative">
+        <div className="w-full md:w-3/5 h-96 min-h-[24rem]" ref={radarBoxRef}>
+          <div className="h-full relative print:hidden">
             {radarData.length > 0 ? (
               <>
                 <ResponsiveRadar
@@ -980,7 +980,7 @@ const ResultadosPage: React.FC = () => {
             )}
           </div>
           {radarImg && (
-            <img src={radarImg} alt="Mapa de habilidades" className="print-only w-full h-96 object-contain" />
+            <img src={radarImg} alt="Mapa de habilidades" className="hidden print:block w-full h-96 object-contain" />
           )}
         </div>
         <div className="w-full md:w-2/5">
