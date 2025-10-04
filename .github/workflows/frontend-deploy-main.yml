@@ -116,6 +116,8 @@ jobs:
     runs-on: ubuntu-latest
     name: Deploy to Azure
     timeout-minutes: 10
+    env:
+      DEPLOY_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND }}
     
     steps:
       - name: Checkout code
@@ -136,34 +138,46 @@ jobs:
           echo "✅ Artefactos verificados"
 
       - name: Deploy to Azure Static Web Apps (Optimizado)
+        if: ${{ env.DEPLOY_TOKEN != '' }}
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND }}
-          repo_token: ${{ secrets.GITHUB_TOKEN }}
+          azure_static_web_apps_api_token: ${{ env.DEPLOY_TOKEN }}
+          repo_token: ${{ github.token }}
           action: upload
-          app_location: "nuevo-frontend"
+          app_location: "dist"
           api_location: ""
-          output_location: "dist"
-          skip_app_build: false
+          output_location: ""
+          skip_app_build: true
           skip_api_build: true
           # Configuraciones adicionales para evitar deploy cancelado
           deployment_environment: production
           is_static_export: true
+
+      - name: Skip deploy (missing secret)
+        if: ${{ env.DEPLOY_TOKEN == '' }}
+        run: echo "Secreto AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND no definido. ⏭️  Saltando deploy."
 
   close_pull_request:
     if: github.event_name == 'pull_request' && github.event.action == 'closed'
     runs-on: ubuntu-latest
     name: Close PR Environment
     timeout-minutes: 5
+    env:
+      DEPLOY_TOKEN: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND }}
     
     steps:
       - name: Close Pull Request
+        if: ${{ env.DEPLOY_TOKEN != '' }}
         uses: Azure/static-web-apps-deploy@v1
         with:
-          azure_static_web_apps_api_token: ${{ secrets.AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND }}
+          azure_static_web_apps_api_token: ${{ env.DEPLOY_TOKEN }}
           action: close
           app_location: "nuevo-frontend"
           api_location: ""
           output_location: "dist"
           skip_app_build: false
           skip_api_build: true 
+
+      - name: Skip close (missing secret)
+        if: ${{ env.DEPLOY_TOKEN == '' }}
+        run: echo "Secreto AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND no definido. ⏭️  Saltando cierre de entorno de PR."
