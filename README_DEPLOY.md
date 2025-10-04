@@ -30,8 +30,10 @@ Antes de lanzar cualquiera de los workflows de despliegue del frontend (`fronten
 
 1. En el portal de Azure Static Web Apps abre **Deployment token** y pulsa **Regenerate** para obtener un valor nuevo si el anterior se ha filtrado.
 2. Copia el token y en el repositorio ve a **Settings → Secrets and variables → Actions → New repository secret**.
-3. Usa `AZURE_STATIC_WEB_APPS_API_TOKEN` como nombre del secreto y pega el valor del token regenerado.
+3. Usa `AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND` como nombre del secreto y pega el valor del token regenerado.
 4. Guarda el secreto y vuelve a ejecutar el workflow que necesites.
+
+> **Nota:** El workflow **Frontend Deploy Principal** aborta el despliegue si `AZURE_STATIC_WEB_APPS_API_TOKEN_EVALUADOR_FRONTEND` está vacío para evitar confusiones y prevenir despliegues incompletos.
 
 ### Rotación y saneamiento tras una filtración
 - Después de regenerar el token en Azure, vuelve a actualizar el secreto del repositorio con el valor nuevo y elimina el antiguo si existía.
