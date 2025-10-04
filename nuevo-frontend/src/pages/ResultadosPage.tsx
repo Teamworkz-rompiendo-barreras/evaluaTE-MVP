@@ -917,47 +917,62 @@ const ResultadosPage: React.FC = () => {
   }, []);
   const radarLabelColor = isDarkMode ? '#FFFFFF' : '#374151';
 
+  const hasAnyRadarValue = useMemo(() => {
+    return Array.isArray(radarData) && radarData.some((item: any) => Number(item?.score) > 0);
+  }, [radarData]);
+
   const radar = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
           {/* ScoreBadge eliminado */}
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-3/5 h-96" ref={radarBoxRef}>
-          <div className="screen-only h-full">
+          <div className="screen-only h-full relative">
             {radarData.length > 0 ? (
-              <ResponsiveRadar
-                data={radarData}
-                keys={["score"]}
-                indexBy="softskill"
-                margin={{ top: 40, right: 100, bottom: 40, left: 100 }}
-                theme={{
-                  // Asegurar legibilidad de etiquetas en ambos modos
-                  text: { fill: radarLabelColor, fontSize: 12 },
-                  grid: { line: { stroke: '#6B7280', strokeWidth: 1 } },
-                  axis: {
-                    ticks: { text: { fill: radarLabelColor, fontSize: 12 } },
-                    domain: { line: { stroke: '#9CA3AF' } },
-                    legend: { text: { fill: radarLabelColor, fontSize: 12 } },
-                  },
-                  // Etiquetas del radar (nombres de habilidades)
-                  labels: { text: { fill: radarLabelColor, fontSize: 12 } },
-                  // Leyendas, en caso de usarse en el futuro
-                  legends: { text: { fill: radarLabelColor, fontSize: 12 } },
-                  crosshair: { line: { stroke: '#F3F4F6' } },
-                }}
-                borderColor="#3B82F6"
-                gridLabelOffset={25}
-                dotSize={12}
-                dotColor="#3B82F6"
-                dotBorderWidth={2}
-                dotBorderColor={{ theme: 'background' }}
-                colors={['#3B82F6']}
-                fillOpacity={0.35}
-                blendMode="multiply"
-                animate={true}
-                isInteractive={false}
-                legends={[]}
-              />
+              <>
+                <ResponsiveRadar
+                  data={radarData}
+                  keys={["score"]}
+                  indexBy="softskill"
+                  margin={{ top: 40, right: 100, bottom: 40, left: 100 }}
+                  maxValue={100}
+                  gridLevels={5}
+                  theme={{
+                    // Asegurar legibilidad de etiquetas en ambos modos
+                    text: { fill: radarLabelColor, fontSize: 12 },
+                    grid: { line: { stroke: '#6B7280', strokeWidth: 1 } },
+                    axis: {
+                      ticks: { text: { fill: radarLabelColor, fontSize: 12 } },
+                      domain: { line: { stroke: '#9CA3AF' } },
+                      legend: { text: { fill: radarLabelColor, fontSize: 12 } },
+                    },
+                    // Etiquetas del radar (nombres de habilidades)
+                    labels: { text: { fill: radarLabelColor, fontSize: 12 } },
+                    // Leyendas, en caso de usarse en el futuro
+                    legends: { text: { fill: radarLabelColor, fontSize: 12 } },
+                    crosshair: { line: { stroke: '#F3F4F6' } },
+                  }}
+                  borderColor="#3B82F6"
+                  gridLabelOffset={25}
+                  dotSize={12}
+                  dotColor="#3B82F6"
+                  dotBorderWidth={2}
+                  dotBorderColor={{ theme: 'background' }}
+                  colors={['#3B82F6']}
+                  fillOpacity={0.35}
+                  blendMode="multiply"
+                  animate={true}
+                  isInteractive={false}
+                  legends={[]}
+                />
+                {!hasAnyRadarValue && (
+                  <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
+                    <p className="text-gray-500 dark:text-gray-300 text-sm bg-white/60 dark:bg-gray-800/60 px-3 py-1 rounded">
+                      Aún no hay datos de habilidades para mostrar
+                    </p>
+                  </div>
+                )}
+              </>
             ) : (
               <div className="flex items-center justify-center h-full text-gray-900 dark:text-gray-100">
                 <p>No hay datos suficientes para mostrar el gráfico de habilidades</p>
