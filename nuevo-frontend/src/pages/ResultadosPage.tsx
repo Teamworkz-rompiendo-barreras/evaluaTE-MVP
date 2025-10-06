@@ -464,14 +464,84 @@ const ResultadosPage: React.FC = () => {
           const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
             || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
             || {} as Record<string, unknown>;
+
+          const firstNonEmpty = (...values: Array<unknown>): string => {
+            for (const value of values) {
+              if (value === null || value === undefined) continue;
+              const trimmed = (typeof value === 'string'
+                ? value
+                : String(value))
+                .trim();
+              if (trimmed.length > 0) return trimmed;
+            }
+            return '';
+          };
+
+          const firstFromArray = (value: unknown): string => {
+            if (!Array.isArray(value)) return '';
+            for (const entry of value) {
+              const asString = typeof entry === 'string'
+                ? entry.trim()
+                : String(entry ?? '').trim();
+              if (asString) return asString;
+            }
+            return '';
+          };
+
+          const stateFullName = `${personal?.firstName ?? ''} ${personal?.lastName ?? ''}`.trim();
+          const reportFullName = `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim();
+          const cvContact = personal?.cvAnalysis?.contact || report?.cvAnalysis?.contact || {};
+          const cvEmail = firstFromArray((cvContact as { emails?: unknown[] }).emails);
+          const cvPhone = firstFromArray((cvContact as { phones?: unknown[] }).phones);
+          const cvLocation = typeof (cvContact as { location?: unknown }).location === 'string'
+            ? String((cvContact as { location?: unknown }).location).trim()
+            : '';
+
+          const backendReport = (data as { report?: { fullName?: string; email?: string; phone?: string; location?: string; personal_data?: Record<string, unknown> } }).report;
+
           const dp: PersonalData = {
-            name: (dpSrc?.['name'] as string) || candidateName,
-            location: (dpSrc?.['location'] as string) || 'No consta',
-            email: (dpSrc?.['email'] as string) || '',
-            phone: (dpSrc?.['phone'] as string) || 'No especificado',
+            name: firstNonEmpty(
+              dpSrc?.['name'],
+              backendReport?.personal_data?.['name'],
+              backendReport?.fullName,
+              reportFullName,
+              stateFullName,
+              candidateName,
+            ) || candidateName,
+            location: firstNonEmpty(
+              dpSrc?.['location'],
+              backendReport?.personal_data?.['location'],
+              backendReport?.location,
+              cvLocation,
+              (personal?.report as Record<string, unknown> | undefined)?.['location'],
+              'No consta',
+            ) || 'No consta',
+            email: firstNonEmpty(
+              dpSrc?.['email'],
+              backendReport?.personal_data?.['email'],
+              backendReport?.email,
+              (report as Record<string, unknown> | undefined)?.['email'],
+              personal?.email,
+              cvEmail,
+              'No consta',
+            ) || 'No consta',
+            phone: firstNonEmpty(
+              dpSrc?.['phone'],
+              backendReport?.personal_data?.['phone'],
+              backendReport?.phone,
+              (report as Record<string, unknown> | undefined)?.['phone'],
+              personal?.whatsapp,
+              cvPhone,
+              'No especificado',
+            ) || 'No especificado',
             disability_certificate: (dpSrc?.['disability_certificate'] != null)
-              ? (dpSrc['disability_certificate'] as string)
-              : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
+              ? String(dpSrc['disability_certificate'])
+              : firstNonEmpty(
+                backendReport?.personal_data?.['disability_certificate'],
+                ((report?.jobPreferences as unknown as { hasDisabilityCert?: boolean })?.hasDisabilityCert ?? personal?.hasDisabilityCert)
+                  ? 'Sí'
+                  : 'No',
+              ) || 'No',
           };
 
           let normalized: NewReportSchema;
