@@ -61,5 +61,8 @@ jobs:
           output_location: ${{ inputs.output_location }}
           skip_app_build: false
           skip_api_build: true
+          # Forzar despliegue al entorno de Producción del recurso principal
+          deployment_environment: production
+          is_static_export: true
 
 

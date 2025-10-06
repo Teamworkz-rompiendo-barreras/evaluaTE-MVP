@@ -40,6 +40,8 @@ jobs:
           output_location: "dist"
           skip_app_build: false
           skip_api_build: true
+          deployment_environment: production
+          is_static_export: true
 
       - name: Skip deploy (missing secret)
         if: ${{ env.DEPLOY_TOKEN == '' }}

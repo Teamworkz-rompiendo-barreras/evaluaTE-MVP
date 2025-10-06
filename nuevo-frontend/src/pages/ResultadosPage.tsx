@@ -166,9 +166,8 @@ const ResultadosPage: React.FC = () => {
     return () => window.removeEventListener('beforeprint', beforePrint);
   }, []);
 
-  // Llamar al endpoint de IA al cargar la página
+  // Sincronizar soft skills de minijuegos → estado personal (fallback robusto)
   useEffect(() => {
-    // Sincronizar soft skills de minijuegos → estado personal (fallback robusto)
     try {
       const gameSkills = Array.isArray(game?.softSkills) ? game.softSkills : [];
       const personalSkills = Array.isArray(personal?.softSkills) ? personal.softSkills : [];
@@ -184,7 +183,10 @@ const ResultadosPage: React.FC = () => {
         dispatch(saveSoftSkills(mapped));
       }
     } catch { /* no-op */ }
+  }, [game?.softSkills, personal?.softSkills, dispatch]);
 
+  // Llamar al endpoint de IA al cargar la página (después de sincronizar datos)
+  useEffect(() => {
     const fetchIaReport = async () => {
       setLoadingIa(true);
       setErrorIa('');
@@ -213,6 +215,8 @@ const ResultadosPage: React.FC = () => {
             const analysis = await analyzeRes.json();
             dispatch(saveCvAnalysis(analysis));
             console.log('✅ DEBUG - Análisis de CV guardado desde ResultadosPage');
+            // Esperar a que Redux se actualice antes de continuar
+            await new Promise(resolve => setTimeout(resolve, 100));
           } else {
             console.warn('⚠️ DEBUG - analyze-cv falló:', analyzeRes.status, analyzeRes.statusText);
           }
@@ -574,6 +578,7 @@ const ResultadosPage: React.FC = () => {
       }
     };
     fetchIaReportRef.current = fetchIaReport;
+    
     // SOLUCIÓN: Ejecutar siempre el informe si hay datos básicos del usuario
     // Verificar tanto personal.softSkills como report?.softSkills
     const hasPersonalSoftSkills = validateSoftSkills(personal.softSkills);
@@ -585,11 +590,10 @@ const ResultadosPage: React.FC = () => {
                             (cvAnalysis) || 
                             (report?.jobPreferences);
     
-    if (fetchedRef.current) {
-      return;
-    }
+    // SOLUCIÓN: No usar fetchedRef.current para evitar que se ejecute solo una vez
+    // En su lugar, usar un timeout para permitir que Redux se actualice
     if (hasSoftSkills || hasBasicUserData) {
-      // Condición cumplida - Ejecutando fetchIaReport
+      // Condición cumplida - Ejecutando fetchIaReport con delay para permitir actualización de Redux
       if (import.meta.env.MODE !== 'production') {
         // eslint-disable-next-line no-console
         console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
@@ -598,8 +602,16 @@ const ResultadosPage: React.FC = () => {
         // eslint-disable-next-line no-console
         console.log('  • hasBasicUserData:', hasBasicUserData);
       }
-      fetchedRef.current = true;
-      fetchIaReport();
+      
+      // Usar setTimeout para permitir que Redux se actualice después de los dispatch
+      const timeoutId = setTimeout(() => {
+        if (!fetchedRef.current) {
+          fetchedRef.current = true;
+          fetchIaReport();
+        }
+      }, 200); // 200ms debería ser suficiente para que Redux se actualice
+      
+      return () => clearTimeout(timeoutId);
     } else {
       // Condición no cumplida - No se ejecuta fetchIaReport
       if (import.meta.env.MODE !== 'production') {
@@ -612,8 +624,9 @@ const ResultadosPage: React.FC = () => {
         // eslint-disable-next-line no-console
         console.log('  • hasBasicUserData:', hasBasicUserData);
       }
+      return undefined;
     }
-  }, [report?.jobPreferences, personal.softSkills, report?.softSkills, personal.jobPreferences, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId]);
+  }, [report?.jobPreferences, personal.softSkills, report?.softSkills, personal.jobPreferences, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId, dispatch]);
 
   const handleRetry = () => {
     if (loadingIa) return;
