@@ -146,7 +146,7 @@ const ResultadosPage: React.FC = () => {
   const [iaScore, setIaScore] = useState<number | undefined>(undefined);
   const [loadingIa, setLoadingIa] = useState<boolean>(false);
   const [errorIa, setErrorIa] = useState<string>('');
-  const fetchedRef = useRef(false);
+  const fetchSignatureRef = useRef<string>('');
   const fetchIaReportRef = useRef<() => Promise<void> | null>(null);
   const [finalPhrase, setFinalPhrase] = useState<string>('');
 
@@ -187,7 +187,99 @@ const ResultadosPage: React.FC = () => {
 
   // Llamar al endpoint de IA al cargar la página (después de sincronizar datos)
   useEffect(() => {
+    const resolvedJobPreferences = resolveJobPreferences({
+      jobPreferences: personal?.jobPreferences as Partial<JobPreference> | string | undefined,
+      workMode: personal?.workMode,
+      availability: personal?.availability,
+      willingToRelocate: personal?.willingToRelocate,
+      hasDisabilityCert: personal?.hasDisabilityCert,
+    });
+    const personalJobPreferences = personal?.jobPreferences;
+    const personalHasPreferences = Boolean(
+      (typeof personalJobPreferences === 'string' && personalJobPreferences.trim().length > 0)
+        || (personalJobPreferences
+          && typeof personalJobPreferences === 'object'
+          && Array.isArray((personalJobPreferences as JobPreference).areas)
+          && (personalJobPreferences as JobPreference).areas.some(area => (area ?? '').toString().trim().length > 0)),
+    );
+
+    const validSoftSkillsPre = filterValidSoftSkills(personal.softSkills || []);
+    const cvAnalysisPayloadPre: CvAnalysis | null = cvAnalysis ? cvAnalysis : null;
+    const rawCompletedGames = Array.isArray(game?.completedGames) ? game.completedGames : [];
+    const completedGamesForRequest = rawCompletedGames.length > 0
+      ? rawCompletedGames
+      : (Array.isArray(personal.softSkills) && personal.softSkills.length > 0 ? ['softskills-evaluated'] : []);
+
+    const hasSoftSkillsData = validSoftSkillsPre.length > 0;
+    const hasJobPreferenceData = personalHasPreferences
+      || resolvedJobPreferences.needs.length > 0
+      || resolvedJobPreferences.hasDisabilityCert;
+    const hasCvStructuredData = Boolean(
+      cvAnalysisPayloadPre
+      && ([
+        cvAnalysisPayloadPre.structure_score,
+        cvAnalysisPayloadPre.coherence_score,
+        cvAnalysisPayloadPre.key_info_score,
+        cvAnalysisPayloadPre.clarity_score,
+        cvAnalysisPayloadPre.style_score,
+      ].some(score => typeof score === 'number' && score > 0)
+        || (Array.isArray((cvAnalysisPayloadPre as any).experience_detailed) && (cvAnalysisPayloadPre as any).experience_detailed.length > 0)
+        || (Array.isArray((cvAnalysisPayloadPre as any).education_detailed) && (cvAnalysisPayloadPre as any).education_detailed.length > 0)
+        || (Array.isArray((cvAnalysisPayloadPre as any).languages) && (cvAnalysisPayloadPre as any).languages.length > 0)
+        || (Array.isArray((cvAnalysisPayloadPre as any).software) && (cvAnalysisPayloadPre as any).software.length > 0)));
+    const hasCompletedGameData = rawCompletedGames.length > 0;
+    const hasMeaningfulData = hasSoftSkillsData || hasCvStructuredData || hasJobPreferenceData || hasCompletedGameData;
+
     const fetchIaReport = async () => {
+      if (!hasMeaningfulData) {
+        if (import.meta.env.MODE !== 'production') {
+          // eslint-disable-next-line no-console
+          console.log('⏭️ DEBUG - Omitiendo fetch del informe IA por falta de datos relevantes');
+        }
+        return;
+      }
+
+      const signature = JSON.stringify({
+        softSkills: [...validSoftSkillsPre]
+          .map(skill => `${skill.skill}:${Math.round(Number(skill.score) || 0)}`)
+          .sort(),
+        jobPreferences: {
+          areas: [...resolvedJobPreferences.areas].map(area => area.trim()).filter(Boolean).sort(),
+          needs: [...resolvedJobPreferences.needs].map(need => need.trim()).filter(Boolean).sort(),
+          workMode: personalHasPreferences ? (resolvedJobPreferences.workMode ?? '') : '',
+          availability: personalHasPreferences ? (resolvedJobPreferences.availability ?? '') : '',
+          willingToRelocate: personalHasPreferences ? resolvedJobPreferences.willingToRelocate : undefined,
+          hasDisabilityCert: personalHasPreferences ? resolvedJobPreferences.hasDisabilityCert : undefined,
+        },
+        completedGames: [...completedGamesForRequest].map(gameId => String(gameId)).sort(),
+        cv: cvAnalysisPayloadPre
+          ? {
+              scores: [
+                Number(cvAnalysisPayloadPre.structure_score) || 0,
+                Number(cvAnalysisPayloadPre.coherence_score) || 0,
+                Number(cvAnalysisPayloadPre.key_info_score) || 0,
+                Number(cvAnalysisPayloadPre.clarity_score) || 0,
+                Number(cvAnalysisPayloadPre.style_score) || 0,
+              ],
+              experience: Array.isArray((cvAnalysisPayloadPre as any).experience_detailed)
+                ? (cvAnalysisPayloadPre as any).experience_detailed.length
+                : 0,
+              education: Array.isArray((cvAnalysisPayloadPre as any).education_detailed)
+                ? (cvAnalysisPayloadPre as any).education_detailed.length
+                : 0,
+            }
+          : null,
+      });
+
+      if (fetchSignatureRef.current === signature) {
+        if (import.meta.env.MODE !== 'production') {
+          // eslint-disable-next-line no-console
+          console.log('⏭️ DEBUG - Saltando fetch IA: la firma de datos no cambió');
+        }
+        return;
+      }
+      fetchSignatureRef.current = signature;
+
       setLoadingIa(true);
       setErrorIa('');
       
@@ -228,7 +320,7 @@ const ResultadosPage: React.FC = () => {
       try {
         // SOLUCIÓN: Asegurar que siempre hay datos mínimos para el informe
         const userFullName = `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario';
-        const validSoftSkills = filterValidSoftSkills(personal.softSkills || []);
+        const validSoftSkills = validSoftSkillsPre;
         
         // DEBUG: Log del requestBody antes de enviarlo
         console.log('🔍 DEBUG - userFullName:', userFullName);
@@ -264,8 +356,8 @@ const ResultadosPage: React.FC = () => {
           confidence: 80,
         }];
 
-        const cvAnalysisPayload: CvAnalysis | null = cvAnalysis ? cvAnalysis : null;
-        const jp: JobPreference = resolveJobPreferences(personal);
+        const cvAnalysisPayload: CvAnalysis | null = cvAnalysisPayloadPre;
+        const jp: JobPreference = resolvedJobPreferences;
 
         const requestBody = {
           userId: report?.userId || 'user',
@@ -277,9 +369,7 @@ const ResultadosPage: React.FC = () => {
           cvAnalysis: cvAnalysisPayload,
           jobPreferences: jp,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
-          completedGames: (Array.isArray(game?.completedGames) && game.completedGames.length > 0)
-            ? game.completedGames
-            : (Array.isArray(personal.softSkills) && personal.softSkills.length > 0 ? ['softskills-evaluated'] : []),
+          completedGames: completedGamesForRequest,
           logs: []
         };
 
@@ -374,14 +464,84 @@ const ResultadosPage: React.FC = () => {
           const dpSrc = (data as { recommendations?: { datos_personales?: Record<string, unknown> }; report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.recommendations?.datos_personales
             || (data as { report?: { ui?: { datos_personales?: Record<string, unknown> } } })?.report?.ui?.datos_personales
             || {} as Record<string, unknown>;
+
+          const firstNonEmpty = (...values: Array<unknown>): string => {
+            for (const value of values) {
+              if (value === null || value === undefined) continue;
+              const trimmed = (typeof value === 'string'
+                ? value
+                : String(value))
+                .trim();
+              if (trimmed.length > 0) return trimmed;
+            }
+            return '';
+          };
+
+          const firstFromArray = (value: unknown): string => {
+            if (!Array.isArray(value)) return '';
+            for (const entry of value) {
+              const asString = typeof entry === 'string'
+                ? entry.trim()
+                : String(entry ?? '').trim();
+              if (asString) return asString;
+            }
+            return '';
+          };
+
+          const stateFullName = `${personal?.firstName ?? ''} ${personal?.lastName ?? ''}`.trim();
+          const reportFullName = `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim();
+          const cvContact = personal?.cvAnalysis?.contact || report?.cvAnalysis?.contact || {};
+          const cvEmail = firstFromArray((cvContact as { emails?: unknown[] }).emails);
+          const cvPhone = firstFromArray((cvContact as { phones?: unknown[] }).phones);
+          const cvLocation = typeof (cvContact as { location?: unknown }).location === 'string'
+            ? String((cvContact as { location?: unknown }).location).trim()
+            : '';
+
+          const backendReport = (data as { report?: { fullName?: string; email?: string; phone?: string; location?: string; personal_data?: Record<string, unknown> } }).report;
+
           const dp: PersonalData = {
-            name: (dpSrc?.['name'] as string) || candidateName,
-            location: (dpSrc?.['location'] as string) || 'No consta',
-            email: (dpSrc?.['email'] as string) || '',
-            phone: (dpSrc?.['phone'] as string) || 'No especificado',
+            name: firstNonEmpty(
+              dpSrc?.['name'],
+              backendReport?.personal_data?.['name'],
+              backendReport?.fullName,
+              reportFullName,
+              stateFullName,
+              candidateName,
+            ) || candidateName,
+            location: firstNonEmpty(
+              dpSrc?.['location'],
+              backendReport?.personal_data?.['location'],
+              backendReport?.location,
+              cvLocation,
+              (personal?.report as Record<string, unknown> | undefined)?.['location'],
+              'No consta',
+            ) || 'No consta',
+            email: firstNonEmpty(
+              dpSrc?.['email'],
+              backendReport?.personal_data?.['email'],
+              backendReport?.email,
+              (report as Record<string, unknown> | undefined)?.['email'],
+              personal?.email,
+              cvEmail,
+              'No consta',
+            ) || 'No consta',
+            phone: firstNonEmpty(
+              dpSrc?.['phone'],
+              backendReport?.personal_data?.['phone'],
+              backendReport?.phone,
+              (report as Record<string, unknown> | undefined)?.['phone'],
+              personal?.whatsapp,
+              cvPhone,
+              'No especificado',
+            ) || 'No especificado',
             disability_certificate: (dpSrc?.['disability_certificate'] != null)
-              ? (dpSrc['disability_certificate'] as string)
-              : ((report?.jobPreferences as any)?.hasDisabilityCert ? 'Sí' : 'No')
+              ? String(dpSrc['disability_certificate'])
+              : firstNonEmpty(
+                backendReport?.personal_data?.['disability_certificate'],
+                ((report?.jobPreferences as unknown as { hasDisabilityCert?: boolean })?.hasDisabilityCert ?? personal?.hasDisabilityCert)
+                  ? 'Sí'
+                  : 'No',
+              ) || 'No',
           };
 
           let normalized: NewReportSchema;
@@ -460,20 +620,9 @@ const ResultadosPage: React.FC = () => {
               (personal?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined)
             );
 
-            const resolvedPersonalPrefs = resolveJobPreferences({
-              jobPreferences: personal?.jobPreferences as Partial<JobPreference> | string | undefined,
-              workMode: personal?.workMode,
-              availability: personal?.availability,
-              willingToRelocate: personal?.willingToRelocate,
-              hasDisabilityCert: personal?.hasDisabilityCert,
-            });
+            const resolvedPersonalPrefs = resolvedJobPreferences;
 
-            const personalJobPreferences = personal?.jobPreferences;
-            const personalHasPreferences = Boolean(
-              (typeof personalJobPreferences === 'string' && personalJobPreferences.trim().length > 0) ||
-              (personalJobPreferences && typeof personalJobPreferences === 'object') ||
-              personal?.completed
-            );
+            const personalHasPrefs = personalHasPreferences || personal?.completed;
 
             const normalizedWorkEnvironment = normalizeMode(normalized?.ideal_work_environment);
 
@@ -483,7 +632,7 @@ const ResultadosPage: React.FC = () => {
               normalizeMode(jobPreferences?.['preferredMode']) ||
               normalizeMode(jobPreferences?.['preferred_mode']) ||
               normalizeMode(jobPreferences?.['mode']) ||
-              (personalHasPreferences ? normalizeMode(resolvedPersonalPrefs.workMode) : '') ||
+              (personalHasPrefs ? normalizeMode(resolvedPersonalPrefs.workMode) : '') ||
               normalizedWorkEnvironment;
 
             const remotePref = (() => {
@@ -583,49 +732,53 @@ const ResultadosPage: React.FC = () => {
     // Verificar tanto personal.softSkills como report?.softSkills
     const hasPersonalSoftSkills = validateSoftSkills(personal.softSkills);
     const hasReportSoftSkills = validateSoftSkills(report?.softSkills || []);
-    const hasSoftSkills = hasPersonalSoftSkills || hasReportSoftSkills;
-    
+    const hasSoftSkillsCombined = hasPersonalSoftSkills || hasReportSoftSkills;
+
     // NUEVO: También permitir generar informe si hay datos básicos del usuario
-    const hasBasicUserData = (report?.firstName && report?.lastName) || 
-                            (cvAnalysis) || 
-                            (report?.jobPreferences);
-    
-    // SOLUCIÓN: No usar fetchedRef.current para evitar que se ejecute solo una vez
-    // En su lugar, usar un timeout para permitir que Redux se actualice
-    if (hasSoftSkills || hasBasicUserData) {
-      // Condición cumplida - Ejecutando fetchIaReport con delay para permitir actualización de Redux
+    const hasBasicUserData = (report?.firstName && report?.lastName) ||
+                            (cvAnalysisPayloadPre) ||
+                            (report?.jobPreferences) ||
+                            hasJobPreferenceData;
+
+    if (hasMeaningfulData || hasSoftSkillsCombined || hasBasicUserData) {
       if (import.meta.env.MODE !== 'production') {
         // eslint-disable-next-line no-console
         console.log('✅ CONDICIÓN CUMPLIDA - Ejecutando fetchIaReport');
-        // eslint-disable-next-line no-console
-        console.log('  • hasSoftSkills:', hasSoftSkills);
-        // eslint-disable-next-line no-console
-        console.log('  • hasBasicUserData:', hasBasicUserData);
-      }
-      
-      // Usar setTimeout para permitir que Redux se actualice después de los dispatch
-      const timeoutId = setTimeout(() => {
-        if (!fetchedRef.current) {
-          fetchedRef.current = true;
-          fetchIaReport();
-        }
-      }, 200); // 200ms debería ser suficiente para que Redux se actualice
-      
-      return () => clearTimeout(timeoutId);
-    } else {
-      // Condición no cumplida - No se ejecuta fetchIaReport
-      if (import.meta.env.MODE !== 'production') {
-        // eslint-disable-next-line no-console
-        console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
         // eslint-disable-next-line no-console
         console.log('  • hasPersonalSoftSkills:', hasPersonalSoftSkills);
         // eslint-disable-next-line no-console
         console.log('  • hasReportSoftSkills:', hasReportSoftSkills);
         // eslint-disable-next-line no-console
+        console.log('  • hasSoftSkillsCombined:', hasSoftSkillsCombined);
+        // eslint-disable-next-line no-console
         console.log('  • hasBasicUserData:', hasBasicUserData);
+        // eslint-disable-next-line no-console
+        console.log('  • hasMeaningfulData:', hasMeaningfulData);
       }
-      return undefined;
+
+      const timeoutId = setTimeout(() => {
+        fetchIaReport();
+      }, 200); // 200ms debería ser suficiente para que Redux se actualice
+
+      return () => clearTimeout(timeoutId);
     }
+
+    if (import.meta.env.MODE !== 'production') {
+      // eslint-disable-next-line no-console
+      console.log('❌ CONDICIÓN NO CUMPLIDA - No se ejecuta fetchIaReport');
+      // eslint-disable-next-line no-console
+      console.log('  • hasPersonalSoftSkills:', hasPersonalSoftSkills);
+      // eslint-disable-next-line no-console
+      console.log('  • hasReportSoftSkills:', hasReportSoftSkills);
+      // eslint-disable-next-line no-console
+      console.log('  • hasSoftSkillsCombined:', hasSoftSkillsCombined);
+      // eslint-disable-next-line no-console
+      console.log('  • hasBasicUserData:', hasBasicUserData);
+      // eslint-disable-next-line no-console
+      console.log('  • hasMeaningfulData:', hasMeaningfulData);
+    }
+    fetchSignatureRef.current = '';
+    return undefined;
   }, [report?.jobPreferences, personal.softSkills, report?.softSkills, personal.jobPreferences, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId, dispatch]);
 
   const handleRetry = () => {
