@@ -446,6 +446,7 @@ const ResultadosPage: React.FC = () => {
           // Verificar que exista al menos uno de estos campos requeridos
           (data.report && typeof data.report === 'object') ||
           (typeof data.employabilityScore === 'number') ||
+          (typeof (data as { employability_score?: unknown }).employability_score === 'number') ||
           (typeof data.level === 'string') ||
           (Array.isArray((data as any).recommendations)) ||
           // Compatibilidad con respuestas sin 'report' (Azure)
@@ -547,10 +548,18 @@ const ResultadosPage: React.FC = () => {
           let normalized: NewReportSchema;
           try {
             normalized = convertBackendResponseToNewFormat(data);
-            // Merge user-provided personal data when backend values are missing
+            // Merge user-provided personal data when backend values are missing or placeholders
+            const isMissing = (val: unknown): boolean => {
+              if (val === undefined || val === null) return true;
+              if (typeof val === 'string') {
+                const trimmed = val.trim();
+                return trimmed === '' || trimmed === 'No consta' || trimmed === 'No especificado';
+              }
+              return false;
+            };
             for (const key of Object.keys(dp) as (keyof PersonalData)[]) {
               const backendVal = normalized.personal_data?.[key];
-              if (backendVal === undefined || backendVal === null || backendVal === '') {
+              if (isMissing(backendVal)) {
                 normalized.personal_data[key] = dp[key];
               }
             }
@@ -669,7 +678,11 @@ const ResultadosPage: React.FC = () => {
             return `Este informe ha sido elaborado a partir de tus preferencias laborales, los resultados de los minijuegos y tu CV.\n\n${firstName}, tu perfil muestra una base sólida de habilidades y una clara orientación al crecimiento.\n\n${fortalezas} Además, ${remotePref} y ${roleHint} encajan con tus competencias. Continúa desarrollando ${improvementAreas} y mantén la motivación: tu potencial está en constante evolución.`;
           })();
           setFinalPhrase(composed);
-          setIaScore(typeof data?.employabilityScore === 'number' ? data.employabilityScore : undefined);
+          const employabilityScoreValue =
+            typeof data?.employabilityScore === 'number'
+              ? data.employabilityScore
+              : (data as { employability_score?: number })?.employability_score;
+          setIaScore(typeof employabilityScoreValue === 'number' ? employabilityScoreValue : undefined);
           if (import.meta.env.MODE !== 'production') {
             // eslint-disable-next-line no-console
             console.log('✅ DEBUG - Estado iaReport actualizado');
