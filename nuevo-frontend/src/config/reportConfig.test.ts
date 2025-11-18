@@ -93,6 +93,53 @@ test('convertBackendResponseToNewFormat keeps contact fields in new format', () 
   assert.equal(result.personal_data.phone, '+34 600 000 000');
 });
 
+test('convertBackendResponseToNewFormat fills defaults when new-format fields are empty', () => {
+  const minimalNewFormat: Partial<NewReportSchema> = {
+    summary: '',
+    profile_summary: '',
+    cv_summary: '',
+    personal_data: { name: '', location: '', email: '', phone: '' },
+    cv_details: {},
+    strengths: [],
+    soft_skills: [],
+    improvement_areas: [],
+    cv_analysis: {
+      structure_score: 0,
+      coherence_score: 0,
+      key_info_score: 0,
+      clarity_score: 0,
+      style_score: 0,
+      evidence: { structure: '', coherence: '', key_info: '', clarity: '', style: '' },
+      corrections: [],
+      reordering_suggestions: [],
+    },
+    ideal_work_environment: '',
+    suggested_roles: [],
+    action_plan: { short_term: [], medium_term: [], long_term: [] },
+    job_search_advice: {
+      cv_optimization: [],
+      letters_portfolio: '',
+      recommended_platforms: [],
+      networking: '',
+      interview_tips: '',
+    },
+    useful_tools: { productivity: [], job_search: [], learning: [], accessibility: [] },
+    employability_score: 0,
+    completed_games: [],
+    final_message: '',
+  };
+
+  const result = convertBackendResponseToNewFormat(minimalNewFormat);
+
+  assert.equal(result.summary, 'Perfil profesional en desarrollo.');
+  assert.equal(result.profile_summary, 'Perfil profesional en desarrollo.');
+  assert.equal(result.cv_summary, 'Perfil profesional en desarrollo.');
+  assert.equal(result.personal_data.name, 'Usuario');
+  assert.equal(result.personal_data.location, 'No consta');
+  assert.equal(result.personal_data.email, 'No consta');
+  assert.equal(result.personal_data.phone, 'No especificado');
+});
+
 test('convertBackendResponseToNewFormat transforms old format', () => {
   const oldFormat = {
     report: {
@@ -218,8 +265,16 @@ test('generateNewFormatReport shows user contact info when backend omits it', ()
     phone: '+34 999 999 999',
     disability_certificate: 'No'
   };
+  const isMissing = (val: unknown): boolean => {
+    if (val === undefined || val === null) return true;
+    if (typeof val === 'string') {
+      const trimmed = val.trim();
+      return trimmed === '' || trimmed === 'No consta' || trimmed === 'No especificado';
+    }
+    return false;
+  };
   for (const key of Object.keys(dp) as (keyof PersonalData)[]) {
-    if (!normalized.personal_data[key]) {
+    if (isMissing(normalized.personal_data[key])) {
       normalized.personal_data[key] = dp[key];
     }
   }

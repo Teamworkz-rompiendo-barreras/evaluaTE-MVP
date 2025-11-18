@@ -548,10 +548,18 @@ const ResultadosPage: React.FC = () => {
           let normalized: NewReportSchema;
           try {
             normalized = convertBackendResponseToNewFormat(data);
-            // Merge user-provided personal data when backend values are missing
+            // Merge user-provided personal data when backend values are missing or placeholders
+            const isMissing = (val: unknown): boolean => {
+              if (val === undefined || val === null) return true;
+              if (typeof val === 'string') {
+                const trimmed = val.trim();
+                return trimmed === '' || trimmed === 'No consta' || trimmed === 'No especificado';
+              }
+              return false;
+            };
             for (const key of Object.keys(dp) as (keyof PersonalData)[]) {
               const backendVal = normalized.personal_data?.[key];
-              if (backendVal === undefined || backendVal === null || backendVal === '') {
+              if (isMissing(backendVal)) {
                 normalized.personal_data[key] = dp[key];
               }
             }

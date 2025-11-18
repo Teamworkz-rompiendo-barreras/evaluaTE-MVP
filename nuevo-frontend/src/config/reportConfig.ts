@@ -314,6 +314,11 @@ const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvD
 });
 
 export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema {
+  const ensureText = (value: unknown, fallback: string): string => {
+    const text = typeof value === 'string' ? value.trim() : '';
+    return text.length > 0 ? text : fallback;
+  };
+
   if (raw && typeof raw === 'object') {
     // eslint-disable-next-line @typescript-eslint/no-explicit-any
     const data: any = raw;
@@ -323,7 +328,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         ? data.employabilityScore
         : undefined;
     // Already in new format
-    if (data.summary && data.personal_data) {
+    if (data.personal_data) {
       const rawDetails = data.cv_details || {};
       const normalizedDetails = buildCvDetails({
         experience: [rawDetails.experience, rawDetails.experience_highlights, data.cv_analysis?.experience, data.cv_analysis?.experience_detailed],
@@ -331,7 +336,30 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         languages: [rawDetails.languages, data.cv_analysis?.languages],
         tools: [rawDetails.tools, rawDetails.software, data.cv_analysis?.tools, data.cv_analysis?.software],
       });
-      return { ...data, cv_details: normalizedDetails, employability_score: score ?? 0 } as NewReportSchema;
+      const profileSummary = ensureText(data.profile_summary, ensureText(data.summary, 'Perfil profesional en desarrollo.'));
+      const cvSummary = ensureText(data.cv_summary, profileSummary);
+      const summary = ensureText(data.summary, profileSummary);
+      return {
+        ...data,
+        summary,
+        profile_summary: profileSummary,
+        cv_summary: cvSummary,
+        cv_details: normalizedDetails,
+        personal_data: {
+          name: ensureText(data.personal_data?.name, 'Usuario'),
+          location: ensureText(data.personal_data?.location, 'No consta'),
+          email: ensureText(data.personal_data?.email, 'No consta'),
+          phone: ensureText(data.personal_data?.phone, 'No especificado'),
+          disability_certificate: ensureText(
+            (data.personal_data as { disability_certificate?: unknown })?.disability_certificate,
+            ''
+          ),
+        },
+        strengths: Array.isArray(data.strengths) && data.strengths.length > 0 ? data.strengths : [],
+        soft_skills: Array.isArray(data.soft_skills) ? data.soft_skills : [],
+        improvement_areas: Array.isArray(data.improvement_areas) ? data.improvement_areas : [],
+        employability_score: score ?? 0,
+      } as NewReportSchema;
     }
     // Old format conversion
     if (data.report) {
@@ -564,9 +592,15 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       const final_message = String(recs?.frase_final || report?.frase_final || '');
 
       // Resúmenes
-      const profile_summary = String(recs?.resumen_perfil || report?.resumen_ejecutivo || data?.summary || '');
-      const summary = String(report?.resumen_ejecutivo || data?.summary || profile_summary || '');
-      const cv_summary = String(recs?.resumen_cv || '');
+      const profile_summary = ensureText(
+        recs?.resumen_perfil || report?.resumen_ejecutivo || data?.summary,
+        'Perfil profesional con potencial de desarrollo.'
+      );
+      const summary = ensureText(
+        report?.resumen_ejecutivo || data?.summary || profile_summary,
+        profile_summary
+      );
+      const cv_summary = ensureText(recs?.resumen_cv, profile_summary);
 
       return {
         summary,
