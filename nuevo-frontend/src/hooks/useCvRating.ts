@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { buildApiUrl } from "../config/api";
 
 export type CvStars = 1 | 2 | 3 | 4 | 5;
 
@@ -19,7 +20,7 @@ export default function useCvRating(userId: string, reportId: string): UseCvRati
       setRatingSaving(true);
       setRatingError(null);
 
-      const res = await fetch("/api/report/feedback", {
+      const res = await fetch(buildApiUrl('/api/report/feedback'), {
         method: "POST",
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ userId, reportId, rating: stars }),
