@@ -7,8 +7,10 @@ EvaluaTE Backend - FastAPI entrypoint
 """
 
 import os
+import json
 import logging
-from typing import Any, Dict
+from datetime import datetime
+from typing import Any, Dict, List
 
 from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form
 from fastapi.middleware.cors import CORSMiddleware
@@ -22,10 +24,15 @@ try:
     from backend.generate_report import generar_informe
     from backend.pdf_service import create_employability_pdf
     from backend.cv_analyzer import extract_pdf_info
+    from backend.feedback_notifications import feedback_notifier
 except ImportError:  # fallback a imports relativos al directorio actual
     from generate_report import generar_informe
     from pdf_service import create_employability_pdf
     from cv_analyzer import extract_pdf_info
+    from feedback_notifications import feedback_notifier
+
+
+FEEDBACK_STORE = os.getenv("FEEDBACK_FILE", os.path.join(os.getcwd(), "feedback_ia.json"))
 
 APP_TITLE = os.getenv("APP_TITLE", "EvaluaTE Backend")
 APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
@@ -77,6 +84,26 @@ def health() -> Dict[str, Any]:
     return {"status": "ok"}
 
 
+def _load_feedback() -> List[Dict[str, Any]]:
+    try:
+        if os.path.exists(FEEDBACK_STORE):
+            with open(FEEDBACK_STORE, "r", encoding="utf-8") as f:
+                data = json.load(f)
+                if isinstance(data, list):
+                    return data
+    except Exception:
+        logger.exception("No se pudo leer el fichero de feedback")
+    return []
+
+
+def _save_feedback(entries: List[Dict[str, Any]]) -> None:
+    try:
+        with open(FEEDBACK_STORE, "w", encoding="utf-8") as f:
+            json.dump(entries, f, ensure_ascii=False, indent=2)
+    except Exception:
+        logger.exception("No se pudo guardar el fichero de feedback")
+
+
 @app.post("/api/informe-ia")
 async def api_informe_ia(req: Request) -> Dict[str, Any]:
     try:
@@ -98,6 +125,64 @@ async def api_informe_ia(req: Request) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail="Respuesta inválida del generador")
 
     return result
+
+
+@app.post("/api/informe-ia/feedback")
+async def api_feedback(req: Request) -> Dict[str, Any]:
+    try:
+        payload: Dict[str, Any] = await req.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="JSON inválido")
+
+    feedback_entries = _load_feedback()
+    entry = {
+        "rating": payload.get("rating"),
+        "comment": payload.get("comment") or "",
+        "informe": payload.get("informe") or "",
+        "userData": payload.get("userData") or {},
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    feedback_entries.append(entry)
+    _save_feedback(feedback_entries)
+
+    try:
+        feedback_notifier.send_feedback_notification(entry)
+    except Exception:
+        logger.exception("No se pudo enviar la notificación de feedback")
+
+    return {"status": "ok"}
+
+
+@app.get("/api/informe-ia/feedback/stats")
+def api_feedback_stats() -> Dict[str, Any]:
+    feedback_entries = _load_feedback()
+    useful = len([f for f in feedback_entries if str(f.get("rating")) == "Útil"])
+    not_useful = len([f for f in feedback_entries if str(f.get("rating")) == "No útil"])
+    return {
+        "total": len(feedback_entries),
+        "useful": useful,
+        "not_useful": not_useful,
+    }
+
+
+@app.post("/api/report/feedback")
+async def api_report_feedback(req: Request) -> Dict[str, Any]:
+    try:
+        payload: Dict[str, Any] = await req.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="JSON inválido")
+
+    feedback_entries = _load_feedback()
+    entry = {
+        "rating": payload.get("rating"),
+        "userId": payload.get("userId"),
+        "reportId": payload.get("reportId"),
+        "timestamp": datetime.utcnow().isoformat() + "Z",
+    }
+    feedback_entries.append(entry)
+    _save_feedback(feedback_entries)
+
+    return {"status": "ok", "rating": entry.get("rating")}
 
 
 @app.post("/api/pdf/generate-report")
