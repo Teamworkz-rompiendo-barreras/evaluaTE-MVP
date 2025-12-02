@@ -96,14 +96,19 @@ def _load_feedback() -> List[Dict[str, Any]]:
     return []
 
 
-def _save_feedback(entries: List[Dict[str, Any]]) -> bool:
+def _save_feedback(entries: List[Dict[str, Any]]) -> None:
     try:
-        with open(FEEDBACK_STORE, "w", encoding="utf-8") as f:
+        feedback_dir = os.path.dirname(FEEDBACK_STORE)
+        if feedback_dir:
+            os.makedirs(feedback_dir, exist_ok=True)
+
+        tmp_path = f"{FEEDBACK_STORE}.tmp"
+        with open(tmp_path, "w", encoding="utf-8") as f:
             json.dump(entries, f, ensure_ascii=False, indent=2)
-        return True
-    except Exception:
+        os.replace(tmp_path, FEEDBACK_STORE)
+    except Exception as exc:
         logger.exception("No se pudo guardar el fichero de feedback")
-        return False
+        raise HTTPException(status_code=500, detail="No se pudo guardar el feedback") from exc
 
 
 @app.post("/api/informe-ia")
@@ -146,8 +151,7 @@ async def api_feedback(req: Request) -> Dict[str, Any]:
         "timestamp": datetime.utcnow().isoformat() + "Z",
     }
     feedback_entries.append(entry)
-    if not _save_feedback(feedback_entries):
-        raise HTTPException(status_code=500, detail="No se pudo guardar el feedback")
+    _save_feedback(feedback_entries)
 
     try:
         feedback_notifier.send_feedback_notification(entry)
@@ -224,8 +228,7 @@ async def api_report_feedback(req: Request) -> Dict[str, Any]:
         "timestamp": datetime.utcnow().isoformat() + "Z",
     }
     feedback_entries.append(entry)
-    if not _save_feedback(feedback_entries):
-        raise HTTPException(status_code=500, detail="No se pudo guardar el feedback")
+    _save_feedback(feedback_entries)
 
     return {"status": "ok", "rating": entry.get("rating")}
 
