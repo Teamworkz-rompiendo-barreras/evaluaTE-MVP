@@ -986,6 +986,89 @@ const ResultadosPage: React.FC = () => {
     if (Array.isArray(radarDataFromIa) && radarDataFromIa.length > 0) combined.push(...radarDataFromIa);
     return processRadarData(combined);
   }, [softSkillsData, radarDataFromIa]);
+
+  // Bloque inicial del informe (Resumen ejecutivo, Datos personales, Resumen del CV)
+  const renderInitialBlock = () => {
+    if (!info) return null;
+    const personalData = info.personal_data || {} as PersonalData;
+    const details = info.cv_details || {};
+    const cvAnalysisDetails = info.cv_analysis || {};
+
+    const experience = (details.experience && details.experience.length > 0)
+      ? details.experience
+      : (cvAnalysisDetails as any)?.experience || [];
+    const education = (details.education && details.education.length > 0)
+      ? details.education
+      : (cvAnalysisDetails as any)?.education || [];
+    const languages = (details.languages && details.languages.length > 0)
+      ? details.languages
+      : (cvAnalysisDetails as any)?.languages || [];
+    const tools = (details.tools && details.tools.length > 0)
+      ? details.tools
+      : (cvAnalysisDetails as any)?.software || [];
+
+    const renderList = (items: Array<string>) => {
+      if (!items || items.length === 0) return <p className="text-gray-900 dark:text-gray-100">No hay información disponible.</p>;
+      return (
+        <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
+          {items.map((item, idx) => (
+            <li key={idx}>{item}</li>
+          ))}
+        </ul>
+      );
+    };
+
+    const scoreBadge = (globalScore ?? info.employability_score);
+
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors relative">
+        {typeof scoreBadge === 'number' && scoreBadge >= 0 && (
+          <div className="absolute right-4 bottom-4 bg-gray-900 text-white text-sm font-semibold rounded-full px-3 py-1 shadow-md print:hidden">
+            {scoreBadge}%
+          </div>
+        )}
+        <section className="mb-6">
+          <h2 className="text-3xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resumen ejecutivo</h2>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
+            {info.summary || info.profile_summary || 'Informe personalizado de empleabilidad.'}
+          </p>
+        </section>
+
+        <section className="mb-6">
+          <h3 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Datos personales</h3>
+          <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100">
+            <li><strong>Nombre:</strong> {personalData.name || 'No consta'}</li>
+            <li><strong>Ubicación:</strong> {personalData.location || 'No consta'}</li>
+            <li><strong>Email:</strong> {personalData.email || 'No consta'}</li>
+            <li><strong>Teléfono:</strong> {personalData.phone || 'No especificado'}</li>
+            <li><strong>LinkedIn:</strong> (no especificado; recomendado crear/actualizar)</li>
+          </ul>
+        </section>
+
+        <section>
+          <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Resumen del CV</h3>
+          <div className="space-y-4">
+            <div>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Experiencia (selección)</h4>
+              {renderList(experience)}
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Formación (selección)</h4>
+              {renderList(education)}
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Idiomas</h4>
+              {renderList(languages)}
+            </div>
+            <div>
+              <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Herramientas/Software</h4>
+              {renderList(tools)}
+            </div>
+          </div>
+        </section>
+      </div>
+    );
+  };
   // 1. Portada
   const portada = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
@@ -1483,6 +1566,7 @@ const ResultadosPage: React.FC = () => {
 
       {/* Contenido del informe que no depende de la IA */}
       {portada}
+      {renderInitialBlock()}
       {radar}
 
       {/* Informe de la IA y formulario de feedback */}
@@ -1525,7 +1609,8 @@ const ResultadosPage: React.FC = () => {
                 }
                 return (
                   <>
-                    {splitReport.before && renderMarkdown(splitReport.before)}
+                    {/* Si ya renderizamos el bloque inicial nativo, evitamos duplicar el inicio del markdown */}
+                    {!info && splitReport.before && renderMarkdown(splitReport.before)}
                     {splitReport.improvements && renderMarkdown(splitReport.improvements)}
                     {renderCvAnalysisSection()}
                     {splitReport.after && renderMarkdown(splitReport.after)}
