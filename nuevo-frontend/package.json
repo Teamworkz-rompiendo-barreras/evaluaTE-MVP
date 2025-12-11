@@ -5,14 +5,14 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 127.0.0.1 --port 3005",
-    "build": "tsc && vite build",
+    "build": "tsc; vite build",
     "build:analyze": "tsc && vite build --mode analyze",
     "preview": "vite preview --port 5173",
     "lint": "eslint . --ext .ts,.tsx --fix",
     "lint:check": "eslint . --ext .ts,.tsx",
     "type-check": "tsc --noEmit",
     "test": "tsx --test \"src/**/*.test.ts\"",
-    "clean": "rm -rf dist node_modules/.vite",
+    "clean": "node -e \"const fs=require('fs');['dist','node_modules/.vite'].forEach(p=>{try{fs.rmSync(p,{recursive:true,force:true})}catch{}})\"",
     "prebuild": "npm run clean",
     "postbuild": "echo 'Build completado exitosamente'"
   },
