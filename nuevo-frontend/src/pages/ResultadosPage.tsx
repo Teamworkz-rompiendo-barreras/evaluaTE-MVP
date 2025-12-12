@@ -1662,100 +1662,102 @@ const ResultadosPage: React.FC = () => {
       {/* Contenido del informe que no depende de la IA */}
       {portada}
       {radar}
-      {renderInitialBlock()}
-      {renderJobSearchSection()}
+      <div className="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 print:bg-white print:shadow-none print:p-0">
+        {renderInitialBlock()}
+        {renderJobSearchSection()}
 
-      {/* Informe de la IA y formulario de feedback */}
-      {/* Estado iaReport disponible para debug en desarrollo */}
-      
-      {/* SOLUCIÓN: Mostrar informe básico si no hay iaReport después de cargar */}
-      {!loadingIa && !iaReport && !errorIa && (
-        <div className="bg-yellow-100 dark:bg-yellow-900 border border-yellow-400 dark:border-yellow-700 text-yellow-700 dark:text-yellow-200 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
-          <strong className="font-bold text-gray-900 dark:text-gray-100">Informe básico disponible.</strong>
-          <span className="block sm:inline text-gray-900 dark:text-gray-100"> Tu informe está siendo procesado. Mientras tanto, aquí tienes un resumen de tus resultados.</span>
-          
-          <div className="mt-4 bg-white dark:bg-gray-800 rounded-lg p-4 transition-colors">
-            <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Resumen de Evaluación</h3>
-            <p className="text-gray-900 dark:text-gray-100"><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
-            <p className="text-gray-900 dark:text-gray-100"><strong>Puntaje de empleabilidad:</strong> {info?.employability_score ?? report?.employabilityScore ?? 'Calculando...'}</p>
+        {/* Informe de la IA y formulario de feedback */}
+        {/* Estado iaReport disponible para debug en desarrollo */}
+        
+        {/* SOLUCIÓN: Mostrar informe básico si no hay iaReport después de cargar */}
+        {!loadingIa && !iaReport && !errorIa && (
+          <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
+            <strong className="font-bold text-gray-900">Informe básico disponible.</strong>
+            <span className="block sm:inline text-gray-900"> Tu informe está siendo procesado. Mientras tanto, aquí tienes un resumen de tus resultados.</span>
             
-            
-            
-            <p className="mt-3 text-sm text-gray-900 dark:text-gray-100">
-              Actualiza esta página en unos segundos para ver el informe completo.
-            </p>
-          </div>
-        </div>
-      )}
-      
-      {iaReport && (
-        <>
-          <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none">
-            <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none">
-              {(() => {
-                // Si no podemos dividir, usamos siempre la versión limpiada (splitReport.after)
-                // y añadimos nuestro bloque nativo de análisis para evitar duplicados.
-                if (!splitReport.improvements) {
-                  return (
-                    <>
-                      {renderMarkdown(splitReport.after || iaReport)}
-                      {renderCvAnalysisSection()}
-                    </>
-                  );
-                }
-                return (
-                  <>
-                    {/* Si ya renderizamos el bloque inicial nativo, evitamos duplicar el inicio del markdown */}
-                    {!info && splitReport.before && renderMarkdown(splitReport.before)}
-                    {splitReport.improvements && renderMarkdown(splitReport.improvements)}
-                    {renderCvAnalysisSection()}
-                    {splitReport.after && renderMarkdown(splitReport.after)}
-                  </>
-                );
-              })()}
-            </div>
-          </div>
-
-          {finalPhrase && (
-            <div
-              className="rounded-xl p-6 my-8 shadow-sm report-highlight border-2 bg-blue-50 border-blue-200 text-gray-800 dark:!bg-blue-50 dark:!border-blue-200 dark:!text-gray-800 print:bg-white print:text-black"
-              role="note"
-            >
-              <p className="mb-0 leading-relaxed">
-                {finalPhrase}
+            <div className="mt-4 bg-white rounded-lg p-4 transition-colors">
+              <h3 className="text-lg font-semibold mb-2 text-gray-900">Resumen de Evaluación</h3>
+              <p className="text-gray-900"><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
+              <p className="text-gray-900"><strong>Puntaje de empleabilidad:</strong> {info?.employability_score ?? report?.employabilityScore ?? 'Calculando...'}</p>
+              
+              
+              
+              <p className="mt-3 text-sm text-gray-900">
+                Actualiza esta página en unos segundos para ver el informe completo.
               </p>
             </div>
-          )}
-
-          {!feedbackSent && (
-            <div className="bg-gray-50 rounded-lg shadow-md p-6 mb-8 print-hidden">
-              <form onSubmit={handleFeedbackSubmit}>
-                <label className="block mb-2 font-semibold text-gray-900 dark:text-gray-100">¿Te resultó útil este informe?</label>
-                <div className="flex gap-4 mb-4">
-                  <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600">
-                    <input className="w-5 h-5" type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
-                    <span className="min-w-[3.5rem] text-center text-gray-900 dark:text-gray-100">Útil</span>
-                  </label>
-                  <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 dark:border-gray-600">
-                    <input className="w-5 h-5" type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
-                    <span className="min-w-[5rem] text-center text-gray-900 dark:text-gray-100">No útil</span>
-                  </label>
-                </div>
-                <label className="block mb-1 text-gray-900 dark:text-gray-100">¿Algún comentario o sugerencia?</label>
-                <textarea className="w-full border rounded p-2 mb-2" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({...f, comment: e.target.value}))} />
-                {feedbackError && <p className="text-red-600 mb-2">{feedbackError}</p>}
-                <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Enviar feedback</button>
-              </form>
+          </div>
+        )}
+        
+        {iaReport && (
+          <>
+            <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none">
+              <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none">
+                {(() => {
+                  // Si no podemos dividir, usamos siempre la versión limpiada (splitReport.after)
+                  // y añadimos nuestro bloque nativo de análisis para evitar duplicados.
+                  if (!splitReport.improvements) {
+                    return (
+                      <>
+                        {renderMarkdown(splitReport.after || iaReport)}
+                        {renderCvAnalysisSection()}
+                      </>
+                    );
+                  }
+                  return (
+                    <>
+                      {/* Si ya renderizamos el bloque inicial nativo, evitamos duplicar el inicio del markdown */}
+                      {!info && splitReport.before && renderMarkdown(splitReport.before)}
+                      {splitReport.improvements && renderMarkdown(splitReport.improvements)}
+                      {renderCvAnalysisSection()}
+                      {splitReport.after && renderMarkdown(splitReport.after)}
+                    </>
+                  );
+                })()}
+              </div>
             </div>
-          )}
 
-          {feedbackSent && (
-            <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8 print-hidden" role="alert">
-              <p className="font-semibold">¡Gracias por tu feedback!</p>
-            </div>
-          )}
-        </>
-      )}
+            {finalPhrase && (
+              <div
+                className="rounded-xl p-6 my-8 shadow-sm report-highlight border-2 bg-blue-50 border-blue-200 text-gray-800 print:bg-white print:text-black"
+                role="note"
+              >
+                <p className="mb-0 leading-relaxed">
+                  {finalPhrase}
+                </p>
+              </div>
+            )}
+
+            {!feedbackSent && (
+              <div className="bg-gray-50 rounded-lg shadow-md p-6 mb-8 print-hidden">
+                <form onSubmit={handleFeedbackSubmit}>
+                  <label className="block mb-2 font-semibold text-gray-900">¿Te resultó útil este informe?</label>
+                  <div className="flex gap-4 mb-4">
+                    <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300">
+                      <input className="w-5 h-5" type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                      <span className="min-w-[3.5rem] text-center text-gray-900">Útil</span>
+                    </label>
+                    <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300">
+                      <input className="w-5 h-5" type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                      <span className="min-w-[5rem] text-center text-gray-900">No útil</span>
+                    </label>
+                  </div>
+                  <label className="block mb-1 text-gray-900">¿Algún comentario o sugerencia?</label>
+                  <textarea className="w-full border rounded p-2 mb-2" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({...f, comment: e.target.value}))} />
+                  {feedbackError && <p className="text-red-600 mb-2">{feedbackError}</p>}
+                  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Enviar feedback</button>
+                </form>
+              </div>
+            )}
+
+            {feedbackSent && (
+              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8 print-hidden" role="alert">
+                <p className="font-semibold">¡Gracias por tu feedback!</p>
+              </div>
+            )}
+          </>
+        )}
+      </div>
     </section>
   );
 };
