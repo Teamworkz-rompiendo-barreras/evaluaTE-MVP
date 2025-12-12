@@ -1691,35 +1691,33 @@ const ResultadosPage: React.FC = () => {
         
         {iaReport && (
           <>
-          <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none bg-white rounded-lg shadow-sm p-0">
-            <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none bg-white">
-                {(() => {
-                  // Si no podemos dividir, usamos siempre la versión limpiada (splitReport.after)
-                  // y añadimos nuestro bloque nativo de análisis para evitar duplicados.
-                  if (!splitReport.improvements) {
-                    return (
-                      <>
-                        {renderMarkdown(splitReport.after || iaReport)}
-                        {renderCvAnalysisSection()}
-                      </>
-                    );
-                  }
+            <div className="bg-white rounded-lg shadow-sm p-0">
+              {(() => {
+                // Si no podemos dividir, usamos siempre la versión limpiada (splitReport.after)
+                // y añadimos nuestro bloque nativo de análisis para evitar duplicados.
+                if (!splitReport.improvements) {
                   return (
                     <>
-                      {/* Si ya renderizamos el bloque inicial nativo, evitamos duplicar el inicio del markdown */}
-                      {!info && splitReport.before && renderMarkdown(splitReport.before)}
-                      {splitReport.improvements && renderMarkdown(splitReport.improvements)}
+                      {renderMarkdown(splitReport.after || iaReport)}
                       {renderCvAnalysisSection()}
-                      {splitReport.after && renderMarkdown(splitReport.after)}
                     </>
                   );
-                })()}
-              </div>
+                }
+                return (
+                  <>
+                    {/* Si ya renderizamos el bloque inicial nativo, evitamos duplicar el inicio del markdown */}
+                    {!info && splitReport.before && renderMarkdown(splitReport.before)}
+                    {splitReport.improvements && renderMarkdown(splitReport.improvements)}
+                    {renderCvAnalysisSection()}
+                    {splitReport.after && renderMarkdown(splitReport.after)}
+                  </>
+                );
+              })()}
             </div>
 
             {finalPhrase && (
               <div
-                className="rounded-xl p-6 my-8 shadow-sm report-highlight border-2 bg-blue-50 border-blue-200 text-gray-800 print:bg-white print:text-black"
+                className="rounded-xl p-6 my-8 shadow-sm border-2 bg-blue-50 border-blue-200 text-gray-800 print:bg-white print:text-black"
                 role="note"
               >
                 <p className="mb-0 leading-relaxed">
