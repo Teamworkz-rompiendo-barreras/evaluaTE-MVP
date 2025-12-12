@@ -1091,18 +1091,59 @@ const ResultadosPage: React.FC = () => {
     const details = info.cv_details || {};
     const cvAnalysisDetails = info.cv_analysis || {};
 
-    const experience = (details.experience && details.experience.length > 0)
-      ? details.experience
-      : (cvAnalysisDetails as any)?.experience || [];
-    const education = (details.education && details.education.length > 0)
-      ? details.education
-      : (cvAnalysisDetails as any)?.education || [];
-    const languages = (details.languages && details.languages.length > 0)
-      ? details.languages
-      : (cvAnalysisDetails as any)?.languages || [];
-    const tools = (details.tools && details.tools.length > 0)
-      ? details.tools
-      : (cvAnalysisDetails as any)?.software || [];
+    const formatEntry = (item: any, fields: string[]): string => {
+      if (!item) return '';
+      if (typeof item === 'string') return item.trim();
+      if (typeof item === 'number' || typeof item === 'boolean') return String(item);
+      if (Array.isArray(item)) return item.map(it => formatEntry(it, fields)).filter(Boolean).join(' — ');
+      const parts: string[] = [];
+      for (const f of fields) {
+        const val = (item as any)?.[f];
+        if (val === null || val === undefined) continue;
+        const str = typeof val === 'string' ? val.trim() : String(val);
+        if (str) parts.push(str);
+      }
+      if (parts.length === 0) {
+        // intenta descripción genérica
+        const desc = (item as any)?.description || (item as any)?.descripcion;
+        if (desc) return String(desc).trim();
+      }
+      return parts.join(' — ').trim();
+    };
+
+    const toList = (input: any, fields: string[]): string[] => {
+      if (!input) return [];
+      if (!Array.isArray(input)) return [formatEntry(input, fields)].filter(Boolean);
+      return input
+        .map(it => formatEntry(it, fields))
+        .map(s => s.trim())
+        .filter(Boolean);
+    };
+
+    const experience = toList(
+      (details.experience && details.experience.length > 0
+        ? details.experience
+        : (cvAnalysisDetails as any)?.experience_detailed || (cvAnalysisDetails as any)?.experience || []),
+      ['title', 'role', 'position', 'company', 'organization', 'employer', 'period', 'start_date', 'end_date', 'duration', 'description']
+    );
+    const education = toList(
+      (details.education && details.education.length > 0
+        ? details.education
+        : (cvAnalysisDetails as any)?.education_detailed || (cvAnalysisDetails as any)?.education || []),
+      ['degree', 'title', 'program', 'area', 'institution', 'school', 'period', 'start_date', 'end_date', 'graduation_year', 'level', 'description']
+    );
+    const languages = toList(
+      (details.languages && details.languages.length > 0
+        ? details.languages
+        : (cvAnalysisDetails as any)?.languages || []),
+      ['language', 'idioma', 'name', 'level', 'nivel', 'certification']
+    );
+    const tools = toList(
+      (details.tools && details.tools.length > 0
+        ? details.tools
+        : (cvAnalysisDetails as any)?.software || (cvAnalysisDetails as any)?.skills || []),
+      ['name', 'tool', 'technology', 'software', 'level', 'nivel', 'description']
+    );
 
     const renderList = (items: Array<string>) => {
       if (!items || items.length === 0) return <p className="text-gray-900 dark:text-gray-100">No hay información disponible.</p>;
