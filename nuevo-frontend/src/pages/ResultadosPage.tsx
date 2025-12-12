@@ -1717,7 +1717,7 @@ const ResultadosPage: React.FC = () => {
 
             {finalPhrase && (
               <div
-                className="rounded-xl p-6 my-8 shadow-sm border-2 bg-blue-50 border-blue-200 text-gray-800 print:bg-white print:text-black"
+                className="rounded-xl p-6 my-8 shadow-sm border-2 bg-blue-50 border-blue-200 text-gray-800 print:bg-white print:text-black dark:bg-blue-200 dark:border-blue-300 dark:text-gray-900"
                 role="note"
               >
                 <p className="mb-0 leading-relaxed">
