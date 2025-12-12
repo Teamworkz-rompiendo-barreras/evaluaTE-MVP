@@ -112,7 +112,11 @@ const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
   // Priorizar el análisis que viene del informe IA; si no, usar el del estado local
-  const cvAnalysis: CvAnalysis | undefined = (info as NewReportSchema | null | undefined)?.cv_analysis ?? personal?.cvAnalysis;
+  const cvAnalysis: CvAnalysis | undefined = (() => {
+    const reportInfo = info as NewReportSchema | null | undefined;
+    if (reportInfo && reportInfo.cv_analysis) return reportInfo.cv_analysis;
+    return personal?.cvAnalysis;
+  })();
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
