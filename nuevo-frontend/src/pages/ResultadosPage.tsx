@@ -1661,8 +1661,8 @@ const ResultadosPage: React.FC = () => {
 
       {/* Contenido del informe que no depende de la IA */}
       {portada}
-      {renderInitialBlock()}
       {radar}
+      {renderInitialBlock()}
       {renderJobSearchSection()}
 
       {/* Informe de la IA y formulario de feedback */}
