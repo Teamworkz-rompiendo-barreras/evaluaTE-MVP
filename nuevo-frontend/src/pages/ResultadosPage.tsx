@@ -992,6 +992,98 @@ const ResultadosPage: React.FC = () => {
     return processRadarData(combined);
   }, [softSkillsData, radarDataFromIa]);
 
+  const renderJobSearchSection = () => {
+    const advice = info?.job_search_advice;
+    const tools = info?.useful_tools;
+
+    const cvTips = (advice?.cv_optimization || []).filter(Boolean);
+    const platforms = (advice?.recommended_platforms || []).filter(Boolean);
+    const networking = advice?.networking || 'Participar en comunidades y grupos profesionales para ampliar la red y acceder a oportunidades.';
+    const interview = advice?.interview_tips || 'Preparar ejemplos con método STAR y practicar respuestas sobre logros, conflictos y coordinación.';
+    const letters = advice?.letters_portfolio || 'Crear cartas breves y personalizadas para cada oferta, destacando logros y disponibilidad.';
+
+    const defaultPlatforms = ['InfoJobs', 'LinkedIn Empleos', 'Indeed'];
+
+    const renderList = (title: string, items: string[]) => {
+      if (!items || items.length === 0) return null;
+      return (
+        <div>
+          <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">{title}</h4>
+          <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
+            {items.map((item, idx) => <li key={idx}>{item}</li>)}
+          </ul>
+        </div>
+      );
+    };
+
+    const renderTools = () => {
+      if (!tools) return null;
+      const sections: Array<{ label: string; data?: string[] }> = [
+        { label: 'Productividad', data: tools.productivity },
+        { label: 'Búsqueda de empleo', data: tools.job_search },
+        { label: 'Aprendizaje', data: tools.learning },
+        { label: 'Accesibilidad', data: tools.accessibility },
+      ];
+      const hasData = sections.some(s => Array.isArray(s.data) && s.data.length > 0);
+      if (!hasData) return null;
+      return (
+        <div>
+          <h3 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Herramientas útiles</h3>
+          <div className="grid md:grid-cols-2 gap-4">
+            {sections.map((s, idx) => {
+              const data = (s.data || []).filter(Boolean);
+              if (data.length === 0) return null;
+              return (
+                <div key={idx} className="bg-white dark:bg-gray-800 rounded-lg border border-gray-200 dark:border-gray-700 p-4 shadow-sm">
+                  <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">{s.label}</h4>
+                  <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
+                    {data.map((item, j) => <li key={j}>{item}</li>)}
+                  </ul>
+                </div>
+              );
+            })}
+          </div>
+        </div>
+      );
+    };
+
+    if (!advice && !tools) return null;
+
+    return (
+      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
+        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Estrategias de búsqueda de empleo</h2>
+
+        {cvTips.length > 0 && renderList('Optimización del CV', cvTips)}
+
+        <div className="mt-4">
+          <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Cartas y portfolio/casos</h4>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{letters}</p>
+        </div>
+
+        <div className="mt-4">
+          <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Plataformas</h4>
+          <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
+            {(platforms.length > 0 ? platforms : defaultPlatforms).map((p, idx) => <li key={idx}>{p}</li>)}
+          </ul>
+        </div>
+
+        <div className="mt-4">
+          <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Networking dirigido</h4>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{networking}</p>
+        </div>
+
+        <div className="mt-4">
+          <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Entrevistas (método STAR)</h4>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{interview}</p>
+        </div>
+
+        <div className="mt-6 space-y-4">
+          {renderTools()}
+        </div>
+      </div>
+    );
+  };
+
   // Bloque inicial del informe (Resumen ejecutivo, Datos personales, Resumen del CV)
   const renderInitialBlock = () => {
     if (!info) return null;
@@ -1573,6 +1665,7 @@ const ResultadosPage: React.FC = () => {
       {portada}
       {renderInitialBlock()}
       {radar}
+      {renderJobSearchSection()}
 
       {/* Informe de la IA y formulario de feedback */}
       {/* Estado iaReport disponible para debug en desarrollo */}
