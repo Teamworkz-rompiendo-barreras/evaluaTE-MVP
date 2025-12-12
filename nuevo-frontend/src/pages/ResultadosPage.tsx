@@ -111,7 +111,8 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
 const ResultadosPage: React.FC = () => {
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
-  const cvAnalysis: CvAnalysis | undefined = personal?.cvAnalysis;
+  // Priorizar el análisis que viene del informe IA; si no, usar el del estado local
+  const cvAnalysis: CvAnalysis | undefined = info?.cv_analysis ?? personal?.cvAnalysis;
   const report = personal?.report;
   const fecha = new Date().toLocaleDateString();
   const game = useAppSelector((state: RootState) => state.game);
