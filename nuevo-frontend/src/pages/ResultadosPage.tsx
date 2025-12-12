@@ -1691,8 +1691,8 @@ const ResultadosPage: React.FC = () => {
         
         {iaReport && (
           <>
-            <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none">
-              <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none">
+          <div className="informe-empleabilidad report-container print-max-w-none print-p-0 print-bg-white print-shadow-none bg-white rounded-lg shadow-sm p-0">
+            <div className="report-content professional-report print-max-w-none print-p-0 print-bg-white print-shadow-none bg-white">
                 {(() => {
                   // Si no podemos dividir, usamos siempre la versión limpiada (splitReport.after)
                   // y añadimos nuestro bloque nativo de análisis para evitar duplicados.
