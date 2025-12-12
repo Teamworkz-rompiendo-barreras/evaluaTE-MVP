@@ -834,9 +834,6 @@ const ResultadosPage: React.FC = () => {
     }
   };
 
-  // Estado para el progreso de la barra
-  const [progress, setProgress] = useState(0);
-
   // Descarga de PDF (usa el servicio del backend). Mantiene window.print como fallback
   const handleDownloadPdf = async () => {
     try {
@@ -875,31 +872,7 @@ const ResultadosPage: React.FC = () => {
     }
   };
 
-  // Efecto para animar la barra de progreso
-  useEffect(() => {
-    let interval: ReturnType<typeof setInterval> | null = null;
-    if (loadingIa) {
-      setProgress(0);
-      interval = setInterval(() => {
-        setProgress(prev => {
-          // Avanza hasta 95% mientras loadingIa es true
-          if (prev < 95) {
-            return prev + Math.random() * 5 + 1; // avance aleatorio para naturalidad
-          } else {
-            return prev;
-          }
-        });
-      }, 200);
-    } else {
-      // Cuando termina la carga, completa la barra
-      setProgress(100);
-      // Opcional: después de un pequeño delay, resetea la barra
-      setTimeout(() => setProgress(0), 800);
-    }
-    return () => {
-      if (interval) clearInterval(interval);
-    };
-  }, [loadingIa]);
+  // Eliminado: barra de progreso visual
 
   // Eliminado: lógica de descarga de PDF
 
@@ -1669,22 +1642,6 @@ const ResultadosPage: React.FC = () => {
   // Renderizado final
   return (
     <section className="max-w-4xl mx-auto p-4 print:p-0 print:max-w-none">
-
-      {/* Mensaje de carga */}
-      {loadingIa && (
-        <div className="bg-blue-100 dark:bg-blue-900/30 rounded-lg shadow-md p-6 mb-8 text-center">
-          <p className="text-lg font-semibold mb-4 text-gray-900 dark:text-gray-100">Generando tu informe personalizado</p>
-          <div className="w-full flex justify-center">
-            <div className="w-2/3 bg-blue-200 dark:bg-blue-800 rounded-full h-3 overflow-hidden">
-              <div
-                className="bg-blue-500 dark:bg-blue-300 h-3 transition-all duration-300"
-                style={{ width: `${progress}%` }}
-              ></div>
-            </div>
-          </div>
-          <p className="mt-4 text-xs text-gray-900 dark:text-gray-100">Esto puede tardar unos segundos. Por favor, ten paciencia.</p>
-        </div>
-      )}
 
       {/* Mensaje de error (solo si no hay informe generado) */}
       {errorIa && !iaReport && (
