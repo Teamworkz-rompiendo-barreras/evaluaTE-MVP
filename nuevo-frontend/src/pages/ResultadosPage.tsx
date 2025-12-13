@@ -1079,6 +1079,31 @@ const ResultadosPage: React.FC = () => {
       `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim() ||
       'Usuario';
     const displayScore = (globalScore ?? info.employability_score ?? 0);
+    const employmentSummaryParts: string[] = [];
+
+    // Preferencias laborales
+    const jobPrefs = personal?.jobPreferences || {};
+    const areas = Array.isArray((jobPrefs as any)?.areas) ? (jobPrefs as any).areas : [];
+    const mode = (jobPrefs as any)?.workMode || (jobPrefs as any)?.work_mode || '';
+    const location = (jobPrefs as any)?.location || '';
+    if (areas.length > 0) employmentSummaryParts.push(`Áreas de interés: ${areas.join(', ')}`);
+    if (mode) employmentSummaryParts.push(`Modalidad preferida: ${mode}`);
+    if (location) employmentSummaryParts.push(`Ubicación preferida: ${location}`);
+
+    // Habilidades clave (soft skills)
+    const topSkills = Array.isArray(info.soft_skills)
+      ? [...info.soft_skills].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3)
+      : [];
+    if (topSkills.length > 0) {
+      const skillsText = topSkills.map(s => `${s.skill} (${s.score}/100)`).join(', ');
+      employmentSummaryParts.push(`Fortalezas: ${skillsText}`);
+    }
+
+    // Datos CV relevantes
+    const expCount = (info.cv_details?.experience || []).length || (cvAnalysisDetails as any)?.experience?.length || 0;
+    const eduCount = (info.cv_details?.education || []).length || (cvAnalysisDetails as any)?.education?.length || 0;
+    if (expCount > 0) employmentSummaryParts.push(`Experiencia registrada: ${expCount}`);
+    if (eduCount > 0) employmentSummaryParts.push(`Formación registrada: ${eduCount}`);
 
     const formatEntry = (item: any, fields: string[]): string => {
       if (!item) return '';
@@ -1159,6 +1184,11 @@ const ResultadosPage: React.FC = () => {
           <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
             {`Informe de empleabilidad para ${candidateName}. Puntuación global ${displayScore}/100.`}
           </p>
+          {employmentSummaryParts.length > 0 && (
+            <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify mt-2">
+              {employmentSummaryParts.join(' · ')}
+            </p>
+          )}
           {info.summary && (
             <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify mt-2">
               {info.summary}
