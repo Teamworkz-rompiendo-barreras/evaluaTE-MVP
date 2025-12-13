@@ -1139,25 +1139,25 @@ const ResultadosPage: React.FC = () => {
         ? details.experience
         : (cvAnalysisDetails as any)?.experience_detailed || (cvAnalysisDetails as any)?.experience || []),
       ['title', 'role', 'position', 'company', 'organization', 'employer', 'period', 'start_date', 'end_date', 'duration', 'description']
-    );
+    ).slice(0, 5);
     const education = toList(
       (details.education && details.education.length > 0
         ? details.education
         : (cvAnalysisDetails as any)?.education_detailed || (cvAnalysisDetails as any)?.education || []),
       ['degree', 'title', 'program', 'area', 'institution', 'school', 'period', 'start_date', 'end_date', 'graduation_year', 'level', 'description']
-    );
+    ).slice(0, 5);
     const languages = toList(
       (details.languages && details.languages.length > 0
         ? details.languages
         : (cvAnalysisDetails as any)?.languages || []),
       ['language', 'idioma', 'name', 'level', 'nivel', 'certification']
-    );
+    ).slice(0, 5);
     const tools = toList(
       (details.tools && details.tools.length > 0
         ? details.tools
         : (cvAnalysisDetails as any)?.software || (cvAnalysisDetails as any)?.skills || []),
       ['name', 'tool', 'technology', 'software', 'level', 'nivel', 'description']
-    );
+    ).slice(0, 6);
 
     const renderList = (items: Array<string>) => {
       if (!items || items.length === 0) return <p className="text-gray-900 dark:text-gray-100">No hay información disponible.</p>;
