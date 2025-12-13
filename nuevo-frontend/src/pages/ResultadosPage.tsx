@@ -1074,6 +1074,11 @@ const ResultadosPage: React.FC = () => {
     const personalData = info.personal_data || {} as PersonalData;
     const details = info.cv_details || {};
     const cvAnalysisDetails = info.cv_analysis || {};
+    const candidateName =
+      personalData.name ||
+      `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim() ||
+      'Usuario';
+    const displayScore = (globalScore ?? info.employability_score ?? 0);
 
     const formatEntry = (item: any, fields: string[]): string => {
       if (!item) return '';
@@ -1140,7 +1145,7 @@ const ResultadosPage: React.FC = () => {
       );
     };
 
-    const scoreBadge = (globalScore ?? info.employability_score);
+    const scoreBadge = displayScore;
 
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors relative">
@@ -1152,8 +1157,13 @@ const ResultadosPage: React.FC = () => {
         <section className="mb-6">
           <h2 className="text-3xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resumen ejecutivo</h2>
           <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
-            {info.summary || info.profile_summary || 'Informe personalizado de empleabilidad.'}
+            {`Informe de empleabilidad para ${candidateName}. Puntuación global ${displayScore}/100.`}
           </p>
+          {info.summary && (
+            <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify mt-2">
+              {info.summary}
+            </p>
+          )}
         </section>
 
         <section className="mb-6">
