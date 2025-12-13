@@ -373,6 +373,7 @@ const ResultadosPage: React.FC = () => {
           phone: personal.whatsapp || undefined,
           cvAnalysis: cvAnalysisPayload,
           jobPreferences: jp,
+          employabilityScore: globalScore ?? computedScore ?? iaScore ?? undefined,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
           completedGames: completedGamesForRequest,
           logs: []
@@ -1171,6 +1172,11 @@ const ResultadosPage: React.FC = () => {
     };
 
     const scoreBadge = displayScore;
+    const summaryToShow = (() => {
+      if (!info.summary) return null;
+      if (displayScore > 0 && /0\/100|\bBajo\b/i.test(info.summary)) return null;
+      return info.summary;
+    })();
 
     return (
       <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors relative">
@@ -1189,9 +1195,9 @@ const ResultadosPage: React.FC = () => {
               {employmentSummaryParts.join(' · ')}
             </p>
           )}
-          {info.summary && (
+          {summaryToShow && (
             <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify mt-2">
-              {info.summary}
+              {summaryToShow}
             </p>
           )}
         </section>
