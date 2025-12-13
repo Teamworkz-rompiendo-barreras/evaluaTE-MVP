@@ -962,7 +962,14 @@ const ResultadosPage: React.FC = () => {
     const combined: Array<{ skill?: string; softskill?: string; score: number }> = [];
     if (Array.isArray(softSkillsData)) combined.push(...softSkillsData);
     if (Array.isArray(radarDataFromIa) && radarDataFromIa.length > 0) combined.push(...radarDataFromIa);
-    return processRadarData(combined);
+    const normalized = processRadarData(combined);
+    // Ajuste de etiquetas para legibilidad solicitada
+    return normalized.map(item => {
+      let label = item.softskill;
+      if (label === 'Pensamiento Crítico') label = 'Liderazgo';
+      else if (label === 'Curiosidad y aprendizaje') label = 'Toma de decisiones';
+      return { ...item, softskill: label };
+    });
   }, [softSkillsData, radarDataFromIa]);
 
   const renderJobSearchSection = () => {
