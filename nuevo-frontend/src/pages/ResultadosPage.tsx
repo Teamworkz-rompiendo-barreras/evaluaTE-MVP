@@ -1727,21 +1727,21 @@ const ResultadosPage: React.FC = () => {
             )}
 
             {!feedbackSent && (
-              <div className="bg-gray-50 rounded-lg shadow-md p-6 mb-8 print-hidden">
+              <div className="bg-gray-50 rounded-lg shadow-md p-6 mb-8 print-hidden dark:bg-white dark:text-black">
                 <form onSubmit={handleFeedbackSubmit}>
-                  <label className="block mb-2 font-semibold text-gray-900">¿Te resultó útil este informe?</label>
+                  <label className="block mb-2 font-semibold text-gray-900 dark:text-black">¿Te resultó útil este informe?</label>
                   <div className="flex gap-4 mb-4">
-                    <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300">
+                    <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 dark:border-gray-400 dark:bg-white">
                       <input className="w-5 h-5" type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
-                      <span className="min-w-[3.5rem] text-center text-gray-900">Útil</span>
+                      <span className="min-w-[3.5rem] text-center text-gray-900 dark:text-black">Útil</span>
                     </label>
-                    <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300">
+                    <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 dark:border-gray-400 dark:bg-white">
                       <input className="w-5 h-5" type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
-                      <span className="min-w-[5rem] text-center text-gray-900">No útil</span>
+                      <span className="min-w-[5rem] text-center text-gray-900 dark:text-black">No útil</span>
                     </label>
                   </div>
-                  <label className="block mb-1 text-gray-900">¿Algún comentario o sugerencia?</label>
-                  <textarea className="w-full border rounded p-2 mb-2" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({...f, comment: e.target.value}))} />
+                  <label className="block mb-1 text-gray-900 dark:text-black">¿Algún comentario o sugerencia?</label>
+                  <textarea className="w-full border rounded p-2 mb-2 bg-white text-gray-900 dark:bg-white dark:text-black border-gray-300 dark:border-gray-400" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({...f, comment: e.target.value}))} />
                   {feedbackError && <p className="text-red-600 mb-2">{feedbackError}</p>}
                   <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Enviar feedback</button>
                 </form>
