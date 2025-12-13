@@ -421,7 +421,19 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     cv_payload = _build_cv_analysis_payload(cv_data or {})
     job_pref_payload = _build_job_preferences_payload(candidate_data, job_preferences_data or {})
 
-    safe_score = max(0, min(100, int(employability_score or 0)))
+    # Garantizar puntaje aunque no venga empleability_score
+    safe_score = 0
+    try:
+        safe_score = int(round(float(employability_score or 0)))
+    except Exception:
+        safe_score = 0
+    if (safe_score == 0 or not isinstance(safe_score, int)) and normalized_soft_skills:
+        try:
+            avg_soft = int(round(sum(s.get("score", 0) for s in normalized_soft_skills) / len(normalized_soft_skills)))
+            safe_score = max(0, min(100, avg_soft))
+        except Exception:
+            safe_score = 0
+    safe_score = max(0, min(100, safe_score))
     level_label = level or _score_to_level(safe_score)
 
     # Preparar resumen y feedback antes de crear el reporte base
