@@ -443,9 +443,28 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
 
     report = create_default_report(full_name, normalized_soft_skills, cv_payload, job_pref_payload)
 
-    report.summary = (
-        f"Informe de empleabilidad para {full_name}. Puntuación global {safe_score}/100 ({level_label})."
-    )
+    # Resumen ejecutivo enriquecido con preferencias, soft skills y CV
+    top_skills = [s["skill"] for s in normalized_soft_skills[:2] if s.get("skill")]
+    areas_pref = [str(a) for a in job_pref_payload.get("areas", []) if a]
+    work_mode = str(job_pref_payload.get("workMode") or job_pref_payload.get("work_mode") or "").strip()
+    exp_count = len(cv_payload.get("experience") or cv_payload.get("experience_detailed") or [])
+    edu_count = len(cv_payload.get("education") or cv_payload.get("education_detailed") or [])
+    games_count = len(completed_games or [])
+
+    parts: list[str] = []
+    parts.append(f"Informe de empleabilidad para {full_name}. Puntuación global {safe_score}/100 ({level_label}).")
+    if areas_pref:
+        parts.append(f"Orientado a roles en {', '.join(areas_pref)}.")
+    if top_skills:
+        parts.append(f"Fortalezas destacadas: {', '.join(top_skills)}.")
+    if work_mode:
+        parts.append(f"Preferencia de modalidad: {work_mode}.")
+    if exp_count or edu_count:
+        parts.append(f"CV con {exp_count} experiencias y {edu_count} formaciones registradas.")
+    if games_count:
+        parts.append(f"Resultados de {games_count} minijuego(s) integrados.")
+
+    report.summary = " ".join(parts)
 
     personal = report.personal_data
     personal.name = full_name
