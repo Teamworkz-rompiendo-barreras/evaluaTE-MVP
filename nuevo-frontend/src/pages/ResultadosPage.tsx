@@ -963,11 +963,15 @@ const ResultadosPage: React.FC = () => {
     if (Array.isArray(softSkillsData)) combined.push(...softSkillsData);
     if (Array.isArray(radarDataFromIa) && radarDataFromIa.length > 0) combined.push(...radarDataFromIa);
     const normalized = processRadarData(combined);
-    // Ajuste de etiquetas para legibilidad solicitada
+    // Ajuste de etiquetas intercambiando Liderazgo↔Pensamiento Crítico y Toma de decisiones↔Curiosidad y aprendizaje
     return normalized.map(item => {
-      let label = item.softskill;
-      if (label === 'Pensamiento Crítico') label = 'Liderazgo';
-      else if (label === 'Curiosidad y aprendizaje') label = 'Toma de decisiones';
+      const map: Record<string, string> = {
+        'Pensamiento Crítico': 'Liderazgo',
+        'Liderazgo': 'Pensamiento Crítico',
+        'Curiosidad y aprendizaje': 'Toma de decisiones',
+        'Toma de decisiones': 'Curiosidad y aprendizaje',
+      };
+      const label = map[item.softskill] ?? item.softskill;
       return { ...item, softskill: label };
     });
   }, [softSkillsData, radarDataFromIa]);
