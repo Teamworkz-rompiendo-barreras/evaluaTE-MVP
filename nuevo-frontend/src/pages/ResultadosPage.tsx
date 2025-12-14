@@ -259,20 +259,20 @@ const ResultadosPage: React.FC = () => {
           hasDisabilityCert: personalHasPreferences ? resolvedJobPreferences.hasDisabilityCert : undefined,
         },
         completedGames: [...completedGamesForRequest].map(gameId => String(gameId)).sort(),
-        cv: cvAnalysisPayloadPre
+        cv: cvAnalysisPayload
           ? {
               scores: [
-                Number(cvAnalysisPayloadPre.structure_score) || 0,
-                Number(cvAnalysisPayloadPre.coherence_score) || 0,
-                Number(cvAnalysisPayloadPre.key_info_score) || 0,
-                Number(cvAnalysisPayloadPre.clarity_score) || 0,
-                Number(cvAnalysisPayloadPre.style_score) || 0,
+                Number(cvAnalysisPayload.structure_score) || 0,
+                Number(cvAnalysisPayload.coherence_score) || 0,
+                Number(cvAnalysisPayload.key_info_score) || 0,
+                Number(cvAnalysisPayload.clarity_score) || 0,
+                Number(cvAnalysisPayload.style_score) || 0,
               ],
-              experience: Array.isArray((cvAnalysisPayloadPre as any).experience_detailed)
-                ? (cvAnalysisPayloadPre as any).experience_detailed.length
+              experience: Array.isArray((cvAnalysisPayload as any).experience_detailed)
+                ? (cvAnalysisPayload as any).experience_detailed.length
                 : 0,
-              education: Array.isArray((cvAnalysisPayloadPre as any).education_detailed)
-                ? (cvAnalysisPayloadPre as any).education_detailed.length
+              education: Array.isArray((cvAnalysisPayload as any).education_detailed)
+                ? (cvAnalysisPayload as any).education_detailed.length
                 : 0,
             }
           : null,
@@ -786,7 +786,7 @@ const ResultadosPage: React.FC = () => {
 
     // NUEVO: También permitir generar informe si hay datos básicos del usuario
     const hasBasicUserData = (report?.firstName && report?.lastName) ||
-                            (cvAnalysisPayloadPre) ||
+                            (cvAnalysisPayload) ||
                             (report?.jobPreferences) ||
                             hasJobPreferenceData;
 
