@@ -209,7 +209,8 @@ const ResultadosPage: React.FC = () => {
     );
 
     const validSoftSkillsPre = filterValidSoftSkills(personal.softSkills || []);
-    const cvAnalysisPayloadPre: CvAnalysis | null = cvAnalysis ? cvAnalysis : null;
+    const cvAnalysisInitial: CvAnalysis | null = cvAnalysis ? cvAnalysis : null;
+    let cvAnalysisPayload: CvAnalysis | null = cvAnalysisInitial;
     const rawCompletedGames = Array.isArray(game?.completedGames) ? game.completedGames : [];
     const completedGamesForRequest = rawCompletedGames.length > 0
       ? rawCompletedGames
@@ -220,18 +221,19 @@ const ResultadosPage: React.FC = () => {
       || resolvedJobPreferences.needs.length > 0
       || resolvedJobPreferences.hasDisabilityCert;
     const hasCvStructuredData = Boolean(
-      cvAnalysisPayloadPre
+      cvAnalysisPayload
       && ([
-        cvAnalysisPayloadPre.structure_score,
-        cvAnalysisPayloadPre.coherence_score,
-        cvAnalysisPayloadPre.key_info_score,
-        cvAnalysisPayloadPre.clarity_score,
-        cvAnalysisPayloadPre.style_score,
+        cvAnalysisPayload.structure_score,
+        cvAnalysisPayload.coherence_score,
+        cvAnalysisPayload.key_info_score,
+        cvAnalysisPayload.clarity_score,
+        cvAnalysisPayload.style_score,
       ].some(score => typeof score === 'number' && score > 0)
-        || (Array.isArray((cvAnalysisPayloadPre as any).experience_detailed) && (cvAnalysisPayloadPre as any).experience_detailed.length > 0)
-        || (Array.isArray((cvAnalysisPayloadPre as any).education_detailed) && (cvAnalysisPayloadPre as any).education_detailed.length > 0)
-        || (Array.isArray((cvAnalysisPayloadPre as any).languages) && (cvAnalysisPayloadPre as any).languages.length > 0)
-        || (Array.isArray((cvAnalysisPayloadPre as any).software) && (cvAnalysisPayloadPre as any).software.length > 0)));
+        || (Array.isArray((cvAnalysisPayload as any).experience_detailed) && (cvAnalysisPayload as any).experience_detailed.length > 0)
+        || (Array.isArray((cvAnalysisPayload as any).education_detailed) && (cvAnalysisPayload as any).education_detailed.length > 0)
+        || (Array.isArray((cvAnalysisPayload as any).languages) && (cvAnalysisPayload as any).languages.length > 0)
+        || (Array.isArray((cvAnalysisPayload as any).software) && (cvAnalysisPayload as any).software.length > 0)
+        || (Array.isArray((cvAnalysisPayload as any).skills) && (cvAnalysisPayload as any).skills.length > 0)));
     const hasCompletedGameData = rawCompletedGames.length > 0;
     const hasMeaningfulData = hasSoftSkillsData || hasCvStructuredData || hasJobPreferenceData || hasCompletedGameData;
 
@@ -310,10 +312,11 @@ const ResultadosPage: React.FC = () => {
           });
           if (analyzeRes.ok) {
             const analysis = await analyzeRes.json();
+            cvAnalysisPayload = analysis;
             dispatch(saveCvAnalysis(analysis));
             console.log('✅ DEBUG - Análisis de CV guardado desde ResultadosPage');
             // Esperar a que Redux se actualice antes de continuar
-            await new Promise(resolve => setTimeout(resolve, 100));
+            await new Promise(resolve => setTimeout(resolve, 120));
           } else {
             console.warn('⚠️ DEBUG - analyze-cv falló:', analyzeRes.status, analyzeRes.statusText);
           }
@@ -361,7 +364,35 @@ const ResultadosPage: React.FC = () => {
           confidence: 80,
         }];
 
-        const cvAnalysisPayload: CvAnalysis | null = cvAnalysisPayloadPre;
+        // Reintentar tomar el cvAnalysis más reciente del estado si se actualizó tras el análisis
+        if (!cvAnalysisPayload && personal?.cvAnalysis) {
+          cvAnalysisPayload = personal.cvAnalysis as CvAnalysis;
+        }
+        // Fallback seguro para no enviar null al backend
+        if (!cvAnalysisPayload) {
+          cvAnalysisPayload = {
+            structure_score: 0,
+            coherence_score: 0,
+            key_info_score: 0,
+            clarity_score: 0,
+            style_score: 0,
+            evidence: {
+              structure: '',
+              coherence: '',
+              key_info: '',
+              clarity: '',
+              style: '',
+            },
+            corrections: [],
+            reordering_suggestions: [],
+            experience_detailed: [],
+            education_detailed: [],
+            languages: [],
+            software: [],
+            contact: {},
+          };
+        }
+
         const jp: JobPreference = resolvedJobPreferences;
 
         const requestBody = {
