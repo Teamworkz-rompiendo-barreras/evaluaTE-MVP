@@ -259,6 +259,15 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(cv_data, dict):
         cv_data = {}
 
+    def _pick_list(primary_key: str, detailed_key: str) -> list:
+        primary_val = cv_data.get(primary_key)
+        detailed_val = cv_data.get(detailed_key)
+        if isinstance(primary_val, list) and primary_val:
+            return primary_val
+        if isinstance(detailed_val, list) and detailed_val:
+            return detailed_val
+        return []
+
     analysis_candidates: List[Dict[str, Any]] = []
     for key in ("analysis_json", "cv_analysis_structured", "analysis", "diagnostico_cv"):
         val = cv_data.get(key)
@@ -320,10 +329,17 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         "style": str(evidence_src.get("style") or _DEFAULT_EVIDENCE["style"]),
     }
 
-    experience = cv_data.get("experience") or cv_data.get("experience_detailed") or []
-    education = cv_data.get("education") or cv_data.get("education_detailed") or []
-    languages = cv_data.get("languages") or cv_data.get("languages_detailed") or cv_data.get("idiomas") or []
-    software = cv_data.get("software") or cv_data.get("skills") or []
+    experience = _pick_list("experience", "experience_detailed")
+    education = _pick_list("education", "education_detailed")
+    languages = _pick_list("languages", "languages_detailed") or cv_data.get("idiomas") or []
+    software = _pick_list("software", "skills")
+
+    # Preferir nombre desde contacto si existe
+    candidate_name = ""
+    if isinstance(cv_data.get("contact"), dict):
+        candidate_name = cv_data["contact"].get("name") or cv_data["contact"].get("nombre") or ""
+    if not candidate_name:
+        candidate_name = cv_data.get("candidate") or ""
 
     return {
         "structure_score": structure_score,
@@ -340,6 +356,7 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         "education": education,
         "software": software,
         "languages": languages,
+        "candidate": candidate_name,
     }
 
 
