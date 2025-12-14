@@ -1150,6 +1150,23 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             languages_structured = _normalize_languages(di_result.get("languages"))
 
             software_items = di_result.get("software") or []
+
+            # Fallback con análisis básico si Document Intelligence no devolvió listas útiles
+            basic_data = extract_basic_cv_data_from_text(candidate_text or di_raw_text)
+            if basic_data:
+                if not experience_structured and basic_data.get("experiencia_laboral"):
+                    experience_structured = _normalize_experience(basic_data.get("experiencia_laboral"))
+                if not education_structured and basic_data.get("formacion_academica"):
+                    education_structured = _normalize_education(basic_data.get("formacion_academica"))
+                if not languages_structured and basic_data.get("idiomas"):
+                    languages_structured = _normalize_languages(basic_data.get("idiomas"))
+                if not software_items and basic_data.get("habilidades_tecnicas"):
+                    software_items = basic_data.get("habilidades_tecnicas")
+                if not merged_contact.get("name") and (basic_data.get("contacto") or {}).get("nombre"):
+                    merged_contact["name"] = (basic_data.get("contacto") or {}).get("nombre")
+                    merged_contact["nombre"] = merged_contact["name"]
+                if not merged_contact.get("location") and (basic_data.get("contacto") or {}).get("ubicacion"):
+                    merged_contact["location"] = (basic_data.get("contacto") or {}).get("ubicacion")
             software_for_cv_info = [
                 {"name": str(item), "level": ""}
                 for item in software_items
