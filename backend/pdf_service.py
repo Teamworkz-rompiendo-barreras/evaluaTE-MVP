@@ -342,14 +342,48 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         raise ValueError("Payload debe ser un diccionario")
 
     # ---------- Extracción de datos robusta ----------
+    def _ensure_list(value: Any) -> List[Any]:
+        if value is None:
+            return []
+        if isinstance(value, list):
+            return value
+        return [value]
+
     report_data = {}
     cv_data = {}
     soft_skills = []
     job_prefs = payload.get("jobPreferences") or {}
     completed_games = payload.get("completedGames") or []
-    if isinstance(payload.get("summary"), str) and isinstance(payload.get("personal_data"), dict):
+    is_new_format = isinstance(payload.get("summary"), str) and isinstance(payload.get("personal_data"), dict)
+    if is_new_format:
         report_data = payload
-        cv_data = report_data.get("cv_analysis") or {}
+        cv_scores = report_data.get("cv_analysis") or {}
+        cv_details = report_data.get("cv_details") or {}
+        if not isinstance(cv_scores, dict):
+            cv_scores = {}
+        if not isinstance(cv_details, dict):
+            cv_details = {}
+        personal_data = report_data.get("personal_data") if isinstance(report_data.get("personal_data"), dict) else {}
+        contact_from_personal = {}
+        if isinstance(personal_data, dict):
+            contact_from_personal = {
+                "emails": _ensure_list(personal_data.get("email")) if personal_data.get("email") else [],
+                "phones": _ensure_list(personal_data.get("phone")) if personal_data.get("phone") else [],
+                "location": personal_data.get("location") or "",
+            }
+        # Combinar las puntuaciones del análisis con los detalles del CV para que el PDF
+        # muestre experiencia, educación, idiomas y herramientas.
+        cv_data = {
+            **cv_scores,
+            "experience": _ensure_list(cv_details.get("experience")) or _ensure_list(cv_details.get("experience_detailed")),
+            "experience_detailed": _ensure_list(cv_details.get("experience")) or _ensure_list(cv_details.get("experience_detailed")),
+            "education": _ensure_list(cv_details.get("education")) or _ensure_list(cv_details.get("education_detailed")),
+            "education_detailed": _ensure_list(cv_details.get("education")) or _ensure_list(cv_details.get("education_detailed")),
+            "languages": _ensure_list(cv_details.get("languages")),
+            "software": _ensure_list(cv_details.get("tools")) or _ensure_list(cv_details.get("software")),
+            "skills": _ensure_list(cv_details.get("tools")) or _ensure_list(cv_details.get("software")),
+            "contact": contact_from_personal,
+        }
     else:
         report_data = payload.get("report") or {}
         cv_data = payload.get("cvAnalysis") or report_data.get("cv_analysis") or {}
