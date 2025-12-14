@@ -1237,16 +1237,32 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 raw_segments.append(di_raw_text.strip())
             combined_raw_text = "\n\n".join(raw_segments).strip()
 
+            exp_payload = di_result.get("experience")
+            if not isinstance(exp_payload, list) or not exp_payload:
+                exp_payload = experience_structured
+
+            edu_payload = di_result.get("education")
+            if not isinstance(edu_payload, list) or not edu_payload:
+                edu_payload = education_structured
+
+            lang_payload = di_result.get("languages")
+            if not isinstance(lang_payload, list) or not lang_payload:
+                lang_payload = languages_structured
+
+            software_payload = di_result.get("software")
+            if not isinstance(software_payload, list) or not software_payload:
+                software_payload = [item["herramienta"] for item in software_for_structure]
+
             result_payload = {
                 "summary": di_result.get("summary"),
                 "strengths": di_result.get("strengths") or [],
                 "weaknesses": di_result.get("weaknesses") or [],
                 "feedback": di_result.get("feedback"),
                 "stars": di_result.get("stars") or analysis.get("stars") or _default_stars(),
-                "experience": di_result.get("experience") or experience_structured,
-                "education": di_result.get("education") or education_structured,
-                "languages": di_result.get("languages") or languages_structured,
-                "software": di_result.get("software") or [item["herramienta"] for item in software_for_structure],
+                "experience": exp_payload,
+                "education": edu_payload,
+                "languages": lang_payload,
+                "software": software_payload,
                 "contact": merged_contact,
                 "raw_text": (combined_raw_text or candidate_text or di_raw_text or "")[:10000],
                 "raw_text_excerpt": (combined_raw_text or candidate_text or di_raw_text or "")[:1000],
