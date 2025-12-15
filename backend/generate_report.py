@@ -580,8 +580,15 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
         try:
             data: Dict[str, Any] = prompt
 
-            # Datos del candidato
-            full_name = str(data.get("fullName") or data.get("userId") or "Usuario")
+            # Datos del candidato (con fallback a datos del CV para el nombre)
+            full_name_raw = data.get("fullName") or data.get("userId") or ""
+            # Tomar nombre desde el CV si el usuario no lo envió
+            cv_raw_for_name = data.get("cvAnalysis") or {}
+            cv_structured_for_name = cv_raw_for_name.get("cv_structured") or {}
+            cv_contact_for_name = cv_raw_for_name.get("contact") or cv_structured_for_name.get("contact") or {}
+            cv_candidate_name = cv_structured_for_name.get("candidate") or cv_contact_for_name.get("name") or cv_contact_for_name.get("nombre") or ""
+            full_name = str(full_name_raw or cv_candidate_name or "Usuario")
+
             candidate_data = {
                 "fullName": full_name,
                 "location": (data.get("location") or "No consta"),
@@ -637,7 +644,8 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
             nivel = _score_to_level(soft_avg)
 
             # CV data (tomar lo disponible)
-            cv_raw = data.get("cvAnalysis") or {}
+            # Aceptar ambas convenciones de clave para cvAnalysis
+            cv_raw = data.get("cvAnalysis") or data.get("cv_analysis") or {}
             cv_data = {}
             if isinstance(cv_raw, dict):
                 contact_raw = cv_raw.get("contact") or {}
@@ -684,6 +692,7 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
                         "emails": emails,
                         "phones": phones,
                         "location": loc,
+                        "name": cv_raw.get("candidate") or cv_structured_for_name.get("candidate") or "",
                     },
                     "analysis_json": analysis_json,
                 }

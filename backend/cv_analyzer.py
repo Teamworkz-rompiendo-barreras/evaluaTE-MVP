@@ -70,7 +70,7 @@ try:
             )
 except Exception as e:
     # En caso de que el paquete openai no esté disponible o haya fallo
-    print(f"⚠️ Error configurando Azure OpenAI: {e}")
+    logger.warning("Error configurando Azure OpenAI: %s", e)
 
 # Importaciones para OCR (carga lazy)
 OCR_AVAILABLE = False
@@ -230,11 +230,11 @@ def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
     Analiza el CV usando IA para extraer información de manera inteligente
     """
     if not client:
-        print("⚠️ Azure OpenAI no configurado, usando análisis básico")
+        logger.warning("Azure OpenAI no configurado, usando análisis básico")
         return {"error": "Azure OpenAI no configurado"}
     
     try:
-        print("🤖 Iniciando análisis con Azure OpenAI...")
+        logger.info("Iniciando análisis con Azure OpenAI...")
         
         # Prompt profesional y completo para análisis de CV
         prompt = f"""
@@ -361,10 +361,10 @@ IMPORTANTE:
         # Intentar parsear el JSON
         try:
             cv_data = json.loads(normalized_content)
-            print("✅ JSON parseado correctamente")
+            logger.info("JSON parseado correctamente")
             return cv_data
         except (json.JSONDecodeError, TypeError) as e:
-            print(f"⚠️ Error parseando JSON: {e}")
+            logger.warning("Error parseando JSON: %s", e)
             print(f"📝 Contenido recibido: {str(content)[:200]}...")
             if normalized_content != content:
                 print(f"🧹 Contenido normalizado: {normalized_content[:200]}...")
@@ -987,7 +987,7 @@ try:
     DOCUMENT_INTELLIGENCE_AVAILABLE = True
 except ImportError:
     DOCUMENT_INTELLIGENCE_AVAILABLE = False
-    print("⚠️ Document Intelligence no disponible, usando método tradicional")
+    logger.warning("Document Intelligence no disponible, usando método tradicional")
 
 
 def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
@@ -1005,13 +1005,13 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     }
 
     try:
-        print("🚀 Iniciando análisis de CV...")
+        logger.info("Iniciando analisis de CV (modo combinado DI + PyMuPDF/OCR)...")
 
         di_result: Optional[Dict[str, Any]] = None
         di_error: Optional[str] = None
 
         if DOCUMENT_INTELLIGENCE_AVAILABLE:
-            print("🤖 Intentando análisis con Azure AI Document Intelligence...")
+            logger.info("Intentando análisis con Azure AI Document Intelligence...")
             try:
                 di_attempt = analyze_cv_with_improved_intelligence(pdf_buffer)
             except Exception as di_exc:  # pragma: no cover - diagnóstico
@@ -1020,21 +1020,22 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 if di_attempt and not di_attempt.get("error") and di_attempt.get("document_intelligence_used"):
                     di_result = di_attempt
                     processing_metadata["document_intelligence"]["used"] = True
-                    print("✅ Análisis completado con Document Intelligence")
+                    logger.info("Analisis completado con Document Intelligence")
                 else:
                     di_error = (di_attempt or {}).get("error") or "Resultado vacío de Document Intelligence"
 
             if di_error:
                 processing_metadata["document_intelligence"]["error"] = di_error
-                print(f"⚠️ Document Intelligence no disponible o falló: {di_error}")
+                logger.warning("Document Intelligence no disponible o fallo: %s", di_error)
         else:
-            print("ℹ️ Document Intelligence no disponible, se combinarán métodos locales")
+            logger.info("Document Intelligence no disponible, se combinarán métodos locales")
 
-        print("📄 Extrayendo texto del PDF con PyMuPDF + OCR...")
+        logger.info("Extrayendo texto del PDF con PyMuPDF + OCR...")
         text, text_meta = extract_text_with_advanced_ocr(pdf_buffer)
         processing_metadata["text_extraction"] = text_meta
-        print(
-            f"✅ Texto combinado extraído: {text_meta.get('combined_text_length', len(text))} caracteres"
+        logger.info(
+            "Texto combinado extraído: %s caracteres",
+            text_meta.get("combined_text_length", len(text)),
         )
 
         # Helper para listas únicas y limpias
@@ -1226,9 +1227,9 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "voluntariado": di_result.get("volunteer") or [],
             }
 
-            print("📊 Analizando estructura del CV con datos combinados...")
+            logger.info("Analizando estructura del CV con datos combinados...")
             analysis = analyze_cv_structure_ai(cv_data_for_structure)
-            print("✅ Análisis estructural completado (Document Intelligence + PyMuPDF/OCR)")
+            logger.info("Analisis estructural completado (Document Intelligence + PyMuPDF/OCR)")
 
             raw_segments: List[str] = []
             if text.strip():
@@ -1281,10 +1282,10 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             return result_payload
 
         # Si Document Intelligence no está disponible o falló, usar el método tradicional
-        print("📄 Aplicando método tradicional de extracción y análisis...")
+        logger.info("Aplicando método tradicional de extracción y análisis...")
 
         if not candidate_text.strip():
-            print("❌ No se pudo extraer texto del PDF")
+            logger.error("No se pudo extraer texto del PDF")
             return {
                 "error": "No se pudo extraer texto del PDF. El archivo puede estar corrupto o ser una imagen sin texto.",
                 "cv_info": {},
@@ -1294,18 +1295,18 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "document_intelligence_used": False,
             }
 
-        print(f"✅ Texto extraído: {len(candidate_text)} caracteres")
-        print(f"📝 Primeros 200 caracteres: {candidate_text[:200]}...")
+        logger.info("Texto extraído: %s caracteres", len(candidate_text))
+        logger.debug("Primeros 200 caracteres: %s...", candidate_text[:200])
 
-        print("📞 Extrayendo información de contacto...")
+        logger.info("Extrayendo información de contacto...")
         contact = extract_contact_info_enhanced(candidate_text)
-        print(f"✅ Contacto extraído: {contact}")
+        logger.info("Contacto extraído: %s", contact)
 
-        print("🤖 Analizando CV con IA heurística...")
+        logger.info("Analizando CV con IA heurística...")
         cv_data = analyze_cv_with_ai(candidate_text)
 
         if "error" in cv_data:
-            print(f"⚠️ Error en análisis con IA: {cv_data['error']}")
+            logger.warning("Error en análisis con IA: %s", cv_data['error'])
             cv_data = {
                 "contacto": contact,
                 "experiencia_laboral": [],
@@ -1316,11 +1317,11 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "proyectos": [],
             }
         else:
-            print("✅ Análisis con IA completado exitosamente")
+            logger.info("Análisis con IA completado exitosamente")
 
-        print("📊 Analizando estructura del CV (método tradicional)...")
+        logger.info("Analizando estructura del CV (método tradicional)...")
         analysis = analyze_cv_structure_ai(cv_data)
-        print("✅ Análisis estructural completado")
+        logger.info("Análisis estructural completado")
 
         cv_info = {
             "contacto": cv_data.get("contacto", {}),
@@ -1343,11 +1344,11 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "proyectos": cv_data.get("proyectos", []),
         }
 
-        print(
-            "✅ Análisis completado: "
-            f"{len(cv_info['software'])} habilidades técnicas, "
-            f"{len(cv_info['experiencia'])} experiencias, "
-            f"{len(cv_info['educacion'])} formaciones"
+        logger.info(
+            "Analisis completado: %s habilidades técnicas, %s experiencias, %s formaciones",
+            len(cv_info["software"]),
+            len(cv_info["experiencia"]),
+            len(cv_info["educacion"]),
         )
         logger.info("Análisis de CV completado con método tradicional")
 
@@ -1361,11 +1362,8 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         }
 
     except Exception as e:  # pragma: no cover - errores inesperados
-        print(f"❌ Error en análisis: {str(e)}")
         import traceback
-
-        print(f"🔍 Traceback completo: {traceback.format_exc()}")
-        logger.exception("Error analizando CV")
+        logger.exception("Error analizando CV: %s", e)
         return {
             "error": f"Error al procesar el PDF: {str(e)}",
             "cv_info": {},

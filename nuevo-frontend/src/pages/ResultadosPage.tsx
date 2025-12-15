@@ -327,7 +327,18 @@ const ResultadosPage: React.FC = () => {
 
       try {
         // SOLUCIÓN: Asegurar que siempre hay datos mínimos para el informe
-        const userFullName = `${report?.firstName || ''} ${report?.lastName || ''}`.trim() || 'Usuario';
+        // Intentar recuperar nombre desde reporte, estado o CV
+        const cvName =
+          (cvAnalysisPayload as any)?.contact?.name ||
+          (cvAnalysisPayload as any)?.contact?.nombre ||
+          (cvAnalysisPayload as any)?.candidate ||
+          (cvAnalysisPayload as any)?.cv_structured?.candidate ||
+          '';
+        const userFullName =
+          `${report?.firstName || ''} ${report?.lastName || ''}`.trim() ||
+          `${personal?.firstName || ''} ${personal?.lastName || ''}`.trim() ||
+          String(cvName || '').trim() ||
+          'Usuario';
         const validSoftSkills = validSoftSkillsPre;
         
         // DEBUG: Log del requestBody antes de enviarlo
@@ -395,14 +406,21 @@ const ResultadosPage: React.FC = () => {
 
         const jp: JobPreference = resolvedJobPreferences;
 
+        // Completar email/phone con contacto del CV si faltan
+        const cvContact = (cvAnalysisPayload as any)?.contact || (cvAnalysisPayload as any)?.cv_structured?.contact || {};
+        const emailFromCv = Array.isArray(cvContact?.emails) && cvContact.emails.length > 0 ? cvContact.emails[0] : undefined;
+        const phoneFromCv = Array.isArray(cvContact?.phones) && cvContact.phones.length > 0 ? cvContact.phones[0] : undefined;
+
         const requestBody = {
           userId: report?.userId || 'user',
           fullName: userFullName,
           softSkills: softSkillsToSend,
-          // Incluir contacto básico desde estado si el CV no lo trae
-          email: personal.email || undefined,
-          phone: personal.whatsapp || undefined,
+          // Incluir contacto básico, priorizando CV si el estado no lo trae
+          email: personal.email || emailFromCv || undefined,
+          phone: personal.whatsapp || phoneFromCv || undefined,
+          // Enviar análisis en ambas convenciones para máxima compatibilidad backend
           cvAnalysis: cvAnalysisPayload,
+          cv_analysis: cvAnalysisPayload,
           jobPreferences: jp,
           employabilityScore: globalScore ?? computedScore ?? iaScore ?? undefined,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
