@@ -259,6 +259,44 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             if raw_text and (not sw_fallback):
                 sw_fallback = [raw_text[:200]]
 
+            def _stringify_list(items: Any) -> List[str]:
+                lines: List[str] = []
+                if not items:
+                    return lines
+                for it in items:
+                    if it is None:
+                        continue
+                    if isinstance(it, dict):
+                        parts: List[str] = []
+                        for k in (
+                            "title",
+                            "cargo",
+                            "position",
+                            "role",
+                            "puesto",
+                            "company",
+                            "empresa",
+                            "organization",
+                            "organizacion",
+                            "period",
+                            "duration",
+                            "start_date",
+                            "fecha_inicio",
+                            "end_date",
+                            "fecha_fin",
+                            "description",
+                            "descripcion",
+                        ):
+                            v = it.get(k)
+                            if v:
+                                parts.append(str(v))
+                        line = " — ".join(parts).strip() if parts else str(it)
+                        if line:
+                            lines.append(line)
+                    else:
+                        lines.append(str(it))
+                return lines
+
             normalized: Dict[str, Any] = {
                 "strengths": result.get("strengths") or [],
                 "weaknesses": result.get("weaknesses") or [],
@@ -298,6 +336,12 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
                 "languages": lang_fallback or [],
                 "software": sw_fallback or [],
                 "raw_text": raw_text or "",
+                "cv_details": {
+                    "experience": _stringify_list(exp_fallback),
+                    "education": _stringify_list(edu_fallback),
+                    "languages": _stringify_list(lang_fallback),
+                    "tools": _stringify_list(sw_fallback),
+                },
                 "ai_analysis": {},
                 "cv_analysis_structured": {"stars": result.get("stars") or {}},
                 "document_intelligence_used": True,
@@ -374,6 +418,43 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             "education_detailed": cv_info.get("educacion") or [],
             "languages": lang_items,
             "raw_text": result.get("raw_text") or "",
+            "cv_details": {
+                "experience": [
+                    " — ".join(
+                        part
+                        for part in (
+                            e.get("titulo") or e.get("degree") or e.get("title") or "",
+                            e.get("empresa") or e.get("company") or "",
+                            e.get("fecha_inicio") or e.get("start_date") or "",
+                            e.get("fecha_fin") or e.get("end_date") or "",
+                        )
+                        if part
+                    ).strip()
+                    for e in (cv_info.get("experiencia") or []) if isinstance(e, dict)
+                ],
+                "education": [
+                    " — ".join(
+                        part
+                        for part in (
+                            e.get("titulo") or e.get("degree") or e.get("title") or "",
+                            e.get("institucion") or e.get("institution") or e.get("school") or "",
+                            e.get("fecha_inicio") or e.get("start_date") or "",
+                            e.get("fecha_fin") or e.get("end_date") or "",
+                        )
+                        if part
+                    ).strip()
+                    for e in (cv_info.get("educacion") or []) if isinstance(e, dict)
+                ],
+                "languages": [
+                    f"{lang.get('idioma') or lang.get('name') or lang.get('language') or ''} — {lang.get('nivel') or lang.get('level') or ''}".strip(" —")
+                    for lang in lang_items
+                ],
+                "tools": [
+                    f"{tool.get('herramienta') or tool.get('name') or tool.get('tool') or ''} — {tool.get('nivel') or tool.get('level') or ''}".strip(" —")
+                    for tool in (cv_info.get("software") or [])
+                    if isinstance(tool, dict)
+                ],
+            },
             "ai_analysis": result.get("full_cv_data") or {},
             "cv_analysis_structured": analysis,
             "document_intelligence_used": False,
