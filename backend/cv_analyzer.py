@@ -1,3 +1,15 @@
+try:
+    # Intentar reutilizar helper de Document Intelligence
+    from document_intelligence import _default_stars  # type: ignore
+except Exception:
+    def _default_stars() -> Dict[str, int]:
+        return {
+            "formato": 3,
+            "claridad": 3,
+            "coherencia": 3,
+            "informacion_clave": 2,
+            "ortografia": 3,
+        }
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
@@ -25,7 +37,7 @@ Este archivo se basa en el código proporcionado en la descripción del
 problema. No se debe almacenar información personal de los CV analizados.
 """
 
-import fitz  # PyMuPDF
+import fitz  # type: ignore  # PyMuPDF
 import re
 import json
 import sys
@@ -1259,6 +1271,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "strengths": di_result.get("strengths") or [],
                 "weaknesses": di_result.get("weaknesses") or [],
                 "feedback": di_result.get("feedback"),
+                # Stars: intentar de DI, luego del análisis local, luego defaults
                 "stars": di_result.get("stars") or analysis.get("stars") or _default_stars(),
                 "experience": exp_payload,
                 "education": edu_payload,
