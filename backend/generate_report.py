@@ -470,6 +470,72 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
         )
     cv_payload["feedback"] = cv_feedback
 
+    # Enriquecer contacto y nombre desde el candidato si el CV trae valores erróneos
+    cv_payload["candidate"] = full_name
+    contact = cv_payload.get("contact") if isinstance(cv_payload.get("contact"), dict) else {}
+    if not contact.get("emails") and candidate_data.get("email"):
+        contact["emails"] = [candidate_data.get("email")]
+    if not contact.get("phones") and candidate_data.get("phone"):
+        contact["phones"] = [candidate_data.get("phone")]
+    if not contact.get("location") and candidate_data.get("location"):
+        contact["location"] = candidate_data.get("location")
+    cv_payload["contact"] = contact
+
+    # Construir cv_details en texto plano para asegurar render en frontend/PDF
+    def _stringify_list(items: Any) -> List[str]:
+        if not items:
+            return []
+        out: List[str] = []
+        for it in items:
+            if it is None:
+                continue
+            if isinstance(it, str):
+                txt = it.strip()
+                if txt:
+                    out.append(txt)
+            elif isinstance(it, dict):
+                parts: List[str] = []
+                for k in (
+                    "title",
+                    "cargo",
+                    "position",
+                    "role",
+                    "puesto",
+                    "company",
+                    "empresa",
+                    "organization",
+                    "organizacion",
+                    "period",
+                    "duration",
+                    "start_date",
+                    "fecha_inicio",
+                    "end_date",
+                    "fecha_fin",
+                    "description",
+                    "descripcion",
+                    "degree",
+                    "titulo",
+                    "institution",
+                    "institucion",
+                    "school",
+                ):
+                    v = it.get(k)
+                    if v:
+                        parts.append(str(v))
+                line = " — ".join(parts).strip() if parts else str(it)
+                if line:
+                    out.append(line)
+            else:
+                out.append(str(it))
+        return out
+
+    cv_payload["cv_details"] = {
+        "experience": _stringify_list(cv_payload.get("experience") or cv_payload.get("experience_detailed")),
+        "education": _stringify_list(cv_payload.get("education") or cv_payload.get("education_detailed")),
+        "languages": _stringify_list(cv_payload.get("languages")),
+        "tools": _stringify_list(cv_payload.get("software") or cv_payload.get("skills")),
+    }
+
     report = create_default_report(full_name, normalized_soft_skills, cv_payload, job_pref_payload)
 
     # Resumen ejecutivo enriquecido con preferencias, soft skills y CV
