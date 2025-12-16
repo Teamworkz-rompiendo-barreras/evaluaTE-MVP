@@ -5,10 +5,10 @@ from datetime import date
 import math
 import unicodedata
 
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import mm
-from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4  # type: ignore
+from reportlab.pdfgen import canvas  # type: ignore
+from reportlab.lib.units import mm  # type: ignore
+from reportlab.lib import colors  # type: ignore
 
 # Helpers
 def _draw_wrapped_text(c: canvas.Canvas, x: float, y: float, text: str, max_width: float, leading: float = 12) -> float:

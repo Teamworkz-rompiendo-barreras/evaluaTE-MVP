@@ -4,9 +4,13 @@
 
 import sys
 import os
+import pathlib
 
-# Agregar el directorio backend al path
-sys.path.insert(0, os.path.join(os.path.dirname(__file__), 'backend'))
+# Agregar el directorio backend al path (para Pyright/ejecución local)
+ROOT_DIR = pathlib.Path(__file__).resolve().parent
+BACKEND_DIR = ROOT_DIR / "backend"
+sys.path.insert(0, str(ROOT_DIR))
+sys.path.insert(0, str(BACKEND_DIR))
 
 def test_new_report_schema():
     """Prueba las funciones del nuevo esquema de reportes"""
@@ -14,7 +18,10 @@ def test_new_report_schema():
     
     try:
         # Importar las funciones
-        from new_report_schema import create_default_report, convert_old_format_to_new, NewReportSchema
+        from backend import new_report_schema
+        create_default_report = new_report_schema.create_default_report
+        convert_old_format_to_new = new_report_schema.convert_old_format_to_new
+        NewReportSchema = new_report_schema.NewReportSchema
         print("✅ Importación exitosa")
         
         # Crear datos de prueba
@@ -112,7 +119,8 @@ def test_endpoint_logic():
     
     try:
         # Simular la lógica del endpoint
-        from new_report_schema import create_default_report
+        from backend import new_report_schema
+        create_default_report = new_report_schema.create_default_report
         
         # Simular request
         req = type('Request', (), {

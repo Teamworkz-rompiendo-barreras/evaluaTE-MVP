@@ -3,8 +3,8 @@ import os
 import logging
 from typing import Any, Dict, List, Optional
 
-from azure.core.credentials import AzureKeyCredential
-from azure.ai.formrecognizer import DocumentAnalysisClient  # SDK 3.x
+from azure.core.credentials import AzureKeyCredential  # type: ignore
+from azure.ai.formrecognizer import DocumentAnalysisClient  # type: ignore  # SDK 3.x
 
 logger = logging.getLogger("evaluador-backend")
 
