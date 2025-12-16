@@ -233,6 +233,7 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             phones = contact_di.get("phones") or []
             location = contact_di.get("location") or ""
             linkedin = contact_di.get("linkedin") or ""
+            raw_text = result.get("raw_text") or result.get("raw_text_excerpt") or ""
 
             lang_items: list = []
             for item in (result.get("languages") or []):
@@ -244,6 +245,20 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
                 elif isinstance(item, str):
                     lang_items.append({"name": item, "level": ""})
 
+            # Fallbacks: si DI no entregó listas, usar texto raw para no dejar vacío
+            exp_fallback = result.get("experience") or []
+            edu_fallback = result.get("education") or []
+            lang_fallback = lang_items
+            sw_fallback = result.get("software") or []
+            if raw_text and (not exp_fallback):
+                exp_fallback = [raw_text[:400]]
+            if raw_text and (not edu_fallback):
+                edu_fallback = [raw_text[:400]]
+            if raw_text and (not lang_fallback):
+                lang_fallback = [{"name": "Idioma no detectado", "level": ""}]
+            if raw_text and (not sw_fallback):
+                sw_fallback = [raw_text[:200]]
+
             normalized: Dict[str, Any] = {
                 "strengths": result.get("strengths") or [],
                 "weaknesses": result.get("weaknesses") or [],
@@ -251,10 +266,10 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
                 "structure": "regular",
                 "coherence": "regular",
                 "experience": "regular",
-                "skills": result.get("software") or [],
+                "skills": sw_fallback or [],
                 "education": [
                     (e.get("degree") or e.get("titulo") or e.get("title") or "").strip()
-                    for e in (result.get("education") or []) if isinstance(e, dict)
+                    for e in (edu_fallback or []) if isinstance(e, dict)
                 ],
                 "alerts": [],
                 "cv_structured": {
@@ -265,10 +280,10 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
                         "location": location,
                         "linkedin": linkedin,
                     },
-                    "experience": result.get("experience") or [],
-                    "education": result.get("education") or [],
-                    "languages": lang_items,
-                    "skills": result.get("software") or [],
+                    "experience": exp_fallback or [],
+                    "education": edu_fallback or [],
+                    "languages": lang_fallback or [],
+                    "skills": sw_fallback or [],
                     "summary": result.get("summary") or "",
                 },
                 "candidate": contact_di.get("name") or contact_di.get("nombre") or "",
@@ -278,10 +293,11 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
                     "location": location,
                     "linkedin": linkedin,
                 },
-                "experience_detailed": result.get("experience") or [],
-                "education_detailed": result.get("education") or [],
-                "languages": lang_items,
-                "raw_text": result.get("raw_text") or "",
+                "experience_detailed": exp_fallback or [],
+                "education_detailed": edu_fallback or [],
+                "languages": lang_fallback or [],
+                "software": sw_fallback or [],
+                "raw_text": raw_text or "",
                 "ai_analysis": {},
                 "cv_analysis_structured": {"stars": result.get("stars") or {}},
                 "document_intelligence_used": True,
