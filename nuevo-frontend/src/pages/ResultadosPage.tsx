@@ -1324,35 +1324,6 @@ const ResultadosPage: React.FC = () => {
     const gamesCount = Array.isArray(info.completed_games) ? info.completed_games.length : 0;
     if (gamesCount > 0) employmentSummaryParts.push(`Minijuegos integrados: ${gamesCount}`);
 
-    const formatEntry = (item: any, fields: string[]): string => {
-      if (!item) return '';
-      if (typeof item === 'string') return item.trim();
-      if (typeof item === 'number' || typeof item === 'boolean') return String(item);
-      if (Array.isArray(item)) return item.map(it => formatEntry(it, fields)).filter(Boolean).join(' — ');
-      const parts: string[] = [];
-      for (const f of fields) {
-        const val = (item as any)?.[f];
-        if (val === null || val === undefined) continue;
-        const str = typeof val === 'string' ? val.trim() : String(val);
-        if (str) parts.push(str);
-      }
-      if (parts.length === 0) {
-        // intenta descripción genérica
-        const desc = (item as any)?.description || (item as any)?.descripcion;
-        if (desc) return String(desc).trim();
-      }
-      return parts.join(' — ').trim();
-    };
-
-    const toList = (input: any, fields: string[]): string[] => {
-      if (!input) return [];
-      if (!Array.isArray(input)) return [formatEntry(input, fields)].filter(Boolean);
-      return input
-        .map(it => formatEntry(it, fields))
-        .map(s => s.trim())
-        .filter(Boolean);
-    };
-
     const experience = mergeDetail(
       details.experience,
       cvAnalysisDetails?.experience_detailed || cvAnalysisDetails?.experience || [],
