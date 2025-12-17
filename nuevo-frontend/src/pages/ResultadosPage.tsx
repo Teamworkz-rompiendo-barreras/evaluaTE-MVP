@@ -1223,19 +1223,19 @@ const ResultadosPage: React.FC = () => {
     const personalData = { ...(info.personal_data || {} as PersonalData) };
     const cvAnalysisDetails = (info.cv_analysis || {}) as any;
 
-    // Enriquecer datos personales con contacto del CV si faltan
+    // Preferir SIEMPRE los datos de contacto del CV sobre los ingresados en la app
     const cvContact = (cvAnalysisDetails?.contact || cvAnalysisDetails?.cv_structured?.contact || {}) as any;
     const contactName = cvAnalysisDetails?.cv_structured?.candidate || cvAnalysisDetails?.candidate || cvContact?.name || cvContact?.nombre;
-    if (!personalData.name || personalData.name === 'Usuario') {
-      personalData.name = (contactName || `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim() || 'Usuario').trim() || 'Usuario';
-    }
-    if ((!personalData.email || personalData.email === 'No consta') && Array.isArray(cvContact?.emails) && cvContact.emails[0]) {
+    const preferredName = (contactName || `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim() || personalData.name || 'Usuario').trim() || 'Usuario';
+    personalData.name = preferredName;
+
+    if (Array.isArray(cvContact?.emails) && cvContact.emails[0]) {
       personalData.email = String(cvContact.emails[0]);
     }
-    if ((!personalData.phone || personalData.phone === 'No especificado') && Array.isArray(cvContact?.phones) && cvContact.phones[0]) {
+    if (Array.isArray(cvContact?.phones) && cvContact.phones[0]) {
       personalData.phone = String(cvContact.phones[0]);
     }
-    if ((!personalData.location || personalData.location === 'No consta') && cvContact?.location) {
+    if (cvContact?.location) {
       personalData.location = String(cvContact.location);
     }
 
@@ -1291,7 +1291,15 @@ const ResultadosPage: React.FC = () => {
           }
           const desc = (item as any)?.description || (item as any)?.descripcion;
           if (parts.length === 0 && desc) parts.push(String(desc).trim());
-          return parts.join(' — ').trim();
+          // Caso de idiomas: si no hay nombre pero sí nivel, mostrar el nivel
+          if (parts.length === 0) {
+            const name = (item as any)?.name || (item as any)?.idioma || (item as any)?.language;
+            const level = (item as any)?.level || (item as any)?.nivel;
+            const combined = [name, level].map((x) => (x == null ? '' : String(x).trim())).filter(Boolean);
+            if (combined.length) return combined.join(' — ');
+          }
+          const line = parts.join(' — ').trim();
+          return line;
         }
         return String(item ?? '').trim();
       }).filter(Boolean);
