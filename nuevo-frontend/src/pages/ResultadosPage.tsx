@@ -23,7 +23,7 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
-import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData } from '../config/reportConfig';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData, type NormalizedJobPreferences } from '../config/reportConfig';
 // (import duplicado eliminado)
 
 // Definir tipos locales para evitar importaciones problemáticas
@@ -1232,24 +1232,24 @@ const ResultadosPage: React.FC = () => {
 
     // Preferencias laborales (combinar estado local + backend)
     const jobPrefs = personal?.jobPreferences || {};
-    const reportJobPrefs = (info?.job_preferences as Record<string, unknown> | undefined) || {};
+    const reportJobPrefs: Partial<NormalizedJobPreferences> = info?.job_preferences ?? {};
     const areasRaw = [
       ...(Array.isArray((jobPrefs as any)?.areas) ? (jobPrefs as any).areas : []),
-      ...(Array.isArray(reportJobPrefs?.areas as unknown[]) ? (reportJobPrefs.areas as string[]) : []),
+      ...(Array.isArray(reportJobPrefs?.areas) ? reportJobPrefs.areas : []),
     ];
     const areas = Array.from(new Set(areasRaw.map(a => String(a ?? '').trim()).filter(Boolean)));
     const mode =
       (jobPrefs as any)?.workMode ||
       (jobPrefs as any)?.work_mode ||
-      (reportJobPrefs as any)?.work_mode ||
+      reportJobPrefs?.work_mode ||
       '';
     const location =
       (jobPrefs as any)?.location ||
-      (reportJobPrefs as any)?.location ||
+      reportJobPrefs?.location ||
       '';
-    const availability = (reportJobPrefs as any)?.availability || '';
-    const preferredPlatforms = Array.isArray((reportJobPrefs as any)?.preferred_platforms)
-      ? (reportJobPrefs as any).preferred_platforms.filter((p: unknown) => Boolean(p))
+    const availability = reportJobPrefs?.availability || '';
+    const preferredPlatforms = Array.isArray(reportJobPrefs?.preferred_platforms)
+      ? reportJobPrefs.preferred_platforms.filter((p) => Boolean(p))
       : [];
 
     if (areas.length > 0) employmentSummaryParts.push(`Áreas de interés: ${areas.join(', ')}`);

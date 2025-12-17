@@ -70,7 +70,7 @@ export interface NewReportSchema {
   job_preferences: NormalizedJobPreferences;
 }
 
-interface NormalizedJobPreferences {
+export interface NormalizedJobPreferences {
   areas: string[];
   preferred_platforms: string[];
   needs: string[];
