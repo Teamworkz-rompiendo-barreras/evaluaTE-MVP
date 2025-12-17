@@ -67,15 +67,19 @@ export interface NewReportSchema {
   employability_score: number;
   completed_games: string[];
   final_message: string;
+  job_preferences: NormalizedJobPreferences;
 }
 
 interface NormalizedJobPreferences {
   areas: string[];
   preferred_platforms: string[];
+  needs: string[];
   location: string;
   seniority: string;
   work_mode: string;
   disability_certificate: string;
+  availability: string;
+  willing_to_relocate: boolean;
 }
 
 const detailPriority = {
@@ -140,6 +144,16 @@ const firstString = (value: unknown): string => {
     }
   }
   return '';
+};
+
+const toBoolean = (value: unknown): boolean => {
+  if (typeof value === 'boolean') return value;
+  if (typeof value === 'number') return value !== 0;
+  if (typeof value === 'string') {
+    const val = value.trim().toLowerCase();
+    return ['1', 'true', 'si', 'sí', 'yes', 'y'].includes(val);
+  }
+  return false;
 };
 
 const formatDisabilityCertificate = (value: unknown): string => {
@@ -219,10 +233,26 @@ const normalizeJobPreferences = (...sources: unknown[]): NormalizedJobPreference
   return {
     areas: toUniqueStringArray(areasSource),
     preferred_platforms: toUniqueStringArray(preferredPlatformsSource),
+    needs: toUniqueStringArray(
+      merged['needs'] ??
+        merged['apoyos'] ??
+        merged['supports'] ??
+        []
+    ),
     location: firstString(locationValue),
     seniority: firstString(seniorityValue),
     work_mode: firstString(workModeValue),
     disability_certificate: formatDisabilityCertificate(disabilityValue),
+    availability: firstString(
+      merged['availability'] ??
+        merged['schedule'] ??
+        merged['disponibilidad']
+    ),
+    willing_to_relocate: toBoolean(
+      merged['willingToRelocate'] ??
+        merged['willing_to_relocate'] ??
+        merged['relocate']
+    ),
   };
 };
 
@@ -329,6 +359,12 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         : undefined;
     // Already in new format
     if (data.personal_data) {
+      const normalizedJobPrefs = normalizeJobPreferences(
+        data.job_preferences,
+        data.jobPreferences,
+        data.job_preferences_data,
+        data.jobPreferencesData,
+      );
       const rawDetails = data.cv_details || {};
       const normalizedDetails = buildCvDetails({
         experience: [rawDetails.experience, rawDetails.experience_highlights, data.cv_analysis?.experience, data.cv_analysis?.experience_detailed],
@@ -358,6 +394,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         strengths: Array.isArray(data.strengths) && data.strengths.length > 0 ? data.strengths : [],
         soft_skills: Array.isArray(data.soft_skills) ? data.soft_skills : [],
         improvement_areas: Array.isArray(data.improvement_areas) ? data.improvement_areas : [],
+        job_preferences: normalizedJobPrefs,
         employability_score: score ?? 0,
       } as NewReportSchema;
     }
@@ -605,6 +642,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       return {
         summary,
         personal_data,
+        job_preferences: jobPreferences,
         profile_summary,
         cv_summary,
         strengths,
@@ -645,6 +683,17 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     gameNameMap[g] ?? g.replace(/-/g, ' ')
   );
   const radarData = data.soft_skills.map(s => ({ softskill: s.skill, score: s.score }));
+  const prefs = data.job_preferences || {
+    areas: [],
+    needs: [],
+    preferred_platforms: [],
+    location: '',
+    seniority: '',
+    work_mode: '',
+    disability_certificate: '',
+    availability: '',
+    willing_to_relocate: false,
+  };
 
   const stars = (n: number): string => {
     const v = Math.max(0, Math.min(5, Math.round(n)));
@@ -684,35 +733,47 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     `Email: ${data.personal_data.email}`,
     `Teléfono: ${data.personal_data.phone}`,
     '',
-    '## 2. Resumen del perfil',
+    '## 2. Preferencias laborales',
+    ...(prefs.areas?.length ? [`Áreas preferidas: ${prefs.areas.join(', ')}`] : []),
+    ...(prefs.needs?.length ? [`Apoyos o necesidades: ${prefs.needs.join(', ')}`] : []),
+    ...(prefs.work_mode ? [`Modalidad deseada: ${prefs.work_mode}`] : []),
+    ...(prefs.availability ? [`Disponibilidad: ${prefs.availability}`] : []),
+    ...(prefs.location ? [`Ubicación deseada: ${prefs.location}`] : []),
+    ...(prefs.preferred_platforms?.length ? [`Plataformas favoritas: ${prefs.preferred_platforms.join(', ')}`] : []),
+    ...(prefs.disability_certificate ? [`Certificado de discapacidad: ${prefs.disability_certificate}`] : []),
+    ...(typeof prefs.willing_to_relocate === 'boolean'
+      ? [`Movilidad geográfica: ${prefs.willing_to_relocate ? 'Sí' : 'No'}`]
+      : []),
+    '',
+    '## 3. Resumen del perfil',
     data.profile_summary,
     '',
-    '## 3. Resumen del CV',
+    '## 4. Resumen del CV',
     data.cv_summary,
     ...detailSectionLines,
-    '## 4. Fortalezas',
+    '## 5. Fortalezas',
     ...data.strengths.map((s) => `- ${s}`),
     '',
     // Título como H1 para que el split en ResultadosPage lo detecte (# ... Áreas de mejora ...)
-    '# 5. Áreas de mejora y consejos',
+    '# 6. Áreas de mejora y consejos',
     ...data.improvement_areas.map(
       (a) => `- ${a.area} - ${a.reason}${a.suggested_action ? ` (Acción: ${a.suggested_action})` : ''}`
     ),
     '',
-    '## 6. Análisis del CV con puntuación 1–5',
+    '## 7. Análisis del CV con puntuación 1–5',
     `Estructura: ${stars(data.cv_analysis.structure_score)}`,
     `Coherencia: ${stars(data.cv_analysis.coherence_score)}`,
     `Información clave: ${stars(data.cv_analysis.key_info_score)}`,
     `Claridad: ${stars(data.cv_analysis.clarity_score)}`,
     `Estilo: ${stars(data.cv_analysis.style_score)}`,
     '',
-    '## 7. Entornos de trabajo ideales',
+    '## 8. Entornos de trabajo ideales',
     data.ideal_work_environment,
     '',
-    '## 8. Roles profesionales sugeridos',
+    '## 9. Roles profesionales sugeridos',
     ...data.suggested_roles.map((r) => `- ${r.role} - ${r.reason}`),
     '',
-    '## 9. Plan de acción',
+    '## 10. Plan de acción',
     'Corto plazo:',
     ...data.action_plan.short_term.map((s) => `- ${s}`),
     'Mediano plazo:',
@@ -720,7 +781,7 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     'Largo plazo:',
     ...data.action_plan.long_term.map((s) => `- ${s}`),
     '',
-    '## 10. Consejos de búsqueda de empleo',
+    '## 11. Consejos de búsqueda de empleo',
     'Optimización del CV:',
     ...data.job_search_advice.cv_optimization.map((tip) => `- ${tip}`),
     `Cartas y portafolio: ${data.job_search_advice.letters_portfolio}`,
@@ -728,7 +789,7 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     `Networking: ${data.job_search_advice.networking}`,
     `Entrevistas: ${data.job_search_advice.interview_tips}`,
     '',
-    '## 11. Herramientas útiles y tecnología',
+    '## 12. Herramientas útiles y tecnología',
     ...[
       ['Productividad', data.useful_tools.productivity],
       ['Búsqueda de empleo', data.useful_tools.job_search],
@@ -736,7 +797,7 @@ export function generateNewFormatReport(data: NewReportSchema): string {
       ['Accesibilidad', data.useful_tools.accessibility],
     ].map(([label, items]) => `${label}: ${(items as string[]).join(', ')}`),
     '',
-    '## 12. Juegos completados',
+    '## 13. Juegos completados',
     ...prettyGames.map((g) => `- ${g}`),
   ];
 

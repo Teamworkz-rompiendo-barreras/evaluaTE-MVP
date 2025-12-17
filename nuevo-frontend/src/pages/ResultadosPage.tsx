@@ -1230,14 +1230,33 @@ const ResultadosPage: React.FC = () => {
     const displayScore = (globalScore ?? info.employability_score ?? 0);
     const employmentSummaryParts: string[] = [];
 
-    // Preferencias laborales
+    // Preferencias laborales (combinar estado local + backend)
     const jobPrefs = personal?.jobPreferences || {};
-    const areas = Array.isArray((jobPrefs as any)?.areas) ? (jobPrefs as any).areas : [];
-    const mode = (jobPrefs as any)?.workMode || (jobPrefs as any)?.work_mode || '';
-    const location = (jobPrefs as any)?.location || '';
+    const reportJobPrefs = (info?.job_preferences as Record<string, unknown> | undefined) || {};
+    const areasRaw = [
+      ...(Array.isArray((jobPrefs as any)?.areas) ? (jobPrefs as any).areas : []),
+      ...(Array.isArray(reportJobPrefs?.areas as unknown[]) ? (reportJobPrefs.areas as string[]) : []),
+    ];
+    const areas = Array.from(new Set(areasRaw.map(a => String(a ?? '').trim()).filter(Boolean)));
+    const mode =
+      (jobPrefs as any)?.workMode ||
+      (jobPrefs as any)?.work_mode ||
+      (reportJobPrefs as any)?.work_mode ||
+      '';
+    const location =
+      (jobPrefs as any)?.location ||
+      (reportJobPrefs as any)?.location ||
+      '';
+    const availability = (reportJobPrefs as any)?.availability || '';
+    const preferredPlatforms = Array.isArray((reportJobPrefs as any)?.preferred_platforms)
+      ? (reportJobPrefs as any).preferred_platforms.filter((p: unknown) => Boolean(p))
+      : [];
+
     if (areas.length > 0) employmentSummaryParts.push(`Áreas de interés: ${areas.join(', ')}`);
     if (mode) employmentSummaryParts.push(`Modalidad preferida: ${mode}`);
+    if (availability) employmentSummaryParts.push(`Disponibilidad: ${availability}`);
     if (location) employmentSummaryParts.push(`Ubicación preferida: ${location}`);
+    if (preferredPlatforms.length > 0) employmentSummaryParts.push(`Plataformas recomendadas: ${preferredPlatforms.join(', ')}`);
 
     // Habilidades clave (soft skills)
     const topSkills = Array.isArray(info.soft_skills)
@@ -1253,6 +1272,8 @@ const ResultadosPage: React.FC = () => {
     const eduCount = (info.cv_details?.education || []).length || (cvAnalysisDetails as any)?.education?.length || 0;
     if (expCount > 0) employmentSummaryParts.push(`Experiencia registrada: ${expCount}`);
     if (eduCount > 0) employmentSummaryParts.push(`Formación registrada: ${eduCount}`);
+    const gamesCount = Array.isArray(info.completed_games) ? info.completed_games.length : 0;
+    if (gamesCount > 0) employmentSummaryParts.push(`Minijuegos integrados: ${gamesCount}`);
 
     const formatEntry = (item: any, fields: string[]): string => {
       if (!item) return '';
@@ -1838,7 +1859,7 @@ const ResultadosPage: React.FC = () => {
     let after = cleaned.slice(endIndex);
 
     // 2) Asegurar de nuevo: eliminar cualquier resto de sección de Análisis del CV
-    const analysisHeader = /(\n|^)##\s*6\.\s*Análisis del CV con puntuación 1–5[\s\S]*?(?=\n##\s|$)/;
+    const analysisHeader = /(\n|^)##\s*\d+\.\s*Análisis del CV con puntuación 1–5[\s\S]*?(?=\n##\s|$)/;
     after = stripCvAnalysisSections(after).replace(analysisHeader, '\n');
 
     return { before, improvements, after };

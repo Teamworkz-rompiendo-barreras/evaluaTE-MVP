@@ -76,7 +76,18 @@ const mockNewFormat: NewReportSchema = {
   },
   completed_games: ['Juego de lógica'],
   final_message: '¡Éxitos en tu búsqueda laboral!',
-  employability_score: 76
+  employability_score: 76,
+  job_preferences: {
+    areas: ['Desarrollo de software'],
+    needs: [],
+    preferred_platforms: ['LinkedIn'],
+    location: 'Madrid, España',
+    seniority: 'Senior',
+    work_mode: 'híbrido',
+    disability_certificate: 'Sí',
+    availability: 'completa',
+    willing_to_relocate: false,
+  },
 };
 
 test('convertBackendResponseToNewFormat returns data as-is for new format', () => {
@@ -127,6 +138,17 @@ test('convertBackendResponseToNewFormat fills defaults when new-format fields ar
     employability_score: 0,
     completed_games: [],
     final_message: '',
+    job_preferences: {
+      areas: [],
+      needs: [],
+      preferred_platforms: [],
+      location: '',
+      seniority: '',
+      work_mode: '',
+      disability_certificate: '',
+      availability: '',
+      willing_to_relocate: false,
+    },
   };
 
   const result = convertBackendResponseToNewFormat(minimalNewFormat);
@@ -222,11 +244,12 @@ test('generateNewFormatReport includes required sections', () => {
   const report = generateNewFormatReport(mockNewFormat);
   const sections = [
     '## 1. Datos personales básicos',
-    '## 2. Resumen del perfil',
-    '## 3. Resumen del CV',
+    '## 2. Preferencias laborales',
+    '## 3. Resumen del perfil',
+    '## 4. Resumen del CV',
     '### Experiencia destacada',
-    '## 4. Fortalezas',
-    '# 5. Áreas de mejora y consejos'
+    '## 5. Fortalezas',
+    '# 6. Áreas de mejora y consejos'
   ];
   sections.forEach(section => {
     assert.ok(report.includes(section));
@@ -255,7 +278,8 @@ test('generateNewFormatReport renders CV scores as stars', () => {
 test('generateNewFormatReport shows user contact info when backend omits it', () => {
   const backendMissing: NewReportSchema = {
     ...mockNewFormat,
-    personal_data: { name: '', location: '', email: '', phone: '', disability_certificate: '' }
+    personal_data: { name: '', location: '', email: '', phone: '', disability_certificate: '' },
+    job_preferences: mockNewFormat.job_preferences,
   };
   const normalized = convertBackendResponseToNewFormat(backendMissing);
   const dp: PersonalData = {

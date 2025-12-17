@@ -73,9 +73,22 @@ class UsefulTools(BaseModel):
     accessibility: List[str]
 
 
+class JobPreferences(BaseModel):
+    areas: List[str] = Field(default_factory=list)
+    needs: List[str] = Field(default_factory=list)
+    work_mode: str = ""
+    availability: str = ""
+    willing_to_relocate: bool = False
+    has_disability_cert: bool = False
+    preferred_platforms: List[str] = Field(default_factory=list)
+    location: str = ""
+    seniority: str = ""
+
+
 class NewReportSchema(BaseModel):
     summary: str
     personal_data: PersonalData
+    job_preferences: JobPreferences = Field(default_factory=JobPreferences)
     profile_summary: str
     cv_summary: str
     cv_details: CvDetails = Field(default_factory=CvDetails)
@@ -143,10 +156,93 @@ def _stringify_entries(entries: Any, priority_keys: Iterable[str] = ()) -> List[
     return unique
 
 
+def _normalize_job_preferences(raw: Any) -> JobPreferences:
+    """
+    Normaliza preferencias laborales aceptando claves diversas del frontend o del backend.
+    """
+
+    def _as_bool(value: Any) -> bool:
+        if isinstance(value, bool):
+            return value
+        if isinstance(value, (int, float)):
+            return bool(value)
+        if isinstance(value, str):
+            v = value.strip().lower()
+            return v in {"1", "true", "si", "sí", "yes", "y"}
+        return False
+
+    def _as_list(value: Any) -> List[str]:
+        if value is None:
+            return []
+        if isinstance(value, (list, tuple, set)):
+            out = [str(v).strip() for v in value if v not in (None, "")]
+            return [v for v in out if v]
+        text = str(value).strip()
+        return [text] if text else []
+
+    raw = raw or {}
+    if not isinstance(raw, dict):
+        return JobPreferences()
+
+    return JobPreferences(
+        areas=_as_list(
+            raw.get("areas")
+            or raw.get("desired_roles")
+            or raw.get("desiredRoles")
+            or raw.get("roles")
+            or raw.get("targets")
+            or []
+        ),
+        needs=_as_list(raw.get("needs") or raw.get("apoyos") or raw.get("supports") or []),
+        work_mode=str(
+            raw.get("work_mode")
+            or raw.get("workMode")
+            or raw.get("mode")
+            or raw.get("working_mode")
+            or raw.get("modalidad")
+            or ""
+        ).strip(),
+        availability=str(
+            raw.get("availability")
+            or raw.get("schedule")
+            or raw.get("disponibilidad")
+            or ""
+        ).strip(),
+        willing_to_relocate=_as_bool(
+            raw.get("willingToRelocate")
+            or raw.get("willing_to_relocate")
+            or raw.get("relocate")
+        ),
+        has_disability_cert=_as_bool(
+            raw.get("hasDisabilityCert")
+            or raw.get("has_disability_cert")
+            or raw.get("disability_certificate")
+        ),
+        preferred_platforms=_as_list(
+            raw.get("preferred_platforms")
+            or raw.get("preferredPlatforms")
+            or raw.get("platforms")
+            or raw.get("sites")
+            or raw.get("channels")
+            or []
+        ),
+        location=str(raw.get("location") or raw.get("ubicacion") or "").strip(),
+        seniority=str(
+            raw.get("seniority")
+            or raw.get("experience_level")
+            or raw.get("experienceLevel")
+            or raw.get("level")
+            or ""
+        ).strip(),
+    )
+
+
 def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_analysis: Dict[str, Any], job_preferences: Dict[str, Any]) -> NewReportSchema:
     """
     Crea un reporte por defecto con el nuevo esquema estructurado
     """
+    job_prefs = _normalize_job_preferences(job_preferences)
+
     # Formatear soft skills y derivar fortalezas
     formatted_soft_skills: List[Dict[str, Any]] = []
     if soft_skills:
@@ -179,10 +275,10 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
     # Crear datos personales básicos
     personal_data = PersonalData(
         name=full_name or "Usuario",
-        location=(job_preferences or {}).get("location", "No especificado"),
+        location=job_prefs.location or "No especificado",
         email="No proporcionado",
         phone="No proporcionado",
-        disability_certificate="Sí" if (job_preferences or {}).get("hasDisabilityCert", False) else "No",
+        disability_certificate="Sí" if job_prefs.has_disability_cert else "No",
     )
     
     # Crear análisis del CV tomando datos de entrada cuando existan
@@ -347,13 +443,13 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
             ),
         ]
 
-    areas_pref = (job_preferences or {}).get('desired_roles') or (job_preferences or {}).get('areas') or []
+    areas_pref = job_prefs.areas
     area_str = ', '.join(areas_pref)
-    if job_preferences and areas_pref:
+    if job_prefs and areas_pref:
         action_plan = ActionPlan(
             short_term=[f"Explorar oportunidades en {area_str}"],
-            medium_term=[f"Desarrollar habilidades para rol {(job_preferences or {}).get('seniority', 'Senior')}"],
-            long_term=[f"Alcanzar posición {(job_preferences or {}).get('seniority', 'Senior')} en {area_str}"],
+            medium_term=[f"Desarrollar habilidades para rol {job_prefs.seniority or 'Senior'}"],
+            long_term=[f"Alcanzar posición {job_prefs.seniority or 'Senior'} en {area_str}"],
         )
     else:
         action_plan = ActionPlan(
@@ -380,12 +476,12 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         "Incluir logros cuantificables",
         "Destacar proyectos relevantes",
     ])
-    recommended_platforms = (job_preferences or {}).get('preferred_platforms') or (job_preferences or {}).get('platforms') or default_platforms
+    recommended_platforms = job_prefs.preferred_platforms or default_platforms
     job_search_advice = JobSearchAdvice(
         cv_optimization=cv_tips,
         letters_portfolio="Destacar proyectos relevantes en la carta de presentación",
         recommended_platforms=recommended_platforms,
-        networking="Participar en comunidades online" if (job_preferences or {}).get('workMode', '').lower() == 'remoto' else "Participar en meetups y grupos profesionales online",
+        networking="Participar en comunidades online" if (job_prefs.work_mode or '').lower() == 'remoto' else "Participar en meetups y grupos profesionales online",
         interview_tips="Preparar respuestas STAR y practicar presentación de proyectos",
     )
     
@@ -406,8 +502,8 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
             SuggestedRole(
                 role=role,
                 reason='Basado en preferencias del usuario',
-                seniority=(job_preferences or {}).get('seniority', 'Junior'),
-                remote_viable=((job_preferences or {}).get('workMode', '').lower() == 'remoto'),
+                seniority=job_prefs.seniority or 'Junior',
+                remote_viable=(job_prefs.work_mode or '').lower() == 'remoto',
             )
         )
     if not suggested_roles:
@@ -421,16 +517,17 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         ]
 
     ideal_work_environment_parts = []
-    if (job_preferences or {}).get('workMode'):
-        ideal_work_environment_parts.append('Modalidad preferida: ' + (job_preferences or {}).get('workMode'))
-    if (job_preferences or {}).get('areas'):
-        ideal_work_environment_parts.append('Áreas de interés: ' + ', '.join((job_preferences or {}).get('areas')))
+    if job_prefs.work_mode:
+        ideal_work_environment_parts.append('Modalidad preferida: ' + job_prefs.work_mode)
+    if job_prefs.areas:
+        ideal_work_environment_parts.append('Áreas de interés: ' + ', '.join(job_prefs.areas))
     ideal_work_environment = '. '.join(ideal_work_environment_parts) if ideal_work_environment_parts else 'Entorno inclusivo con oportunidades de aprendizaje y crecimiento profesional. Preferencia por empresas que valoren el desarrollo continuo.'
 
     
     return NewReportSchema(
         summary=f"Informe de empleabilidad para {full_name}",
         personal_data=personal_data,
+        job_preferences=job_prefs,
         profile_summary=cv_analysis.get('summary', 'Perfil profesional con potencial de desarrollo. Se recomienda fortalecer habilidades técnicas específicas y experiencia práctica.') if cv_analysis else 'Perfil profesional con potencial de desarrollo. Se recomienda fortalecer habilidades técnicas específicas y experiencia práctica.',
         cv_summary=cv_summary_markdown,
         cv_details=cv_details,
@@ -457,12 +554,21 @@ def convert_old_format_to_new(old_data: Dict[str, Any]) -> NewReportSchema:
     # Extraer información del formato antiguo
     report = old_data.get('report', {})
     recommendations = old_data.get('recommendations', [])
-    
+
+    raw_job_prefs = (
+        report.get('job_preferences')
+        or report.get('jobPreferences')
+        or old_data.get('job_preferences')
+        or old_data.get('jobPreferences')
+        or {}
+    )
+    job_prefs = _normalize_job_preferences(raw_job_prefs)
+
     full_name = report.get('fullName', 'Usuario')
     resumen = report.get('resumen_ejecutivo', 'Resumen no disponible')
-    
+
     # Crear reporte por defecto
-    default_report = create_default_report(full_name, [], {}, {})
+    default_report = create_default_report(full_name, [], {}, job_prefs.dict())
     
     # Sobrescribir con datos disponibles del formato antiguo
     if resumen and resumen != 'Resumen no disponible':
