@@ -1247,11 +1247,33 @@ const ResultadosPage: React.FC = () => {
     };
 
     // Si cv_details viene vacío, intentar usar cv_analysis detallado
+    const parseMaybeObject = (value: any) => {
+      if (value == null) return value;
+      if (typeof value === 'string') {
+        const txt = value.trim();
+        // Intentar convertir un dict de Python o JSON simplificado a objeto
+        if (/^\{.*\}$/.test(txt) && txt.includes(':')) {
+          try {
+            const normalized = txt
+              .replace(/'/g, '"')
+              .replace(/\bNone\b/g, 'null')
+              .replace(/\bTrue\b/g, 'true')
+              .replace(/\bFalse\b/g, 'false');
+            return JSON.parse(normalized);
+          } catch {
+            return value;
+          }
+        }
+      }
+      return value;
+    };
+
     const mergeDetail = (current: any[], fallback: any[], fields: string[]) => {
       const arr: any[] = Array.isArray(current) ? current : [];
       const fb: any[] = Array.isArray(fallback) ? fallback : [];
       if (arr.length > 0) return arr;
-      return fb.map((item) => {
+      return fb.map((raw) => {
+        const item = parseMaybeObject(raw);
         if (item == null) return '';
         if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
           return String(item).trim();
