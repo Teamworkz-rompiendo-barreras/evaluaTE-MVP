@@ -259,6 +259,57 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             if raw_text and (not sw_fallback):
                 sw_fallback = [raw_text[:200]]
 
+            def _extract_tools_from_text(text: str) -> List[str]:
+                """Detecta herramientas conocidas dentro del texto plano del CV."""
+                if not text:
+                    return []
+                catalog = [
+                    "microsoft office",
+                    "office",
+                    "excel",
+                    "word",
+                    "powerpoint",
+                    "outlook",
+                    "teams",
+                    "photoshop",
+                    "illustrator",
+                    "indesign",
+                    "after effects",
+                    "lightroom",
+                    "figma",
+                    "miro",
+                    "notion",
+                    "trello",
+                    "jira",
+                    "asana",
+                    "slack",
+                ]
+                lowered = text.lower()
+                found: List[str] = []
+                for tool in catalog:
+                    if tool in lowered:
+                        found.append(tool.title())
+                # Orden estable y sin duplicados
+                seen = set()
+                unique = []
+                for item in found:
+                    if item not in seen:
+                        seen.add(item)
+                        unique.append(item)
+                return unique
+
+            # Si Document Intelligence devolvió herramientas irrelevantes o vacías,
+            # reforzar con extracción simple desde el texto crudo.
+            if raw_text:
+                tools_from_text = _extract_tools_from_text(raw_text)
+                # Reemplazar si no hay herramientas o si solo hay dos genéricas
+                if (not sw_fallback) or (len(sw_fallback) <= 2):
+                    sw_fallback = tools_from_text or sw_fallback
+                else:
+                    # Combinar manteniendo prioridad a lo ya extraído
+                    combined = list(sw_fallback) + [t for t in tools_from_text if t not in sw_fallback]
+                    sw_fallback = combined
+
             def _stringify_list(items: Any) -> List[str]:
                 lines: List[str] = []
                 if not items:

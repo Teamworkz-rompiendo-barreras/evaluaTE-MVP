@@ -116,10 +116,26 @@ const ResultadosPage: React.FC = () => {
   const game = useAppSelector((state: RootState) => state.game);
   const [info, setInfo] = useState<NewReportSchema | null>(null);
   // Priorizar el análisis que viene del informe IA; si no, usar el del estado local
+  // Preferir el análisis más rico: primero el guardado en Redux, luego el del informe IA
   const cvAnalysis: CvAnalysis | undefined = (() => {
     const reportInfo = info as NewReportSchema | null | undefined;
-    if (reportInfo && reportInfo.cv_analysis) return reportInfo.cv_analysis;
-    return personal?.cvAnalysis;
+    const fromReport = reportInfo?.cv_analysis;
+    const fromState = personal?.cvAnalysis;
+
+    const hasDetails = (ca: any): boolean =>
+      !!(
+        (ca?.cv_details && Object.values(ca.cv_details).some((v: any) => Array.isArray(v) && v.length > 0)) ||
+        (Array.isArray(ca?.experience_detailed) && ca.experience_detailed.length > 0) ||
+        (Array.isArray(ca?.education_detailed) && ca.education_detailed.length > 0) ||
+        (Array.isArray(ca?.languages) && ca.languages.length > 0) ||
+        (Array.isArray(ca?.software) && ca.software.length > 0) ||
+        (Array.isArray(ca?.skills) && ca.skills.length > 0)
+      );
+
+    if (hasDetails(fromState)) return fromState as CvAnalysis;
+    if (hasDetails(fromReport)) return fromReport as CvAnalysis;
+    // Si ninguno tiene detalles, preferir el de Redux para mantener coherencia con analyze-cv
+    return (fromState || fromReport) as CvAnalysis | undefined;
   })();
 
   // Hook de valoración (alias para evitar choque de nombres)
@@ -375,9 +391,39 @@ const ResultadosPage: React.FC = () => {
           confidence: 80,
         }];
 
+        const mergeCvDetails = (target: any, source: any): void => {
+          if (!source || typeof source !== 'object') return;
+          const ensureArray = (val: any) => (Array.isArray(val) ? val : []);
+          target.experience_detailed = ensureArray(target.experience_detailed).length
+            ? target.experience_detailed
+            : ensureArray(source.experience_detailed || source.experience);
+          target.education_detailed = ensureArray(target.education_detailed).length
+            ? target.education_detailed
+            : ensureArray(source.education_detailed || source.education);
+          target.languages = ensureArray(target.languages).length
+            ? target.languages
+            : ensureArray(source.languages);
+          target.software = ensureArray(target.software).length
+            ? target.software
+            : ensureArray(source.software || source.skills || source.tools);
+          if (source.cv_details) {
+            const t = target.cv_details || { experience: [], education: [], languages: [], tools: [] };
+            const s = source.cv_details;
+            t.experience = t.experience && t.experience.length ? t.experience : ensureArray(s.experience);
+            t.education = t.education && t.education.length ? t.education : ensureArray(s.education);
+            t.languages = t.languages && t.languages.length ? t.languages : ensureArray(s.languages);
+            t.tools = t.tools && t.tools.length ? t.tools : ensureArray(s.tools || s.software);
+            target.cv_details = t;
+          }
+        };
+
         // Reintentar tomar el cvAnalysis más reciente del estado si se actualizó tras el análisis
         if (!cvAnalysisPayload && personal?.cvAnalysis) {
           cvAnalysisPayload = personal.cvAnalysis as CvAnalysis;
+        }
+        // Si el cvAnalysis proveniente del informe no tiene detalles, injertar los del estado
+        if (cvAnalysisPayload && personal?.cvAnalysis) {
+          mergeCvDetails(cvAnalysisPayload as any, personal.cvAnalysis);
         }
         // Fallback seguro para no enviar null al backend
         if (!cvAnalysisPayload) {
