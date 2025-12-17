@@ -1220,13 +1220,62 @@ const ResultadosPage: React.FC = () => {
   // Bloque inicial del informe (Resumen ejecutivo, Datos personales, Resumen del CV)
   const renderInitialBlock = () => {
     if (!info) return null;
-    const personalData = info.personal_data || {} as PersonalData;
-    const details = info.cv_details || {};
-    const cvAnalysisDetails = info.cv_analysis || {};
-    const candidateName =
-      personalData.name ||
-      `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim() ||
-      'Usuario';
+    const personalData = { ...(info.personal_data || {} as PersonalData) };
+    const cvAnalysisDetails = (info.cv_analysis || {}) as any;
+
+    // Enriquecer datos personales con contacto del CV si faltan
+    const cvContact = (cvAnalysisDetails?.contact || cvAnalysisDetails?.cv_structured?.contact || {}) as any;
+    const contactName = cvAnalysisDetails?.cv_structured?.candidate || cvAnalysisDetails?.candidate || cvContact?.name || cvContact?.nombre;
+    if (!personalData.name || personalData.name === 'Usuario') {
+      personalData.name = (contactName || `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim() || 'Usuario').trim() || 'Usuario';
+    }
+    if ((!personalData.email || personalData.email === 'No consta') && Array.isArray(cvContact?.emails) && cvContact.emails[0]) {
+      personalData.email = String(cvContact.emails[0]);
+    }
+    if ((!personalData.phone || personalData.phone === 'No especificado') && Array.isArray(cvContact?.phones) && cvContact.phones[0]) {
+      personalData.phone = String(cvContact.phones[0]);
+    }
+    if ((!personalData.location || personalData.location === 'No consta') && cvContact?.location) {
+      personalData.location = String(cvContact.location);
+    }
+
+    const details = {
+      experience: info.cv_details?.experience || [],
+      education: info.cv_details?.education || [],
+      languages: info.cv_details?.languages || [],
+      tools: info.cv_details?.tools || [],
+    };
+
+    // Si cv_details viene vacío, intentar usar cv_analysis detallado
+    const mergeDetail = (current: any[], fallback: any[], fields: string[]) => {
+      const arr: any[] = Array.isArray(current) ? current : [];
+      const fb: any[] = Array.isArray(fallback) ? fallback : [];
+      if (arr.length > 0) return arr;
+      return fb.map((item) => {
+        if (item == null) return '';
+        if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
+          return String(item).trim();
+        }
+        if (Array.isArray(item)) {
+          return item.map((it) => String(it ?? '').trim()).filter(Boolean).join(' — ');
+        }
+        if (typeof item === 'object') {
+          const parts: string[] = [];
+          for (const f of fields) {
+            const v = (item as any)?.[f];
+            if (v === null || v === undefined) continue;
+            const s = String(v).trim();
+            if (s) parts.push(s);
+          }
+          const desc = (item as any)?.description || (item as any)?.descripcion;
+          if (parts.length === 0 && desc) parts.push(String(desc).trim());
+          return parts.join(' — ').trim();
+        }
+        return String(item ?? '').trim();
+      }).filter(Boolean);
+    };
+
+    const candidateName = personalData.name;
     const displayScore = (globalScore ?? info.employability_score ?? 0);
     const employmentSummaryParts: string[] = [];
 
@@ -1268,8 +1317,8 @@ const ResultadosPage: React.FC = () => {
     }
 
     // Datos CV relevantes
-    const expCount = (info.cv_details?.experience || []).length || (cvAnalysisDetails as any)?.experience?.length || 0;
-    const eduCount = (info.cv_details?.education || []).length || (cvAnalysisDetails as any)?.education?.length || 0;
+    const expCount = mergeDetail(details.experience, cvAnalysisDetails?.experience_detailed || cvAnalysisDetails?.experience || [], []).length;
+    const eduCount = mergeDetail(details.education, cvAnalysisDetails?.education_detailed || cvAnalysisDetails?.education || [], []).length;
     if (expCount > 0) employmentSummaryParts.push(`Experiencia registrada: ${expCount}`);
     if (eduCount > 0) employmentSummaryParts.push(`Formación registrada: ${eduCount}`);
     const gamesCount = Array.isArray(info.completed_games) ? info.completed_games.length : 0;
@@ -1304,30 +1353,26 @@ const ResultadosPage: React.FC = () => {
         .filter(Boolean);
     };
 
-    const experience = toList(
-      (details.experience && details.experience.length > 0
-        ? details.experience
-        : (cvAnalysisDetails as any)?.experience_detailed || (cvAnalysisDetails as any)?.experience || []),
+    const experience = mergeDetail(
+      details.experience,
+      cvAnalysisDetails?.experience_detailed || cvAnalysisDetails?.experience || [],
       ['title', 'role', 'position', 'company', 'organization', 'employer', 'period', 'start_date', 'end_date', 'duration', 'description']
-    ).slice(0, 5);
-    const education = toList(
-      (details.education && details.education.length > 0
-        ? details.education
-        : (cvAnalysisDetails as any)?.education_detailed || (cvAnalysisDetails as any)?.education || []),
+    ).slice(0, 8);
+    const education = mergeDetail(
+      details.education,
+      cvAnalysisDetails?.education_detailed || cvAnalysisDetails?.education || [],
       ['degree', 'title', 'program', 'area', 'institution', 'school', 'period', 'start_date', 'end_date', 'graduation_year', 'level', 'description']
-    ).slice(0, 5);
-    const languages = toList(
-      (details.languages && details.languages.length > 0
-        ? details.languages
-        : (cvAnalysisDetails as any)?.languages || []),
+    ).slice(0, 8);
+    const languages = mergeDetail(
+      details.languages,
+      cvAnalysisDetails?.languages || [],
       ['language', 'idioma', 'name', 'level', 'nivel', 'certification']
-    ).slice(0, 5);
-    const tools = toList(
-      (details.tools && details.tools.length > 0
-        ? details.tools
-        : (cvAnalysisDetails as any)?.software || (cvAnalysisDetails as any)?.skills || []),
+    ).slice(0, 8);
+    const tools = mergeDetail(
+      details.tools,
+      cvAnalysisDetails?.software || cvAnalysisDetails?.skills || [],
       ['name', 'tool', 'technology', 'software', 'level', 'nivel', 'description']
-    ).slice(0, 6);
+    ).slice(0, 8);
 
     const renderList = (items: Array<string>) => {
       if (!items || items.length === 0) return <p className="text-gray-900 dark:text-gray-100">No hay información disponible.</p>;
