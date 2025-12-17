@@ -333,6 +333,11 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     education = _pick_list("education", "education_detailed")
     languages = _pick_list("languages", "languages_detailed") or cv_data.get("idiomas") or []
     software = _pick_list("software", "skills")
+    courses = _pick_list("courses", "courses_detailed") or cv_data.get("cursos") or []
+    certifications = _pick_list("certifications", "certifications_detailed") or cv_data.get("certificaciones") or []
+    volunteering = _pick_list("volunteering", "volunteering_detailed") or cv_data.get("voluntariado") or []
+    projects = _pick_list("projects", "projects_detailed") or cv_data.get("proyectos") or []
+    aptitudes = _pick_list("aptitudes", "aptitudes_detailed") or cv_data.get("aptitudes") or cv_data.get("skills") or []
 
     # Preferir nombre desde contacto si existe
     candidate_name = ""
@@ -340,6 +345,17 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         candidate_name = cv_data["contact"].get("name") or cv_data["contact"].get("nombre") or ""
     if not candidate_name:
         candidate_name = cv_data.get("candidate") or ""
+
+    # Contacto directo desde el CV (prioritario frente a la app)
+    contact = {}
+    if isinstance(cv_data.get("contact"), dict):
+        contact = {
+            "emails": cv_data["contact"].get("emails") or [],
+            "phones": cv_data["contact"].get("phones") or [],
+            "location": cv_data["contact"].get("location") or "",
+            "name": cv_data["contact"].get("name") or cv_data["contact"].get("nombre") or "",
+            "linkedin": cv_data["contact"].get("linkedin") or "",
+        }
 
     return {
         "structure_score": structure_score,
@@ -357,6 +373,12 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         "software": software,
         "languages": languages,
         "candidate": candidate_name,
+        "contact": contact,
+        "courses": courses,
+        "certifications": certifications,
+        "volunteering": volunteering,
+        "projects": projects,
+        "aptitudes": aptitudes,
     }
 
 
@@ -470,9 +492,11 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
         )
     cv_payload["feedback"] = cv_feedback
 
-    # Enriquecer contacto y nombre desde el candidato si el CV trae valores erróneos
+    # Enriquecer contacto priorizando SIEMPRE los datos del CV; solo usar candidato como último recurso
     cv_payload["candidate"] = full_name
     contact = cv_payload.get("contact") if isinstance(cv_payload.get("contact"), dict) else {}
+    if not contact:
+        contact = {}
     if not contact.get("emails") and candidate_data.get("email"):
         contact["emails"] = [candidate_data.get("email")]
     if not contact.get("phones") and candidate_data.get("phone"):
@@ -562,12 +586,20 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     report.summary = " ".join(parts)
 
     personal = report.personal_data
-    personal.name = full_name
-    if candidate_data.get("location"):
+    # Datos personales: priorizar contacto del CV
+    cv_contact = cv_payload.get("contact") if isinstance(cv_payload.get("contact"), dict) else {}
+    personal.name = cv_contact.get("name") or cv_contact.get("nombre") or full_name
+    if cv_contact.get("location"):
+        personal.location = str(cv_contact.get("location"))
+    elif candidate_data.get("location"):
         personal.location = str(candidate_data.get("location"))
-    if candidate_data.get("email"):
+    if cv_contact.get("emails"):
+        personal.email = str(cv_contact.get("emails")[0])
+    elif candidate_data.get("email"):
         personal.email = str(candidate_data.get("email"))
-    if candidate_data.get("phone"):
+    if cv_contact.get("phones"):
+        personal.phone = str(cv_contact.get("phones")[0])
+    elif candidate_data.get("phone"):
         personal.phone = str(candidate_data.get("phone"))
     has_cert = candidate_data.get("hasDisabilityCertificate")
     if has_cert is None:

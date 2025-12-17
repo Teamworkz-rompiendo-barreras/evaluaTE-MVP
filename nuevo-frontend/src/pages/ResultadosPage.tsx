@@ -1384,6 +1384,26 @@ const ResultadosPage: React.FC = () => {
       cvAnalysisDetails?.software || cvAnalysisDetails?.skills || [],
       ['name', 'tool', 'technology', 'software', 'level', 'nivel', 'description']
     ).slice(0, 8);
+    const courses = mergeDetail(
+      [],
+      (cvAnalysisDetails as any)?.courses || (cvAnalysisDetails as any)?.certifications || [],
+      ['title', 'course', 'certification', 'institution', 'provider', 'year', 'fecha', 'description']
+    ).slice(0, 8);
+    const volunteering = mergeDetail(
+      [],
+      (cvAnalysisDetails as any)?.volunteering || (cvAnalysisDetails as any)?.voluntariado || [],
+      ['role', 'position', 'organization', 'organizacion', 'period', 'start_date', 'end_date', 'duration', 'description', 'descripcion']
+    ).slice(0, 8);
+    const projects = mergeDetail(
+      [],
+      (cvAnalysisDetails as any)?.projects || [],
+      ['title', 'project', 'role', 'description', 'descripcion', 'year', 'fecha']
+    ).slice(0, 8);
+    const aptitudes = mergeDetail(
+      [],
+      (cvAnalysisDetails as any)?.aptitudes || [],
+      ['name', 'skill', 'aptitude', 'description']
+    ).slice(0, 12);
 
     const renderList = (items: Array<string>) => {
       if (!items || items.length === 0) return <p className="text-gray-900 dark:text-gray-100">No hay información disponible.</p>;
@@ -1449,6 +1469,12 @@ const ResultadosPage: React.FC = () => {
               <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Formación (selección)</h4>
               {renderList(education)}
             </div>
+            {courses.length > 0 && (
+              <div>
+                <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Cursos / Certificaciones</h4>
+                {renderList(courses)}
+              </div>
+            )}
             <div>
               <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Idiomas</h4>
               {renderList(languages)}
@@ -1457,6 +1483,24 @@ const ResultadosPage: React.FC = () => {
               <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Herramientas/Software</h4>
               {renderList(tools)}
             </div>
+            {volunteering.length > 0 && (
+              <div>
+                <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Voluntariados</h4>
+                {renderList(volunteering)}
+              </div>
+            )}
+            {projects.length > 0 && (
+              <div>
+                <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Proyectos</h4>
+                {renderList(projects)}
+              </div>
+            )}
+            {aptitudes.length > 0 && (
+              <div>
+                <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Aptitudes destacadas</h4>
+                {renderList(aptitudes)}
+              </div>
+            )}
           </div>
         </section>
       </div>
