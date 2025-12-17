@@ -1269,10 +1269,11 @@ const ResultadosPage: React.FC = () => {
     };
 
     const mergeDetail = (current: any[], fallback: any[], fields: string[]) => {
-      const arr: any[] = Array.isArray(current) ? current : [];
-      const fb: any[] = Array.isArray(fallback) ? fallback : [];
-      if (arr.length > 0) return arr;
-      return fb.map((raw) => {
+      const combined: any[] = [];
+      if (Array.isArray(current)) combined.push(...current);
+      if (Array.isArray(fallback)) combined.push(...fallback);
+
+      const formatted = combined.map((raw) => {
         const item = parseMaybeObject(raw);
         if (item == null) return '';
         if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
@@ -1295,14 +1296,23 @@ const ResultadosPage: React.FC = () => {
           if (parts.length === 0) {
             const name = (item as any)?.name || (item as any)?.idioma || (item as any)?.language;
             const level = (item as any)?.level || (item as any)?.nivel;
-            const combined = [name, level].map((x) => (x == null ? '' : String(x).trim())).filter(Boolean);
-            if (combined.length) return combined.join(' — ');
+            const combinedNameLevel = [name, level].map((x) => (x == null ? '' : String(x).trim())).filter(Boolean);
+            if (combinedNameLevel.length) return combinedNameLevel.join(' — ');
           }
           const line = parts.join(' — ').trim();
           return line;
         }
         return String(item ?? '').trim();
       }).filter(Boolean);
+
+      // Deduplicar manteniendo orden
+      const seen = new Set<string>();
+      return formatted.filter((val) => {
+        const key = val.toLowerCase();
+        if (seen.has(key)) return false;
+        seen.add(key);
+        return true;
+      });
     };
 
     const candidateName = personalData.name;
