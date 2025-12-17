@@ -394,6 +394,51 @@ const ResultadosPage: React.FC = () => {
         const mergeCvDetails = (target: any, source: any): void => {
           if (!source || typeof source !== 'object') return;
           const ensureArray = (val: any) => (Array.isArray(val) ? val : []);
+          const stringifyList = (items: any[]): string[] => {
+            if (!items) return [];
+            const out: string[] = [];
+            for (const it of items) {
+              if (it === null || it === undefined) continue;
+              if (typeof it === 'string') {
+                const t = it.trim();
+                if (t) out.push(t);
+                continue;
+              }
+              if (typeof it === 'number' || typeof it === 'boolean') {
+                out.push(String(it));
+                continue;
+              }
+              if (Array.isArray(it)) {
+                out.push(...stringifyList(it));
+                continue;
+              }
+              if (typeof it === 'object') {
+                const parts: string[] = [];
+                const keys = [
+                  'title','cargo','position','role','puesto',
+                  'company','empresa','organization','organizacion',
+                  'period','duration','start_date','fecha_inicio','end_date','fecha_fin',
+                  'description','descripcion','degree','titulo','institution','institucion','school','name','language','idioma','level','nivel'
+                ];
+                for (const k of keys) {
+                  const v = (it as any)[k];
+                  if (v !== null && v !== undefined && String(v).trim()) parts.push(String(v).trim());
+                }
+                const line = parts.join(' — ').trim();
+                if (line) out.push(line);
+                continue;
+              }
+            }
+            // Unificar y limpiar duplicados
+            const seen = new Set<string>();
+            return out.filter((x) => {
+              const key = x.toLowerCase();
+              if (seen.has(key)) return false;
+              seen.add(key);
+              return true;
+            });
+          };
+
           target.experience_detailed = ensureArray(target.experience_detailed).length
             ? target.experience_detailed
             : ensureArray(source.experience_detailed || source.experience);
@@ -409,10 +454,18 @@ const ResultadosPage: React.FC = () => {
           if (source.cv_details) {
             const t = target.cv_details || { experience: [], education: [], languages: [], tools: [] };
             const s = source.cv_details;
-            t.experience = t.experience && t.experience.length ? t.experience : ensureArray(s.experience);
-            t.education = t.education && t.education.length ? t.education : ensureArray(s.education);
-            t.languages = t.languages && t.languages.length ? t.languages : ensureArray(s.languages);
-            t.tools = t.tools && t.tools.length ? t.tools : ensureArray(s.tools || s.software);
+            t.experience = t.experience && t.experience.length ? t.experience : stringifyList(ensureArray(s.experience));
+            t.education = t.education && t.education.length ? t.education : stringifyList(ensureArray(s.education));
+            t.languages = t.languages && t.languages.length ? t.languages : stringifyList(ensureArray(s.languages));
+            t.tools = t.tools && t.tools.length ? t.tools : stringifyList(ensureArray(s.tools || s.software));
+            target.cv_details = t;
+          } else {
+            // Si no hay cv_details en la fuente, generarlos a partir de los arrays detallados
+            const t = target.cv_details || { experience: [], education: [], languages: [], tools: [] };
+            if (!t.experience?.length) t.experience = stringifyList(target.experience_detailed || target.experience || []);
+            if (!t.education?.length) t.education = stringifyList(target.education_detailed || target.education || []);
+            if (!t.languages?.length) t.languages = stringifyList(target.languages || []);
+            if (!t.tools?.length) t.tools = stringifyList(target.software || target.skills || []);
             target.cv_details = t;
           }
         };
