@@ -1352,10 +1352,18 @@ const ResultadosPage: React.FC = () => {
     const cvDetailsFromInfo = (info?.cv_details as any) || {};
     const cvDetailsFromState = (cvFromState as any)?.cv_details || {};
     const mergedCvDetails = {
-      experience: ensureArray((cvDetailsFromInfo as any).experience) || ensureArray((cvFromState as any)?.experience_detailed || (cvFromState as any)?.experience) || ensureArray((cvDetailsFromState as any).experience),
-      education: ensureArray((cvDetailsFromInfo as any).education) || ensureArray((cvFromState as any)?.education_detailed || (cvFromState as any)?.education) || ensureArray((cvDetailsFromState as any).education),
-      languages: ensureArray((cvDetailsFromInfo as any).languages) || ensureArray((cvFromState as any)?.languages) || ensureArray((cvDetailsFromState as any).languages),
-      tools: ensureArray((cvDetailsFromInfo as any).tools) || ensureArray((cvDetailsFromInfo as any).software) || ensureArray((cvFromState as any)?.software || (cvFromState as any)?.skills) || ensureArray((cvDetailsFromState as any).tools),
+      experience: ensureArray((cvDetailsFromInfo as any).experience_detailed || (cvDetailsFromInfo as any).experience)
+        || ensureArray((cvFromState as any)?.experience_detailed || (cvFromState as any)?.experience)
+        || ensureArray((cvDetailsFromState as any).experience),
+      education: ensureArray((cvDetailsFromInfo as any).education_detailed || (cvDetailsFromInfo as any).education)
+        || ensureArray((cvFromState as any)?.education_detailed || (cvFromState as any)?.education)
+        || ensureArray((cvDetailsFromState as any).education),
+      languages: ensureArray((cvDetailsFromInfo as any).languages)
+        || ensureArray((cvFromState as any)?.languages)
+        || ensureArray((cvDetailsFromState as any).languages),
+      tools: ensureArray((cvDetailsFromInfo as any).tools || (cvDetailsFromInfo as any).software)
+        || ensureArray((cvFromState as any)?.software || (cvFromState as any)?.skills)
+        || ensureArray((cvDetailsFromState as any).tools),
     };
 
     const mergedCvAnalysis = (() => {
@@ -1380,7 +1388,9 @@ const ResultadosPage: React.FC = () => {
       };
       mergeList(scores, cvFromState, 'corrections');
       mergeList(scores, cvFromState, 'reordering_suggestions');
+      // Evidencias: usar las del CV si existen; de lo contrario, dejar vacío (no genérico)
       if (!scores.evidence && (cvFromState as any)?.evidence) scores.evidence = (cvFromState as any).evidence;
+      if (!scores.evidence && (info?.cv_analysis as any)?.evidence) scores.evidence = (info?.cv_analysis as any).evidence;
       return scores;
     })();
 
@@ -1393,7 +1403,11 @@ const ResultadosPage: React.FC = () => {
         (cvContact as any)?.nombre,
         `${personal?.firstName ?? ''} ${personal?.lastName ?? ''}`,
       ),
-      location: firstNonEmpty(base?.personal_data?.location, (cvContact as any)?.location, (resolvedJobPreferences as any)?.location),
+      location: firstNonEmpty(
+        base?.personal_data?.location,
+        (cvContact as any)?.location,
+        (resolvedJobPreferences as any)?.location,
+      ),
       email: firstNonEmpty(base?.personal_data?.email, (cvContact as any)?.emails?.[0], personal?.email),
       phone: firstNonEmpty(base?.personal_data?.phone, (cvContact as any)?.phones?.[0], personal?.whatsapp),
       disability_certificate: firstNonEmpty(base?.personal_data?.disability_certificate, personal?.hasDisabilityCert ? 'Sí' : ''),
