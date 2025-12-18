@@ -680,18 +680,24 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
 
             # Datos del candidato (con fallback a datos del CV para el nombre)
             full_name_raw = data.get("fullName") or data.get("userId") or ""
-            # Tomar nombre desde el CV si el usuario no lo envió
             cv_raw_for_name = data.get("cvAnalysis") or {}
             cv_structured_for_name = cv_raw_for_name.get("cv_structured") or {}
             cv_contact_for_name = cv_raw_for_name.get("contact") or cv_structured_for_name.get("contact") or {}
             cv_candidate_name = cv_structured_for_name.get("candidate") or cv_contact_for_name.get("name") or cv_contact_for_name.get("nombre") or ""
-            full_name = str(full_name_raw or cv_candidate_name or "Usuario")
+            full_name = str(cv_candidate_name or full_name_raw or "Usuario").strip() or "Usuario"
 
+            # Datos del candidato priorizando siempre el contacto del CV
             candidate_data = {
                 "fullName": full_name,
-                "location": (data.get("location") or "No consta"),
-                "email": (data.get("email") or "No consta"),
-                "phone": (data.get("phone") or "No especificado"),
+                "location": cv_contact_for_name.get("location")
+                or data.get("location")
+                or "No consta",
+                "email": (cv_contact_for_name.get("emails") or [None])[0]
+                or data.get("email")
+                or "No consta",
+                "phone": (cv_contact_for_name.get("phones") or [None])[0]
+                or data.get("phone")
+                or "No especificado",
                 "hasDisabilityCertificate": bool((data.get("jobPreferences") or {}).get("hasDisabilityCert"))
             }
 

@@ -397,16 +397,17 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
 
     # Datos personales básicos
     full_name = (
-        payload.get("fullName")
-        or (report_data.get("personal_data") or {}).get("name")
+        (report_data.get("personal_data") or {}).get("name")
+        or payload.get("fullName")
         or payload.get("userId")
-        or "Usuario"
+        or ""
     )
     personal = report_data.get("personal_data") or {}
     if not isinstance(personal, dict):
         personal = {}
     # Enriquecer con contacto del CV si falta
     contact = (cv_data.get("contact") if isinstance(cv_data, dict) else {}) or {}
+    contact_name = ""
     if isinstance(contact, dict):
         if not personal.get("email") and isinstance(contact.get("emails"), list) and contact.get("emails"):
             personal["email"] = contact.get("emails")[0]
@@ -414,6 +415,13 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
             personal["phone"] = contact.get("phones")[0]
         if not personal.get("location") and isinstance(contact.get("location"), str):
             personal["location"] = contact.get("location")
+        contact_name = contact.get("name") or contact.get("nombre") or ""
+    if not full_name and contact_name:
+        full_name = contact_name
+    if not personal.get("name") and full_name:
+        personal["name"] = full_name
+    if not full_name:
+        full_name = "Usuario"
 
     # Puntuación global
     global_score = int(payload.get("employabilityScore") or report_data.get("employabilityScore") or 0)
@@ -620,7 +628,7 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         ]
         y = _draw_star_rating_block(c, margin_x, y, rating_items)
         evidence = (scores.get("evidence") if isinstance(scores, dict) else {}) or {}
-        if isinstance(evidence, dict) and any(evidence.values()):
+        if isinstance(evidence, dict):
             y -= 6
             c.setFont("Helvetica-Bold", 11)
             c.drawString(margin_x, y, "Observaciones del análisis:")
@@ -632,6 +640,8 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
             if evidence.get("key_info"): items.append(f"Información clave: {evidence.get('key_info')}")
             if evidence.get("clarity"): items.append(f"Claridad: {evidence.get('clarity')}")
             if evidence.get("style"): items.append(f"Estilo: {evidence.get('style')}")
+            if not items:
+                items.append("No se pudo extraer evidencia del CV. Añade logros, fechas y responsabilidades claras.")
             y = _draw_bulleted_list(c, margin_x, y, items, line_w)
         corrections = scores.get("corrections") if isinstance(scores, dict) else []
         if isinstance(corrections, list) and corrections:
@@ -763,7 +773,9 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
                 else:
                     pretty_games.append(str(nm))
             else:
-                pretty_games.append(str(g))
+                sg = str(g)
+                if sg.strip() and not sg.isdigit():
+                    pretty_games.append(sg)
         y = _draw_bulleted_list(c, margin_x, y, pretty_games, line_w)
 
     # Herramientas útiles

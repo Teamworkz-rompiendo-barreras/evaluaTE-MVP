@@ -1387,7 +1387,12 @@ const ResultadosPage: React.FC = () => {
     const cvContact = (cvFromState as any)?.contact || (cvFromState as any)?.cv_structured?.contact || {};
     const personalData = {
       ...(base?.personal_data || {}),
-      name: firstNonEmpty(base?.personal_data?.name, `${personal?.firstName ?? ''} ${personal?.lastName ?? ''}`),
+      name: firstNonEmpty(
+        base?.personal_data?.name,
+        (cvContact as any)?.name,
+        (cvContact as any)?.nombre,
+        `${personal?.firstName ?? ''} ${personal?.lastName ?? ''}`,
+      ),
       location: firstNonEmpty(base?.personal_data?.location, (cvContact as any)?.location, (resolvedJobPreferences as any)?.location),
       email: firstNonEmpty(base?.personal_data?.email, (cvContact as any)?.emails?.[0], personal?.email),
       phone: firstNonEmpty(base?.personal_data?.phone, (cvContact as any)?.phones?.[0], personal?.whatsapp),
@@ -1425,7 +1430,8 @@ const ResultadosPage: React.FC = () => {
         if (Array.isArray(arr)) {
           arr.forEach((g) => {
             const val = String(g ?? '').trim();
-            if (val) set.add(val);
+            // Evitar placeholders numéricos (1,2,3) y cadenas vacías
+            if (val && !/^\d+$/.test(val)) set.add(val);
           });
         }
       };
