@@ -527,6 +527,18 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
         pd_lines.append(f"Teléfono: {personal.get('phone')}")
     y = _draw_bulleted_list(c, margin_x, y, pd_lines, line_w)
 
+    # Utilidad para limpiar placeholders sintéticos
+    def _clean_list(items: List[str]) -> List[str]:
+        noise = ("Cargo detectado", "Empresa detectada", "Fecha detectada", "Experiencia extraída del CV")
+        cleaned: List[str] = []
+        for it in items:
+            if not it:
+                continue
+            if any(n.lower() in str(it).lower() for n in noise):
+                continue
+            cleaned.append(str(it).strip())
+        return cleaned
+
     # Resumen del CV (experiencia/educación/idiomas/software)
     y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom)
     c.setFont("Helvetica-Bold", 12)
@@ -535,15 +547,15 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
     c.setFont("Helvetica", 10)
     # Experiencia
     y = _draw_wrapped_text(c, margin_x, y, "Experiencia (selección)", line_w)
-    xp = (cv_data.get("experience") or cv_data.get("experience_detailed") or [])
+    xp = _clean_list(cv_data.get("experience") or cv_data.get("experience_detailed") or [])
     y = _draw_bulleted_list(c, margin_x, y, xp[:8], line_w)
     # Educación
     y -= 6
     y = _draw_wrapped_text(c, margin_x, y, "Formación (selección)", line_w)
-    edu = cv_data.get("education") or cv_data.get("education_detailed") or []
+    edu = _clean_list(cv_data.get("education") or cv_data.get("education_detailed") or [])
     y = _draw_bulleted_list(c, margin_x, y, edu[:8], line_w)
     # Idiomas
-    langs = cv_data.get("languages") or []
+    langs = _clean_list(cv_data.get("languages") or [])
     if langs:
         y -= 6
         y = _draw_wrapped_text(c, margin_x, y, "Idiomas", line_w)
@@ -557,7 +569,7 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
                 items.append(str(it))
         y = _draw_bulleted_list(c, margin_x, y, items, line_w)
     # Software / herramientas
-    sw = cv_data.get("software") or cv_data.get("skills") or []
+    sw = _clean_list(cv_data.get("software") or cv_data.get("skills") or [])
     if sw:
         y -= 6
         y = _draw_wrapped_text(c, margin_x, y, "Herramientas/Software", line_w)

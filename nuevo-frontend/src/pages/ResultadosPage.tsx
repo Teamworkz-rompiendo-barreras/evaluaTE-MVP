@@ -1351,19 +1351,41 @@ const ResultadosPage: React.FC = () => {
     const cvFromState = (personal?.cvAnalysis as any) || {};
     const cvDetailsFromInfo = (info?.cv_details as any) || {};
     const cvDetailsFromState = (cvFromState as any)?.cv_details || {};
+    const cleanList = (items: string[]): string[] => {
+      const noise = ['cargo detectado', 'empresa detectada', 'fecha detectada', 'experiencia extraída del cv'];
+      const out: string[] = [];
+      for (const it of items || []) {
+        if (!it) continue;
+        const txt = String(it).trim();
+        if (!txt) continue;
+        const lower = txt.toLowerCase();
+        if (noise.some(n => lower.includes(n))) continue;
+        out.push(txt);
+      }
+      return out;
+    };
+
     const mergedCvDetails = {
-      experience: ensureArray((cvDetailsFromInfo as any).experience_detailed || (cvDetailsFromInfo as any).experience)
+      experience: cleanList(
+        ensureArray((cvDetailsFromInfo as any).experience_detailed || (cvDetailsFromInfo as any).experience)
         || ensureArray((cvFromState as any)?.experience_detailed || (cvFromState as any)?.experience)
         || ensureArray((cvDetailsFromState as any).experience),
-      education: ensureArray((cvDetailsFromInfo as any).education_detailed || (cvDetailsFromInfo as any).education)
+      ),
+      education: cleanList(
+        ensureArray((cvDetailsFromInfo as any).education_detailed || (cvDetailsFromInfo as any).education)
         || ensureArray((cvFromState as any)?.education_detailed || (cvFromState as any)?.education)
         || ensureArray((cvDetailsFromState as any).education),
-      languages: ensureArray((cvDetailsFromInfo as any).languages)
+      ),
+      languages: cleanList(
+        ensureArray((cvDetailsFromInfo as any).languages)
         || ensureArray((cvFromState as any)?.languages)
         || ensureArray((cvDetailsFromState as any).languages),
-      tools: ensureArray((cvDetailsFromInfo as any).tools || (cvDetailsFromInfo as any).software)
+      ),
+      tools: cleanList(
+        ensureArray((cvDetailsFromInfo as any).tools || (cvDetailsFromInfo as any).software)
         || ensureArray((cvFromState as any)?.software || (cvFromState as any)?.skills)
         || ensureArray((cvDetailsFromState as any).tools),
+      ),
     };
 
     const mergedCvAnalysis = (() => {
@@ -1510,17 +1532,7 @@ const ResultadosPage: React.FC = () => {
     if (Array.isArray(softSkillsData)) combined.push(...softSkillsData);
     if (Array.isArray(radarDataFromIa) && radarDataFromIa.length > 0) combined.push(...radarDataFromIa);
     const normalized = processRadarData(combined);
-    // Ajuste de etiquetas intercambiando Liderazgo↔Pensamiento Crítico y Toma de decisiones↔Curiosidad y aprendizaje
-    return normalized.map(item => {
-      const map: Record<string, string> = {
-        'Pensamiento Crítico': 'Liderazgo',
-        'Liderazgo': 'Pensamiento Crítico',
-        'Curiosidad y aprendizaje': 'Toma de decisiones',
-        'Toma de decisiones': 'Curiosidad y aprendizaje',
-      };
-      const label = map[item.softskill] ?? item.softskill;
-      return { ...item, softskill: label };
-    });
+    return normalized;
   }, [softSkillsData, radarDataFromIa]);
 
   const renderJobSearchSection = () => {

@@ -957,35 +957,12 @@ def extract_basic_cv_data_from_text(text: str) -> Dict[str, Any]:
             "telefono": phones[0] if phones else "",
             "ubicacion": ""
         },
-        "experiencia_laboral": [
-            {
-                "empresa": "Empresa detectada",
-                "cargo": "Cargo detectado",
-                "fecha_inicio": "Fecha detectada",
-                "fecha_fin": "Actualidad",
-                "descripcion": "Experiencia extraída del CV",
-                "logros": [],
-                "tecnologias": found_skills
-            }
-        ] if experience else [],
-        "formacion_academica": [
-            {
-                "titulo": edu,
-                "institucion": "Institución educativa",
-                "fecha_inicio": "",
-                "fecha_fin": "",
-                "nivel": "Formación detectada"
-            }
-            for edu in found_education[:3]
-        ],
+        # No generar experiencia/educación ficticia: si no se detecta, dejar vacío
+        "experiencia_laboral": [],
+        "formacion_academica": [],
         "habilidades_tecnicas": list(set(found_skills)),
-        "habilidades_blandas": ["Trabajo en equipo", "Comunicación", "Resolución de problemas"],
-        "idiomas": [
-            {
-                "idioma": "Español",
-                "nivel": "Nativo"
-            }
-        ],
+        "habilidades_blandas": [],
+        "idiomas": [],
         "certificaciones": [],
         "proyectos": [],
         "resumen_profesional": text[:200] + "..." if len(text) > 200 else text,
@@ -1175,9 +1152,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                     languages_structured = _normalize_languages(basic_data.get("idiomas"))
                 if not software_items and basic_data.get("habilidades_tecnicas"):
                     software_items = basic_data.get("habilidades_tecnicas")
-                if not merged_contact.get("name") and (basic_data.get("contacto") or {}).get("nombre"):
-                    merged_contact["name"] = (basic_data.get("contacto") or {}).get("nombre")
-                    merged_contact["nombre"] = merged_contact["name"]
+                # No usar el nombre estimado del extractor básico para evitar falsos positivos (p.ej. listas de software)
                 if not merged_contact.get("location") and (basic_data.get("contacto") or {}).get("ubicacion"):
                     merged_contact["location"] = (basic_data.get("contacto") or {}).get("ubicacion")
             software_for_cv_info = [
