@@ -191,17 +191,53 @@ const ResultadosPage: React.FC = () => {
   useEffect(() => {
     try {
       const gameSkills = Array.isArray(game?.softSkills) ? game.softSkills : [];
+      if (gameSkills.length === 0) return;
+
+      const normalizeName = (value: unknown): string =>
+        String(value ?? '').trim().toLowerCase();
+
       const personalSkills = Array.isArray(personal?.softSkills) ? personal.softSkills : [];
-      if (gameSkills.length > 0 && personalSkills.length < gameSkills.length) {
-        const mapped = gameSkills.map((s: any) => {
-          const score = Math.round(Number(s?.score) || 0);
-          const level = s?.level || (score < 50 ? 'bajo' : score < 75 ? 'medio' : 'alto');
-          const conf = typeof s?.confidence === 'number' && s.confidence <= 1
-            ? Math.round(s.confidence * 100)
-            : Math.round(Number(s?.confidence) || 80);
-          return { skill: String(s?.name || s?.softSkill || 'Habilidad'), score, level, confidence: conf };
+      const currentMap: Record<string, any> = {};
+      for (const s of personalSkills) {
+        if (!s?.skill) continue;
+        const key = normalizeName(s.skill);
+        if (!key) continue;
+        currentMap[key] = { ...s, skill: String(s.skill).trim() };
+      }
+      const initialSnapshot = JSON.parse(JSON.stringify(currentMap));
+
+      for (const s of gameSkills) {
+        if (!s) continue;
+        const score = Math.round(Number((s as any)?.score) || 0);
+        const level = (s as any)?.level || (score < 50 ? 'bajo' : score < 75 ? 'medio' : 'alto');
+        const conf = typeof (s as any)?.confidence === 'number' && (s as any).confidence <= 1
+          ? Math.round((s as any).confidence * 100)
+          : Math.round(Number((s as any)?.confidence) || 80);
+        const name = String((s as any)?.name || (s as any)?.softSkill || 'Habilidad').trim();
+        const key = normalizeName(name);
+        if (!key) continue;
+        const existing = currentMap[key];
+        if (!existing || score > (Number(existing.score) || 0)) {
+          currentMap[key] = { ...existing, skill: name, score, level, confidence: conf };
+        } else if (existing && !existing.level && level) {
+          currentMap[key] = { ...existing, level };
+        }
+      }
+
+      const mergedList = Object.values(currentMap);
+      const changed =
+        mergedList.length !== personalSkills.length ||
+        mergedList.some((item) => {
+          const key = normalizeName((item as any)?.skill);
+          const existing = initialSnapshot[key];
+          return !existing
+            || existing.score !== (item as any)?.score
+            || existing.level !== (item as any)?.level
+            || existing.confidence !== (item as any)?.confidence;
         });
-        dispatch(saveSoftSkills(mapped));
+
+      if (changed) {
+        dispatch(saveSoftSkills(mergedList as any));
       }
     } catch { /* no-op */ }
   }, [game?.softSkills, personal?.softSkills, dispatch]);
@@ -504,11 +540,47 @@ const ResultadosPage: React.FC = () => {
         }
 
         const jp: JobPreference = resolvedJobPreferences;
+        const pickFirstNonEmpty = (...values: Array<unknown>): string => {
+          for (const value of values) {
+            if (value === null || value === undefined) continue;
+            const trimmed = (typeof value === 'string' ? value : String(value)).trim();
+            if (trimmed.length > 0) return trimmed;
+          }
+          return '';
+        };
+        const jobPrefsAny = personal?.jobPreferences as any;
+        const jpResolvedAny = resolvedJobPreferences as any;
+        const cvContactLocation = (() => {
+          const contact = (cvAnalysisPayload as any)?.contact || (cvAnalysisPayload as any)?.cv_structured?.contact || {};
+          const loc = (contact as any)?.location;
+          return typeof loc === 'string' ? loc.trim() : '';
+        })();
+        const preferredLocation = pickFirstNonEmpty(
+          jobPrefsAny?.location,
+          jpResolvedAny?.location,
+          cvContactLocation,
+          (report as Record<string, unknown> | undefined)?.['location'],
+        );
+
+        const enrichedJobPreferences = {
+          ...jp,
+          availability: personal?.availability ?? jp.availability,
+          startDate: (personal as any)?.startDate ?? (jp as any)?.startDate,
+          needs: Array.isArray(jobPrefsAny?.needs)
+            ? jobPrefsAny.needs
+            : jp.needs,
+          accessibilitySettings: (personal as any)?.accessibilitySettings ?? (jp as any)?.accessibilitySettings,
+          languages: Array.isArray(jobPrefsAny?.languages)
+            ? jobPrefsAny.languages
+            : (jp as any)?.languages,
+          location: preferredLocation || (jp as any)?.location,
+        } as JobPreference & Record<string, unknown>;
 
         // Completar email/phone con contacto del CV si faltan
         const cvContact = (cvAnalysisPayload as any)?.contact || (cvAnalysisPayload as any)?.cv_structured?.contact || {};
         const emailFromCv = Array.isArray(cvContact?.emails) && cvContact.emails.length > 0 ? cvContact.emails[0] : undefined;
         const phoneFromCv = Array.isArray(cvContact?.phones) && cvContact.phones.length > 0 ? cvContact.phones[0] : undefined;
+        const completedGamesDetailed = completedGamesForRequest.map((g) => String(g)).filter(Boolean);
 
         const requestBody = {
           userId: report?.userId || 'user',
@@ -517,13 +589,14 @@ const ResultadosPage: React.FC = () => {
           // Incluir contacto básico, priorizando CV si el estado no lo trae
           email: personal.email || emailFromCv || undefined,
           phone: personal.whatsapp || phoneFromCv || undefined,
+          location: preferredLocation || undefined,
           // Enviar análisis en ambas convenciones para máxima compatibilidad backend
           cvAnalysis: cvAnalysisPayload,
           cv_analysis: cvAnalysisPayload,
-          jobPreferences: jp,
+          jobPreferences: enrichedJobPreferences,
           employabilityScore: globalScore ?? computedScore ?? iaScore ?? undefined,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
-          completedGames: completedGamesForRequest,
+          completedGames: completedGamesDetailed,
           logs: []
         };
 
@@ -716,6 +789,129 @@ const ResultadosPage: React.FC = () => {
               if (isMissing(backendVal)) {
                 normalized.personal_data[key] = dp[key];
               }
+            }
+            // Completar preferencias laborales con la información del usuario si el backend no las devolvió completas
+            const toUnique = (arr: unknown): string[] => {
+              if (!Array.isArray(arr)) return [];
+              const set = new Set<string>();
+              for (const item of arr) {
+                const val = String(item ?? '').trim();
+                if (val) set.add(val);
+              }
+              return Array.from(set);
+            };
+            const mergedPrefs: NormalizedJobPreferences = {
+              areas: toUnique(normalized.job_preferences?.areas || []),
+              needs: toUnique(normalized.job_preferences?.needs || []),
+              preferred_platforms: toUnique(normalized.job_preferences?.preferred_platforms || []),
+              location: normalized.job_preferences?.location || '',
+              seniority: normalized.job_preferences?.seniority || '',
+              work_mode: normalized.job_preferences?.work_mode || '',
+              disability_certificate: normalized.job_preferences?.disability_certificate || '',
+              availability: normalized.job_preferences?.availability || '',
+              willing_to_relocate: normalized.job_preferences?.willing_to_relocate,
+            };
+            const applyPrefs = (src?: unknown) => {
+              const srcAny = src as Record<string, unknown> | undefined;
+              if (!srcAny) return;
+              if (Array.isArray(srcAny['areas'])) mergedPrefs.areas = toUnique([...mergedPrefs.areas, ...(srcAny['areas'] as unknown[])]);
+              if (Array.isArray(srcAny['needs'])) mergedPrefs.needs = toUnique([...mergedPrefs.needs, ...(srcAny['needs'] as unknown[])]);
+              if (Array.isArray(srcAny['preferred_platforms'])) mergedPrefs.preferred_platforms = toUnique([...mergedPrefs.preferred_platforms, ...(srcAny['preferred_platforms'] as unknown[])]);
+              if (srcAny['location'] && !mergedPrefs.location) mergedPrefs.location = String(srcAny['location']).trim();
+              if (srcAny['seniority'] && !mergedPrefs.seniority) mergedPrefs.seniority = String(srcAny['seniority']).trim();
+              const wm = (srcAny['work_mode'] || srcAny['workMode']) as unknown;
+              if (wm && !mergedPrefs.work_mode) mergedPrefs.work_mode = String(wm).trim();
+              if (!mergedPrefs.availability && srcAny['availability']) mergedPrefs.availability = String(srcAny['availability']).trim();
+              if (mergedPrefs.willing_to_relocate === undefined && typeof srcAny['willing_to_relocate'] === 'boolean') {
+                mergedPrefs.willing_to_relocate = srcAny['willing_to_relocate'] as boolean;
+              }
+              if (mergedPrefs.willing_to_relocate === undefined && typeof srcAny['willingToRelocate'] === 'boolean') {
+                mergedPrefs.willing_to_relocate = srcAny['willingToRelocate'] as boolean;
+              }
+              if (!mergedPrefs.disability_certificate && (srcAny['disability_certificate'] || srcAny['hasDisabilityCert'])) {
+                mergedPrefs.disability_certificate = (srcAny['hasDisabilityCert'] ?? srcAny['disability_certificate']) ? 'Sí' : 'No';
+              }
+            };
+            applyPrefs(normalized.job_preferences);
+            applyPrefs(enrichedJobPreferences);
+            applyPrefs(resolvedJobPreferences);
+            applyPrefs(personal?.jobPreferences);
+            normalized.job_preferences = mergedPrefs;
+
+            // Rellenar soft skills, juegos y score si el backend devolvió valores vacíos
+            if ((!normalized.soft_skills || normalized.soft_skills.length === 0) && softSkillsToSend.length > 0) {
+              normalized.soft_skills = softSkillsToSend;
+            }
+            if ((!normalized.completed_games || normalized.completed_games.length === 0) && completedGamesDetailed.length > 0) {
+              normalized.completed_games = completedGamesDetailed;
+            }
+            const bestScore = pickScore(iaScore)
+              ?? pickScore(data?.employabilityScore)
+              ?? pickScore((data as { employability_score?: number })?.employability_score)
+              ?? pickScore(report?.employabilityScore)
+              ?? computedScore;
+            if (!pickScore(normalized.employability_score) && bestScore) {
+              normalized.employability_score = bestScore;
+            }
+
+            // Completar detalles del CV con el análisis almacenado si faltan campos
+            const ensureArray = (value: any): string[] => {
+              if (!value) return [];
+              if (Array.isArray(value)) {
+                return value.map((v) => String(v ?? '').trim()).filter(Boolean);
+              }
+              return [String(value)].filter(Boolean);
+            };
+            if (cvAnalysisPayload) {
+              const detailsFromCv = {
+                experience: ensureArray((cvAnalysisPayload as any).experience_detailed || (cvAnalysisPayload as any).experience),
+                education: ensureArray((cvAnalysisPayload as any).education_detailed || (cvAnalysisPayload as any).education),
+                languages: ensureArray((cvAnalysisPayload as any).languages),
+                tools: ensureArray((cvAnalysisPayload as any).software || (cvAnalysisPayload as any).skills),
+              };
+              const existingDetails = normalized.cv_details || { experience: [], education: [], languages: [], tools: [] };
+              normalized.cv_details = {
+                experience: existingDetails.experience && existingDetails.experience.length ? existingDetails.experience : detailsFromCv.experience,
+                education: existingDetails.education && existingDetails.education.length ? existingDetails.education : detailsFromCv.education,
+                languages: existingDetails.languages && existingDetails.languages.length ? existingDetails.languages : detailsFromCv.languages,
+                tools: existingDetails.tools && existingDetails.tools.length ? existingDetails.tools : detailsFromCv.tools,
+              };
+
+              const cvScores = normalized.cv_analysis || {
+                structure_score: 0,
+                coherence_score: 0,
+                key_info_score: 0,
+                clarity_score: 0,
+                style_score: 0,
+                evidence: {
+                  structure: '',
+                  coherence: '',
+                  key_info: '',
+                  clarity: '',
+                  style: '',
+                },
+                corrections: [],
+                reordering_suggestions: [],
+              };
+              const pickCvScore = (current: unknown, incoming: unknown): number => {
+                const currentNum = Number(current);
+                const incomingNum = Number(incoming);
+                if (Number.isFinite(currentNum) && currentNum > 0) return Math.round(currentNum);
+                if (Number.isFinite(incomingNum) && incomingNum >= 0) return Math.round(incomingNum);
+                return 0;
+              };
+              cvScores.structure_score = pickCvScore(cvScores.structure_score, (cvAnalysisPayload as any).structure_score);
+              cvScores.coherence_score = pickCvScore(cvScores.coherence_score, (cvAnalysisPayload as any).coherence_score);
+              cvScores.key_info_score = pickCvScore(cvScores.key_info_score, (cvAnalysisPayload as any).key_info_score);
+              cvScores.clarity_score = pickCvScore(cvScores.clarity_score, (cvAnalysisPayload as any).clarity_score);
+              cvScores.style_score = pickCvScore(cvScores.style_score, (cvAnalysisPayload as any).style_score ?? (cvAnalysisPayload as any).spelling_style_score);
+              cvScores.corrections = Array.isArray(cvScores.corrections) && cvScores.corrections.length > 0
+                ? cvScores.corrections
+                : ensureArray((cvAnalysisPayload as any).corrections);
+              cvScores.reordering_suggestions = Array.isArray(cvScores.reordering_suggestions) && cvScores.reordering_suggestions.length > 0
+                ? cvScores.reordering_suggestions
+                : ensureArray((cvAnalysisPayload as any).reordering_suggestions);
+              normalized.cv_analysis = cvScores;
             }
             setInfo(normalized);
           } catch (error) {
