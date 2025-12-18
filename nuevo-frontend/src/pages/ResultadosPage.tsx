@@ -23,7 +23,7 @@ import { filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
-import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData, type NormalizedJobPreferences } from '../config/reportConfig';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData, type NormalizedJobPreferences, type JobSearchAdvice, type UsefulTools } from '../config/reportConfig';
 // (import duplicado eliminado)
 
 // Definir tipos locales para evitar importaciones problemáticas
@@ -170,6 +170,23 @@ const ResultadosPage: React.FC = () => {
   const fetchSignatureRef = useRef<string>('');
   const fetchIaReportRef = useRef<() => Promise<void> | null>(null);
   const [finalPhrase, setFinalPhrase] = useState<string>('');
+  const resolvedJobPreferences = useMemo(
+    () =>
+      resolveJobPreferences({
+        jobPreferences: personal?.jobPreferences as Partial<JobPreference> | string | undefined,
+        workMode: personal?.workMode,
+        availability: personal?.availability,
+        willingToRelocate: personal?.willingToRelocate,
+        hasDisabilityCert: personal?.hasDisabilityCert,
+      }),
+    [
+      personal?.jobPreferences,
+      personal?.workMode,
+      personal?.availability,
+      personal?.willingToRelocate,
+      personal?.hasDisabilityCert,
+    ],
+  );
 
   // === NUEVO: fallback de impresión del radar (SVG → IMG) ===
   const radarBoxRef = useRef<HTMLDivElement>(null);
@@ -244,13 +261,6 @@ const ResultadosPage: React.FC = () => {
 
   // Llamar al endpoint de IA al cargar la página (después de sincronizar datos)
   useEffect(() => {
-    const resolvedJobPreferences = resolveJobPreferences({
-      jobPreferences: personal?.jobPreferences as Partial<JobPreference> | string | undefined,
-      workMode: personal?.workMode,
-      availability: personal?.availability,
-      willingToRelocate: personal?.willingToRelocate,
-      hasDisabilityCert: personal?.hasDisabilityCert,
-    });
     const personalJobPreferences = personal?.jobPreferences;
     const personalHasPreferences = Boolean(
       (typeof personalJobPreferences === 'string' && personalJobPreferences.trim().length > 0)
@@ -1182,15 +1192,11 @@ const ResultadosPage: React.FC = () => {
   // Descarga de PDF (usa el servicio del backend). Mantiene window.print como fallback
   const handleDownloadPdf = async () => {
     try {
-      // Requerimos un informe normalizado. Si aún no existe, intentamos construirlo rápido
-      if (!info) {
-        if (!iaReport) {
-          // Si no hay datos suficientes, usar impresión como alternativa inmediata
-          window.print();
-          return;
-        }
+      if (!reportForRender && !iaReport) {
+        window.print();
+        return;
       }
-      const payload = info ?? null;
+      const payload = reportForRender ?? info ?? null;
       const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_GENERATE), {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
@@ -1302,6 +1308,178 @@ const ResultadosPage: React.FC = () => {
     ?? pickScore(info?.employability_score)
     ?? pickScore(report?.employabilityScore)
     ?? computedScore;
+
+  // Unificar el reporte que se muestra en pantalla y el que se envía al PDF
+  const reportForRender: NewReportSchema | null = useMemo(() => {
+    const ensureArray = (value: any): string[] => {
+      if (!value) return [];
+      if (Array.isArray(value)) return value.map((v) => String(v ?? '').trim()).filter(Boolean);
+      const str = String(value ?? '').trim();
+      return str ? [str] : [];
+    };
+    const firstNonEmpty = (...values: Array<unknown>): string => {
+      for (const value of values) {
+        if (value === null || value === undefined) continue;
+        const trimmed = (typeof value === 'string' ? value : String(value)).trim();
+        if (trimmed.length > 0) return trimmed;
+      }
+      return '';
+    };
+
+    const base = info ? { ...info } : null;
+    if (!base && !personal?.cvAnalysis && softSkillsData.length === 0) return null;
+
+    // Soft skills unificadas
+    const unifiedSoftSkills = ((): Array<{ skill: string; score: number; level?: string; confidence?: number }> => {
+      const byName: Record<string, any> = {};
+      const push = (skill: any) => {
+        if (!skill) return;
+        const name = String(skill.skill ?? skill.name ?? '').trim();
+        if (!name) return;
+        const key = name.toLowerCase();
+        const score = Math.max(0, Math.min(100, Math.round(Number(skill.score) || 0)));
+        const existing = byName[key];
+        if (!existing || score > (existing.score || 0)) {
+          byName[key] = { skill: name, score, level: skill.level, confidence: skill.confidence };
+        }
+      };
+      (softSkillsData || []).forEach(push);
+      (info?.soft_skills || []).forEach(push);
+      return Object.values(byName);
+    })();
+
+    const cvFromState = (personal?.cvAnalysis as any) || {};
+    const cvDetailsFromInfo = (info?.cv_details as any) || {};
+    const cvDetailsFromState = (cvFromState as any)?.cv_details || {};
+    const mergedCvDetails = {
+      experience: ensureArray((cvDetailsFromInfo as any).experience) || ensureArray((cvFromState as any)?.experience_detailed || (cvFromState as any)?.experience) || ensureArray((cvDetailsFromState as any).experience),
+      education: ensureArray((cvDetailsFromInfo as any).education) || ensureArray((cvFromState as any)?.education_detailed || (cvFromState as any)?.education) || ensureArray((cvDetailsFromState as any).education),
+      languages: ensureArray((cvDetailsFromInfo as any).languages) || ensureArray((cvFromState as any)?.languages) || ensureArray((cvDetailsFromState as any).languages),
+      tools: ensureArray((cvDetailsFromInfo as any).tools) || ensureArray((cvDetailsFromInfo as any).software) || ensureArray((cvFromState as any)?.software || (cvFromState as any)?.skills) || ensureArray((cvDetailsFromState as any).tools),
+    };
+
+    const mergedCvAnalysis = (() => {
+      const scores: any = { ...(info?.cv_analysis || {}) };
+      const apply = (key: string, value: unknown) => {
+        const current = Number(scores[key]);
+        const incoming = Number(value);
+        if (!Number.isFinite(current) || current === 0) {
+          if (Number.isFinite(incoming) && incoming >= 0) scores[key] = Math.round(incoming);
+        }
+      };
+      apply('structure_score', (cvFromState as any)?.structure_score);
+      apply('coherence_score', (cvFromState as any)?.coherence_score);
+      apply('key_info_score', (cvFromState as any)?.key_info_score);
+      apply('clarity_score', (cvFromState as any)?.clarity_score);
+      apply('style_score', (cvFromState as any)?.style_score ?? (cvFromState as any)?.spelling_style_score);
+
+      const mergeList = (dst: any, src: any, key: string) => {
+        const current = Array.isArray(dst?.[key]) ? dst[key] : [];
+        const incoming = Array.isArray(src?.[key]) ? src[key] : [];
+        dst[key] = current.length > 0 ? current : incoming;
+      };
+      mergeList(scores, cvFromState, 'corrections');
+      mergeList(scores, cvFromState, 'reordering_suggestions');
+      if (!scores.evidence && (cvFromState as any)?.evidence) scores.evidence = (cvFromState as any).evidence;
+      return scores;
+    })();
+
+    const cvContact = (cvFromState as any)?.contact || (cvFromState as any)?.cv_structured?.contact || {};
+    const personalData = {
+      ...(base?.personal_data || {}),
+      name: firstNonEmpty(base?.personal_data?.name, `${personal?.firstName ?? ''} ${personal?.lastName ?? ''}`),
+      location: firstNonEmpty(base?.personal_data?.location, (cvContact as any)?.location),
+      email: firstNonEmpty(base?.personal_data?.email, (cvContact as any)?.emails?.[0], personal?.email),
+      phone: firstNonEmpty(base?.personal_data?.phone, (cvContact as any)?.phones?.[0], personal?.whatsapp),
+      disability_certificate: firstNonEmpty(base?.personal_data?.disability_certificate, personal?.hasDisabilityCert ? 'Sí' : ''),
+    };
+
+    const jobPrefsUnified = (() => {
+      const src: any = base?.job_preferences || {};
+      const merged = {
+        areas: ensureArray(src.areas),
+        needs: ensureArray(src.needs),
+        preferred_platforms: ensureArray(src.preferred_platforms),
+        location: firstNonEmpty(src.location, (resolvedJobPreferences as any).location),
+        seniority: firstNonEmpty(src.seniority, (resolvedJobPreferences as any).seniority),
+        work_mode: firstNonEmpty(src.work_mode, (resolvedJobPreferences as any).workMode),
+        disability_certificate: firstNonEmpty(src.disability_certificate, (resolvedJobPreferences as any).hasDisabilityCert ? 'Sí' : ''),
+        availability: firstNonEmpty(src.availability, (resolvedJobPreferences as any).availability),
+        willing_to_relocate: src.willing_to_relocate ?? (resolvedJobPreferences as any).willingToRelocate,
+      };
+      const addArr = (into: string[], values: string[]) => {
+        values.forEach((v) => {
+          const t = String(v ?? '').trim();
+          if (t && !into.includes(t)) into.push(t);
+        });
+      };
+      addArr(merged.areas, ensureArray((resolvedJobPreferences as any).areas));
+      addArr(merged.needs, ensureArray((resolvedJobPreferences as any).needs));
+      addArr(merged.preferred_platforms, ensureArray((resolvedJobPreferences as any).preferred_platforms));
+      return merged;
+    })();
+
+    const completedGamesUnified = (() => {
+      const set = new Set<string>();
+      const push = (arr: any) => {
+        if (Array.isArray(arr)) {
+          arr.forEach((g) => {
+            const val = String(g ?? '').trim();
+            if (val) set.add(val);
+          });
+        }
+      };
+      push(info?.completed_games);
+      push(game?.completedGames);
+      push(report?.completedGames);
+      if (set.size === 0 && unifiedSoftSkills.length > 0) set.add('softskills-evaluated');
+      return Array.from(set);
+    })();
+
+    const summaryText = base?.summary || base?.profile_summary || '';
+    const employabilityScore = pickScore(base?.employability_score) ?? globalScore ?? 0;
+
+    const unified: NewReportSchema = {
+      ...(base || {}),
+      summary: summaryText,
+      profile_summary: base?.profile_summary || summaryText,
+      cv_summary: base?.cv_summary || summaryText,
+      employability_score: employabilityScore ?? 0,
+      personal_data: personalData as any,
+      job_preferences: jobPrefsUnified as any,
+      soft_skills: unifiedSoftSkills,
+      strengths: base?.strengths && base.strengths.length > 0 ? base.strengths : unifiedSoftSkills.map((s) => s.skill).slice(0, 6),
+      improvement_areas: base?.improvement_areas || [],
+      cv_details: {
+        experience: mergedCvDetails.experience,
+        education: mergedCvDetails.education,
+        languages: mergedCvDetails.languages,
+        tools: mergedCvDetails.tools,
+      },
+      cv_analysis: mergedCvAnalysis as any,
+      completed_games: completedGamesUnified,
+      job_search_advice: (base?.job_search_advice as any) || { cv_optimization: [], letters_portfolio: '', recommended_platforms: [], networking: '', interview_tips: '' },
+      action_plan: base?.action_plan || { short_term: [], medium_term: [], long_term: [] },
+      useful_tools: (base?.useful_tools as UsefulTools) || { productivity: [], job_search: [], learning: [], accessibility: [] },
+      final_message: base?.final_message || (base as any)?.frase_final || finalPhrase,
+      ideal_work_environment: base?.ideal_work_environment || '',
+      suggested_roles: base?.suggested_roles || [],
+    };
+
+    return unified;
+  }, [info, personal?.cvAnalysis, personal?.firstName, personal?.lastName, personal?.email, personal?.whatsapp, personal?.hasDisabilityCert, report?.completedGames, softSkillsData, resolvedJobPreferences, game?.completedGames, globalScore, finalPhrase, pickScore]);
+
+  // Mantener sincronizado el markdown de pantalla con el mismo reporte que se envía al PDF
+  useEffect(() => {
+    if (!reportForRender) return;
+    try {
+      const md = generateNewFormatReport(reportForRender);
+      setIaReport(md);
+    } catch {
+      // no-op
+    }
+  }, [reportForRender]);
+
   // Combinar datos de IA con datos de minijuegos para el radar
   const radarData = useMemo(() => {
     const combined: Array<{ skill?: string; softskill?: string; score: number }> = [];
@@ -1322,8 +1500,11 @@ const ResultadosPage: React.FC = () => {
   }, [softSkillsData, radarDataFromIa]);
 
   const renderJobSearchSection = () => {
-    const advice = info?.job_search_advice;
-    const tools = info?.useful_tools;
+    const advice: Partial<JobSearchAdvice> = (reportForRender?.job_search_advice as Partial<JobSearchAdvice>) || (info?.job_search_advice as Partial<JobSearchAdvice>) || {};
+    const tools: UsefulTools | null =
+      (reportForRender?.useful_tools as UsefulTools) ||
+      (info?.useful_tools as UsefulTools) ||
+      null;
 
     const cvTips = (advice?.cv_optimization || []).filter(Boolean);
     const platforms = (advice?.recommended_platforms || []).filter(Boolean);
@@ -1392,7 +1573,7 @@ const ResultadosPage: React.FC = () => {
         <div className="mt-4">
           <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Plataformas</h4>
           <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-            {(platforms.length > 0 ? platforms : defaultPlatforms).map((p, idx) => <li key={idx}>{p}</li>)}
+            {(platforms.length > 0 ? platforms : defaultPlatforms).map((p: string, idx: number) => <li key={idx}>{p}</li>)}
           </ul>
         </div>
 
