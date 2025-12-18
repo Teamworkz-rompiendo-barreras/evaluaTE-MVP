@@ -1388,7 +1388,7 @@ const ResultadosPage: React.FC = () => {
     const personalData = {
       ...(base?.personal_data || {}),
       name: firstNonEmpty(base?.personal_data?.name, `${personal?.firstName ?? ''} ${personal?.lastName ?? ''}`),
-      location: firstNonEmpty(base?.personal_data?.location, (cvContact as any)?.location),
+      location: firstNonEmpty(base?.personal_data?.location, (cvContact as any)?.location, (resolvedJobPreferences as any)?.location),
       email: firstNonEmpty(base?.personal_data?.email, (cvContact as any)?.emails?.[0], personal?.email),
       phone: firstNonEmpty(base?.personal_data?.phone, (cvContact as any)?.phones?.[0], personal?.whatsapp),
       disability_certificate: firstNonEmpty(base?.personal_data?.disability_certificate, personal?.hasDisabilityCert ? 'Sí' : ''),
@@ -1461,6 +1461,10 @@ const ResultadosPage: React.FC = () => {
       job_search_advice: (base?.job_search_advice as any) || { cv_optimization: [], letters_portfolio: '', recommended_platforms: [], networking: '', interview_tips: '' },
       action_plan: base?.action_plan || { short_term: [], medium_term: [], long_term: [] },
       useful_tools: (base?.useful_tools as UsefulTools) || { productivity: [], job_search: [], learning: [], accessibility: [] },
+      // Alias para el PDF (pdf_service espera report.tools)
+      // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+      // @ts-ignore
+      tools: (base?.useful_tools as UsefulTools) || { productivity: [], job_search: [], learning: [], accessibility: [] },
       final_message: base?.final_message || (base as any)?.frase_final || finalPhrase,
       ideal_work_environment: base?.ideal_work_environment || '',
       suggested_roles: base?.suggested_roles || [],
