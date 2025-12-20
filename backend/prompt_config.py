@@ -6,32 +6,29 @@ from datetime import datetime
 from typing import Any, Dict, List
 
 class PromptConfig:
-    """Configuración centralizada de prompts para el sistema EvaluaTE"""
-    
-    @staticmethod
-    def get_system_prompt() -> str:
-        return (
-            "Eres un/a orientador/a laboral senior con formación en psicología del trabajo y neurodivergencias. "
-            "Escribes en español de España, tono profesional, claro, directo y neuroinclusivo. "
-            "Tu salida debe respetar estrictamente el esquema JSON proporcionado (strict)."
-        )
+    """Configuración centralizada de prompts para el sistema EvaluaTE."""
 
     @staticmethod
     def make_cv_analysis_block(cv_ui_diag: Dict[str, Any], cv_data: Dict[str, Any]) -> str:
         """Bloque que fija las puntuaciones 1–5 y aporta contexto al modelo sin que las re-calcule."""
         diag = cv_ui_diag or {}
-        ev  = (diag.get("evidence") or {})
-        def _g(k, d="—"): return str(diag.get(k, d))
-        def _e(k): return (ev.get(k) or "—").strip()
+        ev = diag.get("evidence") or {}
+
+        def _g(k, d="—"):
+            return str(diag.get(k, d))
+
+        def _e(k):
+            return (ev.get(k) or "—").strip()
 
         lines = [
             "### DIAGNÓSTICO DETERMINISTA DEL CV (NO MODIFICAR PUNTUACIONES, SOLO EXPLICAR Y COMPLEMENTAR)",
-            f"- Estructura: { _g('structure_score') }/5 | Evidencia: {_e('structure')}",
-            f"- Coherencia: { _g('coherence_score') }/5 | Evidencia: {_e('coherence')}",
-            f"- Información clave: { _g('key_info_score') }/5 | Evidencia: {_e('key_info')}",
-            f"- Claridad: { _g('clarity_score') }/5 | Evidencia: {_e('clarity')}",
-            f"- Ortografía y estilo: { _g('style_score') }/5 | Evidencia: {_e('style')}",
+            f"- Estructura: {_g('structure_score')}/5 | Evidencia: {_e('structure')}",
+            f"- Coherencia: {_g('coherence_score')}/5 | Evidencia: {_e('coherence')}",
+            f"- Información clave: {_g('key_info_score')}/5 | Evidencia: {_e('key_info')}",
+            f"- Claridad: {_g('clarity_score')}/5 | Evidencia: {_e('clarity')}",
+            f"- Ortografía y estilo: {_g('style_score')}/5 | Evidencia: {_e('style')}",
         ]
+
         corr = [f"- {c}" for c in (diag.get("corrections") or [])]
         if corr:
             lines.append("Correcciones detectadas:")
@@ -100,8 +97,8 @@ class PromptConfig:
         # Si se proporcionó analysis_json en cv_data, añadir reglas estrictas
         
         # CRÍTICO: Bloque de análisis del CV con estrellas deterministas
-        analysis_block = ""
-        if cv_data.get("diagnostico_cv"):
+        analysis_block = analysis_block or ""
+        if not analysis_block and cv_data.get("diagnostico_cv"):
             diag = cv_data["diagnostico_cv"]
             ev = (diag.get("evidence") or {})
             analysis_block = f"""

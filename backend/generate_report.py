@@ -10,6 +10,7 @@ No requiere claves ni servicios externos. Devuelve un diccionario compatible con
 from __future__ import annotations
 import json
 import re
+import logging
 from typing import Any, Dict, List, Optional, Tuple
 
 # Importar la nueva configuración de prompts
@@ -23,9 +24,22 @@ try:
         NewReportSchema,
         convert_old_format_to_new,
         create_default_report,
+        ImprovementArea,
     )
 except ImportError:  # pragma: no cover - fallback cuando se ejecuta dentro de backend/
-    from new_report_schema import NewReportSchema, convert_old_format_to_new, create_default_report
+    from new_report_schema import NewReportSchema, convert_old_format_to_new, create_default_report, ImprovementArea
+
+# Cliente Azure OpenAI compartido con el analizador de CV
+try:
+    from backend.cv_analyzer import client as azure_client, DEPLOYMENT as AZURE_DEPLOYMENT
+except Exception:  # pragma: no cover - evitar fallo cuando no hay cliente
+    try:
+        from cv_analyzer import client as azure_client, DEPLOYMENT as AZURE_DEPLOYMENT
+    except Exception:
+        azure_client = None
+        AZURE_DEPLOYMENT = None
+
+logger = logging.getLogger(__name__)
 
 # ----------------------------
 # Utilidades de parsing seguro
@@ -413,20 +427,76 @@ def _build_job_preferences_payload(candidate: Dict[str, Any], job_preferences: D
 
     return job_preferences
 
+
+def _extract_json_from_text(text: str) -> Optional[Dict[str, Any]]:
+    """Extrae un JSON válido de un texto, tolerando ruido alrededor."""
+    if not text:
+        return None
+    try:
+        parsed = json.loads(text)
+        if isinstance(parsed, dict):
+            return parsed
+    except Exception:
+        pass
+
+    try:
+        first = text.find("{")
+        last = text.rfind("}")
+        if first != -1 and last != -1 and last > first:
+            candidate = text[first : last + 1]
+            parsed = json.loads(candidate)
+            if isinstance(parsed, dict):
+                return parsed
+    except Exception:
+        return None
+    return None
+
+
+def _validate_report_json(data: Dict[str, Any], fallback: NewReportSchema) -> Optional[NewReportSchema]:
+    """
+    Combina la respuesta del modelo con el fallback y valida contra NewReportSchema.
+    Devuelve None si no cumple el esquema.
+    """
+    if not isinstance(data, dict):
+        return None
+    try:
+        merged = fallback.dict()
+        merged.update(data)
+        return NewReportSchema(**merged)
+    except Exception as exc:
+        logger.warning("Respuesta LLM no cumple esquema: %s", exc)
+        return None
+
 def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_data: dict,
                            job_preferences_data: dict, employability_score: int, level: str,
                            completed_games: list) -> Optional[NewReportSchema]:
     """
     Genera un informe moderno y completo usando la nueva lógica de PromptConfig
     """
+    fallback_report = _generate_structured_response_from_data(
+        candidate_data, soft_skills_data, cv_data,
+        job_preferences_data, employability_score, level, completed_games
+    )
+
     try:
         if PromptConfig is None:
             raise ImportError("PromptConfig no disponible")
-        
-        # Preparar datos para el prompt moderno
-        languages_data = cv_data.get("languages", [])
-        
-        # Generar el prompt usando la nueva configuración
+
+        languages_data = cv_data.get("languages", []) if isinstance(cv_data, dict) else []
+        diag_block_source = {}
+        if isinstance(cv_data, dict):
+            for key in ("analysis_json", "cv_analysis_structured", "diagnostico_cv", "analysis"):
+                candidate = cv_data.get(key)
+                if isinstance(candidate, dict) and candidate:
+                    diag_block_source = candidate
+                    break
+
+        analysis_block = ""
+        try:
+            analysis_block = PromptConfig.make_cv_analysis_block(diag_block_source, cv_data)
+        except Exception:
+            analysis_block = ""
+
         prompt = PromptConfig.get_employability_report_prompt(
             candidate_data=candidate_data,
             soft_skills_data=soft_skills_data,
@@ -435,19 +505,35 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
             employability_score=employability_score,
             level=level,
             completed_games=completed_games,
-            languages_data=languages_data
-        )
-        
-        # Aquí normalmente se enviaría a OpenAI, pero como es local, generamos una respuesta estructurada
-        # basada en los datos disponibles
-        return _generate_structured_response_from_data(
-            candidate_data, soft_skills_data, cv_data,
-            job_preferences_data, employability_score, level, completed_games
+            languages_data=languages_data,
+            analysis_block=analysis_block,
         )
 
+        # Usar Azure OpenAI si está configurado
+        if azure_client and AZURE_DEPLOYMENT:
+            response = azure_client.chat.completions.create(
+                model=AZURE_DEPLOYMENT,
+                temperature=0.15,
+                max_tokens=2200,
+                messages=[
+                    {"role": "system", "content": PromptConfig.get_system_prompt()},
+                    {"role": "user", "content": prompt},
+                ],
+            )
+            content = response.choices[0].message.content if response and response.choices else ""
+            parsed = _extract_json_from_text(content)
+            candidate_schema = _validate_report_json(parsed, fallback_report) if isinstance(parsed, dict) else None
+            if candidate_schema:
+                return candidate_schema
+            logger.warning("El JSON del modelo no cumple el esquema; usando fallback.")
+        else:
+            logger.info("Azure OpenAI no configurado; se usa la respuesta determinista.")
+
     except Exception as e:
-        # Fallback a la lógica antigua si hay error
-        return None
+        # Fallback a la lógica determinista si hay error
+        logger.warning("Error generando informe con LLM, usando fallback determinista: %s", e)
+
+    return fallback_report
 
 def _generate_structured_response_from_data(candidate_data: dict, soft_skills_data: list,
                                           cv_data: dict, job_preferences_data: dict,
@@ -460,19 +546,36 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     cv_payload = _build_cv_analysis_payload(cv_data or {})
     job_pref_payload = _build_job_preferences_payload(candidate_data, job_preferences_data or {})
 
-    # Garantizar puntaje aunque no venga empleability_score
-    safe_score = 0
+    raw_text = ""
+    if isinstance(cv_data, dict):
+        raw_text = cv_data.get("rawText") or cv_data.get("raw_text") or ""
+
+    exp_count = len(cv_payload.get("experience") or cv_payload.get("experience_detailed") or [])
+    edu_count = len(cv_payload.get("education") or cv_payload.get("education_detailed") or [])
+    lang_count = len(cv_payload.get("languages") or [])
+    tools_count = len(cv_payload.get("software") or cv_payload.get("skills") or [])
+    cv_missing = not any([exp_count, edu_count, lang_count, tools_count]) and not raw_text
+
+    # Garantizar puntaje aunque no venga employability_score
+    base_score = 0
     try:
-        safe_score = int(round(float(employability_score or 0)))
+        base_score = int(round(float(employability_score or 0)))
     except Exception:
-        safe_score = 0
-    if (safe_score == 0 or not isinstance(safe_score, int)) and normalized_soft_skills:
+        base_score = 0
+    if (base_score == 0 or not isinstance(base_score, int)) and normalized_soft_skills:
         try:
             avg_soft = int(round(sum(s.get("score", 0) for s in normalized_soft_skills) / len(normalized_soft_skills)))
-            safe_score = max(0, min(100, avg_soft))
+            base_score = max(0, min(100, avg_soft))
         except Exception:
-            safe_score = 0
-    safe_score = max(0, min(100, safe_score))
+            base_score = 0
+    base_score = max(0, min(100, base_score))
+
+    cv_boost = min(20, exp_count * 4 + edu_count * 2 + min(lang_count * 2, 8) + (5 if tools_count else 0))
+    games_boost = min(10, len(completed_games or []) * 2)
+    prefs_boost = 5 if (job_pref_payload.get("areas") or job_pref_payload.get("workMode") or job_pref_payload.get("work_mode")) else 0
+    safe_score = max(0, min(100, base_score + cv_boost + games_boost + prefs_boost))
+    if cv_missing and safe_score > 40:
+        safe_score = 40  # limitar cuando no hay CV
     level_label = level or _score_to_level(safe_score)
 
     # Preparar resumen y feedback antes de crear el reporte base
@@ -483,6 +586,31 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     if cv_payload.get("summary"):
         profile_parts.append(str(cv_payload.get("summary")))
     cv_payload["summary"] = " ".join(part.strip() for part in profile_parts if part).strip()
+
+    if cv_missing:
+        cv_payload["structure_score"] = 1
+        cv_payload["coherence_score"] = 1
+        cv_payload["key_info_score"] = 1
+        cv_payload["clarity_score"] = 1
+        cv_payload["style_score"] = 1
+        cv_payload["evidence"] = {
+            "structure": "No hay información del CV disponible para evaluar la estructura.",
+            "coherence": "No hay información del CV disponible para evaluar la coherencia.",
+            "key_info": "No hay información del CV disponible para evaluar la información clave.",
+            "clarity": "No hay información del CV disponible para evaluar la claridad.",
+            "style": "No hay información del CV disponible para evaluar ortografía y estilo.",
+        }
+        cv_payload["corrections"] = [
+            "Sube un CV en PDF legible con fechas, funciones y logros medibles.",
+            "Añade enlaces de contacto (email, LinkedIn) visibles en la cabecera.",
+            "Incluye 3-5 logros cuantificados en tus experiencias más recientes.",
+        ]
+        cv_payload["reordering_suggestions"] = [
+            "Coloca un resumen profesional inicial con especialidad y sector objetivo.",
+            "Ordena la experiencia de la más reciente a la más antigua con fechas completas.",
+            "Añade una sección de herramientas/idiomas con nivel.",
+        ]
+        cv_payload["feedback"] = "No hay información del CV disponible para evaluar; añade un PDF legible para un análisis completo."
 
     cv_feedback = cv_payload.get("feedback") or ""
     if not cv_feedback:
@@ -582,8 +710,36 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
         parts.append(f"CV con {exp_count} experiencias y {edu_count} formaciones registradas.")
     if games_count:
         parts.append(f"Resultados de {games_count} minijuego(s) integrados.")
+    if cv_missing:
+        parts.append("No se encontró texto del CV; sube un PDF legible para un diagnóstico completo.")
 
     report.summary = " ".join(parts)
+
+    profile_pieces: list[str] = []
+    if top_skills:
+        profile_pieces.append("Fortalezas principales: " + ", ".join(top_skills))
+    if areas_pref:
+        profile_pieces.append("Objetivo profesional en " + ", ".join(areas_pref))
+    if not cv_missing and exp_count:
+        profile_pieces.append(f"Experiencia registrada: {exp_count} puestos.")
+    if cv_missing:
+        profile_pieces.append("Falta texto del CV para detallar responsabilidades y logros.")
+    if profile_pieces:
+        report.profile_summary = " ".join(profile_pieces)
+
+    cv_summary_parts: list[str] = []
+    if exp_count:
+        cv_summary_parts.append(f"Experiencia: {exp_count} registros.")
+    if edu_count:
+        cv_summary_parts.append(f"Formación: {edu_count} registros.")
+    if lang_count:
+        cv_summary_parts.append(f"Idiomas detectados: {lang_count}.")
+    if tools_count:
+        cv_summary_parts.append(f"Herramientas/tecnologías: {tools_count}.")
+    if cv_missing:
+        cv_summary_parts.append("No hay texto del CV; añade un PDF con fechas, funciones y logros cuantificados.")
+    if cv_summary_parts:
+        report.cv_summary = " ".join(cv_summary_parts)
 
     personal = report.personal_data
     # Datos personales: priorizar contacto del CV
@@ -614,6 +770,19 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
 
     report.employability_score = safe_score
 
+    if cv_missing:
+        try:
+            report.improvement_areas.insert(
+                0,
+                ImprovementArea(
+                    area="Completar CV",
+                    reason="No se recibió texto ni secciones del CV",
+                    suggested_action="Sube un PDF legible con fechas, funciones y logros cuantificados para un diagnóstico completo.",
+                ),
+            )
+        except Exception:
+            pass
+
     games_list: List[str] = []
     for game in completed_games or []:
         if isinstance(game, dict):
@@ -639,11 +808,13 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     if ideal_parts:
         report.ideal_work_environment = ". ".join(ideal_parts)
 
-    report.final_message = (
-        f"{full_name}, tu nivel de empleabilidad actual es {level_label.lower()}. "
-        "Aplica el plan de acción priorizado y mantén una rutina de aprendizaje continuo "
-        "para acelerar tus oportunidades laborales."
+    cierre = (
+        f"{full_name}, tu nivel de empleabilidad actual es {safe_score}/100. "
+        "Sigue el plan de acción priorizado y mantén una rutina de aprendizaje continuo."
     )
+    if cv_missing:
+        cierre += " Sube tu CV en PDF para que podamos ofrecerte un diagnóstico más preciso."
+    report.final_message = cierre
 
     return report
 
