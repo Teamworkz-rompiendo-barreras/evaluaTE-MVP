@@ -1056,6 +1056,59 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
 
         candidate_text = text if text.strip() else di_raw_text
 
+        tool_keywords = {"word", "excel", "powerpoint", "photoshop", "procreate", "clip studio", "paint", "movie maker"}
+
+        def _clean_name_candidate(name: str) -> str:
+            if not name:
+                return ""
+            normalized = name.strip()
+            if len(normalized) > 60 or any(ch.isdigit() for ch in normalized):
+                return ""
+            lower = normalized.lower()
+            if any(k in lower for k in tool_keywords):
+                return ""
+            tokens = normalized.split()
+            if len(tokens) > 5:
+                return ""
+            return normalized
+
+        def _extract_languages_from_text(txt: str) -> List[Dict[str, str]]:
+            if not txt:
+                return []
+            langs = []
+            known = [
+                "inglés", "ingles", "english",
+                "español", "spanish",
+                "francés", "frances", "french",
+                "alemán", "aleman", "german",
+                "italiano", "italian",
+                "portugués", "portugues", "portuguese",
+            ]
+            seen = set()
+            lower = txt.lower()
+            for lang in known:
+                if lang in lower and lang not in seen:
+                    langs.append({"idioma": lang.capitalize(), "nivel": ""})
+                    seen.add(lang)
+            return langs
+
+        def _extract_tools_from_text(txt: str) -> List[str]:
+            if not txt:
+                return []
+            tools = []
+            known_tools = [
+                "Word", "Excel", "PowerPoint", "Powerpoint",
+                "Photoshop", "Illustrator", "InDesign",
+                "Procreate", "Clip Studio", "Paint", "Movie Maker",
+            ]
+            lower = txt.lower()
+            seen = set()
+            for tool in known_tools:
+                if tool.lower() in lower and tool.lower() not in seen:
+                    tools.append(tool)
+                    seen.add(tool.lower())
+            return tools
+
         if di_result:
             # Fusionar datos de Document Intelligence con la extracción local
             contact_di = di_result.get("contact") or {}
@@ -1067,6 +1120,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 or fallback_contact.get("nombre")
                 or ""
             )
+            name_candidate = _clean_name_candidate(name_candidate)
             merged_contact = {
                 "name": name_candidate,
                 "nombre": name_candidate,
@@ -1155,6 +1209,11 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 # No usar el nombre estimado del extractor básico para evitar falsos positivos (p.ej. listas de software)
                 if not merged_contact.get("location") and (basic_data.get("contacto") or {}).get("ubicacion"):
                     merged_contact["location"] = (basic_data.get("contacto") or {}).get("ubicacion")
+            # Fallback extra de idiomas/herramientas por regex simple
+            if not languages_structured:
+                languages_structured = _extract_languages_from_text(candidate_text or di_raw_text)
+            if not software_items:
+                software_items = _extract_tools_from_text(candidate_text or di_raw_text)
             software_for_cv_info = [
                 {"name": str(item), "level": ""}
                 for item in software_items
