@@ -1325,6 +1325,21 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "document_intelligence_used": True,
             }
 
+            try:
+                logger.info(
+                    "CV extraído (DI+OCR) → contacto: name=%s email=%s phone=%s loc=%s | exp=%d edu=%d idiomas=%d tools=%d",
+                    merged_contact.get("name") or merged_contact.get("nombre") or "",
+                    (merged_contact.get("emails") or [""])[0],
+                    (merged_contact.get("phones") or [""])[0],
+                    merged_contact.get("location") or "",
+                    len(experience_structured),
+                    len(education_structured),
+                    len(languages_structured),
+                    len(software_items),
+                )
+            except Exception:
+                pass
+
             logger.info("Análisis de CV completado combinando Document Intelligence y PyMuPDF/OCR")
             return result_payload
 
@@ -1391,12 +1406,23 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "proyectos": cv_data.get("proyectos", []),
         }
 
-        logger.info(
-            "Analisis completado: %s habilidades técnicas, %s experiencias, %s formaciones",
-            len(cv_info["software"]),
-            len(cv_info["experiencia"]),
-            len(cv_info["educacion"]),
-        )
+        try:
+            contact_log = cv_info.get("contacto") or {}
+            logger.info(
+                "CV extraído (heurístico) → contacto: name=%s email=%s phone=%s loc=%s | exp=%d edu=%d idiomas=%d tools=%d",
+                contact_log.get("nombre") or "",
+                contact_log.get("email") or "",
+                contact_log.get("telefono") or "",
+                contact_log.get("ubicacion") or "",
+                len(cv_info.get("experiencia") or []),
+                len(cv_info.get("educacion") or []),
+                len(cv_info.get("idiomas") or []),
+                len(cv_info.get("software") or []),
+            )
+        except Exception:
+            pass
+
+        logger.info("Análisis de CV completado con método tradicional")
         logger.info("Análisis de CV completado con método tradicional")
 
         return {
