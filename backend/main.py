@@ -21,12 +21,20 @@ logger = logging.getLogger(__name__)
 # Import robusto compatible tanto si se ejecuta como paquete (backend.main)
 # como si se ejecuta directamente desde el directorio backend
 try:
-    from backend.generate_report import generar_informe
+    from backend.generate_report import (
+        generar_informe,
+        LLM_SUCCESS_COUNT,
+        LLM_FALLBACK_COUNT,
+    )
     from backend.pdf_service import create_employability_pdf
     from backend.cv_analyzer import extract_pdf_info
     from backend.feedback_notifications import feedback_notifier
 except ImportError:  # fallback a imports relativos al directorio actual
-    from generate_report import generar_informe
+    from generate_report import (
+        generar_informe,
+        LLM_SUCCESS_COUNT,
+        LLM_FALLBACK_COUNT,
+    )
     from pdf_service import create_employability_pdf
     from cv_analyzer import extract_pdf_info
     from feedback_notifications import feedback_notifier
@@ -82,6 +90,18 @@ def root() -> Dict[str, Any]:
 @app.get("/health")
 def health() -> Dict[str, Any]:
     return {"status": "ok"}
+
+
+@app.get("/api/metrics/llm")
+def llm_metrics() -> Dict[str, Any]:
+    """Métricas básicas de uso del LLM."""
+    total = LLM_SUCCESS_COUNT + LLM_FALLBACK_COUNT
+    return {
+        "llm_success": LLM_SUCCESS_COUNT,
+        "llm_fallback": LLM_FALLBACK_COUNT,
+        "llm_total": total,
+        "llm_success_rate": (LLM_SUCCESS_COUNT / total) if total else 0.0,
+    }
 
 
 def _load_feedback() -> List[Dict[str, Any]]:

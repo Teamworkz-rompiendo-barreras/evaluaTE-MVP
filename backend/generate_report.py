@@ -11,6 +11,7 @@ from __future__ import annotations
 import json
 import re
 import logging
+import uuid
 from typing import Any, Dict, List, Optional, Tuple
 
 # Importar la nueva configuración de prompts
@@ -40,6 +41,10 @@ except Exception:  # pragma: no cover - evitar fallo cuando no hay cliente
         AZURE_DEPLOYMENT = None
 
 logger = logging.getLogger(__name__)
+
+# Métricas básicas de uso LLM
+LLM_SUCCESS_COUNT = 0
+LLM_FALLBACK_COUNT = 0
 
 # ----------------------------
 # Utilidades de parsing seguro
@@ -473,6 +478,9 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
     """
     Genera un informe moderno y completo usando la nueva lógica de PromptConfig
     """
+    global LLM_SUCCESS_COUNT, LLM_FALLBACK_COUNT
+    request_id = str(uuid.uuid4())
+
     fallback_report = _generate_structured_response_from_data(
         candidate_data, soft_skills_data, cv_data,
         job_preferences_data, employability_score, level, completed_games
@@ -511,6 +519,15 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
 
         # Usar Azure OpenAI si está configurado
         if azure_client and AZURE_DEPLOYMENT:
+            logger.info(
+                "LLM request start",
+                extra={
+                    "request_id": request_id,
+                    "deployment": AZURE_DEPLOYMENT,
+                    "source": "generate_report",
+                    "cv_has_text": bool(cv_data.get("rawText") if isinstance(cv_data, dict) else False),
+                },
+            )
             response = azure_client.chat.completions.create(
                 model=AZURE_DEPLOYMENT,
                 temperature=0.15,
@@ -524,14 +541,30 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
             parsed = _extract_json_from_text(content)
             candidate_schema = _validate_report_json(parsed, fallback_report) if isinstance(parsed, dict) else None
             if candidate_schema:
+                LLM_SUCCESS_COUNT += 1
+                logger.info(
+                    "LLM request success",
+                    extra={"request_id": request_id, "deployment": AZURE_DEPLOYMENT, "status": "ok"},
+                )
                 return candidate_schema
-            logger.warning("El JSON del modelo no cumple el esquema; usando fallback.")
+            LLM_FALLBACK_COUNT += 1
+            logger.warning(
+                "LLM JSON inválido; se usa fallback",
+                extra={"request_id": request_id, "deployment": AZURE_DEPLOYMENT, "status": "invalid_json"},
+            )
         else:
-            logger.info("Azure OpenAI no configurado; se usa la respuesta determinista.")
+            logger.info(
+                "Azure OpenAI no configurado; se usa respuesta determinista",
+                extra={"request_id": request_id, "status": "no_llm"},
+            )
 
     except Exception as e:
         # Fallback a la lógica determinista si hay error
-        logger.warning("Error generando informe con LLM, usando fallback determinista: %s", e)
+        LLM_FALLBACK_COUNT += 1
+        logger.warning(
+            "Error generando informe con LLM, usando fallback determinista",
+            extra={"request_id": request_id, "error": str(e)},
+        )
 
     return fallback_report
 
