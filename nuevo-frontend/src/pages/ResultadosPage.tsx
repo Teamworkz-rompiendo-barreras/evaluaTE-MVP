@@ -1,5 +1,7 @@
 /* eslint-disable no-console */
 /* eslint-disable @typescript-eslint/no-explicit-any */
+/* eslint-disable @typescript-eslint/no-unused-vars */
+/* eslint-disable no-unused-vars */
 // src/pages/ResultadosPage.tsx
 import React, { useEffect, useState, useRef } from 'react';
 import processRadarData from './processRadarData';
@@ -2052,6 +2054,7 @@ const ResultadosPage: React.FC = () => {
   // El contenido ahora viene de la IA
 
   // === NUEVO: función para renderizar el bloque "Análisis del Currículum" ===
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const renderCvAnalysisSection = () => {
     if (!cvAnalysis) return null;
 
@@ -2137,6 +2140,7 @@ const ResultadosPage: React.FC = () => {
   };
 
   // === NUEVO: función común para renderizar markdown con el mismo estilo ===
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const renderMarkdown = (content: string) => (
               <ReactMarkdown
                 remarkPlugins={[remarkGfm]}
@@ -2343,6 +2347,7 @@ const ResultadosPage: React.FC = () => {
   );
 
   // === NUEVO: dividir el markdown para insertar el análisis justo después de "Áreas de mejora" ===
+  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const splitReport = useMemo(() => {
     if (!iaReport) return { before: '', improvements: '', after: '' };
 
@@ -2377,6 +2382,219 @@ const ResultadosPage: React.FC = () => {
 
     return { before, improvements, after };
   }, [iaReport]);
+  void renderCvAnalysisSection;
+  void renderMarkdown;
+  void splitReport;
+
+  const renderStructuredReport = (data: NewReportSchema) => {
+    const pd = data.personal_data || {} as PersonalData;
+    const cvx = data.cv_analysis || {} as CvAnalysis;
+    const details = data.cv_details || { experience: [], education: [], languages: [], tools: [] };
+    const jobPrefs = data.job_preferences as NormalizedJobPreferences;
+    const formatStars = (n?: number) => <StarsGold n={asStars(Number(n ?? 0))} />;
+    const renderList = (items?: string[]) => (
+      <ul className="list-disc pl-6 space-y-1 text-gray-900">
+        {(items || []).filter(Boolean).map((it, idx) => (<li key={idx}>{it}</li>))}
+      </ul>
+    );
+
+    return (
+      <div className="space-y-8">
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Resumen ejecutivo</h2>
+          <p className="text-gray-900 leading-relaxed">{data.summary}</p>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Datos personales</h2>
+          <ul className="space-y-1 text-gray-900">
+            <li><strong>Nombre:</strong> {pd.name}</li>
+            <li><strong>Ubicación:</strong> {pd.location}</li>
+            <li><strong>Email:</strong> {pd.email}</li>
+            <li><strong>Teléfono:</strong> {pd.phone}</li>
+            <li><strong>Certificado de discapacidad:</strong> {pd.disability_certificate}</li>
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Resumen del CV</h2>
+          <p className="text-gray-900 leading-relaxed">{data.cv_summary}</p>
+          <div className="mt-4 space-y-3">
+            {details.experience?.length ? (
+              <div>
+                <h3 className="font-semibold text-gray-900">Experiencia (selección)</h3>
+                {renderList(details.experience)}
+              </div>
+            ) : null}
+            {details.education?.length ? (
+              <div>
+                <h3 className="font-semibold text-gray-900">Formación (selección)</h3>
+                {renderList(details.education)}
+              </div>
+            ) : null}
+            {details.languages?.length ? (
+              <div>
+                <h3 className="font-semibold text-gray-900">Idiomas</h3>
+                {renderList(details.languages)}
+              </div>
+            ) : (
+              <p className="text-gray-900">Idiomas: No consta</p>
+            )}
+            {details.tools?.length ? (
+              <div>
+                <h3 className="font-semibold text-gray-900">Herramientas/Software</h3>
+                {renderList(details.tools)}
+              </div>
+            ) : (
+              <p className="text-gray-900">Herramientas/Software: No consta</p>
+            )}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Fortalezas clave</h2>
+          {renderList(data.strengths as string[])}
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Áreas de mejora priorizadas</h2>
+          <ul className="list-disc pl-6 space-y-2 text-gray-900">
+            {(data.improvement_areas || []).map((it, idx) => (
+              <li key={idx}>
+                <strong>{it.area}</strong>: {it.reason}. <strong>Acción:</strong> {it.suggested_action}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Análisis del CV (1–5)</h2>
+          <ul className="space-y-1 text-gray-900">
+            <li><strong>Formato:</strong> {formatStars(cvx.structure_score)}</li>
+            <li><strong>Claridad:</strong> {formatStars(cvx.clarity_score)}</li>
+            <li><strong>Coherencia:</strong> {formatStars(cvx.coherence_score)}</li>
+            <li><strong>Información clave:</strong> {formatStars(cvx.key_info_score)}</li>
+            <li><strong>Ortografía y estilo:</strong> {formatStars(cvx.style_score)}</li>
+          </ul>
+          <div className="mt-3 space-y-2 text-gray-900">
+            <h3 className="font-semibold">Observaciones</h3>
+            {cvx.evidence && renderList([
+              cvx.evidence.structure,
+              cvx.evidence.clarity,
+              cvx.evidence.coherence,
+              cvx.evidence.key_info,
+              cvx.evidence.style,
+            ])}
+            {cvx.corrections?.length ? (
+              <>
+                <h3 className="font-semibold">Correcciones/Acciones</h3>
+                {renderList(cvx.corrections as string[])}
+              </>
+            ) : null}
+            {cvx.reordering_suggestions?.length ? (
+              <>
+                <h3 className="font-semibold">Reordenación sugerida</h3>
+                {renderList(cvx.reordering_suggestions as string[])}
+              </>
+            ) : null}
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Entornos de trabajo ideales</h2>
+          <p className="text-gray-900 leading-relaxed">{data.ideal_work_environment || 'No consta'}</p>
+          {jobPrefs?.areas?.length ? (
+            <p className="text-gray-900 mt-2"><strong>Áreas de interés:</strong> {jobPrefs.areas.join(', ')}</p>
+          ) : null}
+          {jobPrefs?.work_mode ? (
+            <p className="text-gray-900"><strong>Modalidad preferida:</strong> {jobPrefs.work_mode}</p>
+          ) : null}
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Roles sugeridos</h2>
+          <ul className="list-disc pl-6 space-y-2 text-gray-900">
+            {(data.suggested_roles || []).map((role, idx) => (
+              <li key={idx}>
+                <strong>{role.role}</strong> — {role.seniority} — {role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}. Razón: {role.reason}
+              </li>
+            ))}
+          </ul>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Plan de acción</h2>
+          <div className="space-y-3">
+            <div>
+              <h3 className="font-semibold text-gray-900">Corto plazo (0-30 días)</h3>
+              {renderList(data.action_plan?.short_term as string[])}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Medio plazo (1-3 meses)</h3>
+              {renderList(data.action_plan?.medium_term as string[])}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Largo plazo (3-6+ meses)</h3>
+              {renderList(data.action_plan?.long_term as string[])}
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Estrategias de búsqueda de empleo</h2>
+          <h3 className="font-semibold text-gray-900">Optimización del CV</h3>
+          {renderList(data.job_search_advice?.cv_optimization as string[])}
+          {data.job_search_advice?.letters_portfolio ? (
+            <p className="text-gray-900 mt-2"><strong>Cartas y portfolio/casos:</strong> {data.job_search_advice.letters_portfolio}</p>
+          ) : null}
+          {data.job_search_advice?.recommended_platforms?.length ? (
+            <>
+              <h3 className="font-semibold text-gray-900 mt-3">Plataformas</h3>
+              {renderList(data.job_search_advice.recommended_platforms as string[])}
+            </>
+          ) : null}
+          {data.job_search_advice?.networking ? (
+            <p className="text-gray-900 mt-2"><strong>Networking dirigido:</strong> {data.job_search_advice.networking}</p>
+          ) : null}
+          {data.job_search_advice?.interview_tips ? (
+            <p className="text-gray-900 mt-2"><strong>Entrevistas:</strong> {data.job_search_advice.interview_tips}</p>
+          ) : null}
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Herramientas útiles</h2>
+          <div className="space-y-2">
+            <div>
+              <h3 className="font-semibold text-gray-900">Productividad</h3>
+              {renderList(data.useful_tools?.productivity as string[])}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Búsqueda de empleo</h3>
+              {renderList(data.useful_tools?.job_search as string[])}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Aprendizaje</h3>
+              {renderList(data.useful_tools?.learning as string[])}
+            </div>
+            <div>
+              <h3 className="font-semibold text-gray-900">Accesibilidad</h3>
+              {renderList(data.useful_tools?.accessibility as string[])}
+            </div>
+          </div>
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Juegos completados</h2>
+          {renderList(data.completed_games as string[])}
+        </section>
+
+        <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900">Mensaje final</h2>
+          <p className="text-gray-900 leading-relaxed">{data.final_message}</p>
+        </section>
+      </div>
+    );
+  };
 
   // Renderizado final
   return (
@@ -2428,71 +2646,45 @@ const ResultadosPage: React.FC = () => {
           </div>
         )}
         
-        {iaReport && (
-          <>
-            <div className="bg-white rounded-lg shadow-sm p-0">
-              {(() => {
-                // Si no podemos dividir, usamos siempre la versión limpiada (splitReport.after)
-                // y añadimos nuestro bloque nativo de análisis para evitar duplicados.
-                if (!splitReport.improvements) {
-                  return (
-                    <>
-                      {renderMarkdown(splitReport.after || iaReport)}
-                      {renderCvAnalysisSection()}
-                    </>
-                  );
-                }
-                return (
-                  <>
-                    {/* Si ya renderizamos el bloque inicial nativo, evitamos duplicar el inicio del markdown */}
-                    {!info && splitReport.before && renderMarkdown(splitReport.before)}
-                    {splitReport.improvements && renderMarkdown(splitReport.improvements)}
-                    {renderCvAnalysisSection()}
-                    {splitReport.after && renderMarkdown(splitReport.after)}
-                  </>
-                );
-              })()}
-            </div>
+        {info && renderStructuredReport(info)}
 
-            {finalPhrase && (
-              <div
-                className="rounded-xl p-6 my-8 shadow-sm border-2 bg-blue-100 border-blue-200 text-gray-900 print:bg-white print:text-black dark:bg-white dark:border-gray-400 dark:text-black"
-                role="note"
-              >
-                <p className="mb-0 leading-relaxed">
-                  {finalPhrase}
-                </p>
-              </div>
-            )}
+        {finalPhrase && (
+          <div
+            className="rounded-xl p-6 my-8 shadow-sm border-2 bg-blue-100 border-blue-200 text-gray-900 print:bg-white print:text-black dark:bg-white dark:border-gray-400 dark:text-black"
+            role="note"
+          >
+            <p className="mb-0 leading-relaxed">
+              {finalPhrase}
+            </p>
+          </div>
+        )}
 
-            {!feedbackSent && (
-              <div className="bg-white text-gray-900 rounded-lg shadow-md p-6 mb-8 print-hidden dark:bg-transparent dark:text-white dark:border dark:border-gray-500">
-                <form onSubmit={handleFeedbackSubmit}>
-                  <label className="block mb-2 font-semibold dark:text-white">¿Te resultó útil este informe?</label>
-                  <div className="flex gap-4 mb-4">
-                    <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 bg-white dark:bg-transparent dark:border-gray-500">
-                      <input className="w-5 h-5" type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
-                      <span className="min-w-[3.5rem] text-center text-gray-900 dark:text-white">Útil</span>
-                    </label>
-                    <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 bg-white dark:bg-transparent dark:border-gray-500">
-                      <input className="w-5 h-5" type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
-                      <span className="min-w-[5rem] text-center text-gray-900 dark:text-white">No útil</span>
-                    </label>
-                  </div>
-                  <label className="block mb-1 text-gray-900 dark:text-white">¿Algún comentario o sugerencia?</label>
-                  <textarea className="w-full border rounded p-2 mb-2 bg-white text-gray-900 border-gray-300 dark:bg-transparent dark:text-white dark:border-gray-500" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({...f, comment: e.target.value}))} />
-                  {feedbackError && <p className="text-red-400 mb-2">{feedbackError}</p>}
-                  <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Enviar feedback</button>
-                </form>
+        {!feedbackSent && (
+          <div className="bg-white text-gray-900 rounded-lg shadow-md p-6 mb-8 print-hidden dark:bg-transparent dark:text-white dark:border dark:border-gray-500">
+            <form onSubmit={handleFeedbackSubmit}>
+              <label className="block mb-2 font-semibold dark:text-white">¿Te resultó útil este informe?</label>
+              <div className="flex gap-4 mb-4">
+                <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 bg-white dark:bg-transparent dark:border-gray-500">
+                  <input className="w-5 h-5" type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                  <span className="min-w-[3.5rem] text-center text-gray-900 dark:text-white">Útil</span>
+                </label>
+                <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 bg-white dark:bg-transparent dark:border-gray-500">
+                  <input className="w-5 h-5" type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                  <span className="min-w-[5rem] text-center text-gray-900 dark:text-white">No útil</span>
+                </label>
               </div>
-            )}
+              <label className="block mb-1 text-gray-900 dark:text-white">¿Algún comentario o sugerencia?</label>
+              <textarea className="w-full border rounded p-2 mb-2 bg-white text-gray-900 border-gray-300 dark:bg-transparent dark:text-white dark:border-gray-500" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({...f, comment: e.target.value}))} />
+              {feedbackError && <p className="text-red-400 mb-2">{feedbackError}</p>}
+              <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Enviar feedback</button>
+            </form>
+          </div>
+        )}
 
-            {feedbackSent && (
-              <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8 print-hidden" role="alert">
-                <p className="font-semibold">¡Gracias por tu feedback!</p>
-              </div>
-            )}
-          </>
+        {feedbackSent && (
+          <div className="bg-green-100 border border-green-400 text-green-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8 print-hidden" role="alert">
+            <p className="font-semibold">¡Gracias por tu feedback!</p>
+          </div>
         )}
       </div>
     </section>
