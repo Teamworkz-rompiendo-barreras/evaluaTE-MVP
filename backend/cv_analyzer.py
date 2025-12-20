@@ -45,7 +45,7 @@ import io
 import os
 import logging
 from datetime import datetime
-from typing import Dict, List, Any, Optional
+from typing import Dict, List, Any, Optional, Tuple
 
 logger = logging.getLogger(__name__)
 
@@ -1194,6 +1194,17 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             languages_structured = _normalize_languages(di_result.get("languages"))
 
             software_items = di_result.get("software") or []
+            # Normalizar software si viene en dict
+            norm_software: List[str] = []
+            for item in software_items:
+                if isinstance(item, dict):
+                    for k in ("name", "tool", "software"):
+                        if item.get(k):
+                            norm_software.append(str(item.get(k)))
+                            break
+                elif item:
+                    norm_software.append(str(item))
+            software_items = norm_software or software_items
 
             # Fallback con análisis básico si Document Intelligence no devolvió listas útiles
             basic_data = extract_basic_cv_data_from_text(candidate_text or di_raw_text)
@@ -1214,6 +1225,12 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 languages_structured = _extract_languages_from_text(candidate_text or di_raw_text)
             if not software_items:
                 software_items = _extract_tools_from_text(candidate_text or di_raw_text)
+
+            # Si sigue sin experiencia/educación, extraer heurísticamente del texto
+            if not experience_structured:
+                experience_structured = _extract_experience_from_text(candidate_text or di_raw_text)  # type: ignore[name-defined]
+            if not education_structured:
+                education_structured = _extract_education_from_text(candidate_text or di_raw_text)  # type: ignore[name-defined]
             software_for_cv_info = [
                 {"name": str(item), "level": ""}
                 for item in software_items
