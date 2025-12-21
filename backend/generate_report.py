@@ -523,6 +523,7 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
             completed_games=completed_games,
             languages_data=languages_data,
             analysis_block=analysis_block,
+            full_raw_text=cv_data.get("full_raw_text") or cv_data.get("rawText") or "",
         )
 
         # Usar Azure OpenAI si está configurado

@@ -45,7 +45,8 @@ class PromptConfig:
         level: str,
         completed_games: list,
         languages_data: list,
-        analysis_block: str = ""
+        analysis_block: str = "",
+        full_raw_text: str = "",
     ) -> str:
         """
         Genera el prompt maestro para el informe de empleabilidad completo
@@ -127,33 +128,38 @@ Evidencia breve: {ev.get('structure','')}
             )
 
         prompt = f"""
-# PROMPT MAESTRO: INFORME DE EMPLEABILIDAD + ANÁLISIS DE CV (NEUROINCLUSIVO, ES-ES)
+# PROMPT MAESTRO: INFORME DE EMPLEABILIDAD + ANÁLISIS DE CV (ORIENTACIÓN EXPERTA, ES-ES)
 
 ## ROL DEL ASISTENTE
-Eres un/a orientador/a laboral senior con formación en psicología, psicología del trabajo y neurodivergencias. Redactas informes profesionales, claros y accionables en español de España, con lenguaje neutro, tono respetuoso y directo, y enfoque neuroinclusivo (nunca patologizante). Evita muletillas y relleno.
+Eres un/a orientador/a laboral senior con formación en psicología, psicología del trabajo y diversidad cognitiva. Redactas informes profesionales, claros y accionables en español de España, con lenguaje neutro, tono respetuoso y directo, y enfoque de respeto a la diversidad (nunca patologizante). Evita muletillas y relleno.
+
+**CRÍTICO:** Tu análisis debe ser experto. Si la preferencia del candidato no es viable o no se alinea con su experiencia/formación, DEBES sugerir roles alternativos y justificar por qué el rol preferido no es el mejor (sin desmotivar). El informe debe ser una orientación profesional, no solo un reflejo de las preferencias. Usa el texto raw del CV para detallar la experiencia, idiomas y herramientas.
 
 ## ESTRUCTURA OBLIGATORIA DEL INFORME (13 PUNTOS EXACTOS → CAMPOS JSON)
 
-Tu respuesta debe ser UN objeto JSON con estas 13 claves, en este orden:
-1. `personal_data` (nombre, ubicación, email, teléfono, discapacidad)
-2. `profile_summary` (3–5 líneas, orientado a valor y preferencias)
-3. `cv_analysis_summary` (panorama de experiencia, sectores, tecnologías, formación)
-4. `strengths` (lista; cruza minijuegos y CV, evidencia concreta)
-5. `improvement_areas` (lista con `area`, `reason`, `suggested_action`)
-6. `cv_analysis` (puntuaciones 1–5 + `evidence`, `corrections`, `reordering_suggestions`)
-7. `ideal_work_environment` (texto operativo e inclusivo)
-8. `suggested_roles` (lista de objetos: `role`, `reason`, `seniority`, `remote_viable`)
-9. `action_plan` (tres listas: `short_term`, `medium_term`, `long_term`)
-10. `job_search_advice` (tres listas: `cv_optimization`, `letters_portfolio`, `networking`, más `recommended_platforms`, `interview_tips`)
-11. `useful_tools` (listas: `productivity`, `job_search`, `learning`, `accessibility`)
-12. `completed_games` (lista describiendo juego + cómo capitalizarlo)
-13. `final_message` (cierre motivacional personalizado)
+Tu informe DEBE generar un objeto JSON con los siguientes 13 campos principales (y sus sub-campos) en este orden:
+
+1. **personal_data** (DATOS PERSONALES BÁSICOS) - Nombre, ubicación, email, teléfono, certificado de discapacidad.
+2. **profile_summary** (RESUMEN DEL PERFIL) - Perfil profesional y propuesta de valor basado en soft skills + CV + preferencias.
+3. **cv_summary** (RESUMEN DEL CV) - Panorama de experiencia, sectores, tecnologías, formación relevante.
+4. **strengths** (FORTALEZAS) - Fortalezas con evidencia concreta del CV y soft skills.
+5. **improvement_areas** (ÁREAS DE MEJORA Y CONSEJOS) - Áreas de mejora con acciones específicas y **no genéricas**. Deben estar directamente relacionadas con las debilidades detectadas en el CV o en las soft skills. Si el CV es pobre, las áreas de mejora deben ser sobre cómo mejorarlo.
+6. **cv_analysis** (ANÁLISIS DEL CV) - Puntuación 1-5 por apartado (estructura, coherencia, etc.).
+7. **ideal_work_environment** (ENTORNOS DE TRABAJO IDEALES) - Condiciones ambientales y operativas ideales.
+8. **suggested_roles** (ROLES PROFESIONALES SUGERIDOS) - Roles concretos con seniority.
+9. **action_plan** (PLAN DE ACCIÓN) - Acciones SMART a corto, medio y largo plazo.
+10. **job_search_advice** (CONSEJOS DE BÚSQUEDA DE EMPLEO) - Estrategias y recursos.
+11. **useful_tools** (HERRAMIENTAS ÚTILES Y TECNOLOGÍA) - Productividad, búsqueda, aprendizaje, accesibilidad.
+12. **completed_games** (JUEGOS COMPLETADOS Y EVIDENCIA) - Análisis de habilidades evaluadas y su aplicación laboral.
+13. **final_message** (FRASE FINAL DE CIERRE) - Mensaje final motivacional y personalizado.
 
 cv_details debe existir como objeto con 4 listas (experience, education, languages, tools), cada elemento con campos: title, subtitle, period, level, detail (rellena los que tengas, no inventes).
 
 **OBLIGATORIO:** Cada campo debe estar completo; si falta dato, usa “No consta”. No omitas ningún campo.
 
 **FORMATO DE RESPUESTA:** EXCLUSIVAMENTE JSON válido que siga esta estructura (strict). NO uses markdown ni texto libre.
+
+**NOTA:** Los campos `soft_skills`, `employability_score`, `job_preferences` y `cv_details` son proporcionados en la entrada y NO deben ser generados por el modelo.
 
 ## ENTRADAS (ESTRUCTURA DE DATOS)
 
@@ -183,13 +189,13 @@ Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No 
 
 **IMPORTANTE:** Si alguno de estos campos muestra "No consta" o está vacío, significa que la información del CV no se pudo extraer correctamente. En ese caso, indica claramente en el informe que "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".
 
-### TEXTO RAW DEL CV (SI ESTÁ DISPONIBLE)
-{cv_data.get('rawText', 'No disponible')[:4000]}
+### TEXTO RAW DEL CV (CRÍTICO PARA DETALLE)
+{full_raw_text[:8000]}
 
-**CRÍTICO:** Si hay texto raw del CV disponible, úsalo para:
-- Extraer información adicional que no esté en las secciones estructuradas
-- Identificar detalles específicos del candidato
-- Analizar el estilo y formato del CV
+**CRÍTICO:** Usa el texto raw del CV para:
+- **Detallar** la experiencia, idiomas y herramientas en el `cv_summary` y `cv_details`.
+- **Justificar** las fortalezas y áreas de mejora con evidencia textual.
+- **Informar** tu análisis de viabilidad del rol sugerido.
 - Detectar inconsistencias o errores
 - Completar información faltante en las secciones estructuradas
 
@@ -362,7 +368,7 @@ REGLAS:
             """
 
         return f"""
-        Eres un orientador laboral experto, con experiencia en neurodivergencias y discapacidad intelectual.
+        Eres un orientador laboral experto, con experiencia en diversidad cognitiva.
         Debes generar información precisa, útil y de lectura fácil (frases cortas, listas, términos claros).
         
         IMPORTANTE: El CV es OBLIGATORIO para todos los candidatos. Analiza el siguiente CV y proporciona un análisis detallado en formato JSON:
@@ -396,8 +402,8 @@ REGLAS:
     @staticmethod
     def get_system_prompt() -> str:
         return (
-            "Eres un/a orientador/a laboral senior con formación en psicología del trabajo y neurodivergencias. "
-            "Escribes en español de España, tono profesional, claro, directo y neuroinclusivo. "
+            "Eres un/a orientador/a laboral senior con formación en psicología del trabajo y diversidad cognitiva. "
+            "Escribes en español de España, tono profesional, claro, directo y respetuoso con la diversidad. "
             "Tu salida debe respetar estrictamente el esquema JSON proporcionado (strict)."
         )
 

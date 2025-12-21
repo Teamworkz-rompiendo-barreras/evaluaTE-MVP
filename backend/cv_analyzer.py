@@ -1460,6 +1460,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             except Exception:
                 pass
 
+            result_payload["full_raw_text"] = combined_raw_text
             logger.info("Análisis de CV completado combinando Document Intelligence y PyMuPDF/OCR")
             return result_payload
 
@@ -1549,6 +1550,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             "cv_info": cv_info,
             "analysis": analysis,
             "raw_text": candidate_text[:1000],
+            "full_raw_text": candidate_text,
             "full_cv_data": cv_data,
             "processing_metadata": processing_metadata,
             "document_intelligence_used": False,
