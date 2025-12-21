@@ -1,4 +1,4 @@
-import type { CvAnalysis } from '../types/report';
+import type { CvAnalysis, CvItem } from '../types/report';
 
 export interface PersonalData {
   name: string;
@@ -29,10 +29,10 @@ export interface ActionPlan {
 
 export interface JobSearchAdvice {
   cv_optimization: string[];
-  letters_portfolio: string;
+  letters_portfolio: string[];
   recommended_platforms: string[];
-  networking: string;
-  interview_tips: string;
+  networking: string[];
+  interview_tips: string[];
 }
 
 export interface UsefulTools {
@@ -42,18 +42,27 @@ export interface UsefulTools {
   accessibility: string[];
 }
 
+export interface CvItem {
+  title?: string;
+  subtitle?: string;
+  period?: string;
+  level?: string;
+  detail?: string;
+  [key: string]: unknown;
+}
+
 export interface CvDetails {
-  experience: string[];
-  education: string[];
-  languages: string[];
-  tools: string[];
+  experience: CvItem[];
+  education: CvItem[];
+  languages: CvItem[];
+  tools: CvItem[];
 }
 
 export interface NewReportSchema {
-  summary: string;
+  summary?: string;
   personal_data: PersonalData;
   profile_summary: string;
-  cv_summary: string;
+  cv_analysis_summary: string;
   cv_details: CvDetails;
   strengths: string[];
   soft_skills: Array<{ skill: string; score: number }>;
@@ -256,91 +265,109 @@ const normalizeJobPreferences = (...sources: unknown[]): NormalizedJobPreference
   };
 };
 
-const stringifyDetailEntry = (entry: unknown, priorityKeys: readonly string[]): string | null => {
-  if (entry === null || entry === undefined) return null;
-  if (typeof entry === 'string') {
-    const trimmed = entry.trim();
-    return trimmed ? trimmed : null;
-  }
-  if (typeof entry === 'number' || typeof entry === 'boolean') {
-    const str = String(entry).trim();
-    return str ? str : null;
-  }
-  if (entry instanceof Date) {
-    return entry.toISOString();
-  }
-  if (typeof entry === 'object') {
-    const obj = entry as Record<string, unknown>;
-    const parts: string[] = [];
-    const used = new Set<string>();
-    for (const key of priorityKeys) {
-      if (Object.prototype.hasOwnProperty.call(obj, key)) {
-        const value = obj[key];
-        if (value === null || value === undefined) continue;
-        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-          const str = String(value).trim();
-          if (str) {
-            parts.push(str);
-            used.add(key);
-          }
-        }
-      }
-    }
-    if (!parts.length) {
-      for (const [key, value] of Object.entries(obj)) {
-        if (used.has(key) || value === null || value === undefined) continue;
-        if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
-          const str = String(value).trim();
-          if (str) parts.push(str);
-        }
-      }
-    }
-    const joined = parts.join(' — ');
-    return joined || null;
-  }
-  const str = String(entry).trim();
-  return str ? str : null;
-};
-
-const normalizeDetailList = (input: unknown, priorityKeys: readonly string[]): string[] => {
-  const result: string[] = [];
+const toCvItemArray = (input: unknown, priorityKeys: readonly string[]): CvItem[] => {
+  const result: CvItem[] = [];
   const seen = new Set<string>();
+
   const pushEntry = (value: unknown): void => {
     if (value === null || value === undefined) return;
-    if (value instanceof Date) {
-      pushEntry(value.toISOString());
-      return;
-    }
     if (Array.isArray(value)) {
       value.forEach(pushEntry);
       return;
     }
+    if (value instanceof Date) {
+      result.push({ detail: value.toISOString() });
+      return;
+    }
+    if (typeof value === 'string' || typeof value === 'number' || typeof value === 'boolean') {
+      const txt = String(value).trim();
+      if (!txt) return;
+      const key = txt.toLowerCase();
+      if (seen.has(key)) return;
+      seen.add(key);
+      result.push({ title: txt, detail: txt });
+      return;
+    }
     if (typeof value === 'object' && value !== null) {
       const obj = value as Record<string, unknown>;
-      const values = Object.values(obj);
-      if (values.some((child) => Array.isArray(child))) {
-        values.forEach(pushEntry);
-        return;
+      const item: CvItem = {};
+      for (const key of priorityKeys) {
+        const v = obj[key as string];
+        if (v === null || v === undefined) continue;
+        const txt = String(v).trim();
+        if (!txt) continue;
+        switch (key) {
+          case 'title':
+          case 'role':
+          case 'position':
+          case 'name':
+          case 'language':
+          case 'tool':
+          case 'technology':
+            if (!item.title) item.title = txt;
+            break;
+          case 'company':
+          case 'organization':
+          case 'employer':
+          case 'institution':
+          case 'school':
+            if (!item.subtitle) item.subtitle = txt;
+            break;
+          case 'period':
+          case 'start_date':
+          case 'end_date':
+          case 'duration':
+          case 'graduation_year':
+            if (!item.period) item.period = txt;
+            break;
+          case 'degree':
+          case 'program':
+          case 'area':
+          case 'level':
+          case 'certification':
+          case 'category':
+            if (!item.level) item.level = txt;
+            break;
+          case 'description':
+            if (!item.detail) item.detail = txt;
+            break;
+          default:
+            break;
+        }
       }
-    }
-    const formatted = stringifyDetailEntry(value, priorityKeys);
-    if (formatted) {
-      const key = formatted.toLowerCase();
-      if (!seen.has(key)) {
-        seen.add(key);
-        result.push(formatted);
+      // fallback: take any remaining fields as detail if empty
+      if (!item.title) {
+        const titleField = obj['title'] ?? obj['name'] ?? obj['language'] ?? obj['tool'];
+        if (typeof titleField === 'string' && titleField.trim()) item.title = titleField.trim();
       }
+      if (!item.detail) {
+        const desc = obj['detail'] ?? obj['description'];
+        if (typeof desc === 'string' && desc.trim()) item.detail = desc.trim();
+      }
+      const signature = `${item.title || ''}|${item.subtitle || ''}|${item.period || ''}|${item.level || ''}|${item.detail || ''}`.toLowerCase();
+      if (signature.trim() && !seen.has(signature)) {
+        seen.add(signature);
+        result.push(item);
+      }
+      return;
     }
+    const txt = String(value).trim();
+    if (!txt) return;
+    const key = txt.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    result.push({ title: txt, detail: txt });
   };
+
   pushEntry(input);
   return result;
 };
 
 const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvDetails => ({
-  experience: normalizeDetailList(sources.experience, detailPriority.experience),
-  education: normalizeDetailList(sources.education, detailPriority.education),
-  languages: normalizeDetailList(sources.languages, detailPriority.languages),
-  tools: normalizeDetailList(sources.tools, detailPriority.tools),
+  experience: toCvItemArray(sources.experience, detailPriority.experience),
+  education: toCvItemArray(sources.education, detailPriority.education),
+  languages: toCvItemArray(sources.languages, detailPriority.languages),
+  tools: toCvItemArray(sources.tools, detailPriority.tools),
 });
 
 export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema {
@@ -372,14 +399,26 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         languages: [rawDetails.languages, data.cv_analysis?.languages],
         tools: [rawDetails.tools, rawDetails.software, data.cv_analysis?.tools, data.cv_analysis?.software],
       });
-      const profileSummary = ensureText(data.profile_summary, ensureText(data.summary, 'Perfil profesional en desarrollo.'));
-      const cvSummary = ensureText(data.cv_summary, profileSummary);
-      const summary = ensureText(data.summary, profileSummary);
+      const profileSummary = ensureText(data.profile_summary, 'Perfil profesional en desarrollo.');
+      const cvSummary = ensureText(data.cv_analysis_summary || data.cv_summary, profileSummary);
+      const jsa = {
+        cv_optimization: Array.isArray(data?.job_search_advice?.cv_optimization) ? data.job_search_advice.cv_optimization : [],
+        letters_portfolio: Array.isArray(data?.job_search_advice?.letters_portfolio)
+          ? data.job_search_advice.letters_portfolio
+          : (data?.job_search_advice?.letters_portfolio ? [String(data.job_search_advice.letters_portfolio)] : []),
+        recommended_platforms: Array.isArray(data?.job_search_advice?.recommended_platforms) ? data.job_search_advice.recommended_platforms : [],
+        networking: Array.isArray(data?.job_search_advice?.networking)
+          ? data.job_search_advice.networking
+          : (data?.job_search_advice?.networking ? [String(data.job_search_advice.networking)] : []),
+        interview_tips: Array.isArray(data?.job_search_advice?.interview_tips)
+          ? data.job_search_advice.interview_tips
+          : (data?.job_search_advice?.interview_tips ? [String(data.job_search_advice.interview_tips)] : []),
+      };
       return {
         ...data,
-        summary,
+        summary: profileSummary,
         profile_summary: profileSummary,
-        cv_summary: cvSummary,
+        cv_analysis_summary: cvSummary,
         cv_details: normalizedDetails,
         personal_data: {
           name: ensureText(data.personal_data?.name, 'Usuario'),
@@ -395,6 +434,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         soft_skills: Array.isArray(data.soft_skills) ? data.soft_skills : [],
         improvement_areas: Array.isArray(data.improvement_areas) ? data.improvement_areas : [],
         job_preferences: normalizedJobPrefs,
+        job_search_advice: jsa,
         employability_score: score ?? 0,
       } as NewReportSchema;
     }
@@ -538,12 +578,18 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         cv_optimization: Array.isArray(report?.job_search_advice?.cv_optimization)
           ? report.job_search_advice.cv_optimization
           : (Array.isArray(report?.job_search_advice?.tips) ? report.job_search_advice.tips : []),
-        letters_portfolio: String(report?.job_search_advice?.letters_portfolio ?? ''),
+        letters_portfolio: Array.isArray(report?.job_search_advice?.letters_portfolio)
+          ? report.job_search_advice.letters_portfolio
+          : (report?.job_search_advice?.letters_portfolio ? [String(report.job_search_advice.letters_portfolio)] : []),
         recommended_platforms: reportRecommendedPlatforms && reportRecommendedPlatforms.length > 0
           ? reportRecommendedPlatforms
           : jobPreferences.preferred_platforms,
-        networking: String(report?.job_search_advice?.networking ?? ''),
-        interview_tips: String(report?.job_search_advice?.interview_tips ?? ''),
+        networking: Array.isArray(report?.job_search_advice?.networking)
+          ? report.job_search_advice.networking
+          : (report?.job_search_advice?.networking ? [String(report.job_search_advice.networking)] : []),
+        interview_tips: Array.isArray(report?.job_search_advice?.interview_tips)
+          ? report.job_search_advice.interview_tips
+          : (report?.job_search_advice?.interview_tips ? [String(report.job_search_advice.interview_tips)] : []),
       };
 
       // Herramientas
@@ -633,18 +679,14 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         recs?.resumen_perfil || report?.resumen_ejecutivo || data?.summary,
         'Perfil profesional con potencial de desarrollo.'
       );
-      const summary = ensureText(
-        report?.resumen_ejecutivo || data?.summary || profile_summary,
-        profile_summary
-      );
-      const cv_summary = ensureText(recs?.resumen_cv, profile_summary);
+      const cv_analysis_summary = ensureText(recs?.resumen_cv || report?.cv_summary, profile_summary);
 
       return {
-        summary,
+        summary: profile_summary,
         personal_data,
         job_preferences: jobPreferences,
         profile_summary,
-        cv_summary,
+        cv_analysis_summary,
         strengths,
         soft_skills,
         improvement_areas,
@@ -701,10 +743,14 @@ export function generateNewFormatReport(data: NewReportSchema): string {
   };
 
   const detailSectionLines: string[] = [''];
-  const addDetailSection = (title: string, items?: string[]): void => {
+  const cvItemToString = (item: CvItem): string => {
+    const parts = [item.title, item.subtitle, item.period, item.level, item.detail].filter(Boolean);
+    return parts.join(' — ');
+  };
+  const addDetailSection = (title: string, items?: CvItem[]): void => {
     if (!items || items.length === 0) return;
     const normalized = items
-      .map((item) => String(item ?? '').trim())
+      .map((item) => cvItemToString(item))
       .filter((item) => item.length > 0);
     if (normalized.length === 0) return;
     detailSectionLines.push(title);
@@ -749,7 +795,7 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     data.profile_summary,
     '',
     '## 4. Resumen del CV',
-    data.cv_summary,
+    data.cv_analysis_summary,
     ...detailSectionLines,
     '## 5. Fortalezas',
     ...data.strengths.map((s) => `- ${s}`),
@@ -784,10 +830,13 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     '## 11. Consejos de búsqueda de empleo',
     'Optimización del CV:',
     ...data.job_search_advice.cv_optimization.map((tip) => `- ${tip}`),
-    `Cartas y portafolio: ${data.job_search_advice.letters_portfolio}`,
+  'Cartas y portafolio:',
+  ...data.job_search_advice.letters_portfolio.map((tip) => `- ${tip}`),
     `Plataformas recomendadas: ${data.job_search_advice.recommended_platforms.join(', ')}`,
-    `Networking: ${data.job_search_advice.networking}`,
-    `Entrevistas: ${data.job_search_advice.interview_tips}`,
+  'Networking:',
+  ...data.job_search_advice.networking.map((tip) => `- ${tip}`),
+  'Entrevistas:',
+  ...data.job_search_advice.interview_tips.map((tip) => `- ${tip}`),
     '',
     '## 12. Herramientas útiles y tecnología',
     ...[

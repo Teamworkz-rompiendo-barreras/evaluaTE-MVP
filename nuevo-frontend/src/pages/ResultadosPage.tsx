@@ -867,12 +867,48 @@ const ResultadosPage: React.FC = () => {
             }
 
             // Completar detalles del CV con el análisis almacenado si faltan campos
-            const ensureArray = (value: any): string[] => {
+            const ensureArray = (value: any): Array<{ title: string; detail: string }> => {
               if (!value) return [];
               if (Array.isArray(value)) {
-                return value.map((v) => String(v ?? '').trim()).filter(Boolean);
+                return value
+                  .map((v) => {
+                    if (v === null || v === undefined) return null;
+                    if (typeof v === 'object' && !Array.isArray(v)) {
+                      const obj = v as Record<string, unknown>;
+                      const title =
+                        (typeof obj['title'] === 'string' && obj['title']) ||
+                        (typeof obj['role'] === 'string' && obj['role']) ||
+                        (typeof obj['position'] === 'string' && obj['position']) ||
+                        (typeof obj['name'] === 'string' && obj['name']) ||
+                        (typeof obj['language'] === 'string' && obj['language']) ||
+                        (typeof obj['tool'] === 'string' && obj['tool']) ||
+                        (typeof obj['technology'] === 'string' && obj['technology']);
+                      const detail =
+                        (typeof obj['detail'] === 'string' && obj['detail']) ||
+                        (typeof obj['description'] === 'string' && obj['description']);
+                      const period =
+                        (typeof obj['period'] === 'string' && obj['period']) ||
+                        (typeof obj['start_date'] === 'string' && obj['start_date']) ||
+                        (typeof obj['end_date'] === 'string' && obj['end_date']) ||
+                        (typeof obj['duration'] === 'string' && obj['duration']);
+                      const level =
+                        (typeof obj['level'] === 'string' && obj['level']) ||
+                        (typeof obj['certification'] === 'string' && obj['certification']);
+                      return { title: title || detail || '', subtitle: period || '', level: level || '', detail: detail || '' };
+                    }
+                    const txt = String(v ?? '').trim();
+                    return txt ? { title: txt, detail: txt } : null;
+                  })
+                  .filter((v): v is { title: string; detail: string } => Boolean(v));
               }
-              return [String(value)].filter(Boolean);
+              const txt = String(value ?? '').trim();
+              return txt ? [{ title: txt, detail: txt }] : [];
+            };
+            const ensureStringArray = (value: any): string[] => {
+              if (!value) return [];
+              if (Array.isArray(value)) return value.map((v) => String(v ?? '').trim()).filter(Boolean);
+              const txt = String(value ?? '').trim();
+              return txt ? [txt] : [];
             };
             if (cvAnalysisPayload) {
               const detailsFromCv = {
@@ -919,10 +955,10 @@ const ResultadosPage: React.FC = () => {
               cvScores.style_score = pickCvScore(cvScores.style_score, (cvAnalysisPayload as any).style_score ?? (cvAnalysisPayload as any).spelling_style_score);
               cvScores.corrections = Array.isArray(cvScores.corrections) && cvScores.corrections.length > 0
                 ? cvScores.corrections
-                : ensureArray((cvAnalysisPayload as any).corrections);
+                : ensureStringArray((cvAnalysisPayload as any).corrections);
               cvScores.reordering_suggestions = Array.isArray(cvScores.reordering_suggestions) && cvScores.reordering_suggestions.length > 0
                 ? cvScores.reordering_suggestions
-                : ensureArray((cvAnalysisPayload as any).reordering_suggestions);
+                : ensureStringArray((cvAnalysisPayload as any).reordering_suggestions);
               normalized.cv_analysis = cvScores;
             }
             setInfo(normalized);
@@ -1390,6 +1426,9 @@ const ResultadosPage: React.FC = () => {
       ),
     };
 
+    const asCvItems = (list: string[]): Array<{ title: string; detail: string }> =>
+      (list || []).map((txt) => ({ title: txt, detail: txt }));
+
     const mergedCvAnalysis = (() => {
       const scores: any = { ...(info?.cv_analysis || {}) };
       const apply = (key: string, value: unknown) => {
@@ -1487,7 +1526,7 @@ const ResultadosPage: React.FC = () => {
       ...(base || {}),
       summary: summaryText,
       profile_summary: base?.profile_summary || summaryText,
-      cv_summary: base?.cv_summary || summaryText,
+      cv_analysis_summary: base?.cv_analysis_summary || summaryText,
       employability_score: employabilityScore ?? 0,
       personal_data: personalData as any,
       job_preferences: jobPrefsUnified as any,
@@ -1495,14 +1534,14 @@ const ResultadosPage: React.FC = () => {
       strengths: base?.strengths && base.strengths.length > 0 ? base.strengths : unifiedSoftSkills.map((s) => s.skill).slice(0, 6),
       improvement_areas: base?.improvement_areas || [],
       cv_details: {
-        experience: mergedCvDetails.experience,
-        education: mergedCvDetails.education,
-        languages: mergedCvDetails.languages,
-        tools: mergedCvDetails.tools,
+        experience: asCvItems(mergedCvDetails.experience),
+        education: asCvItems(mergedCvDetails.education),
+        languages: asCvItems(mergedCvDetails.languages),
+        tools: asCvItems(mergedCvDetails.tools),
       },
       cv_analysis: mergedCvAnalysis as any,
       completed_games: completedGamesUnified,
-      job_search_advice: (base?.job_search_advice as any) || { cv_optimization: [], letters_portfolio: '', recommended_platforms: [], networking: '', interview_tips: '' },
+      job_search_advice: (base?.job_search_advice as any) || { cv_optimization: [], letters_portfolio: [], recommended_platforms: [], networking: [], interview_tips: [] },
       action_plan: base?.action_plan || { short_term: [], medium_term: [], long_term: [] },
       useful_tools: (base?.useful_tools as UsefulTools) || { productivity: [], job_search: [], learning: [], accessibility: [] },
       // Alias para el PDF (pdf_service espera report.tools)
@@ -1602,11 +1641,7 @@ const ResultadosPage: React.FC = () => {
         <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Estrategias de búsqueda de empleo</h2>
 
         {cvTips.length > 0 && renderList('Optimización del CV', cvTips)}
-
-        <div className="mt-4">
-          <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Cartas y portfolio/casos</h4>
-          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{letters}</p>
-        </div>
+        {letters && renderList('Cartas y portfolio/casos', Array.isArray(letters) ? letters : [letters])}
 
         <div className="mt-4">
           <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Plataformas</h4>
@@ -2397,6 +2432,11 @@ const ResultadosPage: React.FC = () => {
         {(items || []).filter(Boolean).map((it, idx) => (<li key={idx}>{it}</li>))}
       </ul>
     );
+    const formatCvItems = (items?: Array<{ title?: string; subtitle?: string; period?: string; level?: string; detail?: string }>) =>
+      (items || []).map((it) => {
+        const parts = [it.title, it.subtitle, it.period, it.level, it.detail].filter(Boolean);
+        return (parts.join(' — ') || '').trim();
+      }).filter(Boolean);
 
     return (
       <div className="space-y-8">
@@ -2416,40 +2456,40 @@ const ResultadosPage: React.FC = () => {
           </ul>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Resumen del CV</h2>
-          <p className="text-gray-900 leading-relaxed">{data.cv_summary}</p>
-          <div className="mt-4 space-y-3">
-            {details.experience?.length ? (
-              <div>
-                <h3 className="font-semibold text-gray-900">Experiencia (selección)</h3>
-                {renderList(details.experience)}
-              </div>
-            ) : null}
-            {details.education?.length ? (
-              <div>
-                <h3 className="font-semibold text-gray-900">Formación (selección)</h3>
-                {renderList(details.education)}
-              </div>
-            ) : null}
-            {details.languages?.length ? (
-              <div>
-                <h3 className="font-semibold text-gray-900">Idiomas</h3>
-                {renderList(details.languages)}
-              </div>
-            ) : (
-              <p className="text-gray-900">Idiomas: No consta</p>
-            )}
-            {details.tools?.length ? (
-              <div>
-                <h3 className="font-semibold text-gray-900">Herramientas/Software</h3>
-                {renderList(details.tools)}
-              </div>
-            ) : (
-              <p className="text-gray-900">Herramientas/Software: No consta</p>
-            )}
-          </div>
-        </section>
+                <section>
+                  <h2 className="text-2xl font-bold mb-3 text-gray-900">Resumen del CV</h2>
+                  <p className="text-gray-900 leading-relaxed">{data.cv_analysis_summary}</p>
+                  <div className="mt-4 space-y-3">
+                    {details.experience?.length ? (
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Experiencia (selección)</h3>
+                        {renderList(formatCvItems(details.experience))}
+                      </div>
+                    ) : null}
+                    {details.education?.length ? (
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Formación (selección)</h3>
+                        {renderList(formatCvItems(details.education))}
+                      </div>
+                    ) : null}
+                    {details.languages?.length ? (
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Idiomas</h3>
+                        {renderList(formatCvItems(details.languages))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-900">Idiomas: No consta</p>
+                    )}
+                    {details.tools?.length ? (
+                      <div>
+                        <h3 className="font-semibold text-gray-900">Herramientas/Software</h3>
+                        {renderList(formatCvItems(details.tools))}
+                      </div>
+                    ) : (
+                      <p className="text-gray-900">Herramientas/Software: No consta</p>
+                    )}
+                  </div>
+                </section>
 
         <section>
           <h2 className="text-2xl font-bold mb-3 text-gray-900">Fortalezas clave</h2>
@@ -2544,8 +2584,11 @@ const ResultadosPage: React.FC = () => {
           <h2 className="text-2xl font-bold mb-3 text-gray-900">Estrategias de búsqueda de empleo</h2>
           <h3 className="font-semibold text-gray-900">Optimización del CV</h3>
           {renderList(data.job_search_advice?.cv_optimization as string[])}
-          {data.job_search_advice?.letters_portfolio ? (
-            <p className="text-gray-900 mt-2"><strong>Cartas y portfolio/casos:</strong> {data.job_search_advice.letters_portfolio}</p>
+          {data.job_search_advice?.letters_portfolio?.length ? (
+            <>
+              <h3 className="font-semibold text-gray-900 mt-3">Cartas y portfolio/casos</h3>
+              {renderList(data.job_search_advice.letters_portfolio as string[])}
+            </>
           ) : null}
           {data.job_search_advice?.recommended_platforms?.length ? (
             <>
@@ -2553,11 +2596,17 @@ const ResultadosPage: React.FC = () => {
               {renderList(data.job_search_advice.recommended_platforms as string[])}
             </>
           ) : null}
-          {data.job_search_advice?.networking ? (
-            <p className="text-gray-900 mt-2"><strong>Networking dirigido:</strong> {data.job_search_advice.networking}</p>
+          {data.job_search_advice?.networking?.length ? (
+            <>
+              <h3 className="font-semibold text-gray-900 mt-3">Networking dirigido</h3>
+              {renderList(data.job_search_advice.networking as string[])}
+            </>
           ) : null}
-          {data.job_search_advice?.interview_tips ? (
-            <p className="text-gray-900 mt-2"><strong>Entrevistas:</strong> {data.job_search_advice.interview_tips}</p>
+          {data.job_search_advice?.interview_tips?.length ? (
+            <>
+              <h3 className="font-semibold text-gray-900 mt-3">Entrevistas</h3>
+              {renderList(data.job_search_advice.interview_tips as string[])}
+            </>
           ) : null}
         </section>
 

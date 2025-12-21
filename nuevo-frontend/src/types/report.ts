@@ -13,32 +13,12 @@ export interface CvContact {
   linkedin?: string;
 }
 
-export interface CvExperienceItem {
+export interface CvItem {
   title?: string;
-  company?: string;
-  start_date?: string;
-  end_date?: string;
-  description?: string;
-  [key: string]: unknown;
-}
-
-export interface CvEducationItem {
-  degree?: string;
-  institution?: string;
-  start_date?: string;
-  end_date?: string;
-  [key: string]: unknown;
-}
-
-export interface CvSoftwareItem {
-  name: string;
+  subtitle?: string;
+  period?: string;
   level?: string;
-  [key: string]: unknown;
-}
-
-export interface CvLanguage {
-  name: string;
-  level?: string;
+  detail?: string;
   [key: string]: unknown;
 }
 
@@ -53,11 +33,11 @@ export interface CvAnalysis {
   reordering_suggestions: string[];
   /** Información estructurada adicional devuelta por el analizador */
   contact?: CvContact;
-  experience_detailed?: CvExperienceItem[];
-  education_detailed?: CvEducationItem[];
-  software?: CvSoftwareItem[];
-  skills?: CvSoftwareItem[];
-  languages?: CvLanguage[];
+  experience_detailed?: CvItem[];
+  education_detailed?: CvItem[];
+  software?: CvItem[];
+  skills?: CvItem[];
+  languages?: CvItem[];
   raw_text?: string;
   [key: string]: unknown;
 }
