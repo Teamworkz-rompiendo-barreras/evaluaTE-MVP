@@ -149,7 +149,7 @@ Tu respuesta debe ser UN objeto JSON con estas 13 claves, en este orden:
 12. `completed_games` (lista describiendo juego + cómo capitalizarlo)
 13. `final_message` (cierre motivacional personalizado)
 
-`cv_details` debe existir como objeto con 4 listas (`experience`, `education`, `languages`, `tools`), cada elemento con campos {`title`, `subtitle`, `period`, `level`, `detail`} (rellena los que tengas, no inventes).
+cv_details debe existir como objeto con 4 listas (experience, education, languages, tools), cada elemento con campos: title, subtitle, period, level, detail (rellena los que tengas, no inventes).
 
 **OBLIGATORIO:** Cada campo debe estar completo; si falta dato, usa “No consta”. No omitas ningún campo.
 

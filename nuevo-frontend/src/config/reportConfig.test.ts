@@ -12,12 +12,12 @@ const mockNewFormat: NewReportSchema = {
     disability_certificate: 'Sí'
   },
   profile_summary: 'Perfil profesional con experiencia en desarrollo de software y habilidades de liderazgo.',
-  cv_summary: 'CV bien estructurado con experiencia en tecnologías modernas.',
+  cv_analysis_summary: 'CV bien estructurado con experiencia en tecnologías modernas.',
   cv_details: {
-    experience: ['Desarrollador en ACME (2020-2023)'],
-    education: ['Ingeniería Informática - Universidad Complutense'],
-    languages: ['Inglés (C1)'],
-    tools: ['React', 'Node.js'],
+    experience: [{ title: 'Desarrollador en ACME', period: '2020-2023' }],
+    education: [{ title: 'Ingeniería Informática', subtitle: 'Universidad Complutense' }],
+    languages: [{ title: 'Inglés', level: 'C1' }],
+    tools: [{ title: 'React' }, { title: 'Node.js' }],
   },
   strengths: ['Liderazgo de equipos técnicos'],
   soft_skills: [
@@ -63,10 +63,10 @@ const mockNewFormat: NewReportSchema = {
   },
   job_search_advice: {
     cv_optimization: ['Usar palabras clave específicas del sector'],
-    letters_portfolio: 'Preparar carta de presentación personalizada',
+    letters_portfolio: ['Preparar carta de presentación personalizada'],
     recommended_platforms: ['LinkedIn'],
-    networking: 'Participar en meetups',
-    interview_tips: 'Practicar presentación de proyectos técnicos'
+    networking: ['Participar en meetups'],
+    interview_tips: ['Practicar presentación de proyectos técnicos']
   },
   useful_tools: {
     productivity: ['Trello'],
@@ -108,7 +108,7 @@ test('convertBackendResponseToNewFormat fills defaults when new-format fields ar
   const minimalNewFormat: Partial<NewReportSchema> = {
     summary: '',
     profile_summary: '',
-    cv_summary: '',
+    cv_analysis_summary: '',
     personal_data: { name: '', location: '', email: '', phone: '', disability_certificate: '' },
     cv_details: { experience: [], education: [], languages: [], tools: [] },
     strengths: [],
@@ -129,10 +129,10 @@ test('convertBackendResponseToNewFormat fills defaults when new-format fields ar
     action_plan: { short_term: [], medium_term: [], long_term: [] },
     job_search_advice: {
       cv_optimization: [],
-      letters_portfolio: '',
+      letters_portfolio: [],
       recommended_platforms: [],
-      networking: '',
-      interview_tips: '',
+      networking: [],
+      interview_tips: [],
     },
     useful_tools: { productivity: [], job_search: [], learning: [], accessibility: [] },
     employability_score: 0,
@@ -155,7 +155,7 @@ test('convertBackendResponseToNewFormat fills defaults when new-format fields ar
 
   assert.equal(result.summary, 'Perfil profesional en desarrollo.');
   assert.equal(result.profile_summary, 'Perfil profesional en desarrollo.');
-  assert.equal(result.cv_summary, 'Perfil profesional en desarrollo.');
+  assert.equal(result.cv_analysis_summary, 'Perfil profesional en desarrollo.');
   assert.equal(result.personal_data.name, 'Usuario');
   assert.equal(result.personal_data.location, 'No consta');
   assert.equal(result.personal_data.email, 'No consta');
