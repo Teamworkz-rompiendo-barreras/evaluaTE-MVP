@@ -1667,295 +1667,6 @@ const ResultadosPage: React.FC = () => {
     );
   };
 
-  // Bloque inicial del informe (Resumen ejecutivo, Datos personales, Resumen del CV)
-  const renderInitialBlock = () => {
-    if (!info) return null;
-    const personalData = { ...(info.personal_data || {} as PersonalData) };
-    const cvAnalysisDetails = (info.cv_analysis || {}) as any;
-
-    // Preferir SIEMPRE los datos de contacto del CV sobre los ingresados en la app
-    const cvContact = (cvAnalysisDetails?.contact || cvAnalysisDetails?.cv_structured?.contact || {}) as any;
-    const contactName = cvAnalysisDetails?.cv_structured?.candidate || cvAnalysisDetails?.candidate || cvContact?.name || cvContact?.nombre;
-    const preferredName = (contactName || `${report?.firstName ?? ''} ${report?.lastName ?? ''}`.trim() || personalData.name || 'Usuario').trim() || 'Usuario';
-    personalData.name = preferredName;
-
-    if (Array.isArray(cvContact?.emails) && cvContact.emails[0]) {
-      personalData.email = String(cvContact.emails[0]);
-    }
-    if (Array.isArray(cvContact?.phones) && cvContact.phones[0]) {
-      personalData.phone = String(cvContact.phones[0]);
-    }
-    if (cvContact?.location) {
-      personalData.location = String(cvContact.location);
-    }
-
-    const details = {
-      experience: info.cv_details?.experience || [],
-      education: info.cv_details?.education || [],
-      languages: info.cv_details?.languages || [],
-      tools: info.cv_details?.tools || [],
-    };
-
-    // Si cv_details viene vacío, intentar usar cv_analysis detallado
-    const parseMaybeObject = (value: any) => {
-      if (value == null) return value;
-      if (typeof value === 'string') {
-        const txt = value.trim();
-        // Intentar convertir un dict de Python o JSON simplificado a objeto
-        if (/^\{.*\}$/.test(txt) && txt.includes(':')) {
-          try {
-            const normalized = txt
-              .replace(/'/g, '"')
-              .replace(/\bNone\b/g, 'null')
-              .replace(/\bTrue\b/g, 'true')
-              .replace(/\bFalse\b/g, 'false');
-            return JSON.parse(normalized);
-          } catch {
-            return value;
-          }
-        }
-      }
-      return value;
-    };
-
-    const mergeDetail = (current: any[], fallback: any[], fields: string[]) => {
-      const combined: any[] = [];
-      if (Array.isArray(current)) combined.push(...current);
-      if (Array.isArray(fallback)) combined.push(...fallback);
-
-      const formatted = combined.map((raw) => {
-        const item = parseMaybeObject(raw);
-        if (item == null) return '';
-        if (typeof item === 'string' || typeof item === 'number' || typeof item === 'boolean') {
-          return String(item).trim();
-        }
-        if (Array.isArray(item)) {
-          return item.map((it) => String(it ?? '').trim()).filter(Boolean).join(' — ');
-        }
-        if (typeof item === 'object') {
-          const parts: string[] = [];
-          for (const f of fields) {
-            const v = (item as any)?.[f];
-            if (v === null || v === undefined) continue;
-            const s = String(v).trim();
-            if (s) parts.push(s);
-          }
-          const desc = (item as any)?.description || (item as any)?.descripcion;
-          if (parts.length === 0 && desc) parts.push(String(desc).trim());
-          // Caso de idiomas: si no hay nombre pero sí nivel, mostrar el nivel
-          if (parts.length === 0) {
-            const name = (item as any)?.name || (item as any)?.idioma || (item as any)?.language;
-            const level = (item as any)?.level || (item as any)?.nivel;
-            const combinedNameLevel = [name, level].map((x) => (x == null ? '' : String(x).trim())).filter(Boolean);
-            if (combinedNameLevel.length) return combinedNameLevel.join(' — ');
-          }
-          const line = parts.join(' — ').trim();
-          return line;
-        }
-        return String(item ?? '').trim();
-      }).filter(Boolean);
-
-      // Deduplicar manteniendo orden
-      const seen = new Set<string>();
-      return formatted.filter((val) => {
-        const key = val.toLowerCase();
-        if (seen.has(key)) return false;
-        seen.add(key);
-        return true;
-      });
-    };
-
-    const candidateName = personalData.name;
-    const displayScore = (globalScore ?? info.employability_score ?? 0);
-    const employmentSummaryParts: string[] = [];
-
-    // Preferencias laborales (combinar estado local + backend)
-    const jobPrefs = personal?.jobPreferences || {};
-    const reportJobPrefs: Partial<NormalizedJobPreferences> = info?.job_preferences ?? {};
-    const areasRaw = [
-      ...(Array.isArray((jobPrefs as any)?.areas) ? (jobPrefs as any).areas : []),
-      ...(Array.isArray(reportJobPrefs?.areas) ? reportJobPrefs.areas : []),
-    ];
-    const areas = Array.from(new Set(areasRaw.map(a => String(a ?? '').trim()).filter(Boolean)));
-    const mode =
-      (jobPrefs as any)?.workMode ||
-      (jobPrefs as any)?.work_mode ||
-      reportJobPrefs?.work_mode ||
-      '';
-    const location =
-      (jobPrefs as any)?.location ||
-      reportJobPrefs?.location ||
-      '';
-    const availability = reportJobPrefs?.availability || '';
-    const preferredPlatforms = Array.isArray(reportJobPrefs?.preferred_platforms)
-      ? reportJobPrefs.preferred_platforms.filter((p) => Boolean(p))
-      : [];
-
-    if (areas.length > 0) employmentSummaryParts.push(`Áreas de interés: ${areas.join(', ')}`);
-    if (mode) employmentSummaryParts.push(`Modalidad preferida: ${mode}`);
-    if (availability) employmentSummaryParts.push(`Disponibilidad: ${availability}`);
-    if (location) employmentSummaryParts.push(`Ubicación preferida: ${location}`);
-    if (preferredPlatforms.length > 0) employmentSummaryParts.push(`Plataformas recomendadas: ${preferredPlatforms.join(', ')}`);
-
-    // Habilidades clave (soft skills)
-    const topSkills = Array.isArray(info.soft_skills)
-      ? [...info.soft_skills].sort((a, b) => (b.score ?? 0) - (a.score ?? 0)).slice(0, 3)
-      : [];
-    if (topSkills.length > 0) {
-      const skillsText = topSkills.map(s => `${s.skill} (${s.score}/100)`).join(', ');
-      employmentSummaryParts.push(`Fortalezas: ${skillsText}`);
-    }
-
-    // Datos CV relevantes
-    const expCount = mergeDetail(details.experience, cvAnalysisDetails?.experience_detailed || cvAnalysisDetails?.experience || [], []).length;
-    const eduCount = mergeDetail(details.education, cvAnalysisDetails?.education_detailed || cvAnalysisDetails?.education || [], []).length;
-    if (expCount > 0) employmentSummaryParts.push(`Experiencia registrada: ${expCount}`);
-    if (eduCount > 0) employmentSummaryParts.push(`Formación registrada: ${eduCount}`);
-    const gamesCount = Array.isArray(info.completed_games) ? info.completed_games.length : 0;
-    if (gamesCount > 0) employmentSummaryParts.push(`Minijuegos integrados: ${gamesCount}`);
-
-    const experience = mergeDetail(
-      details.experience,
-      cvAnalysisDetails?.experience_detailed || cvAnalysisDetails?.experience || [],
-      ['title', 'role', 'position', 'company', 'organization', 'employer', 'period', 'start_date', 'end_date', 'duration', 'description']
-    ).slice(0, 8);
-    const education = mergeDetail(
-      details.education,
-      cvAnalysisDetails?.education_detailed || cvAnalysisDetails?.education || [],
-      ['degree', 'title', 'program', 'area', 'institution', 'school', 'period', 'start_date', 'end_date', 'graduation_year', 'level', 'description']
-    ).slice(0, 8);
-    const languages = mergeDetail(
-      details.languages,
-      cvAnalysisDetails?.languages || [],
-      ['language', 'idioma', 'name', 'level', 'nivel', 'certification']
-    ).slice(0, 8);
-    const tools = mergeDetail(
-      details.tools,
-      cvAnalysisDetails?.software || cvAnalysisDetails?.skills || [],
-      ['name', 'tool', 'technology', 'software', 'level', 'nivel', 'description']
-    ).slice(0, 8);
-    const courses = mergeDetail(
-      [],
-      (cvAnalysisDetails as any)?.courses || (cvAnalysisDetails as any)?.certifications || [],
-      ['title', 'course', 'certification', 'institution', 'provider', 'year', 'fecha', 'description']
-    ).slice(0, 8);
-    const volunteering = mergeDetail(
-      [],
-      (cvAnalysisDetails as any)?.volunteering || (cvAnalysisDetails as any)?.voluntariado || [],
-      ['role', 'position', 'organization', 'organizacion', 'period', 'start_date', 'end_date', 'duration', 'description', 'descripcion']
-    ).slice(0, 8);
-    const projects = mergeDetail(
-      [],
-      (cvAnalysisDetails as any)?.projects || [],
-      ['title', 'project', 'role', 'description', 'descripcion', 'year', 'fecha']
-    ).slice(0, 8);
-    const aptitudes = mergeDetail(
-      [],
-      (cvAnalysisDetails as any)?.aptitudes || [],
-      ['name', 'skill', 'aptitude', 'description']
-    ).slice(0, 12);
-
-    const renderList = (items: Array<string>) => {
-      if (!items || items.length === 0) return <p className="text-gray-900 dark:text-gray-100">No hay información disponible.</p>;
-      return (
-        <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-          {items.map((item, idx) => (
-            <li key={idx}>{item}</li>
-          ))}
-        </ul>
-      );
-    };
-
-    const scoreBadge = displayScore;
-    const summaryToShow = (() => {
-      if (!info.summary) return null;
-      if (displayScore > 0 && /0\/100|\bBajo\b/i.test(info.summary)) return null;
-      return info.summary;
-    })();
-
-    return (
-      <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors relative">
-        {typeof scoreBadge === 'number' && scoreBadge >= 0 && (
-          <div className="absolute right-4 bottom-4 bg-gray-900 text-white text-sm font-semibold rounded-full px-3 py-1 shadow-md print:hidden">
-            {scoreBadge}%
-          </div>
-        )}
-        <section className="mb-6">
-          <h2 className="text-3xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resumen ejecutivo</h2>
-          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
-            {`Informe de empleabilidad para ${candidateName}. Puntuación global ${displayScore}/100.`}
-          </p>
-          {employmentSummaryParts.length > 0 && (
-            <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify mt-2">
-              {employmentSummaryParts.join(' · ')}
-            </p>
-          )}
-          {summaryToShow && (
-            <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify mt-2">
-              {summaryToShow}
-            </p>
-          )}
-        </section>
-
-        <section className="mb-6">
-          <h3 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Datos personales</h3>
-          <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100">
-            <li><strong>Nombre:</strong> {personalData.name || 'No consta'}</li>
-            <li><strong>Ubicación:</strong> {personalData.location || 'No consta'}</li>
-            <li><strong>Email:</strong> {personalData.email || 'No consta'}</li>
-            <li><strong>Teléfono:</strong> {personalData.phone || 'No especificado'}</li>
-            <li><strong>LinkedIn:</strong> (no especificado; recomendado crear/actualizar)</li>
-          </ul>
-        </section>
-
-        <section>
-          <h3 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Resumen del CV</h3>
-          <div className="space-y-4">
-            <div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Experiencia (selección)</h4>
-              {renderList(experience)}
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Formación (selección)</h4>
-              {renderList(education)}
-            </div>
-            {courses.length > 0 && (
-              <div>
-                <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Cursos / Certificaciones</h4>
-                {renderList(courses)}
-              </div>
-            )}
-            <div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Idiomas</h4>
-              {renderList(languages)}
-            </div>
-            <div>
-              <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Herramientas/Software</h4>
-              {renderList(tools)}
-            </div>
-            {volunteering.length > 0 && (
-              <div>
-                <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Voluntariados</h4>
-                {renderList(volunteering)}
-              </div>
-            )}
-            {projects.length > 0 && (
-              <div>
-                <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Proyectos</h4>
-                {renderList(projects)}
-              </div>
-            )}
-            {aptitudes.length > 0 && (
-              <div>
-                <h4 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Aptitudes destacadas</h4>
-                {renderList(aptitudes)}
-              </div>
-            )}
-          </div>
-        </section>
-      </div>
-    );
-  };
   // 1. Portada
   const portada = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
@@ -2088,91 +1799,6 @@ const ResultadosPage: React.FC = () => {
   // Ya no se necesitan las secciones hardcodeadas
   // El contenido ahora viene de la IA
 
-  // === NUEVO: función para renderizar el bloque "Análisis del Currículum" ===
-  // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
-  const renderCvAnalysisSection = () => {
-    if (!cvAnalysis) return null;
-
-    const formatScore = asStars(cvAnalysis.structure_score);
-    const clarityScore = asStars(cvAnalysis.clarity_score);
-    const coherenceScore = asStars(cvAnalysis.coherence_score);
-    const keyInfoScore = asStars(cvAnalysis.key_info_score);
-    const styleScore = asStars(cvAnalysis.style_score);
-
-    const { evidence, corrections = [], reordering_suggestions = [] } = cvAnalysis;
-
-    return (
-      <div className="print-page-break-inside-avoid mb-6">
-        <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Análisis del CV (con puntuación 1–5 por apartado)</h2>
-
-        {/* Sección de puntuaciones con estrellas */}
-        <div className="mb-4">
-          <div className="border-l-4 border-blue-500 pl-4 rounded-md" style={{ backgroundColor: '#F9FAFB' }}>
-            <div className="space-y-1">
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900 dark:text-gray-800">Formato:</span>
-                <span className="text-lg"><StarsGold n={formatScore} /></span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900 dark:text-gray-800">Claridad:</span>
-                <span className="text-lg"><StarsGold n={clarityScore} /></span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900 dark:text-gray-800">Coherencia:</span>
-                <span className="text-lg"><StarsGold n={coherenceScore} /></span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900 dark:text-gray-800">Información clave:</span>
-                <span className="text-lg"><StarsGold n={keyInfoScore} /></span>
-              </div>
-              <div className="flex items-center gap-3">
-                <span className="font-semibold text-gray-900 dark:text-gray-800">Ortografía:</span>
-                <span className="text-lg"><StarsGold n={styleScore} /></span>
-              </div>
-            </div>
-          </div>
-        </div>
-
-        {/* Observaciones del análisis */}
-        {evidence && (
-          <div className="mb-4">
-            <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Observaciones del análisis:</p>
-            <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Formato:</strong> {evidence.structure}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Coherencia:</strong> {evidence.coherence}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Información clave:</strong> {evidence.key_info}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Claridad:</strong> {evidence.clarity}</li>
-              <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Ortografía y estilo:</strong> {evidence.style}</li>
-            </ul>
-          </div>
-        )}
-
-        {/* Correcciones/Acciones sugeridas */}
-        {corrections.length > 0 && (
-          <div className="mb-4">
-            <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Correcciones/Acciones:</p>
-            <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              {corrections.map((correction, i) => (
-                <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{correction}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-
-        {/* Reordenación sugerida */}
-        {reordering_suggestions.length > 0 && (
-          <div className="mb-4">
-            <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Reordenación sugerida:</p>
-            <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
-              {reordering_suggestions.map((suggestion, i) => (
-                <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{suggestion}</li>
-              ))}
-            </ul>
-          </div>
-        )}
-      </div>
-    );
-  };
 
   // === NUEVO: función común para renderizar markdown con el mismo estilo ===
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
@@ -2417,7 +2043,6 @@ const ResultadosPage: React.FC = () => {
 
     return { before, improvements, after };
   }, [iaReport]);
-  void renderCvAnalysisSection;
   void renderMarkdown;
   void splitReport;
 
@@ -2426,9 +2051,14 @@ const ResultadosPage: React.FC = () => {
     const cvx = data.cv_analysis || {} as CvAnalysis;
     const details = data.cv_details || { experience: [], education: [], languages: [], tools: [] };
     const jobPrefs = data.job_preferences as NormalizedJobPreferences;
+    
+    // Obtener LinkedIn desde cv_analysis.contact.linkedin o personal.jobPreferences.linkedin
+    const linkedInFromCv = (cvx as any)?.contact?.linkedin || (cvx as any)?.cv_structured?.contact?.linkedin;
+    const linkedInFromPrefs = (personal?.jobPreferences as any)?.linkedin;
+    const linkedIn = linkedInFromCv || linkedInFromPrefs;
     const formatStars = (n?: number) => <StarsGold n={asStars(Number(n ?? 0))} />;
     const renderList = (items?: string[]) => (
-      <ul className="list-disc pl-6 space-y-1 text-gray-900">
+      <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
         {(items || []).filter(Boolean).map((it, idx) => (<li key={idx}>{it}</li>))}
       </ul>
     );
@@ -2441,64 +2071,71 @@ const ResultadosPage: React.FC = () => {
     return (
       <div className="space-y-8">
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Resumen ejecutivo</h2>
-          <p className="text-gray-900 leading-relaxed">{data.summary}</p>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resumen ejecutivo</h2>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">{data.summary}</p>
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Datos personales</h2>
-          <ul className="space-y-1 text-gray-900">
-            <li><strong>Nombre:</strong> {pd.name}</li>
-            <li><strong>Ubicación:</strong> {pd.location}</li>
-            <li><strong>Email:</strong> {pd.email}</li>
-            <li><strong>Teléfono:</strong> {pd.phone}</li>
-            <li><strong>Certificado de discapacidad:</strong> {pd.disability_certificate}</li>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Datos personales</h2>
+          <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100">
+            <li><strong>Nombre:</strong> {pd.name || 'No consta'}</li>
+            <li><strong>Ubicación:</strong> {pd.location || 'No consta'}</li>
+            <li><strong>Email:</strong> {pd.email || 'No consta'}</li>
+            <li><strong>Teléfono:</strong> {pd.phone || 'No especificado'}</li>
+            <li><strong>LinkedIn:</strong> {linkedIn || 'No consta'}</li>
+            <li><strong>Certificado de discapacidad:</strong> {pd.disability_certificate || 'No especificado'}</li>
           </ul>
         </section>
 
-                <section>
-                  <h2 className="text-2xl font-bold mb-3 text-gray-900">Resumen del CV</h2>
-                  <p className="text-gray-900 leading-relaxed">{data.cv_analysis_summary}</p>
-                  <div className="mt-4 space-y-3">
-                    {details.experience?.length ? (
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Experiencia (selección)</h3>
-                        {renderList(formatCvItems(details.experience))}
-                      </div>
-                    ) : null}
-                    {details.education?.length ? (
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Formación (selección)</h3>
-                        {renderList(formatCvItems(details.education))}
-                      </div>
-                    ) : null}
-                    {details.languages?.length ? (
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Idiomas</h3>
-                        {renderList(formatCvItems(details.languages))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-900">Idiomas: No consta</p>
-                    )}
-                    {details.tools?.length ? (
-                      <div>
-                        <h3 className="font-semibold text-gray-900">Herramientas/Software</h3>
-                        {renderList(formatCvItems(details.tools))}
-                      </div>
-                    ) : (
-                      <p className="text-gray-900">Herramientas/Software: No consta</p>
-                    )}
-                  </div>
-                </section>
+        <section>
+          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Resumen del CV</h2>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">{data.cv_analysis_summary}</p>
+          <div className="mt-4 space-y-4">
+            {details.experience?.length ? (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Experiencia (selección)</h3>
+                {renderList(formatCvItems(details.experience))}
+              </div>
+            ) : null}
+            {details.education?.length ? (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Formación (selección)</h3>
+                {renderList(formatCvItems(details.education))}
+              </div>
+            ) : null}
+            {details.languages?.length ? (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Idiomas</h3>
+                {renderList(formatCvItems(details.languages))}
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Idiomas</h3>
+                <p className="text-gray-900 dark:text-gray-100">No consta</p>
+              </div>
+            )}
+            {details.tools?.length ? (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Herramientas/Software</h3>
+                {renderList(formatCvItems(details.tools))}
+              </div>
+            ) : (
+              <div>
+                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Herramientas/Software</h3>
+                <p className="text-gray-900 dark:text-gray-100">No consta</p>
+              </div>
+            )}
+          </div>
+        </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Fortalezas clave</h2>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Fortalezas clave</h2>
           {renderList(data.strengths as string[])}
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Áreas de mejora priorizadas</h2>
-          <ul className="list-disc pl-6 space-y-2 text-gray-900">
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Áreas de mejora priorizadas</h2>
+          <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100">
             {(data.improvement_areas || []).map((it, idx) => (
               <li key={idx}>
                 <strong>{it.area}</strong>: {it.reason}. <strong>Acción:</strong> {it.suggested_action}
@@ -2507,53 +2144,112 @@ const ResultadosPage: React.FC = () => {
           </ul>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Análisis del CV (1–5)</h2>
-          <ul className="space-y-1 text-gray-900">
-            <li><strong>Formato:</strong> {formatStars(cvx.structure_score)}</li>
-            <li><strong>Claridad:</strong> {formatStars(cvx.clarity_score)}</li>
-            <li><strong>Coherencia:</strong> {formatStars(cvx.coherence_score)}</li>
-            <li><strong>Información clave:</strong> {formatStars(cvx.key_info_score)}</li>
-            <li><strong>Ortografía y estilo:</strong> {formatStars(cvx.style_score)}</li>
-          </ul>
-          <div className="mt-3 space-y-2 text-gray-900">
-            <h3 className="font-semibold">Observaciones</h3>
-            {cvx.evidence && renderList([
-              cvx.evidence.structure,
-              cvx.evidence.clarity,
-              cvx.evidence.coherence,
-              cvx.evidence.key_info,
-              cvx.evidence.style,
-            ])}
-            {cvx.corrections?.length ? (
-              <>
-                <h3 className="font-semibold">Correcciones/Acciones</h3>
-                {renderList(cvx.corrections as string[])}
-              </>
-            ) : null}
-            {cvx.reordering_suggestions?.length ? (
-              <>
-                <h3 className="font-semibold">Reordenación sugerida</h3>
-                {renderList(cvx.reordering_suggestions as string[])}
-              </>
-            ) : null}
-          </div>
-        </section>
+        {cvx && (cvx.structure_score || cvx.clarity_score || cvx.coherence_score || cvx.key_info_score || cvx.style_score) && (
+          <section className="print-page-break-inside-avoid">
+            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Análisis del CV (con puntuación 1–5 por apartado)</h2>
+
+            {/* Sección de puntuaciones con estrellas */}
+            <div className="mb-4">
+              <div className="border-l-4 border-blue-500 pl-4 rounded-md dark:bg-gray-800" style={{ backgroundColor: '#F9FAFB' }}>
+                <div className="space-y-1">
+                  {cvx.structure_score != null && (
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">Formato:</span>
+                      <span className="text-lg"><StarsGold n={asStars(cvx.structure_score)} /></span>
+                    </div>
+                  )}
+                  {cvx.clarity_score != null && (
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">Claridad:</span>
+                      <span className="text-lg"><StarsGold n={asStars(cvx.clarity_score)} /></span>
+                    </div>
+                  )}
+                  {cvx.coherence_score != null && (
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">Coherencia:</span>
+                      <span className="text-lg"><StarsGold n={asStars(cvx.coherence_score)} /></span>
+                    </div>
+                  )}
+                  {cvx.key_info_score != null && (
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">Información clave:</span>
+                      <span className="text-lg"><StarsGold n={asStars(cvx.key_info_score)} /></span>
+                    </div>
+                  )}
+                  {cvx.style_score != null && (
+                    <div className="flex items-center gap-3">
+                      <span className="font-semibold text-gray-900 dark:text-gray-100">Ortografía:</span>
+                      <span className="text-lg"><StarsGold n={asStars(cvx.style_score)} /></span>
+                    </div>
+                  )}
+                </div>
+              </div>
+            </div>
+
+            {/* Observaciones del análisis */}
+            {cvx.evidence && (
+              <div className="mb-4">
+                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Observaciones del análisis:</p>
+                <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
+                  {cvx.evidence.structure && (
+                    <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Formato:</strong> {cvx.evidence.structure}</li>
+                  )}
+                  {cvx.evidence.coherence && (
+                    <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Coherencia:</strong> {cvx.evidence.coherence}</li>
+                  )}
+                  {cvx.evidence.key_info && (
+                    <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Información clave:</strong> {cvx.evidence.key_info}</li>
+                  )}
+                  {cvx.evidence.clarity && (
+                    <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Claridad:</strong> {cvx.evidence.clarity}</li>
+                  )}
+                  {cvx.evidence.style && (
+                    <li className="text-gray-900 dark:text-gray-100"><strong className="font-semibold">Ortografía y estilo:</strong> {cvx.evidence.style}</li>
+                  )}
+                </ul>
+              </div>
+            )}
+
+            {/* Correcciones/Acciones sugeridas */}
+            {cvx.corrections && Array.isArray(cvx.corrections) && cvx.corrections.length > 0 && (
+              <div className="mb-4">
+                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Correcciones/Acciones:</p>
+                <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
+                  {cvx.corrections.map((correction, i) => (
+                    <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{correction}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+
+            {/* Reordenación sugerida */}
+            {cvx.reordering_suggestions && Array.isArray(cvx.reordering_suggestions) && cvx.reordering_suggestions.length > 0 && (
+              <div className="mb-4">
+                <p className="font-semibold mb-2 text-gray-900 dark:text-gray-100">Reordenación sugerida:</p>
+                <ul className="list-disc list-inside space-y-1 text-gray-900 dark:text-gray-100">
+                  {cvx.reordering_suggestions.map((suggestion, i) => (
+                    <li key={i} className={`text-gray-900 dark:text-gray-100 ${i === 0 ? 'mt-0' : ''}`}>{suggestion}</li>
+                  ))}
+                </ul>
+              </div>
+            )}
+          </section>
+        )}
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Entornos de trabajo ideales</h2>
-          <p className="text-gray-900 leading-relaxed">{data.ideal_work_environment || 'No consta'}</p>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Entornos de trabajo ideales</h2>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{data.ideal_work_environment || 'No consta'}</p>
           {jobPrefs?.areas?.length ? (
-            <p className="text-gray-900 mt-2"><strong>Áreas de interés:</strong> {jobPrefs.areas.join(', ')}</p>
+            <p className="text-gray-900 dark:text-gray-100 mt-2"><strong>Áreas de interés:</strong> {jobPrefs.areas.join(', ')}</p>
           ) : null}
           {jobPrefs?.work_mode ? (
-            <p className="text-gray-900"><strong>Modalidad preferida:</strong> {jobPrefs.work_mode}</p>
+            <p className="text-gray-900 dark:text-gray-100"><strong>Modalidad preferida:</strong> {jobPrefs.work_mode}</p>
           ) : null}
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Roles sugeridos</h2>
-          <ul className="list-disc pl-6 space-y-2 text-gray-900">
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Roles sugeridos</h2>
+          <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100">
             {(data.suggested_roles || []).map((role, idx) => (
               <li key={idx}>
                 <strong>{role.role}</strong> — {role.seniority} — {role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}. Razón: {role.reason}
@@ -2563,83 +2259,83 @@ const ResultadosPage: React.FC = () => {
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Plan de acción</h2>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Plan de acción</h2>
           <div className="space-y-3">
             <div>
-              <h3 className="font-semibold text-gray-900">Corto plazo (0-30 días)</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Corto plazo (0-30 días)</h3>
               {renderList(data.action_plan?.short_term as string[])}
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Medio plazo (1-3 meses)</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Medio plazo (1-3 meses)</h3>
               {renderList(data.action_plan?.medium_term as string[])}
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Largo plazo (3-6+ meses)</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Largo plazo (3-6+ meses)</h3>
               {renderList(data.action_plan?.long_term as string[])}
             </div>
           </div>
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Estrategias de búsqueda de empleo</h2>
-          <h3 className="font-semibold text-gray-900">Optimización del CV</h3>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Estrategias de búsqueda de empleo</h2>
+          <h3 className="font-semibold text-gray-900 dark:text-gray-100">Optimización del CV</h3>
           {renderList(data.job_search_advice?.cv_optimization as string[])}
           {data.job_search_advice?.letters_portfolio?.length ? (
             <>
-              <h3 className="font-semibold text-gray-900 mt-3">Cartas y portfolio/casos</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-3">Cartas y portfolio/casos</h3>
               {renderList(data.job_search_advice.letters_portfolio as string[])}
             </>
           ) : null}
           {data.job_search_advice?.recommended_platforms?.length ? (
             <>
-              <h3 className="font-semibold text-gray-900 mt-3">Plataformas</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-3">Plataformas</h3>
               {renderList(data.job_search_advice.recommended_platforms as string[])}
             </>
           ) : null}
           {data.job_search_advice?.networking?.length ? (
             <>
-              <h3 className="font-semibold text-gray-900 mt-3">Networking dirigido</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-3">Networking dirigido</h3>
               {renderList(data.job_search_advice.networking as string[])}
             </>
           ) : null}
           {data.job_search_advice?.interview_tips?.length ? (
             <>
-              <h3 className="font-semibold text-gray-900 mt-3">Entrevistas</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100 mt-3">Entrevistas</h3>
               {renderList(data.job_search_advice.interview_tips as string[])}
             </>
           ) : null}
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Herramientas útiles</h2>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Herramientas útiles</h2>
           <div className="space-y-2">
             <div>
-              <h3 className="font-semibold text-gray-900">Productividad</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Productividad</h3>
               {renderList(data.useful_tools?.productivity as string[])}
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Búsqueda de empleo</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Búsqueda de empleo</h3>
               {renderList(data.useful_tools?.job_search as string[])}
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Aprendizaje</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Aprendizaje</h3>
               {renderList(data.useful_tools?.learning as string[])}
             </div>
             <div>
-              <h3 className="font-semibold text-gray-900">Accesibilidad</h3>
+              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Accesibilidad</h3>
               {renderList(data.useful_tools?.accessibility as string[])}
             </div>
           </div>
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Juegos completados</h2>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Juegos completados</h2>
           {renderList(data.completed_games as string[])}
         </section>
 
         <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900">Mensaje final</h2>
-          <p className="text-gray-900 leading-relaxed">{data.final_message}</p>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Mensaje final</h2>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{data.final_message}</p>
         </section>
       </div>
     );
@@ -2669,7 +2365,6 @@ const ResultadosPage: React.FC = () => {
       {portada}
       {radar}
       <div className="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 print:bg-white print:shadow-none print:p-0">
-        {renderInitialBlock()}
         {renderJobSearchSection()}
 
         {/* Informe de la IA y formulario de feedback */}
