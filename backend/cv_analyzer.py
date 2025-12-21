@@ -90,6 +90,109 @@ _pytesseract_imported = False
 _pil_imported = False
 
 
+def _dedup_list(items: List[Any]) -> List[Any]:
+    seen = set()
+    out: List[Any] = []
+    for it in items:
+        if it in (None, "", " ", [], {}):
+            continue
+        key = str(it).strip().lower()
+        if key in seen:
+            continue
+        seen.add(key)
+        out.append(it)
+    return out
+
+
+def _extract_experience_from_text(text: str) -> List[Dict[str, Any]]:
+    """Heurística básica: busca líneas con años/rangos y construye entradas mínimas."""
+    if not text:
+        return []
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    date_rx = re.compile(r"(\b20\d{2}\b|\b19\d{2}\b)")
+    entries: List[Dict[str, Any]] = []
+    for ln in lines:
+        hits = date_rx.findall(ln)
+        if len(hits) >= 1:
+            entries.append({
+                "empresa": "",
+                "cargo": "",
+                "fecha_inicio": hits[0],
+                "fecha_fin": hits[-1] if len(hits) > 1 else "",
+                "descripcion": ln,
+                "responsabilidades": [],
+                "logros": [],
+                "tecnologias": [],
+            })
+    return entries[:8]
+
+
+def _extract_education_from_text(text: str) -> List[Dict[str, Any]]:
+    """Heurística: detecta palabras clave de estudios + año."""
+    if not text:
+        return []
+    edu_keywords = ("universidad", "grado", "licenciatura", "master", "máster", "curso", "formación", "diplomatura")
+    lines = [ln.strip() for ln in text.splitlines() if ln.strip()]
+    date_rx = re.compile(r"(\b20\d{2}\b|\b19\d{2}\b)")
+    entries: List[Dict[str, Any]] = []
+    for ln in lines:
+        lower = ln.lower()
+        if any(k in lower for k in edu_keywords):
+            year = ""
+            m = date_rx.search(ln)
+            if m:
+                year = m.group(1)
+            entries.append({
+                "titulo": ln,
+                "institucion": "",
+                "fecha_inicio": year,
+                "fecha_fin": "",
+                "nivel": "",
+            })
+    return entries[:8]
+
+
+def _extract_languages_from_text(txt: str) -> List[Dict[str, str]]:
+    if not txt:
+        return []
+    langs = []
+    known = [
+        "inglés", "ingles", "english",
+        "español", "spanish",
+        "francés", "frances", "french",
+        "alemán", "aleman", "german",
+        "italiano", "italian",
+        "portugués", "portugues", "portuguese",
+        "gallego", "basque", "euskera", "catalán", "catalan", "valenciano",
+    ]
+    seen = set()
+    lower = txt.lower()
+    for lang in known:
+        if lang in lower and lang not in seen:
+            langs.append({"idioma": lang.capitalize(), "nivel": ""})
+            seen.add(lang)
+    return langs
+
+
+def _extract_tools_from_text(txt: str) -> List[str]:
+    if not txt:
+        return []
+    tools = []
+    known_tools = [
+        "Word", "Excel", "PowerPoint", "Powerpoint",
+        "Photoshop", "Illustrator", "InDesign",
+        "Procreate", "Clip Studio", "Paint", "Movie Maker",
+        "After Effects", "Office", "Teams", "Outlook",
+    ]
+    lower = txt.lower()
+    seen = set()
+    for tool in known_tools:
+        if tool.lower() in lower and tool.lower() not in seen:
+            tools.append(tool)
+            seen.add(tool.lower())
+    return tools
+
+
 def _import_ocr_dependencies() -> bool:
     """Importa dependencias de OCR solo cuando se necesitan."""
     global OCR_AVAILABLE, _pytesseract_imported, _pil_imported
