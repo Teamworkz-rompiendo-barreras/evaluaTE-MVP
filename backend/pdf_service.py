@@ -473,7 +473,13 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
     c.drawString(margin_x, y, "Resumen ejecutivo")
     y -= 14
     c.setFont("Helvetica", 10)
-    y = _draw_wrapped_text(c, margin_x, y, report_data.get("summary") or report_data.get("resumen_ejecutivo") or "", line_w)
+    y = _draw_wrapped_text(
+        c,
+        margin_x,
+        y,
+        report_data.get("profile_summary") or report_data.get("resumen_ejecutivo") or "",
+        line_w,
+    )
 
     y -= 6
     c.setFont("Helvetica-Bold", 12)
@@ -491,16 +497,45 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
         pd_lines.append(f"Teléfono: {personal.get('phone')}")
     y = _draw_bulleted_list(c, margin_x, y, pd_lines, line_w)
 
+    def _cv_item_to_str(it: Any) -> str:
+        if it is None:
+            return ""
+        if isinstance(it, str):
+            return it.strip()
+        if isinstance(it, dict):
+            parts: List[str] = []
+            for k in ("title", "name", "language", "tool", "technology", "software"):
+                v = it.get(k)
+                if v:
+                    parts.append(str(v))
+                    break
+            for k in ("subtitle", "company", "institution", "school", "level"):
+                v = it.get(k)
+                if v:
+                    parts.append(str(v))
+            for k in ("period", "duration"):
+                v = it.get(k)
+                if v:
+                    parts.append(str(v))
+            detail = it.get("detail")
+            if detail:
+                parts.append(str(detail))
+            return " — ".join([p for p in parts if p]).strip(" —")
+        return str(it).strip()
+
     # Utilidad para limpiar placeholders sintéticos
-    def _clean_list(items: List[str]) -> List[str]:
+    def _clean_list(items: List[Any]) -> List[str]:
         noise = ("Cargo detectado", "Empresa detectada", "Fecha detectada", "Experiencia extraída del CV")
         cleaned: List[str] = []
         for it in items:
-            if not it:
+            if it is None:
                 continue
-            if any(n.lower() in str(it).lower() for n in noise):
+            txt = _cv_item_to_str(it)
+            if not txt:
                 continue
-            cleaned.append(str(it).strip())
+            if any(n.lower() in txt.lower() for n in noise):
+                continue
+            cleaned.append(txt)
         return cleaned
 
     # Resumen del CV (experiencia/educación/idiomas/software)
@@ -509,6 +544,9 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
     c.drawString(margin_x, y, "Resumen del CV")
     y -= 14
     c.setFont("Helvetica", 10)
+    if report_data.get("cv_analysis_summary"):
+        y = _draw_wrapped_text(c, margin_x, y, str(report_data.get("cv_analysis_summary")), line_w)
+        y -= 4
     # Experiencia
     y = _draw_wrapped_text(c, margin_x, y, "Experiencia (selección)", line_w)
     xp = _clean_list(cv_data.get("experience") or cv_data.get("experience_detailed") or [])
@@ -698,13 +736,14 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
         y -= 12
         c.setFont("Helvetica", 10)
         y = _draw_bulleted_list(c, margin_x, y, advice.get("cv_optimization") or advice.get("tips") or [], line_w)
-        if advice.get("letters_portfolio"):
+        letters = advice.get("letters_portfolio")
+        if letters:
             y -= 6
             c.setFont("Helvetica-Bold", 11)
             c.drawString(margin_x, y, "Cartas y portfolio/casos")
             y -= 12
             c.setFont("Helvetica", 10)
-            y = _draw_wrapped_text(c, margin_x, y, str(advice.get("letters_portfolio")), line_w)
+            y = _draw_bulleted_list(c, margin_x, y, letters if isinstance(letters, list) else [letters], line_w)
         if advice.get("recommended_platforms"):
             y -= 6
             c.setFont("Helvetica-Bold", 11)
@@ -712,13 +751,22 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
             y -= 12
             c.setFont("Helvetica", 10)
             y = _draw_bulleted_list(c, margin_x, y, advice.get("recommended_platforms"), line_w)
-        if advice.get("networking"):
+        networking = advice.get("networking")
+        if networking:
             y -= 6
             c.setFont("Helvetica-Bold", 11)
             c.drawString(margin_x, y, "Networking dirigido")
             y -= 12
             c.setFont("Helvetica", 10)
-            y = _draw_wrapped_text(c, margin_x, y, str(advice.get("networking")), line_w)
+            y = _draw_bulleted_list(c, margin_x, y, networking if isinstance(networking, list) else [networking], line_w)
+        interview = advice.get("interview_tips")
+        if interview:
+            y -= 6
+            c.setFont("Helvetica-Bold", 11)
+            c.drawString(margin_x, y, "Entrevistas")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_bulleted_list(c, margin_x, y, interview if isinstance(interview, list) else [interview], line_w)
 
     # Lecturas recomendadas (si existen)
     recs_block = report_data.get("readings") or {}
@@ -755,7 +803,7 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
         y = _draw_bulleted_list(c, margin_x, y, pretty_games, line_w)
 
     # Herramientas útiles
-    tools = report_data.get("tools") or {}
+    tools = report_data.get("useful_tools") or report_data.get("tools") or {}
     if tools:
         y -= 8
         c.setFont("Helvetica-Bold", 12)

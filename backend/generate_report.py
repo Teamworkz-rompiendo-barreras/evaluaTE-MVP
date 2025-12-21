@@ -3,7 +3,7 @@
 """
 Generador de informe IA _determinista_ y robusto a partir del prompt de back-end.
 No requiere claves ni servicios externos. Devuelve un diccionario compatible con
-`NewReportSchema`, es decir, con claves como `summary`, `personal_data`,
+`NewReportSchema`, es decir, con claves como `personal_data`,
 `cv_analysis`, `action_plan`, etc., más el campo `employability_score`.
 """
 
@@ -329,14 +329,6 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     if not feedback:
         feedback = str(cv_data.get("feedback") or "")
 
-    summary = ""
-    for key in ("summary", "perfil", "profile_summary"):
-        if isinstance(analysis, dict) and analysis.get(key):
-            summary = str(analysis.get(key))
-            break
-    if not summary:
-        summary = str(cv_data.get("summary") or "")
-
     corrections = _coerce_str_list((analysis or {}).get("corrections")) or _DEFAULT_CORRECTIONS
     reordering = _coerce_str_list((analysis or {}).get("reordering_suggestions")) or _DEFAULT_REORDERING
 
@@ -386,7 +378,6 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         "corrections": corrections,
         "reordering_suggestions": reordering,
         "feedback": feedback or "CV con información básica disponible.",
-        "summary": summary or "Perfil profesional con potencial de desarrollo.",
         "experience": experience,
         "education": education,
         "software": software,
@@ -467,6 +458,13 @@ def _validate_report_json(data: Dict[str, Any], fallback: NewReportSchema) -> Op
     try:
         merged = fallback.dict()
         merged.update(data)
+        # Normalizar job_search_advice a listas si el modelo devolvió strings
+        jsa = merged.get("job_search_advice", {}) or {}
+        if isinstance(jsa, dict):
+            for k in ("letters_portfolio", "networking", "interview_tips"):
+                if k in jsa and isinstance(jsa[k], str):
+                    jsa[k] = [jsa[k]] if jsa[k] else []
+            merged["job_search_advice"] = jsa
         return NewReportSchema(**merged)
     except Exception as exc:
         logger.warning("Respuesta LLM no cumple esquema: %s", exc)
@@ -666,52 +664,61 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
         contact["location"] = candidate_data.get("location")
     cv_payload["contact"] = contact
 
-    # Construir cv_details en texto plano para asegurar render en frontend/PDF
-    def _stringify_list(items: Any) -> List[str]:
+    # Construir cv_details como lista de dicts básicos para CvItem
+    def _stringify_list(items: Any) -> List[Dict[str, Any]]:
         if not items:
             return []
-        out: List[str] = []
+        out: List[Dict[str, Any]] = []
         for it in items:
             if it is None:
                 continue
             if isinstance(it, str):
                 txt = it.strip()
                 if txt:
-                    out.append(txt)
+                    out.append({"title": txt, "detail": txt})
             elif isinstance(it, dict):
-                parts: List[str] = []
-                for k in (
-                    "title",
-                    "cargo",
-                    "position",
-                    "role",
-                    "puesto",
-                    "company",
-                    "empresa",
-                    "organization",
-                    "organizacion",
-                    "period",
-                    "duration",
-                    "start_date",
-                    "fecha_inicio",
-                    "end_date",
-                    "fecha_fin",
-                    "description",
-                    "descripcion",
-                    "degree",
-                    "titulo",
-                    "institution",
-                    "institucion",
-                    "school",
+                candidate: Dict[str, Any] = {}
+                for k, alias in (
+                    ("title", "title"),
+                    ("cargo", "title"),
+                    ("position", "title"),
+                    ("role", "title"),
+                    ("puesto", "title"),
+                    ("company", "subtitle"),
+                    ("empresa", "subtitle"),
+                    ("organization", "subtitle"),
+                    ("organizacion", "subtitle"),
+                    ("institution", "subtitle"),
+                    ("institucion", "subtitle"),
+                    ("school", "subtitle"),
+                    ("period", "period"),
+                    ("duration", "period"),
+                    ("start_date", "period"),
+                    ("fecha_inicio", "period"),
+                    ("end_date", "period"),
+                    ("fecha_fin", "period"),
+                    ("description", "detail"),
+                    ("descripcion", "detail"),
+                    ("degree", "level"),
+                    ("titulo", "level"),
+                    ("program", "level"),
+                    ("area", "level"),
+                    ("language", "title"),
+                    ("level", "level"),
+                    ("certification", "detail"),
+                    ("tool", "title"),
+                    ("technology", "title"),
+                    ("software", "title"),
+                    ("category", "detail"),
                 ):
-                    v = it.get(k)
-                    if v:
-                        parts.append(str(v))
-                line = " — ".join(parts).strip() if parts else str(it)
-                if line:
-                    out.append(line)
+                    if k in it and it.get(k):
+                        candidate.setdefault(alias, str(it.get(k)))
+                # fallback: if empty, keep raw
+                if not candidate:
+                    candidate = {k: str(v) for k, v in it.items() if v is not None}
+                out.append(candidate)
             else:
-                out.append(str(it))
+                out.append({"title": str(it), "detail": str(it)})
         return out
 
     cv_payload["cv_details"] = {
@@ -730,23 +737,6 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     exp_count = len(cv_payload.get("experience") or cv_payload.get("experience_detailed") or [])
     edu_count = len(cv_payload.get("education") or cv_payload.get("education_detailed") or [])
     games_count = len(completed_games or [])
-
-    parts: list[str] = []
-    parts.append(f"Informe de empleabilidad para {full_name}. Puntuación global {safe_score}/100 ({level_label}).")
-    if areas_pref:
-        parts.append(f"Orientado a roles en {', '.join(areas_pref)}.")
-    if top_skills:
-        parts.append(f"Fortalezas destacadas: {', '.join(top_skills)}.")
-    if work_mode:
-        parts.append(f"Preferencia de modalidad: {work_mode}.")
-    if exp_count or edu_count:
-        parts.append(f"CV con {exp_count} experiencias y {edu_count} formaciones registradas.")
-    if games_count:
-        parts.append(f"Resultados de {games_count} minijuego(s) integrados.")
-    if cv_missing:
-        parts.append("No se encontró texto del CV; sube un PDF legible para un diagnóstico completo.")
-
-    report.summary = " ".join(parts)
 
     profile_pieces: list[str] = []
     if top_skills:
@@ -772,7 +762,7 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     if cv_missing:
         cv_summary_parts.append("No hay texto del CV; añade un PDF con fechas, funciones y logros cuantificados.")
     if cv_summary_parts:
-        report.cv_summary = " ".join(cv_summary_parts)
+        report.cv_analysis_summary = " ".join(cv_summary_parts)
 
     personal = report.personal_data
     # Datos personales: priorizar contacto del CV
@@ -864,9 +854,8 @@ def generar_informe(prompt: str | Dict[str, Any]) -> Dict[str, Any]:
     """
     if prompt is None:
         fallback_report = create_default_report("Usuario", [], {}, {})
-        fallback_report.summary = "No se recibió información suficiente."
         fallback_report.profile_summary = "No se recibió información suficiente."
-        fallback_report.cv_summary = "Sin análisis disponible."
+        fallback_report.cv_analysis_summary = "Sin análisis disponible."
         fallback_report.soft_skills = []
         fallback_report.strengths = []
         fallback_report.improvement_areas = []
