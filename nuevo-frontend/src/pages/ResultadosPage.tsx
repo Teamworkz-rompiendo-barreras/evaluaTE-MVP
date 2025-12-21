@@ -2072,7 +2072,7 @@ const ResultadosPage: React.FC = () => {
       <div className="space-y-8">
         <section>
           <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resumen ejecutivo</h2>
-          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">{data.summary}</p>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">{data.profile_summary}</p>
         </section>
 
         <section>
@@ -2307,6 +2307,11 @@ const ResultadosPage: React.FC = () => {
         </section>
 
         <section>
+          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resultados de minijuegos</h2>
+          {renderList(data.completed_games as string[])}
+        </section>
+
+        <section>
           <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Herramientas útiles</h2>
           <div className="space-y-2">
             <div>
@@ -2326,11 +2331,6 @@ const ResultadosPage: React.FC = () => {
               {renderList(data.useful_tools?.accessibility as string[])}
             </div>
           </div>
-        </section>
-
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Juegos completados</h2>
-          {renderList(data.completed_games as string[])}
         </section>
 
         <section>
@@ -2365,8 +2365,6 @@ const ResultadosPage: React.FC = () => {
       {portada}
       {radar}
       <div className="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 print:bg-white print:shadow-none print:p-0">
-        {renderJobSearchSection()}
-
         {/* Informe de la IA y formulario de feedback */}
         {/* Estado iaReport disponible para debug en desarrollo */}
         
@@ -2391,6 +2389,8 @@ const ResultadosPage: React.FC = () => {
         )}
         
         {info && renderStructuredReport(info)}
+
+        {renderJobSearchSection()}
 
         {finalPhrase && (
           <div
