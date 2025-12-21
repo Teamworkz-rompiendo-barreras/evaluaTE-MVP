@@ -477,7 +477,7 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
         c,
         margin_x,
         y,
-        report_data.get("profile_summary") or report_data.get("resumen_ejecutivo") or "",
+        report.profile_summary,
         line_w,
     )
 
@@ -726,7 +726,7 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
 
     # Página 5: Estrategias de búsqueda + Minijuegos + Herramientas
     y = _ensure_space(c, y, 90 * mm, margin_top, margin_bottom)
-    advice = report_data.get("job_search_advice") or {}
+    advice = getattr(report, "job_search_advice", None)
     if advice:
         c.setFont("Helvetica-Bold", 12)
         c.drawString(margin_x, y, "Estrategias de búsqueda de empleo")
@@ -735,8 +735,8 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
         c.drawString(margin_x, y, "Optimización del CV")
         y -= 12
         c.setFont("Helvetica", 10)
-        y = _draw_bulleted_list(c, margin_x, y, advice.get("cv_optimization") or advice.get("tips") or [], line_w)
-        letters = advice.get("letters_portfolio")
+        y = _draw_bulleted_list(c, margin_x, y, getattr(advice, "cv_optimization", []) or [], line_w)
+        letters = getattr(advice, "letters_portfolio", []) or []
         if letters:
             y -= 6
             c.setFont("Helvetica-Bold", 11)
@@ -744,14 +744,15 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
             y -= 12
             c.setFont("Helvetica", 10)
             y = _draw_bulleted_list(c, margin_x, y, letters if isinstance(letters, list) else [letters], line_w)
-        if advice.get("recommended_platforms"):
+        platforms = getattr(advice, "recommended_platforms", []) or []
+        if platforms:
             y -= 6
             c.setFont("Helvetica-Bold", 11)
             c.drawString(margin_x, y, "Plataformas")
             y -= 12
             c.setFont("Helvetica", 10)
-            y = _draw_bulleted_list(c, margin_x, y, advice.get("recommended_platforms"), line_w)
-        networking = advice.get("networking")
+            y = _draw_bulleted_list(c, margin_x, y, platforms, line_w)
+        networking = getattr(advice, "networking", []) or []
         if networking:
             y -= 6
             c.setFont("Helvetica-Bold", 11)
@@ -759,7 +760,7 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
             y -= 12
             c.setFont("Helvetica", 10)
             y = _draw_bulleted_list(c, margin_x, y, networking if isinstance(networking, list) else [networking], line_w)
-        interview = advice.get("interview_tips")
+        interview = getattr(advice, "interview_tips", []) or []
         if interview:
             y -= 6
             c.setFont("Helvetica-Bold", 11)
@@ -803,21 +804,29 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
         y = _draw_bulleted_list(c, margin_x, y, pretty_games, line_w)
 
     # Herramientas útiles
-    tools = report_data.get("useful_tools") or report_data.get("tools") or {}
+    tools = report.useful_tools
     if tools:
         y -= 8
         c.setFont("Helvetica-Bold", 12)
         c.drawString(margin_x, y, "Herramientas útiles")
         y -= 14
         c.setFont("Helvetica", 10)
-        for title, items in tools.items():
+        categories = [
+            ("Productividad", getattr(tools, "productivity", []) or []),
+            ("Búsqueda de empleo", getattr(tools, "job_search", []) or []),
+            ("Aprendizaje", getattr(tools, "learning", []) or []),
+            ("Accesibilidad", getattr(tools, "accessibility", []) or []),
+        ]
+        for title, items in categories:
+            if not items:
+                continue
             c.setFont("Helvetica-Bold", 10)
-            y = _draw_wrapped_text(c, margin_x, y, title.capitalize(), line_w)
+            y = _draw_wrapped_text(c, margin_x, y, title, line_w)
             c.setFont("Helvetica", 10)
             y = _draw_bulleted_list(c, margin_x, y, items, line_w)
 
     # Página final: Mensaje
-    msg = report_data.get("final_message") or report_data.get("frase_final")
+    msg = report.final_message
     if msg:
         y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom)
         c.setFont("Helvetica-Bold", 12)

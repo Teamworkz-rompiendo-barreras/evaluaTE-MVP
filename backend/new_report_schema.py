@@ -1,7 +1,7 @@
 # backend/new_report_schema.py
 # Nuevo esquema de informe estructurado para el backend
 
-from typing import List, Dict, Any, Iterable
+from typing import List, Dict, Any, Iterable, Optional
 from pydantic import BaseModel, Field
 
 
@@ -44,6 +44,8 @@ class CvItem(BaseModel):
     period: str = ""
     level: str = ""
     detail: str = ""
+    name: str = ""
+    score: Optional[int] = Field(None, ge=0, le=100)
 
 
 class CvDetails(BaseModel):

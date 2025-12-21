@@ -456,8 +456,18 @@ def _validate_report_json(data: Dict[str, Any], fallback: NewReportSchema) -> Op
     if not isinstance(data, dict):
         return None
     try:
+        # El campo 'summary' fue eliminado del esquema; si llega, se ignora
+        if "summary" in data:
+            del data["summary"]
+
         merged = fallback.dict()
         merged.update(data)
+
+        # Compatibilidad: mapear cv_summary → cv_analysis_summary si el LLM usó el nombre antiguo
+        if "cv_summary" in merged and "cv_analysis_summary" not in merged:
+            merged["cv_analysis_summary"] = merged["cv_summary"]
+            del merged["cv_summary"]
+
         # Normalizar job_search_advice a listas si el modelo devolvió strings
         jsa = merged.get("job_search_advice", {}) or {}
         if isinstance(jsa, dict):
@@ -738,18 +748,25 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     edu_count = len(cv_payload.get("education") or cv_payload.get("education_detailed") or [])
     games_count = len(completed_games or [])
 
-    profile_pieces: list[str] = []
-    if top_skills:
-        profile_pieces.append("Fortalezas principales: " + ", ".join(top_skills))
+    # profile_summary = resumen ejecutivo principal
+    profile_parts: list[str] = [
+        f"Informe de empleabilidad para {full_name}. Puntuación global {safe_score}/100 ({level_label})."
+    ]
     if areas_pref:
-        profile_pieces.append("Objetivo profesional en " + ", ".join(areas_pref))
-    if not cv_missing and exp_count:
-        profile_pieces.append(f"Experiencia registrada: {exp_count} puestos.")
+        profile_parts.append(f"Orientado a roles en {', '.join(areas_pref)}.")
+    if top_skills:
+        profile_parts.append(f"Fortalezas destacadas: {', '.join(top_skills)}.")
+    if work_mode:
+        profile_parts.append(f"Preferencia de modalidad: {work_mode}.")
+    if exp_count or edu_count:
+        profile_parts.append(f"CV con {exp_count} experiencias y {edu_count} formaciones registradas.")
+    if games_count:
+        profile_parts.append(f"Resultados de {games_count} minijuego(s) integrados.")
     if cv_missing:
-        profile_pieces.append("Falta texto del CV para detallar responsabilidades y logros.")
-    if profile_pieces:
-        report.profile_summary = " ".join(profile_pieces)
+        profile_parts.append("No se encontró texto del CV; sube un PDF legible para un diagnóstico completo.")
+    report.profile_summary = " ".join(profile_parts).strip()
 
+    # cv_analysis_summary = resumen del CV
     cv_summary_parts: list[str] = []
     if exp_count:
         cv_summary_parts.append(f"Experiencia: {exp_count} registros.")
@@ -761,8 +778,12 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
         cv_summary_parts.append(f"Herramientas/tecnologías: {tools_count}.")
     if cv_missing:
         cv_summary_parts.append("No hay texto del CV; añade un PDF con fechas, funciones y logros cuantificados.")
-    if cv_summary_parts:
-        report.cv_analysis_summary = " ".join(cv_summary_parts)
+    cv_analysis_summary_src = str(cv_payload.get("summary") or "").strip()
+    report.cv_analysis_summary = " ".join([cv_analysis_summary_src] + cv_summary_parts).strip() or "Análisis del CV no disponible."
+
+    # Eliminar campo summary del payload para evitar confusión
+    if "summary" in cv_payload:
+        del cv_payload["summary"]
 
     personal = report.personal_data
     # Datos personales: priorizar contacto del CV
