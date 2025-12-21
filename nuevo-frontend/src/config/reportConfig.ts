@@ -1,4 +1,5 @@
 import type { CvAnalysis, CvItem } from '../types/report';
+export type { CvItem };
 
 export interface PersonalData {
   name: string;
@@ -40,15 +41,6 @@ export interface UsefulTools {
   job_search: string[];
   learning: string[];
   accessibility: string[];
-}
-
-export interface CvItem {
-  title?: string;
-  subtitle?: string;
-  period?: string;
-  level?: string;
-  detail?: string;
-  [key: string]: unknown;
 }
 
 export interface CvDetails {
