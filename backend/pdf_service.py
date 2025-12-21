@@ -10,6 +10,11 @@ from reportlab.pdfgen import canvas  # type: ignore
 from reportlab.lib.units import mm  # type: ignore
 from reportlab.lib import colors  # type: ignore
 
+try:
+    from new_report_schema import NewReportSchema
+except ImportError:
+    from backend.new_report_schema import NewReportSchema
+
 # Helpers
 def _draw_wrapped_text(c: canvas.Canvas, x: float, y: float, text: str, max_width: float, leading: float = 12) -> float:
     """
@@ -330,7 +335,7 @@ def _normalize_soft_skills(raw: Any) -> List[Dict[str, Any]]:
         result.append({"skill": label, "score": ival})
     return result
 
-def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
+def create_employability_pdf(report: NewReportSchema) -> bytes:
     """
     Construye un PDF multi-sección con datos REALES del payload.
     - Usa, si existen: report.personal_data, report.cv_analysis, report.strengths,
@@ -338,8 +343,6 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
       report.job_search_advice, report.tools, report.completed_games.
     - Acepta además: softSkills, jobPreferences, completedGames, cvAnalysis.
     """
-    if not isinstance(payload, dict):
-        raise ValueError("Payload debe ser un diccionario")
 
     # ---------- Extracción de datos robusta ----------
     def _ensure_list(value: Any) -> List[Any]:
@@ -349,82 +352,43 @@ def create_employability_pdf(payload: Dict[str, Any]) -> bytes:
             return value
         return [value]
 
-    report_data = {}
-    cv_data = {}
-    soft_skills = []
-    job_prefs = payload.get("jobPreferences") or {}
-    completed_games = payload.get("completedGames") or []
-    is_new_format = isinstance(payload.get("summary"), str) and isinstance(payload.get("personal_data"), dict)
-    if is_new_format:
-        report_data = payload
-        cv_scores = report_data.get("cv_analysis") or {}
-        cv_details = report_data.get("cv_details") or {}
-        if not isinstance(cv_scores, dict):
-            cv_scores = {}
-        if not isinstance(cv_details, dict):
-            cv_details = {}
-        personal_data = report_data.get("personal_data") if isinstance(report_data.get("personal_data"), dict) else {}
-        contact_from_personal = {}
-        if isinstance(personal_data, dict):
-            contact_from_personal = {
-                "emails": _ensure_list(personal_data.get("email")) if personal_data.get("email") else [],
-                "phones": _ensure_list(personal_data.get("phone")) if personal_data.get("phone") else [],
-                "location": personal_data.get("location") or "",
-            }
-        # Combinar las puntuaciones del análisis con los detalles del CV para que el PDF
-        # muestre experiencia, educación, idiomas y herramientas.
-        cv_data = {
-            **cv_scores,
-            "experience": _ensure_list(cv_details.get("experience")) or _ensure_list(cv_details.get("experience_detailed")),
-            "experience_detailed": _ensure_list(cv_details.get("experience")) or _ensure_list(cv_details.get("experience_detailed")),
-            "education": _ensure_list(cv_details.get("education")) or _ensure_list(cv_details.get("education_detailed")),
-            "education_detailed": _ensure_list(cv_details.get("education")) or _ensure_list(cv_details.get("education_detailed")),
-            "languages": _ensure_list(cv_details.get("languages")),
-            "software": _ensure_list(cv_details.get("tools")) or _ensure_list(cv_details.get("software")),
-            "skills": _ensure_list(cv_details.get("tools")) or _ensure_list(cv_details.get("software")),
-            "contact": contact_from_personal,
-        }
-    else:
-        report_data = payload.get("report") or {}
-        cv_data = payload.get("cvAnalysis") or report_data.get("cv_analysis") or {}
-    if not isinstance(report_data, dict):
-        report_data = {}
-    if not isinstance(cv_data, dict):
-        cv_data = {}
-    soft_skills = payload.get("softSkills") or report_data.get("soft_skills") or []
-    if not isinstance(soft_skills, list):
-        soft_skills = []
+    report_data = report.dict()
+    cv_scores = report_data.get("cv_analysis") or {}
+    cv_details = report_data.get("cv_details") or {}
+    soft_skills = report_data.get("soft_skills") or []
+    job_prefs = report_data.get("job_preferences") or {}
+    completed_games = report_data.get("completed_games") or []
+
+    contact_from_personal = {
+        "emails": _ensure_list(report.personal_data.email) if report.personal_data.email else [],
+        "phones": _ensure_list(report.personal_data.phone) if report.personal_data.phone else [],
+        "location": report.personal_data.location or "",
+    }
+
+    cv_data = {
+        **cv_scores,
+        "experience": _ensure_list(cv_details.get("experience")) or _ensure_list(cv_details.get("experience_detailed")),
+        "experience_detailed": _ensure_list(cv_details.get("experience")) or _ensure_list(cv_details.get("experience_detailed")),
+        "education": _ensure_list(cv_details.get("education")) or _ensure_list(cv_details.get("education_detailed")),
+        "education_detailed": _ensure_list(cv_details.get("education")) or _ensure_list(cv_details.get("education_detailed")),
+        "languages": _ensure_list(cv_details.get("languages")),
+        "software": _ensure_list(cv_details.get("tools")) or _ensure_list(cv_details.get("software")),
+        "skills": _ensure_list(cv_details.get("tools")) or _ensure_list(cv_details.get("software")),
+        "contact": contact_from_personal,
+    }
 
     # Datos personales básicos
-    full_name = (
-        (report_data.get("personal_data") or {}).get("name")
-        or payload.get("fullName")
-        or payload.get("userId")
-        or ""
-    )
-    personal = report_data.get("personal_data") or {}
-    if not isinstance(personal, dict):
-        personal = {}
-    # Enriquecer con contacto del CV si falta
-    contact = (cv_data.get("contact") if isinstance(cv_data, dict) else {}) or {}
-    contact_name = ""
-    if isinstance(contact, dict):
-        if not personal.get("email") and isinstance(contact.get("emails"), list) and contact.get("emails"):
-            personal["email"] = contact.get("emails")[0]
-        if not personal.get("phone") and isinstance(contact.get("phones"), list) and contact.get("phones"):
-            personal["phone"] = contact.get("phones")[0]
-        if not personal.get("location") and isinstance(contact.get("location"), str):
-            personal["location"] = contact.get("location")
-        contact_name = contact.get("name") or contact.get("nombre") or ""
-    if not full_name and contact_name:
-        full_name = contact_name
-    if not personal.get("name") and full_name:
-        personal["name"] = full_name
-    if not full_name:
-        full_name = "Usuario"
+    full_name = report.personal_data.name or "Usuario"
+    personal = {
+        "name": report.personal_data.name,
+        "location": report.personal_data.location,
+        "email": report.personal_data.email,
+        "phone": report.personal_data.phone,
+        "disability_certificate": report.personal_data.disability_certificate,
+    }
 
     # Puntuación global
-    global_score = int(payload.get("employabilityScore") or report_data.get("employabilityScore") or 0)
+    global_score = int(report.employability_score or 0)
 
     # ---------- Render PDF ----------
     buf = BytesIO()

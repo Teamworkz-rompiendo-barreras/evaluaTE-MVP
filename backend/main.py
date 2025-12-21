@@ -12,7 +12,7 @@ import logging
 from datetime import datetime
 from typing import Any, Dict, List
 
-from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form
+from fastapi import FastAPI, HTTPException, Request, Response, UploadFile, File, Form, Depends
 from fastapi.middleware.cors import CORSMiddleware
 
 logging.basicConfig(level=logging.INFO)
@@ -27,6 +27,7 @@ try:
         LLM_FALLBACK_COUNT,
     )
     from backend.pdf_service import create_employability_pdf
+    from backend.new_report_schema import NewReportSchema
     from backend.cv_analyzer import extract_pdf_info
     from backend.feedback_notifications import feedback_notifier
 except ImportError:  # fallback a imports relativos al directorio actual
@@ -36,6 +37,7 @@ except ImportError:  # fallback a imports relativos al directorio actual
         LLM_FALLBACK_COUNT,
     )
     from pdf_service import create_employability_pdf
+    from new_report_schema import NewReportSchema
     from cv_analyzer import extract_pdf_info
     from feedback_notifications import feedback_notifier
 
@@ -206,15 +208,14 @@ async def api_report_feedback(req: Request) -> Dict[str, Any]:
 
 
 @app.post("/api/pdf/generate-report")
-async def api_pdf_generate(req: Request) -> Response:
+async def api_pdf_generate(report: NewReportSchema) -> Response:
+    """
+    Genera el PDF del informe de empleabilidad a partir del objeto NewReportSchema.
+    """
     try:
-        payload: Dict[str, Any] = await req.json()
-    except Exception:
-        raise HTTPException(status_code=400, detail="JSON inválido")
-
-    try:
-        pdf_bytes = create_employability_pdf(payload)
+        pdf_bytes = create_employability_pdf(report)
     except Exception as e:
+        logger.exception("Error generando PDF")
         raise HTTPException(status_code=500, detail=f"Error generando PDF: {e}")
 
     return Response(content=pdf_bytes, media_type="application/pdf")
