@@ -2155,31 +2155,31 @@ const ResultadosPage: React.FC = () => {
                   {cvx.structure_score != null && (
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-gray-900 dark:text-gray-100">Formato:</span>
-                      <span className="text-lg"><StarsGold n={asStars(cvx.structure_score)} /></span>
+                      <span className="text-lg">{formatStars(cvx.structure_score)}</span>
                     </div>
                   )}
                   {cvx.clarity_score != null && (
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-gray-900 dark:text-gray-100">Claridad:</span>
-                      <span className="text-lg"><StarsGold n={asStars(cvx.clarity_score)} /></span>
+                      <span className="text-lg">{formatStars(cvx.clarity_score)}</span>
                     </div>
                   )}
                   {cvx.coherence_score != null && (
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-gray-900 dark:text-gray-100">Coherencia:</span>
-                      <span className="text-lg"><StarsGold n={asStars(cvx.coherence_score)} /></span>
+                      <span className="text-lg">{formatStars(cvx.coherence_score)}</span>
                     </div>
                   )}
                   {cvx.key_info_score != null && (
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-gray-900 dark:text-gray-100">Información clave:</span>
-                      <span className="text-lg"><StarsGold n={asStars(cvx.key_info_score)} /></span>
+                      <span className="text-lg">{formatStars(cvx.key_info_score)}</span>
                     </div>
                   )}
                   {cvx.style_score != null && (
                     <div className="flex items-center gap-3">
                       <span className="font-semibold text-gray-900 dark:text-gray-100">Ortografía:</span>
-                      <span className="text-lg"><StarsGold n={asStars(cvx.style_score)} /></span>
+                      <span className="text-lg">{formatStars(cvx.style_score)}</span>
                     </div>
                   )}
                 </div>
