@@ -1522,7 +1522,7 @@ const ResultadosPage: React.FC = () => {
     })();
 
     const summaryText = base?.summary || base?.profile_summary || '';
-    const employabilityScore = pickScore(base?.employability_score) ?? globalScore ?? 0;
+    const employabilityScore = globalScore ?? pickScore(base?.employability_score) ?? 0;
 
     const unified: NewReportSchema = {
       ...(base || {}),
@@ -2464,7 +2464,7 @@ const ResultadosPage: React.FC = () => {
             <div className="mt-4 bg-white rounded-lg p-4 transition-colors">
               <h3 className="text-lg font-semibold mb-2 text-gray-900">Resumen de Evaluación</h3>
               <p className="text-gray-900"><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
-              <p className="text-gray-900"><strong>Puntaje de empleabilidad:</strong> {info?.employability_score ?? report?.employabilityScore ?? 'Calculando...'}</p>
+              <p className="text-gray-900"><strong>Puntaje de empleabilidad:</strong> {globalScore ?? info?.employability_score ?? report?.employabilityScore ?? 'Calculando...'}</p>
               
               
               
