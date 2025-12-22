@@ -1523,12 +1523,25 @@ const ResultadosPage: React.FC = () => {
 
     const summaryText = base?.summary || base?.profile_summary || '';
     const employabilityScore = globalScore ?? pickScore(base?.employability_score) ?? 0;
+    const withEmployabilityScore = (text: string, score?: number): string => {
+      if (!text || (!score && score !== 0)) return text;
+
+      const regex = /(puntuaci[oó]n global[^\d]*)(\d{1,3})(\s*\/\s*100)?/i;
+      if (regex.test(text)) {
+        return text.replace(regex, `$1${score}/100`);
+      }
+
+      const trimmed = text.trim();
+      const ending = trimmed.endsWith('.') ? '' : '.';
+      return `${trimmed}${ending} Puntuación global: ${score}/100`;
+    };
+    const summaryWithScore = withEmployabilityScore(summaryText, employabilityScore);
 
     const unified: NewReportSchema = {
       ...(base || {}),
-      summary: summaryText,
-      profile_summary: base?.profile_summary || summaryText,
-      cv_analysis_summary: base?.cv_analysis_summary || summaryText,
+      summary: summaryWithScore,
+      profile_summary: base?.profile_summary ? withEmployabilityScore(base.profile_summary, employabilityScore) : summaryWithScore,
+      cv_analysis_summary: base?.cv_analysis_summary ? withEmployabilityScore(base.cv_analysis_summary, employabilityScore) : summaryWithScore,
       employability_score: employabilityScore ?? 0,
       personal_data: personalData as any,
       job_preferences: jobPrefsUnified as any,
