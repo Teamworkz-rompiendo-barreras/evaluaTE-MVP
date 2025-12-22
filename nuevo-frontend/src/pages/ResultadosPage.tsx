@@ -606,7 +606,7 @@ const ResultadosPage: React.FC = () => {
           cvAnalysis: cvAnalysisPayload,
           cv_analysis: cvAnalysisPayload,
           jobPreferences: enrichedJobPreferences,
-          employabilityScore: globalScore ?? computedScore ?? iaScore ?? undefined,
+          employabilityScore: globalScore ?? undefined,
           // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
           completedGames: completedGamesDetailed,
           logs: []
@@ -1336,16 +1336,18 @@ const ResultadosPage: React.FC = () => {
     const sum = softSkillsData.reduce((acc: number, s: any) => acc + (Number(s?.score) || 0), 0);
     const avg = sum / softSkillsData.length;
     const val = Math.round(avg);
-    return val > 0 ? val : undefined;
+    return val > 0 ? Math.min(100, val) : undefined;
   }, [softSkillsData]);
   const pickScore = (v: unknown): number | undefined => {
     const n = typeof v === 'number' ? v : Number(v);
-    return Number.isFinite(n) && n > 0 ? Math.round(n) : undefined;
+    if (!Number.isFinite(n)) return undefined;
+    const bounded = Math.max(0, Math.min(100, Math.round(n)));
+    return bounded > 0 ? bounded : undefined;
   };
-  const globalScore = pickScore(iaScore)
+  const globalScore = computedScore
     ?? pickScore(info?.employability_score)
     ?? pickScore(report?.employabilityScore)
-    ?? computedScore;
+    ?? pickScore(iaScore);
 
   // Unificar el reporte que se muestra en pantalla y el que se envía al PDF
   const reportForRender: NewReportSchema | null = useMemo(() => {
