@@ -1973,15 +1973,28 @@ const ResultadosPage: React.FC = () => {
     );
     const formatCvItems = (items?: Array<{ title?: string; subtitle?: string; period?: string; level?: string; detail?: string }>) =>
       (items || []).map((it) => {
-        const parts = [it.title, it.subtitle, it.period, it.level, it.detail].filter(Boolean);
-        return (parts.join(' — ') || '').trim();
+        const rawParts = [it.title, it.subtitle, it.period, it.level, it.detail]
+          .map((part) => (part || '').trim())
+          .filter(Boolean);
+
+        const deduped = rawParts.reduce<string[]>((acc, current) => {
+          const normalized = current.toLowerCase();
+          if (!acc.some((existing) => existing.toLowerCase() === normalized)) {
+            acc.push(current);
+          }
+          return acc;
+        }, []);
+
+        return (deduped.join(' — ') || '').trim();
       }).filter(Boolean);
 
     return (
       <div className="space-y-8">
         <section>
           <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resumen ejecutivo</h2>
-          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">{data.profile_summary}</p>
+          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
+            {data.profile_summary || data.summary}
+          </p>
         </section>
 
         <section>
