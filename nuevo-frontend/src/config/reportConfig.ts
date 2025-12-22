@@ -363,12 +363,43 @@ const toCvItemArray = (input: unknown, priorityKeys: readonly string[]): CvItem[
   return result;
 };
 
-const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvDetails => ({
-  experience: toCvItemArray(sources.experience, detailPriority.experience),
-  education: toCvItemArray(sources.education, detailPriority.education),
-  languages: toCvItemArray(sources.languages, detailPriority.languages),
-  tools: toCvItemArray(sources.tools, detailPriority.tools),
-});
+const firstNonEmptyArray = (...candidates: unknown[]): unknown | undefined => {
+  for (const candidate of candidates) {
+    if (Array.isArray(candidate) && candidate.length > 0) return candidate;
+    if (candidate instanceof Set && candidate.size > 0) return Array.from(candidate);
+  }
+  return undefined;
+};
+
+const cvItemSignature = (item: CvItem): string => [
+  item.title,
+  item.subtitle,
+  item.period,
+  item.level,
+  item.detail,
+]
+  .map((part) => (part || '').trim().toLowerCase())
+  .filter(Boolean)
+  .join('|');
+
+const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvDetails => {
+  const details: CvDetails = {
+    experience: toCvItemArray(firstNonEmptyArray(sources.experience), detailPriority.experience),
+    education: toCvItemArray(firstNonEmptyArray(sources.education), detailPriority.education),
+    languages: toCvItemArray(firstNonEmptyArray(sources.languages), detailPriority.languages),
+    tools: toCvItemArray(firstNonEmptyArray(sources.tools), detailPriority.tools),
+  };
+
+  if (details.education.length && details.experience.length) {
+    const experienceSignatures = new Set(details.experience.map(cvItemSignature).filter(Boolean));
+    details.education = details.education.filter((entry) => {
+      const signature = cvItemSignature(entry);
+      return !signature || !experienceSignatures.has(signature);
+    });
+  }
+
+  return details;
+};
 
 export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema {
   const ensureText = (value: unknown, fallback: string): string => {
@@ -394,10 +425,24 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       );
       const rawDetails = data.cv_details || {};
       const normalizedDetails = buildCvDetails({
-        experience: [rawDetails.experience, rawDetails.experience_highlights, data.cv_analysis?.experience, data.cv_analysis?.experience_detailed],
-        education: [rawDetails.education, data.cv_analysis?.education, data.cv_analysis?.education_detailed],
-        languages: [rawDetails.languages, data.cv_analysis?.languages],
-        tools: [rawDetails.tools, rawDetails.software, data.cv_analysis?.tools, data.cv_analysis?.software],
+        experience: firstNonEmptyArray(
+          rawDetails.experience,
+          rawDetails.experience_highlights,
+          data.cv_analysis?.experience,
+          data.cv_analysis?.experience_detailed,
+        ),
+        education: firstNonEmptyArray(
+          rawDetails.education,
+          data.cv_analysis?.education,
+          data.cv_analysis?.education_detailed,
+        ),
+        languages: firstNonEmptyArray(rawDetails.languages, data.cv_analysis?.languages),
+        tools: firstNonEmptyArray(
+          rawDetails.tools,
+          rawDetails.software,
+          data.cv_analysis?.tools,
+          data.cv_analysis?.software,
+        ),
       });
       const profileSummary = ensureText(data.profile_summary, 'Perfil profesional en desarrollo.');
       const cvSummary = ensureText(data.cv_analysis_summary || data.cv_summary, profileSummary);
@@ -602,7 +647,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
 
       const cvDetailsSource = report.cv_details || {};
       const cv_details = buildCvDetails({
-        experience: [
+        experience: firstNonEmptyArray(
           cvDetailsSource.experience,
           report.experience,
           report.experiencia,
@@ -612,8 +657,8 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
           analysisJson?.experience_detailed,
           data?.cv_analysis?.experience,
           data?.cv_analysis?.experience_detailed,
-        ],
-        education: [
+        ),
+        education: firstNonEmptyArray(
           cvDetailsSource.education,
           report.education,
           report.educacion,
@@ -624,16 +669,16 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
           analysisJson?.education_detailed,
           data?.cv_analysis?.education,
           data?.cv_analysis?.education_detailed,
-        ],
-        languages: [
+        ),
+        languages: firstNonEmptyArray(
           cvDetailsSource.languages,
           report.languages,
           report.idiomas,
           cvA?.languages,
           analysisJson?.languages,
           data?.cv_analysis?.languages,
-        ],
-        tools: [
+        ),
+        tools: firstNonEmptyArray(
           cvDetailsSource.tools,
           report.tools,
           report.software,
@@ -644,7 +689,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
           analysisJson?.software,
           data?.cv_analysis?.tools,
           data?.cv_analysis?.software,
-        ],
+        ),
       });
 
       // Roles sugeridos
