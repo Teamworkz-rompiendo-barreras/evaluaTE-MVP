@@ -178,6 +178,47 @@ def _to_cv_items(entries: Any, priority_keys: Iterable[str] = ()) -> List[CvItem
     return unique
 
 
+# Constantes reutilizables para defaults
+DEFAULT_SOFT_SKILLS = [
+    {'skill': 'Capacidad de aprendizaje', 'score': 85},
+    {'skill': 'Adaptabilidad al cambio', 'score': 80},
+    {'skill': 'Trabajo en equipo', 'score': 75}
+]
+
+DEFAULT_IMPROVEMENT_AREAS = [
+    ImprovementArea(
+        area='Experiencia técnica',
+        reason='Necesita más práctica en tecnologías específicas',
+        suggested_action='Completar proyectos prácticos y cursos online',
+    ),
+    ImprovementArea(
+        area='Métricas de logros',
+        reason='Faltan resultados cuantificables',
+        suggested_action='Incluir números y porcentajes en el CV',
+    ),
+]
+
+DEFAULT_ACTION_PLAN = ActionPlan(
+    short_term=[
+        "Actualizar CV con información más detallada",
+        "Crear perfil en LinkedIn",
+        "Identificar 3-5 empresas objetivo",
+    ],
+    medium_term=[
+        "Completar formación en habilidades técnicas",
+        "Ampliar red profesional",
+        "Preparar portfolio de proyectos",
+    ],
+    long_term=[
+        "Desarrollar especialización técnica",
+        "Buscar oportunidades de liderazgo",
+        "Considerar certificaciones profesionales",
+    ],
+)
+
+DEFAULT_PLATFORMS = ["LinkedIn", "InfoJobs", "Indeed", "Stack Overflow Jobs"]
+
+
 def _normalize_job_preferences(raw: Any) -> JobPreferences:
     """
     Normaliza preferencias laborales aceptando claves diversas del frontend o del backend.
@@ -279,13 +320,9 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
             elif isinstance(skill, str):
                 formatted_soft_skills.append({'skill': skill, 'score': 70})
 
-    # Si no hay soft skills, crear algunas por defecto
+    # Si no hay soft skills, usar defaults
     if not formatted_soft_skills:
-        formatted_soft_skills = [
-            {'skill': 'Capacidad de aprendizaje', 'score': 85},
-            {'skill': 'Adaptabilidad al cambio', 'score': 80},
-            {'skill': 'Trabajo en equipo', 'score': 75}
-        ]
+        formatted_soft_skills = DEFAULT_SOFT_SKILLS.copy()
 
     strengths = [s['skill'] for s in formatted_soft_skills if s.get('skill')]
 
@@ -452,18 +489,7 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         for s in cv_analysis.get('reordering_suggestions', []):
             improvement_areas.append(ImprovementArea(area=s, reason='Sugerencia de reordenamiento', suggested_action=s))
     else:
-        improvement_areas = [
-            ImprovementArea(
-                area='Experiencia técnica',
-                reason='Necesita más práctica en tecnologías específicas',
-                suggested_action='Completar proyectos prácticos y cursos online',
-            ),
-            ImprovementArea(
-                area='Métricas de logros',
-                reason='Faltan resultados cuantificables',
-                suggested_action='Incluir números y porcentajes en el CV',
-            ),
-        ]
+        improvement_areas = DEFAULT_IMPROVEMENT_AREAS.copy()
 
     areas_pref = job_prefs.areas
     area_str = ', '.join(areas_pref)
@@ -474,25 +500,9 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
             long_term=[f"Alcanzar posición {job_prefs.seniority or 'Senior'} en {area_str}"],
         )
     else:
-        action_plan = ActionPlan(
-            short_term=[
-                "Actualizar CV con información más detallada",
-                "Crear perfil en LinkedIn",
-                "Identificar 3-5 empresas objetivo",
-            ],
-            medium_term=[
-                "Completar formación en habilidades técnicas",
-                "Ampliar red profesional",
-                "Preparar portfolio de proyectos",
-            ],
-            long_term=[
-                "Desarrollar especialización técnica",
-                "Buscar oportunidades de liderazgo",
-                "Considerar certificaciones profesionales",
-            ],
-        )
+        action_plan = DEFAULT_ACTION_PLAN
     
-    default_platforms = ["LinkedIn", "InfoJobs", "Indeed", "Stack Overflow Jobs"]
+    default_platforms = DEFAULT_PLATFORMS.copy()
     cv_tips = (cv_analysis or {}).get('corrections', [
         "Usar palabras clave específicas del sector",
         "Incluir logros cuantificables",
@@ -653,202 +663,57 @@ def convert_old_format_to_new(old_data: Dict[str, Any]) -> NewReportSchema:
     return default_report
 
 
-def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, Any]], cv_analysis: Dict[str, Any], job_preferences: Dict[str, Any]) -> Dict[str, Any]:
+def _to_camel_case_dict(report: NewReportSchema) -> Dict[str, Any]:
     """
-    Crea datos en el formato que espera el frontend actual
+    Convierte un NewReportSchema a un diccionario con claves camelCase para compatibilidad con frontend legacy.
     """
-    # Crear soft skills con formato que espera el frontend
-    formatted_soft_skills = []
-    if soft_skills:
-        for skill in soft_skills:
-            if isinstance(skill, dict):
-                if skill.get('name') and skill.get('score'):
-                    formatted_soft_skills.append({
-                        'skill': skill['name'],
-                        'score': skill['score']
-                    })
-                elif skill.get('skill') and skill.get('score'):
-                    formatted_soft_skills.append({
-                        'skill': skill['skill'],
-                        'score': skill['score']
-                    })
-            elif isinstance(skill, str):
-                formatted_soft_skills.append({
-                    'skill': skill,
-                    'score': 70  # Score por defecto
-                })
+    def _cv_items_to_dict_list(items: List[CvItem]) -> List[Dict[str, Any]]:
+        return [item.dict() for item in items]
     
-    # Si no hay soft skills, crear algunas por defecto
-    if not formatted_soft_skills:
-        formatted_soft_skills = [
-            {'skill': 'Liderazgo', 'score': 90},
-            {'skill': 'Comunicación', 'score': 85},
-            {'skill': 'Trabajo en equipo', 'score': 80},
-            {'skill': 'Resolución de problemas', 'score': 75},
-            {'skill': 'Creatividad', 'score': 70}
-        ]
+    def _improvement_areas_to_dict_list(areas: List[ImprovementArea]) -> List[Dict[str, Any]]:
+        return [{'area': area.area, 'reason': area.reason} for area in areas]
     
-    # Crear áreas de mejora a partir del análisis del CV cuando sea posible
-    if cv_analysis and (cv_analysis.get('corrections') or cv_analysis.get('reordering_suggestions')):
-        improvement_areas = [
-            {'area': c, 'reason': 'Corrección sugerida'} for c in cv_analysis.get('corrections', [])
-        ] + [
-            {'area': s, 'reason': 'Sugerencia de reordenamiento'} for s in cv_analysis.get('reordering_suggestions', [])
-        ]
-        if not improvement_areas:
-            improvement_areas = []
-    else:
-        improvement_areas = [
-            {'area': 'Experiencia técnica', 'reason': 'Necesita más práctica en tecnologías específicas'},
-            {'area': 'Métricas de logros', 'reason': 'Faltan resultados cuantificables'},
-        ]
-
-    # Crear plan de acción basándose en preferencias cuando existan
-    areas_pref = (job_preferences or {}).get('desired_roles') or (job_preferences or {}).get('areas') or []
-    area_str = ', '.join(areas_pref)
-    if job_preferences and areas_pref:
-        action_plan = {
-            'short_term': [f"Explorar oportunidades en {area_str}"],
-            'medium_term': [f"Desarrollar habilidades para rol {(job_preferences or {}).get('seniority', 'Senior')}"],
-            'long_term': [f"Alcanzar posición {(job_preferences or {}).get('seniority', 'Senior')} en {area_str}"],
-        }
-    else:
-        action_plan = {
-            'short_term': [
-                'Actualizar CV con información más detallada',
-                'Crear perfil en LinkedIn',
-                'Identificar 3-5 empresas objetivo',
-            ],
-            'medium_term': [
-                'Completar formación en habilidades técnicas',
-                'Ampliar red profesional',
-                'Preparar portfolio de proyectos',
-            ],
-            'long_term': [
-                'Desarrollar especialización técnica',
-                'Buscar oportunidades de liderazgo',
-                'Considerar certificaciones profesionales',
-            ],
-        }
+    def _suggested_roles_to_dict_list(roles: List[SuggestedRole]) -> List[Dict[str, Any]]:
+        return [role.dict() for role in roles]
     
-    # Crear análisis del CV basado en los datos de entrada
-   
-    cv_analysis_data = {
-        'structure': cv_analysis.get('structure', 'regular') if cv_analysis else 'regular',
-        'coherence': cv_analysis.get('coherence', 'regular') if cv_analysis else 'regular',
-        'feedback': cv_analysis.get('feedback', 'CV analizado con limitaciones') if cv_analysis else 'CV analizado con limitaciones',
-        'summary': cv_analysis.get('summary', '') if cv_analysis else '',
-        'experience': cv_analysis.get('experience', []) if cv_analysis else [],
-        'education': cv_analysis.get('education', []) if cv_analysis else [],
-        'software': cv_analysis.get('software', []) if cv_analysis else [],
+    # Extraer datos del CV analysis para formato legacy
+    cv_analysis_dict = {
+        'structure': 'regular',
+        'coherence': 'regular',
+        'feedback': report.cv_analysis.evidence.structure,
+        'summary': report.profile_summary,
+        'experience': _cv_items_to_dict_list(report.cv_details.experience),
+        'education': _cv_items_to_dict_list(report.cv_details.education),
+        'software': _cv_items_to_dict_list(report.cv_details.tools),
     }
-    cv_details_input = (cv_analysis or {}).get('cv_details') if isinstance((cv_analysis or {}).get('cv_details'), dict) else {}
-    experience_input = (
-        cv_details_input.get('experience')
-        or (cv_analysis or {}).get('experience')
-        or (cv_analysis or {}).get('experience_detailed')
-        or []
-    )
-    education_input = (
-        cv_details_input.get('education')
-        or (cv_analysis or {}).get('education')
-        or (cv_analysis or {}).get('education_detailed')
-        or []
-    )
-    language_input = (
-        cv_details_input.get('languages')
-        or (cv_analysis or {}).get('languages')
-        or (cv_analysis or {}).get('idiomas')
-        or []
-    )
-    tools_input = (
-        cv_details_input.get('tools')
-        or (cv_analysis or {}).get('tools')
-        or (cv_analysis or {}).get('software')
-        or (cv_analysis or {}).get('skills')
-        or []
-    )
-
-    cv_details = {
-        'experience': _to_cv_items(
-            experience_input,
-            (
-                'title', 'role', 'position', 'company', 'organization', 'employer', 'location', 'start_date', 'end_date', 'duration', 'description'
-            ),
-        ),
-        'education': _to_cv_items(
-            education_input,
-            (
-                'degree', 'title', 'program', 'area', 'institution', 'school', 'location', 'start_date', 'end_date', 'graduation_year', 'description'
-            ),
-        ),
-        'languages': _to_cv_items(
-            language_input,
-            (
-                'name', 'language', 'level', 'certification'
-            ),
-        ),
-        'tools': _to_cv_items(
-            tools_input,
-            (
-                'name', 'tool', 'technology', 'level', 'category'
-            ),
-        ),
-    }
-    # Crear consejos de búsqueda y herramientas útiles
-    recommended_platforms = (job_preferences or {}).get('preferred_platforms') or (job_preferences or {}).get('platforms') or ['LinkedIn', 'Indeed']
-    cv_tips = (cv_analysis or {}).get('corrections') or ['gestión', 'coordinación', 'liderazgo']
-    job_search_advice = {
-        'cv_optimization': cv_tips,
-        'letters_portfolio': 'Destacar proyectos relevantes',
-        'recommended_platforms': recommended_platforms,
-        'networking': 'Participar en comunidades online' if (job_preferences or {}).get('workMode', '').lower() == 'remoto' else 'Asistir a eventos locales',
-        'interview_tips': 'Preparar ejemplos de proyectos relevantes',
-    }
-
-    productivity_entries = cv_details['tools'] or [
-        str(item) for item in ((cv_analysis or {}).get('software') or ['Excel', 'Google Sheets']) if item
-    ]
-    useful_tools = {
-        'productivity': productivity_entries,
-        'job_search': recommended_platforms,
-        'learning': ['Coursera', 'Udemy'],
-        'accessibility': ['Microsoft Immersive Reader', 'Grammarly', 'ColorZilla'],
-    }
-    
-    # Crear roles sugeridos a partir de preferencias de trabajo
-    preferred_roles = areas_pref
-    suggested_roles = []
-    for role in preferred_roles:
-        suggested_roles.append({
-            'role': role,
-            'reason': 'Basado en preferencias del usuario',
-            'seniority': (job_preferences or {}).get('seniority', 'Junior'),
-            'remote_viable': ((job_preferences or {}).get('workMode', '').lower() == 'remoto')
-        })
-    if not suggested_roles:
-        suggested_roles = [
-            {
-                'role': 'Coordinador de Proyectos',
-                'reason': 'Perfil adecuado para roles de coordinación',
-                'seniority': 'Junior-Mid',
-                'remote_viable': True
-            }
-        ]
-    
-    # Crear juegos completados
-    completed_games = ['Evaluación de habilidades básicas completada']
     
     return {
-        'softSkills': formatted_soft_skills,
-        'improvement_areas': improvement_areas,
-        'action_plan': action_plan,
-        'cv_analysis': cv_analysis_data,
-        'cv_details': cv_details,
-        'job_search_advice': job_search_advice,
-        'useful_tools': useful_tools,
-        'suggested_roles': suggested_roles,
-        'completed_games': completed_games,
-        'employabilityScore': 76,  # Score por defecto
-        'level': 'Intermedio'
+        'softSkills': report.soft_skills,
+        'improvement_areas': _improvement_areas_to_dict_list(report.improvement_areas),
+        'action_plan': report.action_plan.dict(),
+        'cv_analysis': cv_analysis_dict,
+        'cv_details': {
+            'experience': _cv_items_to_dict_list(report.cv_details.experience),
+            'education': _cv_items_to_dict_list(report.cv_details.education),
+            'languages': _cv_items_to_dict_list(report.cv_details.languages),
+            'tools': _cv_items_to_dict_list(report.cv_details.tools),
+        },
+        'job_search_advice': report.job_search_advice.dict(),
+        'useful_tools': report.useful_tools.dict(),
+        'suggested_roles': _suggested_roles_to_dict_list(report.suggested_roles),
+        'completed_games': report.completed_games,
+        'employabilityScore': report.employability_score,
+        'level': 'Intermedio'  # Valor por defecto para compatibilidad
     }
+
+
+def create_frontend_compatible_data(full_name: str, soft_skills: List[Dict[str, Any]], cv_analysis: Dict[str, Any], job_preferences: Dict[str, Any]) -> Dict[str, Any]:
+    """
+    Crea datos en el formato que espera el frontend actual (camelCase).
+    Esta función ahora deriva su salida de create_default_report para garantizar consistencia.
+    """
+    # Usar create_default_report como fuente única de verdad
+    report = create_default_report(full_name, soft_skills, cv_analysis, job_preferences)
+    
+    # Convertir a formato camelCase para compatibilidad con frontend legacy
+    return _to_camel_case_dict(report)
