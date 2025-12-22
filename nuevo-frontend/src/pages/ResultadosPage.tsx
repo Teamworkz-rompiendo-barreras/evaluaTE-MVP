@@ -2488,7 +2488,7 @@ const ResultadosPage: React.FC = () => {
           </div>
         )}
         
-        {info && renderStructuredReport(info)}
+        {(reportForRender || info) && renderStructuredReport(reportForRender || info!)}
 
         {finalPhrase && (
           <div
