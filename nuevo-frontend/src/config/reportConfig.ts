@@ -374,27 +374,108 @@ const cvItemSignature = (item: CvItem): string => [
   .filter(Boolean)
   .join('|');
 
-const pickBestCvArray = (candidateInput: unknown, priority: ReadonlyArray<string>): CvItem[] => {
-  const candidates = Array.isArray(candidateInput) ? candidateInput : [candidateInput];
-  let best: CvItem[] = [];
-  let bestScore = -1;
+const normalizeSuggestedRoles = (
+  jobPreferences: NormalizedJobPreferences,
+  ...sources: unknown[]
+): SuggestedRole[] => {
+  const result: SuggestedRole[] = [];
+  const seen = new Set<string>();
 
-  for (const candidate of candidates) {
-    const normalized = toCvItemArray(candidate, priority);
-    if (!normalized.length) continue;
-    const richness = normalized.reduce((acc, item) => {
-      return acc + ['title', 'subtitle', 'period', 'level', 'detail'].reduce((score, key) => {
-        return score + ((item as Record<string, unknown>)[key] ? 1 : 0);
-      }, 0);
-    }, 0);
-    const score = richness + normalized.length;
-    if (score > bestScore) {
-      bestScore = score;
-      best = normalized;
+  const normalizeEntry = (entry: Record<string, unknown> | null | undefined): SuggestedRole | null => {
+    if (!entry || typeof entry !== 'object') return null;
+    const roleName = firstString((entry as { role?: unknown }).role ?? (entry as { name?: unknown }).name ?? (entry as { title?: unknown }).title);
+    if (!roleName) return null;
+
+    const fitScoreRaw = (entry as { fit_score?: unknown }).fit_score;
+    const fitScore = typeof fitScoreRaw === 'number' ? Math.max(0, Math.min(100, fitScoreRaw)) : undefined;
+    const matchedSkills = toUniqueStringArray(
+      (entry as { matched_skills?: unknown }).matched_skills
+        ?? (entry as { skills?: unknown }).skills
+        ?? (entry as { fit_by_skills?: unknown }).fit_by_skills,
+    );
+    const reasonParts: string[] = [];
+    const preferenceFlag = Boolean((entry as { preference?: unknown }).preference);
+    const rawReason = firstString((entry as { reason?: unknown }).reason);
+    if (rawReason) reasonParts.push(rawReason);
+    if (matchedSkills.length) {
+      reasonParts.push(`Encaje por skills: ${matchedSkills.join(', ')}`);
+    }
+    if (typeof fitScore === 'number') {
+      reasonParts.push(`Encaje ${Math.round(fitScore)} / 100`);
+    }
+    if (preferenceFlag) {
+      reasonParts.push('Preferencia declarada por el candidato');
+    }
+
+    const seniority = firstString((entry as { seniority?: unknown }).seniority ?? (entry as { level?: unknown }).level ?? jobPreferences.seniority);
+    const workMode = firstString((entry as { work_mode?: unknown }).work_mode ?? (entry as { modality?: unknown }).modality);
+    const remoteFromWorkMode = ['remoto', 'remote', 'teletrabajo', '100% remoto', 'fully remote'].some((flag) => workMode.toLowerCase().includes(flag));
+    const remote_viable = typeof (entry as { remote_viable?: unknown }).remote_viable === 'boolean'
+      ? Boolean((entry as { remote_viable?: unknown }).remote_viable)
+      : remoteFromWorkMode || (jobPreferences.work_mode ? jobPreferences.work_mode.toLowerCase().includes('remoto') : false);
+
+    const reason = reasonParts.filter(Boolean).join(' — ') || 'Propuesto según coincidencia de perfil';
+
+    const signature = `${roleName.toLowerCase()}|${seniority.toLowerCase()}|${remote_viable}`;
+    if (seen.has(signature)) return null;
+    seen.add(signature);
+
+    return { role: roleName, reason, seniority, remote_viable };
+  };
+
+  for (const source of sources) {
+    if (!source) continue;
+    if (Array.isArray(source)) {
+      for (const entry of source) {
+        const normalized = normalizeEntry((entry ?? null) as Record<string, unknown> | null);
+        if (normalized) result.push(normalized);
+      }
+    } else if (typeof source === 'object') {
+      const maybeArray = (source as { suggested_roles?: unknown }).suggested_roles;
+      if (Array.isArray(maybeArray)) {
+        for (const entry of maybeArray) {
+          const normalized = normalizeEntry((entry ?? null) as Record<string, unknown> | null);
+          if (normalized) result.push(normalized);
+        }
+      } else {
+        const normalized = normalizeEntry(source as Record<string, unknown>);
+        if (normalized) result.push(normalized);
+      }
     }
   }
 
-  return best;
+  return result;
+};
+
+const pickBestCvArray = (candidateInput: unknown, priority: ReadonlyArray<string>): CvItem[] => {
+  const candidates = Array.isArray(candidateInput) ? candidateInput : [candidateInput];
+  const ranked = candidates
+    .map((candidate) => {
+      const normalized = toCvItemArray(candidate, priority);
+      if (!normalized.length) return null;
+      const richness = normalized.reduce((acc, item) => {
+        return acc + ['title', 'subtitle', 'period', 'level', 'detail'].reduce((score, key) => {
+          return score + ((item as Record<string, unknown>)[key] ? 1 : 0);
+        }, 0);
+      }, 0);
+      return { items: normalized, score: richness + normalized.length };
+    })
+    .filter((entry): entry is { items: CvItem[]; score: number } => Boolean(entry))
+    .sort((a, b) => b.score - a.score);
+
+  const merged: CvItem[] = [];
+  const seen = new Set<string>();
+
+  for (const candidate of ranked) {
+    for (const item of candidate.items) {
+      const signature = cvItemSignature(item);
+      if (signature && seen.has(signature)) continue;
+      seen.add(signature);
+      merged.push(item);
+    }
+  }
+
+  return merged;
 };
 
 const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvDetails => {
@@ -407,9 +488,20 @@ const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvD
 
   if (details.education.length && details.experience.length) {
     const experienceSignatures = new Set(details.experience.map(cvItemSignature).filter(Boolean));
+    const experienceText = details.experience
+      .map((entry) => [entry.title, entry.subtitle, entry.detail].map((part) => (part || '').toLowerCase().trim()).filter(Boolean).join(' '))
+      .filter(Boolean);
+
     details.education = details.education.filter((entry) => {
       const signature = cvItemSignature(entry);
-      return !signature || !experienceSignatures.has(signature);
+      if (signature && experienceSignatures.has(signature)) return false;
+      const text = [entry.title, entry.subtitle, entry.detail]
+        .map((part) => (part || '').toLowerCase().trim())
+        .filter(Boolean)
+        .join(' ');
+
+      if (!text) return true;
+      return !experienceText.some((exp) => exp.includes(text) || text.includes(exp));
     });
   }
 
@@ -474,12 +566,19 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
           ? data.job_search_advice.interview_tips
           : (data?.job_search_advice?.interview_tips ? [String(data.job_search_advice.interview_tips)] : []),
       };
+      const suggested_roles = normalizeSuggestedRoles(
+        normalizedJobPrefs,
+        data.suggested_roles,
+        data.cv_analysis?.suggested_roles,
+        data.cv_analysis,
+      );
       return {
         ...data,
         summary: profileSummary,
         profile_summary: profileSummary,
         cv_analysis_summary: cvSummary,
         cv_details: normalizedDetails,
+        suggested_roles,
         personal_data: {
           name: ensureText(data.personal_data?.name, 'Usuario'),
           location: ensureText(data.personal_data?.location, 'No consta'),
@@ -708,73 +807,14 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       });
 
       // Roles sugeridos
-      const flattenCvItems = (items?: CvItem[]): string[] => {
-        if (!Array.isArray(items)) return [];
-        return items
-          .map((item) => {
-            const parts = [item.title, item.subtitle, item.level, item.detail].filter(Boolean);
-            return parts.join(' ').trim();
-          })
-          .filter(Boolean);
-      };
-
-      const experienceStrings = flattenCvItems((cv_details as CvDetails).experience);
-      const toolStrings = flattenCvItems((cv_details as CvDetails).tools);
-      const softSkillStrings = Array.isArray(soft_skills)
-        ? soft_skills.map((s) => `${s.skill} (${s.score}/100)`)
-        : [];
-
-      // Selección corta de elementos que justifican el ajuste al rol
-      const matchedSkillsGlobal = Array.from(
-        new Set(
-          [...experienceStrings, ...toolStrings, ...softSkillStrings]
-            .map((s) => s.trim())
-            .filter(Boolean),
-        ),
-      ).slice(0, 6);
-
-      const preferenceContext = [
-        jobPreferences.areas.length ? `Áreas de interés: ${jobPreferences.areas.join(', ')}` : '',
-        jobPreferences.work_mode ? `Modalidad preferida: ${jobPreferences.work_mode}` : '',
-        jobPreferences.location ? `Ubicación deseada: ${jobPreferences.location}` : '',
-      ]
-        .filter(Boolean)
-        .join(' — ');
-
-      const suggested_roles = Array.isArray(report?.suggested_roles)
-        ? report.suggested_roles.map((r: any) => {
-            const roleName = String(r?.role ?? r?.name ?? '').trim();
-            const baseReason = String(r?.reason ?? '').trim();
-
-            const skillsReason = matchedSkillsGlobal.length
-              ? `Ajuste por experiencia, herramientas y habilidades: ${matchedSkillsGlobal.join('; ')}`
-              : '';
-
-            const preferenceReason = preferenceContext
-              ? `Contexto de preferencias: ${preferenceContext}`
-              : '';
-
-            const combinedReason = [skillsReason || baseReason, preferenceReason]
-              .filter(Boolean)
-              .join(' — ');
-
-            const roleSeniority = String(r?.seniority ?? '').trim();
-
-            const explicitRemote =
-              typeof r?.remote_viable === 'boolean' ? Boolean(r.remote_viable) : undefined;
-
-            return {
-              role: roleName,
-              reason: combinedReason,
-              // No rellenar seniority únicamente con la preferencia; usar solo la proveniente del rol si existe.
-              seniority: roleSeniority,
-              // No inferir remoto solo por la preferencia; respetar únicamente el valor explícito del rol.
-              remote_viable: explicitRemote ?? false,
-              fit_by_skills: skillsReason || undefined,
-              matched_skills: matchedSkillsGlobal.length ? matchedSkillsGlobal : undefined,
-            } as SuggestedRole;
-          })
-        : [];
+      const suggested_roles = normalizeSuggestedRoles(
+        jobPreferences,
+        report?.suggested_roles,
+        cvA?.suggested_roles,
+        analysisJson?.suggested_roles,
+        data?.cv_analysis?.suggested_roles,
+        data?.cv_analysis,
+      );
 
       // Otros campos
       const jobPreferenceEnvironment = [
