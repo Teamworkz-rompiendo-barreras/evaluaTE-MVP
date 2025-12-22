@@ -1352,10 +1352,59 @@ const ResultadosPage: React.FC = () => {
   // Unificar el reporte que se muestra en pantalla y el que se envía al PDF
   const reportForRender: NewReportSchema | null = useMemo(() => {
     const ensureArray = (value: any): string[] => {
-      if (!value) return [];
-      if (Array.isArray(value)) return value.map((v) => String(v ?? '').trim()).filter(Boolean);
-      const str = String(value ?? '').trim();
-      return str ? [str] : [];
+      const seen = new Set<string>();
+
+      const push = (entry: any): void => {
+        if (entry === null || entry === undefined) return;
+
+        if (typeof entry === 'string' || typeof entry === 'number' || typeof entry === 'boolean') {
+          const t = String(entry).trim();
+          if (t) seen.add(t);
+          return;
+        }
+
+        if (Array.isArray(entry)) {
+          entry.forEach(push);
+          return;
+        }
+
+        if (entry instanceof Set) {
+          entry.forEach(push);
+          return;
+        }
+
+        if (typeof entry === 'object') {
+          const preferredKeys = [
+            'title', 'subtitle', 'role', 'position', 'cargo', 'puesto',
+            'company', 'organization', 'employer', 'empresa', 'organizacion',
+            'institution', 'school', 'degree', 'titulo',
+            'period', 'start_date', 'end_date', 'duration', 'fecha_inicio', 'fecha_fin',
+            'level', 'language', 'name', 'detail', 'description', 'descripcion',
+          ];
+
+          const parts: string[] = [];
+          for (const key of preferredKeys) {
+            const valueForKey = (entry as any)[key];
+            if (valueForKey === null || valueForKey === undefined) continue;
+            const text = typeof valueForKey === 'string' || typeof valueForKey === 'number' || typeof valueForKey === 'boolean'
+              ? String(valueForKey).trim()
+              : '';
+            if (text) parts.push(text);
+          }
+
+          const composed = parts.join(' — ').trim();
+          if (composed) {
+            seen.add(composed);
+            return;
+          }
+        }
+
+        const fallback = String(entry ?? '').trim();
+        if (fallback) seen.add(fallback);
+      };
+
+      push(value);
+      return Array.from(seen);
     };
     const firstNonEmpty = (...values: Array<unknown>): string => {
       for (const value of values) {
