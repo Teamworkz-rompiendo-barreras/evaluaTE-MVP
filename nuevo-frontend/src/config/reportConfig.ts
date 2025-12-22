@@ -20,6 +20,14 @@ export interface SuggestedRole {
   reason: string;
   seniority: string;
   remote_viable: boolean;
+  /**
+   * Resumen de por qué el rol encaja con la experiencia/herramientas de la persona.
+   */
+  fit_by_skills?: string;
+  /**
+   * Lista breve de experiencias, herramientas o soft skills que sustentan la recomendación.
+   */
+  matched_skills?: string[];
 }
 
 export interface ActionPlan {
@@ -640,15 +648,72 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       });
 
       // Roles sugeridos
+      const flattenCvItems = (items?: CvItem[]): string[] => {
+        if (!Array.isArray(items)) return [];
+        return items
+          .map((item) => {
+            const parts = [item.title, item.subtitle, item.level, item.detail].filter(Boolean);
+            return parts.join(' ').trim();
+          })
+          .filter(Boolean);
+      };
+
+      const experienceStrings = flattenCvItems((cv_details as CvDetails).experience);
+      const toolStrings = flattenCvItems((cv_details as CvDetails).tools);
+      const softSkillStrings = Array.isArray(soft_skills)
+        ? soft_skills.map((s) => `${s.skill} (${s.score}/100)`)
+        : [];
+
+      // Selección corta de elementos que justifican el ajuste al rol
+      const matchedSkillsGlobal = Array.from(
+        new Set(
+          [...experienceStrings, ...toolStrings, ...softSkillStrings]
+            .map((s) => s.trim())
+            .filter(Boolean),
+        ),
+      ).slice(0, 6);
+
+      const preferenceContext = [
+        jobPreferences.areas.length ? `Áreas de interés: ${jobPreferences.areas.join(', ')}` : '',
+        jobPreferences.work_mode ? `Modalidad preferida: ${jobPreferences.work_mode}` : '',
+        jobPreferences.location ? `Ubicación deseada: ${jobPreferences.location}` : '',
+      ]
+        .filter(Boolean)
+        .join(' — ');
+
       const suggested_roles = Array.isArray(report?.suggested_roles)
-        ? report.suggested_roles.map((r: any) => ({
-            role: String(r?.role ?? r?.name ?? ''),
-            reason: String(r?.reason ?? ''),
-            seniority: String(r?.seniority ?? jobPreferences.seniority ?? ''),
-            remote_viable: typeof r?.remote_viable === 'boolean'
-              ? Boolean(r?.remote_viable)
-              : (jobPreferences.work_mode || '').toLowerCase() === 'remoto',
-          }))
+        ? report.suggested_roles.map((r: any) => {
+            const roleName = String(r?.role ?? r?.name ?? '').trim();
+            const baseReason = String(r?.reason ?? '').trim();
+
+            const skillsReason = matchedSkillsGlobal.length
+              ? `Ajuste por experiencia, herramientas y habilidades: ${matchedSkillsGlobal.join('; ')}`
+              : '';
+
+            const preferenceReason = preferenceContext
+              ? `Contexto de preferencias: ${preferenceContext}`
+              : '';
+
+            const combinedReason = [skillsReason || baseReason, preferenceReason]
+              .filter(Boolean)
+              .join(' — ');
+
+            const roleSeniority = String(r?.seniority ?? '').trim();
+
+            const explicitRemote =
+              typeof r?.remote_viable === 'boolean' ? Boolean(r.remote_viable) : undefined;
+
+            return {
+              role: roleName,
+              reason: combinedReason,
+              // No rellenar seniority únicamente con la preferencia; usar solo la proveniente del rol si existe.
+              seniority: roleSeniority,
+              // No inferir remoto solo por la preferencia; respetar únicamente el valor explícito del rol.
+              remote_viable: explicitRemote ?? false,
+              fit_by_skills: skillsReason || undefined,
+              matched_skills: matchedSkillsGlobal.length ? matchedSkillsGlobal : undefined,
+            } as SuggestedRole;
+          })
         : [];
 
       // Otros campos

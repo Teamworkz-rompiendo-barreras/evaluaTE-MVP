@@ -2247,16 +2247,179 @@ const ResultadosPage: React.FC = () => {
           ) : null}
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Roles sugeridos</h2>
-          <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100">
-            {(data.suggested_roles || []).map((role, idx) => (
-              <li key={idx}>
-                <strong>{role.role}</strong> — {role.seniority} — {role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}. Razón: {role.reason}
-              </li>
-            ))}
-          </ul>
-        </section>
+        {(() => {
+          // Roles normalizados (reportConfig) + posibles roles adicionales del backend (cv_analysis.suggested_roles / roles con fit_score)
+          const rolesFromReport = Array.isArray(data.suggested_roles) ? data.suggested_roles : [];
+          const cvxAny = data.cv_analysis as any;
+          const cvSuggestedRaw = Array.isArray(cvxAny?.suggested_roles)
+            ? cvxAny.suggested_roles
+            : Array.isArray(cvxAny?.roles)
+              ? cvxAny.roles
+              : [];
+
+          const normalizeBackendRole = (r: any) => {
+            const name =
+              r?.role ||
+              r?.name ||
+              r?.title ||
+              r?.label ||
+              r?.position ||
+              r?.jobTitle ||
+              '';
+            const roleName = String(name ?? '').trim();
+            if (!roleName) return null;
+
+            const fitScore =
+              typeof r?.fit_score === 'number' && !Number.isNaN(r.fit_score)
+                ? r.fit_score
+                : undefined;
+
+            const matched =
+              Array.isArray(r?.matched_skills) && r.matched_skills.length
+                ? r.matched_skills.map((x: any) => String(x ?? '').trim()).filter(Boolean)
+                : [];
+
+            const fitReasonRaw = String(r?.fit_reason ?? r?.fit_by_skills ?? '').trim();
+            const preferenceReasonRaw = String(r?.preference_reason ?? '').trim();
+
+            return {
+              role: roleName,
+              seniority: String(r?.seniority ?? '').trim(),
+              remote_viable:
+                typeof r?.remote_viable === 'boolean' ? Boolean(r.remote_viable) : false,
+              reason: String(r?.reason ?? '').trim(),
+              fit_by_skills: fitReasonRaw || undefined,
+              matched_skills: matched.length ? matched : undefined,
+              // Campos adicionales solo usados en el frontend para ordenar y desglosar motivos
+              fit_score: fitScore,
+              preference_reason: preferenceReasonRaw || undefined,
+            };
+          };
+
+          const backendRoles = cvSuggestedRaw
+            .map(normalizeBackendRole)
+            .filter((r: any) => r && r.role) as any[];
+
+          // Combinar y desduplicar por nombre de rol y seniority
+          const combinedMap = new Map<string, any>();
+          const addRole = (r: any) => {
+            if (!r || !r.role) return;
+            const key = `${r.role}`.toLowerCase() + `|${(r.seniority || '').toLowerCase()}`;
+            if (!combinedMap.has(key)) {
+              combinedMap.set(key, r);
+            }
+          };
+          rolesFromReport.forEach(addRole);
+          backendRoles.forEach(addRole);
+
+          const roles: any[] = Array.from(combinedMap.values());
+          if (roles.length === 0) return null;
+
+          const validated = roles.filter((r) => {
+            const fitScore =
+              typeof (r as any).fit_score === 'number' && !Number.isNaN((r as any).fit_score);
+            const hasSkills =
+              (r.fit_by_skills && String(r.fit_by_skills).trim()) ||
+              (Array.isArray(r.matched_skills) && r.matched_skills.length > 0);
+            return fitScore || hasSkills;
+          });
+
+          const preferencesOnly = roles.filter((r) => !validated.includes(r));
+
+          const sortedValidated = [...validated].sort((a, b) => {
+            const aScore = typeof a.fit_score === 'number' ? a.fit_score : 0;
+            const bScore = typeof b.fit_score === 'number' ? b.fit_score : 0;
+            if (aScore !== bScore) return bScore - aScore;
+            const aCount = a.matched_skills?.length || 0;
+            const bCount = b.matched_skills?.length || 0;
+            return bCount - aCount;
+          });
+
+          const computeFitLabel = (r: any) => {
+            const score = typeof r.fit_score === 'number' ? r.fit_score : undefined;
+            if (score != null) {
+              if (score >= 80) return 'Ajuste: muy buen encaje';
+              if (score >= 60) return 'Ajuste: encaje razonable';
+              if (score > 0) return 'Ajuste: encaje inicial';
+            }
+            const count = r.matched_skills?.length || 0;
+            if (count >= 5) return 'Ajuste: muy buen encaje';
+            if (count >= 3) return 'Ajuste: encaje razonable';
+            if (count >= 1) return 'Ajuste: encaje inicial';
+            return 'Ajuste: por revisar';
+          };
+
+          return (
+            <section>
+              <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Roles sugeridos</h2>
+
+              {sortedValidated.length > 0 && (
+                <div className="mb-4">
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    Roles validados por encaje con tu perfil
+                  </h3>
+                  <ul className="list-disc list-inside space-y-3 text-gray-900 dark:text-gray-100 mt-2">
+                    {sortedValidated.map((role, idx) => (
+                      <li key={`validated-${idx}`}>
+                        <div className="font-semibold">
+                          {role.role}
+                          {role.seniority ? ` — ${role.seniority}` : ''}
+                          {typeof role.remote_viable === 'boolean' &&
+                            ` — ${role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}`}
+                        </div>
+                        <div className="text-sm">
+                          {computeFitLabel(role)}
+                          {role.fit_by_skills ? `. Motivo de encaje: ${role.fit_by_skills}` : ''}
+                        </div>
+                        {Array.isArray(role.matched_skills) && role.matched_skills.length > 0 && (
+                          <div className="text-sm mt-1">
+                            <strong>Experiencias y habilidades que encajan:</strong>{' '}
+                            {role.matched_skills.join(' · ')}
+                          </div>
+                        )}
+                        {role.reason && (
+                          <div className="text-sm mt-1">
+                            <strong>Motivo adicional del análisis:</strong> {role.reason}
+                          </div>
+                        )}
+                        {(role as any).preference_reason && (
+                          <div className="text-sm mt-1">
+                            <strong>Motivo de preferencia:</strong>{' '}
+                            {(role as any).preference_reason}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+
+              {preferencesOnly.length > 0 && (
+                <div>
+                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
+                    Roles según tus preferencias (no validados por skills)
+                  </h3>
+                  <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100 mt-2">
+                    {preferencesOnly.map((role, idx) => (
+                      <li key={`pref-${idx}`}>
+                        <div className="font-semibold">
+                          {role.role}
+                          {role.seniority ? ` — ${role.seniority}` : ''}
+                          {typeof role.remote_viable === 'boolean' &&
+                            ` — ${role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}`}
+                        </div>
+                        <div className="text-sm">
+                          Preferencia del candidato (no validada por skills).
+                          {role.reason ? ` Motivo indicado: ${role.reason}` : ''}
+                        </div>
+                      </li>
+                    ))}
+                  </ul>
+                </div>
+              )}
+            </section>
+          );
+        })()}
 
         <section>
           <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Plan de acción</h2>
