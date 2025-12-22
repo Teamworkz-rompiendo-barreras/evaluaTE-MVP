@@ -363,14 +363,6 @@ const toCvItemArray = (input: unknown, priorityKeys: readonly string[]): CvItem[
   return result;
 };
 
-const firstNonEmptyArray = (...candidates: unknown[]): unknown | undefined => {
-  for (const candidate of candidates) {
-    if (Array.isArray(candidate) && candidate.length > 0) return candidate;
-    if (candidate instanceof Set && candidate.size > 0) return Array.from(candidate);
-  }
-  return undefined;
-};
-
 const cvItemSignature = (item: CvItem): string => [
   item.title,
   item.subtitle,
@@ -382,12 +374,35 @@ const cvItemSignature = (item: CvItem): string => [
   .filter(Boolean)
   .join('|');
 
+const pickBestCvArray = (candidateInput: unknown, priority: ReadonlyArray<string>): CvItem[] => {
+  const candidates = Array.isArray(candidateInput) ? candidateInput : [candidateInput];
+  let best: CvItem[] = [];
+  let bestScore = -1;
+
+  for (const candidate of candidates) {
+    const normalized = toCvItemArray(candidate, priority);
+    if (!normalized.length) continue;
+    const richness = normalized.reduce((acc, item) => {
+      return acc + ['title', 'subtitle', 'period', 'level', 'detail'].reduce((score, key) => {
+        return score + ((item as Record<string, unknown>)[key] ? 1 : 0);
+      }, 0);
+    }, 0);
+    const score = richness + normalized.length;
+    if (score > bestScore) {
+      bestScore = score;
+      best = normalized;
+    }
+  }
+
+  return best;
+};
+
 const buildCvDetails = (sources: Partial<Record<keyof CvDetails, unknown>>): CvDetails => {
   const details: CvDetails = {
-    experience: toCvItemArray(firstNonEmptyArray(sources.experience), detailPriority.experience),
-    education: toCvItemArray(firstNonEmptyArray(sources.education), detailPriority.education),
-    languages: toCvItemArray(firstNonEmptyArray(sources.languages), detailPriority.languages),
-    tools: toCvItemArray(firstNonEmptyArray(sources.tools), detailPriority.tools),
+    experience: pickBestCvArray(sources.experience, detailPriority.experience),
+    education: pickBestCvArray(sources.education, detailPriority.education),
+    languages: pickBestCvArray(sources.languages, detailPriority.languages),
+    tools: pickBestCvArray(sources.tools, detailPriority.tools),
   };
 
   if (details.education.length && details.experience.length) {
@@ -425,24 +440,24 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       );
       const rawDetails = data.cv_details || {};
       const normalizedDetails = buildCvDetails({
-        experience: firstNonEmptyArray(
+        experience: [
           rawDetails.experience,
           rawDetails.experience_highlights,
           data.cv_analysis?.experience,
           data.cv_analysis?.experience_detailed,
-        ),
-        education: firstNonEmptyArray(
+        ],
+        education: [
           rawDetails.education,
           data.cv_analysis?.education,
           data.cv_analysis?.education_detailed,
-        ),
-        languages: firstNonEmptyArray(rawDetails.languages, data.cv_analysis?.languages),
-        tools: firstNonEmptyArray(
+        ],
+        languages: [rawDetails.languages, data.cv_analysis?.languages],
+        tools: [
           rawDetails.tools,
           rawDetails.software,
           data.cv_analysis?.tools,
           data.cv_analysis?.software,
-        ),
+        ],
       });
       const profileSummary = ensureText(data.profile_summary, 'Perfil profesional en desarrollo.');
       const cvSummary = ensureText(data.cv_analysis_summary || data.cv_summary, profileSummary);
@@ -647,7 +662,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
 
       const cvDetailsSource = report.cv_details || {};
       const cv_details = buildCvDetails({
-        experience: firstNonEmptyArray(
+        experience: [
           cvDetailsSource.experience,
           report.experience,
           report.experiencia,
@@ -657,8 +672,8 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
           analysisJson?.experience_detailed,
           data?.cv_analysis?.experience,
           data?.cv_analysis?.experience_detailed,
-        ),
-        education: firstNonEmptyArray(
+        ],
+        education: [
           cvDetailsSource.education,
           report.education,
           report.educacion,
@@ -669,16 +684,16 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
           analysisJson?.education_detailed,
           data?.cv_analysis?.education,
           data?.cv_analysis?.education_detailed,
-        ),
-        languages: firstNonEmptyArray(
+        ],
+        languages: [
           cvDetailsSource.languages,
           report.languages,
           report.idiomas,
           cvA?.languages,
           analysisJson?.languages,
           data?.cv_analysis?.languages,
-        ),
-        tools: firstNonEmptyArray(
+        ],
+        tools: [
           cvDetailsSource.tools,
           report.tools,
           report.software,
@@ -689,7 +704,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
           analysisJson?.software,
           data?.cv_analysis?.tools,
           data?.cv_analysis?.software,
-        ),
+        ],
       });
 
       // Roles sugeridos
