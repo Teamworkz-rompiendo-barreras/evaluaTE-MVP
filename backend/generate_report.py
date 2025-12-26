@@ -741,31 +741,81 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
 
     report = create_default_report(full_name, normalized_soft_skills, cv_payload, job_pref_payload)
 
-    # Resumen ejecutivo enriquecido con preferencias, soft skills y CV
-    top_skills = [s["skill"] for s in normalized_soft_skills[:2] if s.get("skill")]
+    # Resumen ejecutivo enriquecido con preferencias, soft skills, minijuegos y CV
+    def _format_skill(skill: Dict[str, Any]) -> str:
+        name = skill.get("skill") or skill.get("name")
+        score = skill.get("score")
+        if name and isinstance(score, (int, float)):
+            return f"{name} ({int(round(score))}/100)"
+        return str(name or "").strip()
+
+    top_skills: list[str] = []
+    for raw_skill in normalized_soft_skills[:3]:
+        formatted = _format_skill(raw_skill)
+        if formatted:
+            top_skills.append(formatted)
     areas_pref = [str(a) for a in job_pref_payload.get("areas", []) if a]
     work_mode = str(job_pref_payload.get("workMode") or job_pref_payload.get("work_mode") or "").strip()
     exp_count = len(cv_payload.get("experience") or cv_payload.get("experience_detailed") or [])
     edu_count = len(cv_payload.get("education") or cv_payload.get("education_detailed") or [])
-    games_count = len(completed_games or [])
+    tools_count = len(cv_payload.get("software") or cv_payload.get("skills") or [])
+    lang_count = len(cv_payload.get("languages") or [])
+    games_list = [str(g) for g in (completed_games or []) if g]
+    games_count = len(games_list)
 
-    # profile_summary = resumen ejecutivo principal
+    experience_fragment = "experiencia en " + (f"{exp_count} posiciones" if exp_count else "roles en desarrollo y prácticas")
+    formation_fragment = " y formación en " + (f"{edu_count} programa(s)" if edu_count else "proceso de consolidación académica")
+
     profile_parts: list[str] = [
-        f"Informe de empleabilidad para {full_name}. Puntuación global {safe_score}/100 ({level_label})."
+        f"Informe de empleabilidad para {full_name}. Perfil {level_label.lower()} con puntuación global {safe_score}/100, {experience_fragment}{formation_fragment}.",
     ]
-    if areas_pref:
-        profile_parts.append(f"Orientado a roles en {', '.join(areas_pref)}.")
+
     if top_skills:
-        profile_parts.append(f"Fortalezas destacadas: {', '.join(top_skills)}.")
+        profile_parts.append(f"Destaca por {', '.join(top_skills)}.")
+
+    if tools_count or lang_count:
+        hard_soft_mix = []
+        if tools_count:
+            hard_soft_mix.append(f"manejo de {tools_count} herramienta(s) técnica(s)")
+        if lang_count:
+            hard_soft_mix.append(f"{lang_count} idioma(s) documentados")
+        profile_parts.append(
+            f"Su propuesta de valor combina {', '.join(hard_soft_mix)} con las soft skills anteriores,"
+            " alineada con entornos que valoran la autonomía y la organización."
+        )
+
+    if areas_pref:
+        profile_parts.append(f"Interés principal en {', '.join(areas_pref)}.")
     if work_mode:
-        profile_parts.append(f"Preferencia de modalidad: {work_mode}.")
-    if exp_count or edu_count:
-        profile_parts.append(f"CV con {exp_count} experiencias y {edu_count} formaciones registradas.")
+        profile_parts.append(f"Modalidad preferida: {work_mode}.")
+
     if games_count:
-        profile_parts.append(f"Resultados de {games_count} minijuego(s) integrados.")
+        sample_games = ", ".join(games_list[:2])
+        extra_games = f" y {games_count - 2} más" if games_count > 2 else ""
+        profile_parts.append(
+            f"Los resultados de minijuegos ({sample_games}{extra_games}) aportan evidencia adicional de su desempeño.".strip()
+        )
+
+    improvement_notes: list[str] = []
+    for area in (report.improvement_areas or [])[:2]:
+        if isinstance(area, dict):
+            label = area.get("area") or ""
+            qualifier = area.get("reason") or area.get("suggested_action") or ""
+        else:
+            label = getattr(area, "area", "") or str(area)
+            qualifier = getattr(area, "reason", "") or getattr(area, "suggested_action", "")
+        if label:
+            if qualifier:
+                improvement_notes.append(f"{label} – {qualifier}")
+            else:
+                improvement_notes.append(label)
+    if improvement_notes:
+        profile_parts.append(f"Áreas a potenciar: {', '.join(improvement_notes)}.")
+
     if cv_missing:
         profile_parts.append("No se encontró texto del CV; sube un PDF legible para un diagnóstico completo.")
-    report.profile_summary = " ".join(profile_parts).strip()
+
+    report.profile_summary = " ".join(part.strip() for part in profile_parts if part).strip()
 
     # cv_analysis_summary = resumen del CV
     cv_summary_parts: list[str] = []
