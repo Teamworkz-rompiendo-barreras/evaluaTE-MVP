@@ -135,9 +135,9 @@ Eres un/a orientador/a laboral senior con formación en psicología, psicología
 
 **CRÍTICO:** Tu análisis debe ser experto. Si la preferencia del candidato no es viable o no se alinea con su experiencia/formación, DEBES sugerir roles alternativos y justificar por qué el rol preferido no es el mejor (sin desmotivar). El informe debe ser una orientación profesional, no solo un reflejo de las preferencias. Usa el texto raw del CV para detallar la experiencia, idiomas y herramientas.
 
-## ESTRUCTURA OBLIGATORIA DEL INFORME (13 PUNTOS EXACTOS → CAMPOS JSON)
+## ESTRUCTURA OBLIGATORIA DEL INFORME (14 PUNTOS EXACTOS → CAMPOS JSON)
 
-Tu informe DEBE generar un objeto JSON con los siguientes 13 campos principales (y sus sub-campos) en este orden:
+Tu informe DEBE generar un objeto JSON con los siguientes 14 campos principales (y sus sub-campos) en este orden:
 
 1. **personal_data** (DATOS PERSONALES BÁSICOS) - Nombre, ubicación, email, teléfono, certificado de discapacidad.
 2. **profile_summary** (RESUMEN DEL PERFIL) - Perfil profesional y propuesta de valor basado en soft skills + CV + preferencias.
@@ -151,7 +151,8 @@ Tu informe DEBE generar un objeto JSON con los siguientes 13 campos principales 
 10. **job_search_advice** (CONSEJOS DE BÚSQUEDA DE EMPLEO) - Estrategias y recursos.
 11. **useful_tools** (HERRAMIENTAS ÚTILES Y TECNOLOGÍA) - Productividad, búsqueda, aprendizaje, accesibilidad.
 12. **completed_games** (JUEGOS COMPLETADOS Y EVIDENCIA) - Análisis de habilidades evaluadas y su aplicación laboral.
-13. **final_message** (FRASE FINAL DE CIERRE) - Mensaje final motivacional y personalizado.
+13. **ready_phrases** (FRASES LISTAS PARA PROPUESTAS Y LINKEDIN) - Titular, Acerca de (3 líneas), Mensaje corto.
+14. **final_message** (FRASE FINAL DE CIERRE) - Mensaje final motivacional y personalizado.
 
 cv_details debe existir como objeto con 4 listas (experience, education, languages, tools), cada elemento con campos: title, subtitle, period, level, detail (rellena los que tengas, no inventes).
 
@@ -251,8 +252,9 @@ Califica y justifica cada apartado con evidencia del CV y correcciones accionabl
 - Entornos de trabajo ideales: bullets operativos (tareas, métricas, modalidad, comunicación, cultura).
 - Roles sugeridos: cada elemento incluye "Rol — Seniority — Remoto?" y una "Razón:" breve.
 - Plan de acción: 3 listas (0–30, 31–60, 61–90 días) con 4–6 bullets accionables por bloque.
-- Consejos prácticos de búsqueda: incluye frases listas (titular, acerca de, mensaje corto) dentro de una subsección textual.
+- Consejos prácticos de búsqueda: enfocado en CV, plataformas y networking.
 - Juegos completados: lista formateada como "Nombre: cómo capitalizarlo".
+- Frases listas: genera textos listos para copiar y pegar en LinkedIn y propuestas.
 
 
 **CRÍTICO:** Cada puntuación debe estar respaldada por evidencia específica del CV. Si no hay información del CV:
@@ -338,6 +340,7 @@ Devuelve ÚNICAMENTE un JSON con estas claves y tipos:
 - job_search_advice: objeto con (cv_optimization: array[string], letters_portfolio:string opcional, recommended_platforms: array[string], networking:string opcional, interview_tips:string opcional)
 - useful_tools: objeto con (productivity: array[string], job_search: array[string], learning: array[string], accessibility: array[string])
 - completed_games: array[string]
+- ready_phrases: objeto con (headline:string, about_me:string, short_message:string)
 - final_message: string
 
 REGLAS:
@@ -522,13 +525,23 @@ REGLAS:
                     "required": ["productivity","job_search","learning","accessibility"]
                 },
                 "completed_games": {"type": "array", "items": {"type": "string"}},
+                "ready_phrases": {
+                    "type": "object",
+                    "additionalProperties": False,
+                    "properties": {
+                        "headline": {"type": "string"},
+                        "about_me": {"type": "string"},
+                        "short_message": {"type": "string"}
+                    },
+                    "required": ["headline", "about_me", "short_message"]
+                },
                 "final_message": {"type": "string"}
             },
             "required": [
                 "summary","personal_data","profile_summary","cv_summary",
                 "strengths","improvement_areas","cv_analysis","ideal_work_environment",
                 "suggested_roles","action_plan","job_search_advice","useful_tools",
-                "completed_games","final_message"
+                "completed_games","ready_phrases","final_message"
             ]
         }
     
@@ -652,8 +665,14 @@ REGLAS:
             else:
                 report += (games if isinstance(games, str) else "No disponible") + "\n"
             
+            rp = json_data.get('ready_phrases', {}) or {}
             report += f"""
-## 13) FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA
+## 13. FRASES LISTAS (PARA COPIAR Y PEGAR)
+**Titular:** {rp.get('headline','')}
+**Acerca de:** {rp.get('about_me','')}
+**Mensaje corto:** {rp.get('short_message','')}
+
+## 14) FRASE FINAL DE CIERRE MOTIVACIONAL Y PERSONALIZADA
 {json_data.get('final_message', 'No disponible')}
 
 ---

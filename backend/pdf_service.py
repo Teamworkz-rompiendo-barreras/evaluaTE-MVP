@@ -1,4 +1,5 @@
 # backend/pdf_service.py
+import os
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import date
@@ -401,16 +402,32 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
     line_w = width - 2 * margin_x
 
     # Cabecera (franja superior oscura con título, nombre y fecha)
-    header_h = 22 * mm
+    header_h = 30 * mm
     c.setFillColorRGB(0.12, 0.14, 0.18)
     c.rect(0, height - header_h, width, header_h, stroke=0, fill=1)
+
+    # Logo
+    logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
+    if os.path.exists(logo_path):
+        try:
+            # Centered logo at top of header
+            logo_w = 40 * mm
+            logo_h = 12 * mm
+            logo_x = (width - logo_w) / 2
+            logo_y = height - 16 * mm
+            c.drawImage(logo_path, logo_x, logo_y, width=logo_w, height=logo_h, mask='auto', preserveAspectRatio=True)
+        except Exception:
+            pass
+
     c.setFillColor(colors.white)
     c.setFont("Helvetica-Bold", 18)
-    c.drawString(margin_x, height - header_h + 12 * mm, "Informe de Empleabilidad")
+    c.drawCentredString(width / 2, height - header_h + 8 * mm, "Informe de Empleabilidad")
+
     c.setFont("Helvetica", 10)
     today = date.today().strftime("%d/%m/%Y")
-    c.drawString(margin_x, height - header_h + 7 * mm, f"Nombre: {full_name}")
-    c.drawString(margin_x, height - header_h + 3 * mm, f"Fecha: {today}")
+    c.drawCentredString(width / 2, height - header_h + 4 * mm, f"{full_name}")
+    c.drawCentredString(width / 2, height - header_h + 1 * mm, f"{today}")
+
     c.setFillColor(colors.black)
     y = height - header_h - 6 * mm
 
@@ -825,15 +842,63 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
             c.setFont("Helvetica", 10)
             y = _draw_bulleted_list(c, margin_x, y, items, line_w)
 
+    # Frases listas (si existen)
+    rp = getattr(report, "ready_phrases", None)
+    if rp and (rp.headline or rp.about_me or rp.short_message):
+        y = _ensure_space(c, y, 60 * mm, margin_top, margin_bottom + 25 * mm) # Extra margin for footer
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(margin_x, y, "Frases listas (para propuestas y LinkedIn)")
+        y -= 14
+
+        if rp.headline:
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(margin_x, y, "Titular")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_wrapped_text(c, margin_x, y, rp.headline, line_w)
+            y -= 6
+
+        if rp.about_me:
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(margin_x, y, "Acerca de (3 líneas)")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_wrapped_text(c, margin_x, y, rp.about_me, line_w)
+            y -= 6
+
+        if rp.short_message:
+            c.setFont("Helvetica-Bold", 10)
+            c.drawString(margin_x, y, "Mensaje corto a reclutador/cliente")
+            y -= 12
+            c.setFont("Helvetica", 10)
+            y = _draw_wrapped_text(c, margin_x, y, rp.short_message, line_w)
+            y -= 6
+
     # Página final: Mensaje
     msg = report.final_message
     if msg:
-        y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom)
+        y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom + 25 * mm)
         c.setFont("Helvetica-Bold", 12)
         c.drawString(margin_x, y, "Mensaje final")
         y -= 14
         c.setFont("Helvetica", 10)
         y = _draw_wrapped_text(c, margin_x, y, str(msg), line_w)
+
+    # Footer Disclaimer (Blue Box)
+    footer_h = 22 * mm
+    c.setFillColorRGB(0.12, 0.14, 0.18)
+    c.rect(0, 0, width, footer_h, stroke=0, fill=1)
+
+    c.setFillColor(colors.white)
+    c.setFont("Helvetica", 8)
+    disclaimer_text = (
+        "Este informe ha sido elaborado a partir de tus preferencias laborales y la información extraída de tu CV. "
+        "Las sugerencias de roles, entornos y frases son orientativas y generadas mediante inteligencia artificial "
+        "para apoyarte en tu búsqueda de empleo. Te recomendamos revisarlas y adaptarlas a tu estilo personal."
+    )
+    # Centered text in footer
+    text_y = footer_h - 8 * mm
+    _draw_wrapped_text(c, margin_x, text_y, disclaimer_text, line_w, leading=10)
 
     c.showPage()
     c.save()

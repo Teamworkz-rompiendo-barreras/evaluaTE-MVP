@@ -83,6 +83,12 @@ class UsefulTools(BaseModel):
     accessibility: List[str]
 
 
+class ReadyPhrases(BaseModel):
+    headline: str = ""
+    about_me: str = ""
+    short_message: str = ""
+
+
 class JobPreferences(BaseModel):
     areas: List[str] = Field(default_factory=list)
     needs: List[str] = Field(default_factory=list)
@@ -110,6 +116,7 @@ class NewReportSchema(BaseModel):
     action_plan: ActionPlan
     job_search_advice: JobSearchAdvice
     useful_tools: UsefulTools
+    ready_phrases: ReadyPhrases = Field(default_factory=ReadyPhrases)
     employability_score: int
     completed_games: List[str]
     final_message: str
@@ -586,6 +593,11 @@ def create_default_report(full_name: str, soft_skills: List[Dict[str, Any]], cv_
         action_plan=action_plan,
         job_search_advice=job_search_advice,
         useful_tools=useful_tools,
+        ready_phrases=ReadyPhrases(
+            headline=f"Experto en {job_prefs.areas[0] if job_prefs.areas else 'su sector'} con enfoque en resultados",
+            about_me="Profesional comprometido con el aprendizaje continuo y la mejora de procesos. Busco aportar valor en entornos colaborativos y dinámicos.",
+            short_message="Hola, he visto vuestra vacante y creo que mi perfil encaja por mi experiencia en el sector. Me gustaría conversar sobre cómo puedo aportar valor al equipo."
+        ),
         employability_score=employability_score,
         completed_games=[],
         final_message=f"{full_name}, tu perfil muestra un excelente potencial para el desarrollo profesional. Enfócate en construir experiencia práctica y desarrollar habilidades técnicas específicas. La constancia y el aprendizaje continuo serán tus mejores aliados en la búsqueda de empleo.",
@@ -700,6 +712,7 @@ def _to_camel_case_dict(report: NewReportSchema) -> Dict[str, Any]:
         },
         'job_search_advice': report.job_search_advice.dict(),
         'useful_tools': report.useful_tools.dict(),
+        'ready_phrases': report.ready_phrases.dict(),
         'suggested_roles': _suggested_roles_to_dict_list(report.suggested_roles),
         'completed_games': report.completed_games,
         'employabilityScore': report.employability_score,

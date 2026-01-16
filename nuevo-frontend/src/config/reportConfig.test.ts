@@ -88,6 +88,11 @@ const mockNewFormat: NewReportSchema = {
     availability: 'completa',
     willing_to_relocate: false,
   },
+  ready_phrases: {
+    headline: '',
+    about_me: '',
+    short_message: ''
+  },
 };
 
 test('convertBackendResponseToNewFormat returns data as-is for new format', () => {
@@ -149,6 +154,11 @@ test('convertBackendResponseToNewFormat fills defaults when new-format fields ar
       availability: '',
       willing_to_relocate: false,
     },
+    ready_phrases: {
+      headline: '',
+      about_me: '',
+      short_message: ''
+    }
   };
 
   const result = convertBackendResponseToNewFormat(minimalNewFormat);
