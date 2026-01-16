@@ -92,10 +92,10 @@ export interface NormalizedJobPreferences {
 }
 
 const detailPriority = {
-  experience: ['title', 'role', 'position', 'company', 'organization', 'employer', 'location', 'start_date', 'end_date', 'duration', 'description'] as const,
-  education: ['degree', 'title', 'program', 'area', 'institution', 'school', 'location', 'start_date', 'end_date', 'graduation_year', 'description'] as const,
-  languages: ['name', 'language', 'level', 'certification'] as const,
-  tools: ['name', 'tool', 'technology', 'level', 'category'] as const,
+  experience: ['title', 'role', 'position', 'company', 'organization', 'employer', 'location', 'start_date', 'end_date', 'duration', 'description', 'subtitle', 'period', 'detail', 'level'] as const,
+  education: ['degree', 'title', 'program', 'area', 'institution', 'school', 'location', 'start_date', 'end_date', 'graduation_year', 'description', 'subtitle', 'period', 'detail', 'level'] as const,
+  languages: ['name', 'language', 'level', 'certification', 'title', 'subtitle', 'period', 'detail'] as const,
+  tools: ['name', 'tool', 'technology', 'level', 'category', 'title', 'subtitle', 'period', 'detail'] as const,
 };
 
 const toUniqueStringArray = (value: unknown): string[] => {
@@ -311,6 +311,7 @@ const toCvItemArray = (input: unknown, priorityKeys: readonly string[]): CvItem[
           case 'employer':
           case 'institution':
           case 'school':
+          case 'subtitle':
             if (!item.subtitle) item.subtitle = txt;
             break;
           case 'period':
@@ -329,6 +330,7 @@ const toCvItemArray = (input: unknown, priorityKeys: readonly string[]): CvItem[
             if (!item.level) item.level = txt;
             break;
           case 'description':
+          case 'detail':
             if (!item.detail) item.detail = txt;
             break;
           default:
@@ -574,7 +576,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
       );
       return {
         ...data,
-        summary: profileSummary,
+        summary: ensureText(data.summary, profileSummary),
         profile_summary: profileSummary,
         cv_analysis_summary: cvSummary,
         cv_details: normalizedDetails,
