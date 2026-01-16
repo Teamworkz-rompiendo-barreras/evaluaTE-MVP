@@ -51,6 +51,12 @@ export interface UsefulTools {
   accessibility: string[];
 }
 
+export interface ReadyPhrases {
+  headline: string;
+  about_me: string;
+  short_message: string;
+}
+
 export interface CvDetails {
   experience: CvItem[];
   education: CvItem[];
@@ -73,6 +79,7 @@ export interface NewReportSchema {
   action_plan: ActionPlan;
   job_search_advice: JobSearchAdvice;
   useful_tools: UsefulTools;
+  ready_phrases: ReadyPhrases;
   employability_score: number;
   completed_games: string[];
   final_message: string;
@@ -574,6 +581,14 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         data.cv_analysis?.suggested_roles,
         data.cv_analysis,
       );
+
+      const rp = (data.ready_phrases || {}) as any;
+      const ready_phrases: ReadyPhrases = {
+        headline: String(rp.headline || ''),
+        about_me: String(rp.about_me || ''),
+        short_message: String(rp.short_message || ''),
+      };
+
       return {
         ...data,
         summary: ensureText(data.summary, profileSummary),
@@ -596,6 +611,8 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         improvement_areas: Array.isArray(data.improvement_areas) ? data.improvement_areas : [],
         job_preferences: normalizedJobPrefs,
         job_search_advice: jsa,
+        useful_tools: data.useful_tools || { productivity: [], job_search: [], learning: [], accessibility: [] },
+        ready_phrases,
         employability_score: score ?? 0,
       } as NewReportSchema;
     }
@@ -761,6 +778,13 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         accessibility: Array.isArray(report?.tools?.accessibility) ? report.tools.accessibility.filter(Boolean) : [],
       };
 
+      const rp = (report.ready_phrases || {}) as any;
+      const ready_phrases: ReadyPhrases = {
+        headline: String(rp.headline || ''),
+        about_me: String(rp.about_me || ''),
+        short_message: String(rp.short_message || ''),
+      };
+
       const cvDetailsSource = report.cv_details || {};
       const cv_details = buildCvDetails({
         experience: [
@@ -856,6 +880,7 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
         action_plan,
         job_search_advice,
         useful_tools,
+        ready_phrases,
         employability_score: score ?? 0,
         completed_games,
         final_message,
@@ -1007,6 +1032,11 @@ export function generateNewFormatReport(data: NewReportSchema): string {
     '',
     '## 13. Juegos completados',
     ...prettyGames.map((g) => `- ${g}`),
+    '',
+    '## 14. Frases listas (para copiar y pegar)',
+    `**Titular:** ${data.ready_phrases?.headline || ''}`,
+    `**Acerca de:** ${data.ready_phrases?.about_me || ''}`,
+    `**Mensaje corto:** ${data.ready_phrases?.short_message || ''}`,
   ];
 
   return lines.join('\n');
