@@ -24,7 +24,9 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
 }) => {
   const [draggedItem, setDraggedItem] = useState<DragDropItem | null>(null);
   const [itemPositions, setItemPositions] = useState<Record<string, string>>({});
+  const [placedItems, setPlacedItems] = useState<DragDropItem[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
+  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
   const dragDropConfig = scene.dragDropConfig;
   if (!dragDropConfig) return <div>Configuración de arrastrar y soltar no encontrada</div>;
@@ -42,33 +44,32 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
 
   const handleDrop = (e: React.DragEvent, zone: DragDropZone) => {
     e.preventDefault();
-    if (!draggedItem) return;
+    if (isCompleted || !draggedItem) return;
+
+    const newPlacedItems = [...placedItems, draggedItem];
+    setPlacedItems(newPlacedItems);
 
     const itemId = draggedItem.id;
     const newPositions = { ...itemPositions, [itemId]: zone.id };
     setItemPositions(newPositions);
     setDraggedItem(null);
 
-    // Verificar si la tarea está completa
-    const allItemsPlaced = dragDropConfig.items.every(item => 
-      newPositions[item.id]
-    );
+    const allItemsPlaced = dragDropConfig.items.length === newPlacedItems.length;
 
     if (allItemsPlaced) {
       setIsCompleted(true);
-      
-      // Calcular puntuación basada en el orden correcto
+
       if (dragDropConfig.correctOrder) {
-        // Eliminado: const placedOrder = ...
-        // Si necesitas usar el orden, implementa la lógica aquí
+        const placedOrderIds = newPlacedItems.map(item => item.id);
+        const isOrderCorrect = JSON.stringify(placedOrderIds) === JSON.stringify(dragDropConfig.correctOrder);
+        setIsCorrect(isOrderCorrect);
       } else {
-        // Si no hay orden específico, dar puntuación por completar
-        // score = 80;
+        setIsCorrect(true);
       }
 
       setTimeout(() => {
         onComplete(undefined);
-      }, 1500);
+      }, 2500);
     }
   };
 
@@ -77,30 +78,32 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
   };
 
   const getItemsInZone = (zoneId: string) => {
-    return dragDropConfig.items.filter(item => itemPositions[item.id] === zoneId);
+      return placedItems.filter(item => itemPositions[item.id] === zoneId);
   };
 
   const availableItems = () => {
-    return dragDropConfig.items.filter(item => !itemPositions[item.id]);
+    const placedItemIds = placedItems.map(item => item.id);
+    return dragDropConfig.items.filter(item => !placedItemIds.includes(item.id));
   };
 
   return (
     <div className="drag-drop-scene">
-      {/* Área de elementos disponibles */}
       <div className="available-items mb-6">
         <h3 className="text-lg font-semibold mb-3">Elementos disponibles:</h3>
         <div className="flex flex-wrap gap-3">
-          {(Array.isArray(availableItems()) ? availableItems() : []).map((item) => (
+          {availableItems().map((item) => (
             <div
               key={item.id}
-              draggable
+              draggable={!isCompleted}
               onDragStart={(e) => handleDragStart(e, item)}
               onDragEnd={handleDragEnd}
-              className={`draggable-item p-3 border-2 border-dashed border-gray-400 rounded-lg cursor-move hover:border-blue-400 transition-colors ${
+              className={`draggable-item p-3 border-2 border-dashed border-gray-400 rounded-lg transition-colors ${
+                isCompleted ? 'cursor-not-allowed opacity-60' : 'cursor-move hover:border-blue-400'
+              } ${
                 draggedItem?.id === item.id ? 'opacity-50' : ''
               } ${
-                accessibility.contrastLevel === 'high' 
-                  ? 'bg-white border-black' 
+                accessibility.contrastLevel === 'high'
+                  ? 'bg-white border-black'
                   : 'bg-gray-100'
               }`}
               style={{ fontSize: `${accessibility.fontScale}%` }}
@@ -114,34 +117,32 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
         </div>
       </div>
 
-      {/* Áreas de destino */}
       <div className="drop-zones">
         <h3 className="text-lg font-semibold mb-3">Organiza los elementos:</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {(Array.isArray(dragDropConfig.targetZones) ? dragDropConfig.targetZones : []).map((zone) => (
+          {dragDropConfig.targetZones.map((zone) => (
             <div
               key={zone.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, zone)}
               className={`drop-zone p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-32 ${
-                draggedItem ? 'border-blue-400 bg-blue-50' : ''
+                draggedItem && !isCompleted ? 'border-blue-400 bg-blue-50' : ''
               } ${
-                accessibility.contrastLevel === 'high' 
-                  ? 'bg-white border-black' 
+                accessibility.contrastLevel === 'high'
+                  ? 'bg-white border-black'
                   : 'bg-gray-50'
               }`}
             >
               <h4 className="font-semibold mb-2 text-center">{zone.title}</h4>
-              
-              {/* Elementos colocados en esta zona */}
+
               <div className="space-y-2">
-                {(Array.isArray(getItemsInZone(zone.id)) ? getItemsInZone(zone.id) : []).map((item) => (
+                {getItemsInZone(zone.id).map((item) => (
                   <div
                     key={item.id}
-                    className={`placed-item p-2 bg-green-100 border border-green-300 rounded ${
-                      accessibility.contrastLevel === 'high' 
-                        ? 'bg-white border-black' 
-                        : ''
+                    className={`placed-item p-2 border rounded ${
+                      accessibility.contrastLevel === 'high'
+                        ? 'bg-white border-black'
+                        : 'bg-green-100 border-green-300'
                     }`}
                   >
                     <div className="flex items-center space-x-2">
@@ -156,16 +157,18 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
         </div>
       </div>
 
-      {/* Mensaje de completado */}
-      {isCompleted && (
-        <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded text-center">
-          <p className="text-green-800 font-semibold">
-            Gracias por colocar todas las tareas en su sitio.
+      {isCompleted && isCorrect !== null && (
+        <div className={`mt-4 p-4 border rounded text-center transition-all duration-500 ${
+            isCorrect ? 'bg-green-100 border-green-300' : 'bg-red-100 border-red-300'
+          }`}>
+          <p className={`font-semibold ${
+              isCorrect ? 'text-green-800' : 'text-red-800'
+            }`}>
+            {isCorrect ? '¡Orden correcto! Buen trabajo.' : 'El orden no es el correcto.'}
           </p>
         </div>
       )}
 
-      {/* Instrucciones de accesibilidad */}
       {accessibility.visualHelp && (
         <div className="mt-4 p-3 bg-blue-100 border border-blue-300 rounded">
           <p className="text-blue-800 text-sm">
@@ -177,4 +180,4 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
   );
 };
 
-export default DragDropScene; 
+export default DragDropScene;
