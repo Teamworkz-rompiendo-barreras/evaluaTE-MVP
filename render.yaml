@@ -1,0 +1,30 @@
+services:
+  # Backend Service
+  - type: web
+    name: evaluate-backend
+    env: python
+    region: frankfurt  # Europe region close to Spain
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 10000
+    autoDeploy: false
+
+  # Frontend Service
+  - type: static
+    name: evaluate-frontend
+    env: static
+    region: frankfurt
+    rootDir: nuevo-frontend
+    buildCommand: npm install && npm run build
+    staticPublishPath: ./dist
+    envVars:
+      - key: VITE_API_URL
+        fromService:
+          type: web
+          name: evaluate-backend
+          property: url
+    autoDeploy: false
