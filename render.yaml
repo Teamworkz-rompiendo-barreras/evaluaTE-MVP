@@ -21,7 +21,4 @@ services:
     startCommand: npx serve -s dist -p $PORT
     envVars:
       - key: VITE_API_URL
-        fromService:
-          type: web
-          name: evaluate-backend
-          property: url
+        value: https://evaluate-backend.onrender.com
