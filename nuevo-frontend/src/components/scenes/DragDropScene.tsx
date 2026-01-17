@@ -24,9 +24,7 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
 }) => {
   const [draggedItem, setDraggedItem] = useState<DragDropItem | null>(null);
   const [itemPositions, setItemPositions] = useState<Record<string, string>>({});
-  const [placedItems, setPlacedItems] = useState<DragDropItem[]>([]);
   const [isCompleted, setIsCompleted] = useState(false);
-  const [isCorrect, setIsCorrect] = useState<boolean | null>(null);
 
   const dragDropConfig = scene.dragDropConfig;
   if (!dragDropConfig) return <div>Configuración de arrastrar y soltar no encontrada</div>;
@@ -44,32 +42,33 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
 
   const handleDrop = (e: React.DragEvent, zone: DragDropZone) => {
     e.preventDefault();
-    if (isCompleted || !draggedItem) return;
-
-    const newPlacedItems = [...placedItems, draggedItem];
-    setPlacedItems(newPlacedItems);
+    if (!draggedItem) return;
 
     const itemId = draggedItem.id;
     const newPositions = { ...itemPositions, [itemId]: zone.id };
     setItemPositions(newPositions);
     setDraggedItem(null);
 
-    const allItemsPlaced = dragDropConfig.items.length === newPlacedItems.length;
+    // Verificar si la tarea está completa
+    const allItemsPlaced = dragDropConfig.items.every(item =>
+      newPositions[item.id]
+    );
 
     if (allItemsPlaced) {
       setIsCompleted(true);
 
+      // Calcular puntuación basada en el orden correcto
       if (dragDropConfig.correctOrder) {
-        const placedOrderIds = newPlacedItems.map(item => item.id);
-        const isOrderCorrect = JSON.stringify(placedOrderIds) === JSON.stringify(dragDropConfig.correctOrder);
-        setIsCorrect(isOrderCorrect);
+        // Eliminado: const placedOrder = ...
+        // Si necesitas usar el orden, implementa la lógica aquí
       } else {
-        setIsCorrect(true);
+        // Si no hay orden específico, dar puntuación por completar
+        // score = 80;
       }
 
       setTimeout(() => {
         onComplete(undefined);
-      }, 2500);
+      }, 1500);
     }
   };
 
@@ -78,28 +77,26 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
   };
 
   const getItemsInZone = (zoneId: string) => {
-      return placedItems.filter(item => itemPositions[item.id] === zoneId);
+    return dragDropConfig.items.filter(item => itemPositions[item.id] === zoneId);
   };
 
   const availableItems = () => {
-    const placedItemIds = placedItems.map(item => item.id);
-    return dragDropConfig.items.filter(item => !placedItemIds.includes(item.id));
+    return dragDropConfig.items.filter(item => !itemPositions[item.id]);
   };
 
   return (
     <div className="drag-drop-scene">
+      {/* Área de elementos disponibles */}
       <div className="available-items mb-6">
         <h3 className="text-lg font-semibold mb-3">Elementos disponibles:</h3>
         <div className="flex flex-wrap gap-3">
-          {availableItems().map((item) => (
+          {(Array.isArray(availableItems()) ? availableItems() : []).map((item) => (
             <div
               key={item.id}
-              draggable={!isCompleted}
+              draggable
               onDragStart={(e) => handleDragStart(e, item)}
               onDragEnd={handleDragEnd}
-              className={`draggable-item p-3 border-2 border-dashed border-gray-400 rounded-lg transition-colors ${
-                isCompleted ? 'cursor-not-allowed opacity-60' : 'cursor-move hover:border-blue-400'
-              } ${
+              className={`draggable-item p-3 border-2 border-dashed border-gray-400 rounded-lg cursor-move hover:border-blue-400 transition-colors ${
                 draggedItem?.id === item.id ? 'opacity-50' : ''
               } ${
                 accessibility.contrastLevel === 'high'
@@ -117,16 +114,17 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
         </div>
       </div>
 
+      {/* Áreas de destino */}
       <div className="drop-zones">
         <h3 className="text-lg font-semibold mb-3">Organiza los elementos:</h3>
         <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {dragDropConfig.targetZones.map((zone) => (
+          {(Array.isArray(dragDropConfig.targetZones) ? dragDropConfig.targetZones : []).map((zone) => (
             <div
               key={zone.id}
               onDragOver={handleDragOver}
               onDrop={(e) => handleDrop(e, zone)}
               className={`drop-zone p-4 border-2 border-dashed border-gray-300 rounded-lg min-h-32 ${
-                draggedItem && !isCompleted ? 'border-blue-400 bg-blue-50' : ''
+                draggedItem ? 'border-blue-400 bg-blue-50' : ''
               } ${
                 accessibility.contrastLevel === 'high'
                   ? 'bg-white border-black'
@@ -135,14 +133,15 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
             >
               <h4 className="font-semibold mb-2 text-center">{zone.title}</h4>
 
+              {/* Elementos colocados en esta zona */}
               <div className="space-y-2">
-                {getItemsInZone(zone.id).map((item) => (
+                {(Array.isArray(getItemsInZone(zone.id)) ? getItemsInZone(zone.id) : []).map((item) => (
                   <div
                     key={item.id}
-                    className={`placed-item p-2 border rounded ${
+                    className={`placed-item p-2 bg-green-100 border border-green-300 rounded ${
                       accessibility.contrastLevel === 'high'
                         ? 'bg-white border-black'
-                        : 'bg-green-100 border-green-300'
+                        : ''
                     }`}
                   >
                     <div className="flex items-center space-x-2">
@@ -157,18 +156,16 @@ const DragDropScene: React.FC<DragDropSceneProps> = ({
         </div>
       </div>
 
-      {isCompleted && isCorrect !== null && (
-        <div className={`mt-4 p-4 border rounded text-center transition-all duration-500 ${
-            isCorrect ? 'bg-green-100 border-green-300' : 'bg-red-100 border-red-300'
-          }`}>
-          <p className={`font-semibold ${
-              isCorrect ? 'text-green-800' : 'text-red-800'
-            }`}>
-            {isCorrect ? '¡Orden correcto! Buen trabajo.' : 'El orden no es el correcto.'}
+      {/* Mensaje de completado */}
+      {isCompleted && (
+        <div className="mt-4 p-4 bg-green-100 border border-green-300 rounded text-center">
+          <p className="text-green-800 font-semibold">
+            Gracias por colocar todas las tareas en su sitio.
           </p>
         </div>
       )}
 
+      {/* Instrucciones de accesibilidad */}
       {accessibility.visualHelp && (
         <div className="mt-4 p-3 bg-blue-100 border border-blue-300 rounded">
           <p className="text-blue-800 text-sm">
