@@ -11,12 +11,14 @@ services:
       - key: PORT
         value: 10000
 
-staticSites:
-  - name: evaluate-frontend
+  - type: web
+    name: evaluate-frontend
+    env: node
     region: frankfurt
+    plan: free
     rootDir: nuevo-frontend
     buildCommand: npm install && npm run build
-    staticPublishPath: ./dist
+    startCommand: npx serve -s dist -p $PORT
     envVars:
       - key: VITE_API_URL
         fromService:
