@@ -1455,26 +1455,32 @@ const ResultadosPage: React.FC = () => {
     };
 
     const mergedCvDetails = {
-      experience: cleanList(
-        ensureArray((cvDetailsFromInfo as any).experience_detailed || (cvDetailsFromInfo as any).experience)
-        || ensureArray((cvFromState as any)?.experience_detailed || (cvFromState as any)?.experience)
-        || ensureArray((cvDetailsFromState as any).experience),
-      ),
-      education: cleanList(
-        ensureArray((cvDetailsFromInfo as any).education_detailed || (cvDetailsFromInfo as any).education)
-        || ensureArray((cvFromState as any)?.education_detailed || (cvFromState as any)?.education)
-        || ensureArray((cvDetailsFromState as any).education),
-      ),
-      languages: cleanList(
-        ensureArray((cvDetailsFromInfo as any).languages)
-        || ensureArray((cvFromState as any)?.languages)
-        || ensureArray((cvDetailsFromState as any).languages),
-      ),
-      tools: cleanList(
-        ensureArray((cvDetailsFromInfo as any).tools || (cvDetailsFromInfo as any).software)
-        || ensureArray((cvFromState as any)?.software || (cvFromState as any)?.skills)
-        || ensureArray((cvDetailsFromState as any).tools),
-      ),
+      experience: cleanList(ensureArray([
+        (cvDetailsFromInfo as any).experience_detailed,
+        (cvDetailsFromInfo as any).experience,
+        (cvFromState as any)?.experience_detailed,
+        (cvFromState as any)?.experience,
+        (cvDetailsFromState as any).experience
+      ])),
+      education: cleanList(ensureArray([
+        (cvDetailsFromInfo as any).education_detailed,
+        (cvDetailsFromInfo as any).education,
+        (cvFromState as any)?.education_detailed,
+        (cvFromState as any)?.education,
+        (cvDetailsFromState as any).education
+      ])),
+      languages: cleanList(ensureArray([
+        (cvDetailsFromInfo as any).languages,
+        (cvFromState as any)?.languages,
+        (cvDetailsFromState as any).languages
+      ])),
+      tools: cleanList(ensureArray([
+        (cvDetailsFromInfo as any).tools,
+        (cvDetailsFromInfo as any).software,
+        (cvFromState as any)?.software,
+        (cvFromState as any)?.skills,
+        (cvDetailsFromState as any).tools
+      ])),
     };
 
     const asCvItems = (list: string[]): Array<{ title: string; detail: string }> =>

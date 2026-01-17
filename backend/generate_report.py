@@ -620,12 +620,73 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
         safe_score = 40  # limitar cuando no hay CV
     level_label = level or _score_to_level(safe_score)
 
+    # Identificar áreas de mejora (las 2 con menor puntuación)
+    sorted_skills = sorted(normalized_soft_skills, key=lambda x: x.get("score", 0), reverse=True)
+    top_skills = [s["skill"] for s in sorted_skills[:4] if s.get("skill")]
+    weak_skills_data = sorted(normalized_soft_skills, key=lambda x: x.get("score", 0))[:2]
+    improvement_strs = []
+    for ws in weak_skills_data:
+        nm = ws.get("skill")
+        if nm:
+            improvement_strs.append(f"{nm} - Oportunidad de mejora")
+
+    areas_pref = [str(a) for a in job_pref_payload.get("areas", []) if a]
+    work_mode = str(job_pref_payload.get("workMode") or job_pref_payload.get("work_mode") or "").strip()
+
+    # Construcción del texto narrativo (profile_summary)
+    summary_sentences: List[str] = []
+
+    # 1. Apertura: Experiencia y Soft Skills
+    intro_part = f"Profesional con experiencia en {exp_count} posiciones," if exp_count > 0 else "Profesional en búsqueda de nuevas oportunidades,"
+
+    skills_text = ""
+    if top_skills:
+        if len(top_skills) > 1:
+            skills_text = ", ".join(top_skills[:-1]) + " y " + top_skills[-1]
+        else:
+            skills_text = top_skills[0]
+        summary_sentences.append(f"{intro_part} {full_name} destaca por su capacidad de {skills_text}.")
+    else:
+        summary_sentences.append(f"{intro_part} {full_name} presenta un perfil con potencial de desarrollo.")
+
+    # 2. Propuesta de valor y preferencias
+    roles_text = ""
+    if areas_pref:
+        if len(areas_pref) > 1:
+            roles_join = ", ".join(areas_pref[:-1]) + " y " + areas_pref[-1]
+        else:
+            roles_join = areas_pref[0]
+        roles_text = f"con especial interés en roles {roles_join}"
+    else:
+        roles_text = "con interés en desarrollar su carrera profesional"
+
+    env_text = ""
+    if work_mode:
+        env_text = f" en entornos {work_mode}"
+
+    summary_sentences.append(f"Su propuesta de valor reside en la combinación de habilidades técnicas y soft skills, {roles_text}{env_text}.")
+
+    # 3. Fit cultural (frase estándar positiva)
+    summary_sentences.append("Su perfil es adecuado para entornos que valoren la autonomía, la organización y el aprendizaje continuo.")
+
+    # 4. Áreas de mejora
+    if improvement_strs:
+        if len(improvement_strs) > 1:
+            imp_join = " y ".join(improvement_strs)
+        else:
+            imp_join = improvement_strs[0]
+        summary_sentences.append(f"Áreas a potenciar: {imp_join}.")
+
+    if cv_missing:
+        summary_sentences.append("Nota: No se encontró texto del CV; se recomienda subir un PDF legible para un diagnóstico más preciso.")
+
+    narrative_summary = " ".join(summary_sentences).strip()
+
     # Preparar resumen y feedback antes de crear el reporte base
-    # (NOTA: profile_summary se sobrescribirá más adelante con la lógica narrativa detallada,
-    #  aquí solo aseguramos que cv_payload['summary'] tenga un valor base razonable para cv_analysis_summary)
+    # Aseguramos que cv_payload['summary'] tenga el resumen narrativo
+    # para que create_default_report inicialice profile_summary con él.
     if not cv_payload.get("summary"):
-        intro_desc = f"Perfil {level_label.lower()}."
-        cv_payload["summary"] = intro_desc
+        cv_payload["summary"] = narrative_summary
 
     if cv_missing:
         cv_payload["structure_score"] = 1
@@ -739,72 +800,9 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
 
     report = create_default_report(full_name, normalized_soft_skills, cv_payload, job_pref_payload)
 
-    # Resumen ejecutivo enriquecido con preferencias, soft skills y CV
-    sorted_skills = sorted(normalized_soft_skills, key=lambda x: x.get("score", 0), reverse=True)
-    top_skills = [s["skill"] for s in sorted_skills[:4] if s.get("skill")]
-
-    # Identificar áreas de mejora (las 2 con menor puntuación)
-    weak_skills_data = sorted(normalized_soft_skills, key=lambda x: x.get("score", 0))[:2]
-    improvement_strs = []
-    for ws in weak_skills_data:
-        nm = ws.get("skill")
-        if nm:
-            improvement_strs.append(f"{nm} - Oportunidad de mejora")
-
-    areas_pref = [str(a) for a in job_pref_payload.get("areas", []) if a]
-    work_mode = str(job_pref_payload.get("workMode") or job_pref_payload.get("work_mode") or "").strip()
-    exp_count = len(cv_payload.get("experience") or cv_payload.get("experience_detailed") or [])
-
-    # Construcción del texto narrativo
-    summary_sentences: List[str] = []
-
-    # 1. Apertura: Experiencia y Soft Skills
-    intro_part = f"Profesional con experiencia en {exp_count} posiciones," if exp_count > 0 else "Profesional en búsqueda de nuevas oportunidades,"
-
-    skills_text = ""
-    if top_skills:
-        if len(top_skills) > 1:
-            skills_text = ", ".join(top_skills[:-1]) + " y " + top_skills[-1]
-        else:
-            skills_text = top_skills[0]
-        summary_sentences.append(f"{intro_part} {full_name} destaca por su capacidad de {skills_text}.")
-    else:
-        summary_sentences.append(f"{intro_part} {full_name} presenta un perfil con potencial de desarrollo.")
-
-    # 2. Propuesta de valor y preferencias
-    roles_text = ""
-    if areas_pref:
-        if len(areas_pref) > 1:
-            roles_join = ", ".join(areas_pref[:-1]) + " y " + areas_pref[-1]
-        else:
-            roles_join = areas_pref[0]
-        roles_text = f"con especial interés en roles {roles_join}"
-    else:
-        roles_text = "con interés en desarrollar su carrera profesional"
-
-    env_text = ""
-    if work_mode:
-        env_text = f" en entornos {work_mode}"
-
-    summary_sentences.append(f"Su propuesta de valor reside en la combinación de habilidades técnicas y soft skills, {roles_text}{env_text}.")
-
-    # 3. Fit cultural (frase estándar positiva)
-    summary_sentences.append("Su perfil es adecuado para entornos que valoren la autonomía, la organización y el aprendizaje continuo.")
-
-    # 4. Áreas de mejora
-    if improvement_strs:
-        if len(improvement_strs) > 1:
-            imp_join = " y ".join(improvement_strs)
-        else:
-            imp_join = improvement_strs[0]
-        summary_sentences.append(f"Áreas a potenciar: {imp_join}.")
-
-    if cv_missing:
-        summary_sentences.append("Nota: No se encontró texto del CV; se recomienda subir un PDF legible para un diagnóstico más preciso.")
-
-    report.profile_summary = " ".join(summary_sentences).strip()
-
     # cv_analysis_summary = resumen del CV
+    # Usamos un resumen breve para esta parte, no la narrativa completa
+    simple_summary = f"Perfil {level_label.lower()}."
     cv_summary_parts: list[str] = []
     if exp_count:
         cv_summary_parts.append(f"Experiencia: {exp_count} registros.")
@@ -816,7 +814,10 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
         cv_summary_parts.append(f"Herramientas/tecnologías: {tools_count}.")
     if cv_missing:
         cv_summary_parts.append("No hay texto del CV; añade un PDF con fechas, funciones y logros cuantificados.")
-    cv_analysis_summary_src = str(cv_payload.get("summary") or "").strip()
+
+    # Si cv_payload['summary'] ya es el narrativo largo, preferimos usar simple_summary aquí
+    # para que el resumen del CV sea más conciso.
+    cv_analysis_summary_src = simple_summary
     report.cv_analysis_summary = " ".join([cv_analysis_summary_src] + cv_summary_parts).strip() or "Análisis del CV no disponible."
 
     # Eliminar campo summary del payload para evitar confusión
