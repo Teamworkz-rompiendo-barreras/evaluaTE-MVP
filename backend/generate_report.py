@@ -621,13 +621,11 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     level_label = level or _score_to_level(safe_score)
 
     # Preparar resumen y feedback antes de crear el reporte base
-    highlighted = ", ".join([s["skill"] for s in normalized_soft_skills[:3] if s.get("skill")])
-    profile_parts = [f"Perfil {level_label.lower()} con puntuación de empleabilidad {safe_score}/100."]
-    if highlighted:
-        profile_parts.append(f"Destacan habilidades como {highlighted}.")
-    if cv_payload.get("summary"):
-        profile_parts.append(str(cv_payload.get("summary")))
-    cv_payload["summary"] = " ".join(part.strip() for part in profile_parts if part).strip()
+    # (NOTA: profile_summary se sobrescribirá más adelante con la lógica narrativa detallada,
+    #  aquí solo aseguramos que cv_payload['summary'] tenga un valor base razonable para cv_analysis_summary)
+    if not cv_payload.get("summary"):
+        intro_desc = f"Perfil {level_label.lower()}."
+        cv_payload["summary"] = intro_desc
 
     if cv_missing:
         cv_payload["structure_score"] = 1
