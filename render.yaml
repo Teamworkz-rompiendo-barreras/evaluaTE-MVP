@@ -1,9 +1,8 @@
 services:
-  # Backend Service
   - type: web
     name: evaluate-backend
     env: python
-    region: frankfurt  # Europe region close to Spain
+    region: frankfurt
     plan: free
     rootDir: backend
     buildCommand: pip install -r requirements.txt
@@ -11,12 +10,9 @@ services:
     envVars:
       - key: PORT
         value: 10000
-    autoDeploy: false
 
-  # Frontend Service
-  - type: static
-    name: evaluate-frontend
-    env: static
+staticSites:
+  - name: evaluate-frontend
     region: frankfurt
     rootDir: nuevo-frontend
     buildCommand: npm install && npm run build
@@ -27,4 +23,3 @@ services:
           type: web
           name: evaluate-backend
           property: url
-    autoDeploy: false
