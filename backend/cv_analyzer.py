@@ -43,6 +43,7 @@ import json
 import sys
 import io
 import os
+import asyncio
 import logging
 from datetime import datetime
 from typing import Dict, List, Any, Optional, Tuple
@@ -215,7 +216,7 @@ def _import_ocr_dependencies() -> bool:
     return True
 
 
-def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> tuple[str, Dict[str, Any]]:
+async def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> tuple[str, Dict[str, Any]]:
     """Extrae texto combinando PyMuPDF y OCR para todas las páginas.
 
     Devuelve una tupla ``(texto, metadata)`` donde ``metadata`` describe si se
@@ -279,7 +280,8 @@ def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> tuple[str, Dict[str, An
                         "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789@.-_()/\\|,;: "
                     )
 
-                    ocr_text = pytesseract.image_to_string(
+                    ocr_text = await asyncio.to_thread(
+                        pytesseract.image_to_string,
                         img,
                         lang="spa+eng",
                         config=ocr_config,
@@ -1082,7 +1084,7 @@ except ImportError:
     logger.warning("Document Intelligence no disponible, usando método tradicional")
 
 
-def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
+async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
     """Extrae y analiza información de un CV en PDF."""
 
     file_size = len(pdf_buffer) if pdf_buffer else 0
@@ -1105,7 +1107,9 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         if DOCUMENT_INTELLIGENCE_AVAILABLE:
             logger.info("Intentando análisis con Azure AI Document Intelligence...")
             try:
-                di_attempt = analyze_cv_with_improved_intelligence(pdf_buffer)
+                di_attempt = await asyncio.to_thread(
+                    analyze_cv_with_improved_intelligence, pdf_buffer
+                )
             except Exception as di_exc:  # pragma: no cover - diagnóstico
                 di_error = str(di_exc)
             else:
@@ -1123,7 +1127,7 @@ def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             logger.info("Document Intelligence no disponible, se combinarán métodos locales")
 
         logger.info("Extrayendo texto del PDF con PyMuPDF + OCR...")
-        text, text_meta = extract_text_with_advanced_ocr(pdf_buffer)
+        text, text_meta = await extract_text_with_advanced_ocr(pdf_buffer)
         processing_metadata["text_extraction"] = text_meta
         logger.info(
             "Texto combinado extraído: %s caracteres",
