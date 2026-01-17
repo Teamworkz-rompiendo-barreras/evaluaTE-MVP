@@ -742,30 +742,69 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     report = create_default_report(full_name, normalized_soft_skills, cv_payload, job_pref_payload)
 
     # Resumen ejecutivo enriquecido con preferencias, soft skills y CV
-    top_skills = [s["skill"] for s in normalized_soft_skills[:2] if s.get("skill")]
+    sorted_skills = sorted(normalized_soft_skills, key=lambda x: x.get("score", 0), reverse=True)
+    top_skills = [s["skill"] for s in sorted_skills[:4] if s.get("skill")]
+
+    # Identificar áreas de mejora (las 2 con menor puntuación)
+    weak_skills_data = sorted(normalized_soft_skills, key=lambda x: x.get("score", 0))[:2]
+    improvement_strs = []
+    for ws in weak_skills_data:
+        nm = ws.get("skill")
+        if nm:
+            improvement_strs.append(f"{nm} - Oportunidad de mejora")
+
     areas_pref = [str(a) for a in job_pref_payload.get("areas", []) if a]
     work_mode = str(job_pref_payload.get("workMode") or job_pref_payload.get("work_mode") or "").strip()
     exp_count = len(cv_payload.get("experience") or cv_payload.get("experience_detailed") or [])
-    edu_count = len(cv_payload.get("education") or cv_payload.get("education_detailed") or [])
-    games_count = len(completed_games or [])
 
-    # profile_summary = resumen ejecutivo principal
-    profile_parts: list[str] = [
-        f"Informe de empleabilidad para {full_name}. Puntuación global {safe_score}/100 ({level_label})."
-    ]
-    if areas_pref:
-        profile_parts.append(f"Orientado a roles en {', '.join(areas_pref)}.")
+    # Construcción del texto narrativo
+    summary_sentences: List[str] = []
+
+    # 1. Apertura: Experiencia y Soft Skills
+    intro_part = f"Profesional con experiencia en {exp_count} posiciones," if exp_count > 0 else "Profesional en búsqueda de nuevas oportunidades,"
+
+    skills_text = ""
     if top_skills:
-        profile_parts.append(f"Fortalezas destacadas: {', '.join(top_skills)}.")
+        if len(top_skills) > 1:
+            skills_text = ", ".join(top_skills[:-1]) + " y " + top_skills[-1]
+        else:
+            skills_text = top_skills[0]
+        summary_sentences.append(f"{intro_part} {full_name} destaca por su capacidad de {skills_text}.")
+    else:
+        summary_sentences.append(f"{intro_part} {full_name} presenta un perfil con potencial de desarrollo.")
+
+    # 2. Propuesta de valor y preferencias
+    roles_text = ""
+    if areas_pref:
+        if len(areas_pref) > 1:
+            roles_join = ", ".join(areas_pref[:-1]) + " y " + areas_pref[-1]
+        else:
+            roles_join = areas_pref[0]
+        roles_text = f"con especial interés en roles {roles_join}"
+    else:
+        roles_text = "con interés en desarrollar su carrera profesional"
+
+    env_text = ""
     if work_mode:
-        profile_parts.append(f"Preferencia de modalidad: {work_mode}.")
-    if exp_count or edu_count:
-        profile_parts.append(f"CV con {exp_count} experiencias y {edu_count} formaciones registradas.")
-    if games_count:
-        profile_parts.append(f"Resultados de {games_count} minijuego(s) integrados.")
+        env_text = f" en entornos {work_mode}"
+
+    summary_sentences.append(f"Su propuesta de valor reside en la combinación de habilidades técnicas y soft skills, {roles_text}{env_text}.")
+
+    # 3. Fit cultural (frase estándar positiva)
+    summary_sentences.append("Su perfil es adecuado para entornos que valoren la autonomía, la organización y el aprendizaje continuo.")
+
+    # 4. Áreas de mejora
+    if improvement_strs:
+        if len(improvement_strs) > 1:
+            imp_join = " y ".join(improvement_strs)
+        else:
+            imp_join = improvement_strs[0]
+        summary_sentences.append(f"Áreas a potenciar: {imp_join}.")
+
     if cv_missing:
-        profile_parts.append("No se encontró texto del CV; sube un PDF legible para un diagnóstico completo.")
-    report.profile_summary = " ".join(profile_parts).strip()
+        summary_sentences.append("Nota: No se encontró texto del CV; se recomienda subir un PDF legible para un diagnóstico más preciso.")
+
+    report.profile_summary = " ".join(summary_sentences).strip()
 
     # cv_analysis_summary = resumen del CV
     cv_summary_parts: list[str] = []
