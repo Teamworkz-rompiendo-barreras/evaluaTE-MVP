@@ -231,7 +231,7 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             logger.warning("Archivo vacío recibido")
             raise HTTPException(status_code=400, detail="Archivo vacío")
         try:
-            result = extract_pdf_info(pdf_bytes)
+            result = await extract_pdf_info(pdf_bytes)
             logger.info("extract_pdf_info ejecutado correctamente")
         except Exception as e:
             logger.exception("Fallo ejecutando extract_pdf_info")
