@@ -1135,20 +1135,32 @@ async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
 
         candidate_text = text if text.strip() else di_raw_text
 
-        tool_keywords = {"word", "excel", "powerpoint", "photoshop", "procreate", "clip studio", "paint", "movie maker"}
+        tool_keywords = {
+            "word", "excel", "powerpoint", "photoshop", "procreate", "clip studio", "paint", "movie maker",
+            "microsoft", "office", "adobe", "suite", "tool", "software", "windows", "linux", "macos",
+            "visual", "studio", "code", "python", "java", "javascript", "html", "css", "sql", "react", "node"
+        }
 
         def _clean_name_candidate(name: str) -> str:
             if not name:
                 return ""
             normalized = name.strip()
-            if len(normalized) > 60 or any(ch.isdigit() for ch in normalized):
+            # Si es muy largo o contiene dígitos, descartar
+            if len(normalized) > 50 or any(ch.isdigit() for ch in normalized):
                 return ""
+            
             lower = normalized.lower()
+            tokens = lower.split()
+            
+            # Si contiene palabras prohibidas
             if any(k in lower for k in tool_keywords):
+                # Caso borde: si el nombre es "Hope" o "Crystal" (coincide con soft?), pero aquí filtramos herramientas
                 return ""
-            tokens = normalized.split()
-            if len(tokens) > 5:
+            
+            # Si tiene demasiadas palabras (más de 4 suele ser raro para un nombre)
+            if len(tokens) > 4:
                 return ""
+                
             return normalized
 
         def _extract_languages_from_text(txt: str) -> List[Dict[str, str]]:

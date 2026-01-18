@@ -303,7 +303,19 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
                 
                 for c in candidates:
                     val = container.get(c)
-                    if isinstance(val, list) and val: return val
+                    if isinstance(val, list) and val:
+                        # Clean noise from lists
+                        cleaned = []
+                        for v in val:
+                            if isinstance(v, str):
+                                s = v.lower().strip()
+                                if s in ("mejorable", "regular", "bueno", "excelente", "no consta", "no especificado"):
+                                    continue
+                                if len(s) < 3:
+                                    continue
+                            cleaned.append(v)
+                        if cleaned:
+                            return cleaned
 
         return []
 
