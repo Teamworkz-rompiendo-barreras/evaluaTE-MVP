@@ -281,13 +281,30 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
     if not isinstance(cv_data, dict):
         cv_data = {}
 
-    def _pick_list(primary_key: str, detailed_key: str) -> list:
-        primary_val = cv_data.get(primary_key)
-        detailed_val = cv_data.get(detailed_key)
-        if isinstance(primary_val, list) and primary_val:
-            return primary_val
-        if isinstance(detailed_val, list) and detailed_val:
-            return detailed_val
+    def _pick_list(primary_key: str, detailed_key: str, nested_key: str = "") -> list:
+        # 1. Direct lists
+        p_val = cv_data.get(primary_key)
+        if isinstance(p_val, list) and p_val: return p_val
+        
+        d_val = cv_data.get(detailed_key)
+        if isinstance(d_val, list) and d_val: return d_val
+        
+        # 2. Nested in cv_structured or cv_analysis_structured
+        target = nested_key or primary_key
+        for root in ("cv_structured", "cv_analysis_structured", "cv_info"):
+            container = cv_data.get(root)
+            if isinstance(container, dict):
+                # Try English and Spanish keys
+                candidates = [target]
+                if target == "experience": candidates.append("experiencia")
+                if target == "education": candidates.append("educacion")
+                if target == "languages": candidates.append("idiomas")
+                if target == "software": candidates.append("tools")
+                
+                for c in candidates:
+                    val = container.get(c)
+                    if isinstance(val, list) and val: return val
+
         return []
 
     analysis_candidates: List[Dict[str, Any]] = []
