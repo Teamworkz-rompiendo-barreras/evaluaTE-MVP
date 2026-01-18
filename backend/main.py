@@ -529,7 +529,10 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             },
             "ai_analysis": result.get("full_cv_data") or {},
             "cv_analysis_structured": analysis,
-          # Post-processing: Sanitize candidate name
+            "document_intelligence_used": False,
+        }
+        
+        # Post-processing: Sanitize candidate name
         suspicious_keywords = {
             "microsoft", "office", "adobe", "photoshop", "suite", "tool", "software", "windows", "linux", "macos",
             "visual", "studio", "code", "python", "java", "javascript", "html", "css", "sql", "react", "node",
@@ -557,9 +560,8 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             normalized["contact"]["name"] = valid_name
         normalized["candidate"] = valid_name
 
-            "document_intelligence_used": False,
-        }
         logger.info("CV analysis normalizado correctamente")
+        return normalized
         return normalized
     except HTTPException:
         raise
