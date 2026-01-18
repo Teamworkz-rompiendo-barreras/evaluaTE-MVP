@@ -516,6 +516,8 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
         except Exception:
             analysis_block = ""
 
+        full_text = cv_data.get("full_raw_text") or cv_data.get("rawText") or cv_data.get("raw_text") or ""
+        
         prompt = PromptConfig.get_employability_report_prompt(
             candidate_data=candidate_data,
             soft_skills_data=soft_skills_data,
@@ -526,7 +528,7 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
             completed_games=completed_games,
             languages_data=languages_data,
             analysis_block=analysis_block,
-            full_raw_text=cv_data.get("full_raw_text") or cv_data.get("rawText") or "",
+            full_raw_text=full_text,
         )
 
         # Usar Gemini si está configurado
@@ -537,7 +539,7 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
                     "request_id": request_id,
                     "model": "gemini-flash-latest",
                     "source": "generate_report",
-                    "cv_has_text": bool(cv_data.get("rawText") if isinstance(cv_data, dict) else False),
+                    "cv_has_text": bool(full_text),
                 },
             )
             
