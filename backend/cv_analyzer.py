@@ -314,9 +314,10 @@ def _normalize_ai_json_response(content: str) -> str:
     return cleaned
 
 
-def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
+def analyze_cv_with_ai(text: str, pdf_bytes: Optional[bytes] = None) -> Dict[str, Any]:
     """
-    Analiza el CV usando Gemini para extraer información de manera inteligente
+    Analiza el CV usando Gemini para extraer información de manera inteligente.
+    Soporta entrada multimodal (PDF bytes) para mejor precisión con documentos escaneados.
     """
     if not genai_configured:
         logger.warning("Gemini no configurado, usando análisis básico")
@@ -325,15 +326,11 @@ def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
     try:
         logger.info("Iniciando análisis con Google Gemini...")
         
-        # System instructions separate
         system_instruction = "Eres un experto en análisis de CVs con más de 15 años de experiencia en recursos humanos y tecnología. Tu especialidad es extraer información precisa y estructurada de CVs en cualquier formato, idioma o estructura. Siempre devuelves JSON válido y bien estructurado."
         
-        # Prompt profesional y completo para análisis de CV
-        prompt = f"""
-Eres un experto en análisis de CVs y recursos humanos con más de 15 años de experiencia. Tu tarea es analizar el siguiente texto extraído de un CV y extraer toda la información relevante de manera estructurada y profesional.
-
-TEXTO DEL CV:
-{text[:10000]}
+        # Prompt base
+        prompt_text = f"""
+Eres un experto en análisis de CVs y recursos humanos con más de 15 años de experiencia. Tu tarea es analizar el siguiente CV y extraer toda la información relevante de manera estructurada y profesional.
 
 INSTRUCCIONES DETALLADAS:
 1. **Información Personal**: Extrae nombre completo, email, teléfono, ubicación, LinkedIn, portfolio
@@ -427,6 +424,9 @@ IMPORTANTE:
 - Asegúrate de que el JSON sea válido
 """
 
+        if text and not pdf_bytes:
+             prompt_text += f"\n\nTEXTO DEL CV:\n{text[:10000]}"
+
         print("📤 Enviando solicitud a Gemini...")
         
         # Configurar modelo
@@ -435,8 +435,16 @@ IMPORTANTE:
             system_instruction=system_instruction
         )
         
+        content_parts = [prompt_text]
+        if pdf_bytes:
+            print("📄 Adjuntando PDF nativo para análisis multimodal...")
+            content_parts.append({
+                "mime_type": "application/pdf",
+                "data": pdf_bytes
+            })
+        
         response = model.generate_content(
-            prompt,
+            content_parts,
             generation_config=genai.types.GenerationConfig(
                 temperature=0.1,
                 max_output_tokens=4000,
@@ -460,9 +468,6 @@ IMPORTANTE:
         except (json.JSONDecodeError, TypeError) as e:
             logger.warning("Error parseando JSON: %s", e)
             print(f"📝 Contenido recibido: {str(content)[:200]}...")
-            if normalized_content != content:
-                print(f"🧹 Contenido normalizado: {normalized_content[:200]}...")
-
             # Fallback: intentar extraer información básica del texto
             return extract_basic_cv_data_from_text(text)
             
@@ -1473,8 +1478,11 @@ async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         contact = extract_contact_info_enhanced(candidate_text)
         logger.info("Contacto extraído: %s", contact)
 
-        logger.info("Analizando CV con IA heurística...")
-        cv_data = analyze_cv_with_ai(candidate_text)
+        logger.info("Analizando CV con IA heurística (Multimodal)...")
+        # Si NO usamos Document Intelligence, pasamos el buffer PDF directo a Gemini
+        # para que haga su propia extracción/OCR
+        pdf_payload = pdf_buffer if not di_result else None
+        cv_data = analyze_cv_with_ai(candidate_text, pdf_payload)
 
         if "error" in cv_data:
             logger.warning("Error en análisis con IA: %s", cv_data['error'])
