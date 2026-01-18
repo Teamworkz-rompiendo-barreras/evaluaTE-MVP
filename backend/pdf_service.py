@@ -1,35 +1,69 @@
 # backend/pdf_service.py
 import os
+import math
 from io import BytesIO
 from typing import Any, Dict, List, Optional, Tuple
 from datetime import date
-import math
 import unicodedata
 
-from reportlab.lib.pagesizes import A4  # type: ignore
-from reportlab.pdfgen import canvas  # type: ignore
-from reportlab.lib.units import mm  # type: ignore
-from reportlab.lib import colors  # type: ignore
+from reportlab.lib.pagesizes import A4
+from reportlab.pdfgen import canvas
+from reportlab.lib.units import mm
+from reportlab.lib import colors
 
 try:
     from new_report_schema import NewReportSchema
 except ImportError:
     from backend.new_report_schema import NewReportSchema
 
-# Helpers
-def _draw_wrapped_text(c: canvas.Canvas, x: float, y: float, text: str, max_width: float, leading: float = 12) -> float:
-    """
-    Dibuja texto multilínea simple; devuelve la coordenada Y final.
-    """
+# --- Colores (Tema Oscuro) ---
+BG_COLOR = colors.HexColor("#171923")  # Deep Dark Blue/Slate
+TEXT_COLOR = colors.white
+ACCENT_COLOR = colors.HexColor("#4299E1") # Blue
+BOX_BG_COLOR = colors.HexColor("#A0AEC0") # For badges (light grey) - wait, images show dark badges?
+# Image analysis: Background is clearly dark (#171923 or similar). Text is white/light grey.
+# Radar chart background is dark.
+# Global score badge is dark grey/black with white text.
+
+# --- Helpers de Dibujo ---
+
+def _draw_background(c: canvas.Canvas):
+    """Pinta el fondo completo de la página."""
+    c.saveState()
+    c.setFillColor(BG_COLOR)
+    c.rect(0, 0, A4[0], A4[1], stroke=0, fill=1)
+    c.restoreState()
+
+def _draw_text(c: canvas.Canvas, x: float, y: float, text: str, font="Helvetica", size=10, color=TEXT_COLOR):
+    """Dibuja texto simple."""
+    c.saveState()
+    c.setFillColor(color)
+    c.setFont(font, size)
+    c.drawString(x, y, text)
+    c.restoreState()
+
+def _draw_centered_text(c: canvas.Canvas, x: float, y: float, text: str, font="Helvetica", size=10, color=TEXT_COLOR):
+    c.saveState()
+    c.setFillColor(color)
+    c.setFont(font, size)
+    c.drawCentredString(x, y, text)
+    c.restoreState()
+
+def _draw_wrapped_text(c: canvas.Canvas, x: float, y: float, text: str, max_width: float, leading: float = 12, font="Helvetica", size=10, color=TEXT_COLOR) -> float:
+    """Dibuja texto multilínea."""
     if not text:
         return y
+    c.saveState()
+    c.setFillColor(color)
+    c.setFont(font, size)
+    
     lines: List[str] = []
     for raw_line in text.split("\n"):
         words = raw_line.split(" ")
         line = ""
         for w in words:
             test = f"{line} {w}".strip()
-            if c.stringWidth(test) <= max_width:
+            if c.stringWidth(test, font, size) <= max_width:
                 line = test
             else:
                 if line:
@@ -37,871 +71,324 @@ def _draw_wrapped_text(c: canvas.Canvas, x: float, y: float, text: str, max_widt
                 line = w
         if line:
             lines.append(line)
+            
     for ln in lines:
         c.drawString(x, y, ln)
         y -= leading
+    c.restoreState()
     return y
 
-# Renderiza una lista con viñetas; cada item puede ser str o dict (con claves comunes)
-def _draw_bulleted_list(
-    c: canvas.Canvas,
-    x: float,
-    y: float,
-    items: List[Any],
-    max_width: float,
-    leading: float = 12,
-) -> float:
+def _draw_bulleted_list(c: canvas.Canvas, x: float, y: float, items: List[Any], max_width: float, leading: float = 14) -> float:
+    """Renderiza lista con viñetas."""
     if not items:
         return y
     for it in items:
-        if it is None:
+        if not it:
             continue
-        if isinstance(it, dict):
-            # Intentar construir una línea legible a partir de claves comunes
-            label_parts: List[str] = []
-            for k in ("title", "degree", "role", "area", "name", "label"):
-                v = it.get(k)
-                if v:
-                    label_parts.append(str(v))
-                    break
-            # info secundaria
-            secondary: List[str] = []
-            for k in ("company", "center", "year", "seniority", "reason"):
-                v = it.get(k)
-                if v:
-                    secondary.append(str(v))
-            line = " • " + (" ".join(label_parts) if label_parts else str(it))
-            if secondary:
-                line += " — " + ", ".join(secondary)
-            y = _draw_wrapped_text(c, x, y, line, max_width, leading)
-        else:
-            y = _draw_wrapped_text(c, x, y, f"• {str(it)}", max_width, leading)
+        # Convertir a string si es dict
+        txt = ""
+        if isinstance(it, str):
+            txt = it
+        elif isinstance(it, dict):
+            # Lógica heurística para diccionarios
+            labels = [str(it.get(k)) for k in ["name", "skill", "role", "title", "language", "empresa"] if it.get(k)]
+            txt = " - ".join(labels) if labels else str(it)
+        
+        y = _draw_wrapped_text(c, x, y, f"• {txt}", max_width, leading, font="Helvetica", size=10)
     return y
 
-# Crea una nueva página si falta espacio
-def _ensure_space(c: canvas.Canvas, y: float, needed: float, margin_top: float, margin_bottom: float) -> float:
-    if y - needed < margin_bottom:
-        c.showPage()
-        c.setFont("Helvetica", 10)
-        return A4[1] - margin_top
-    return y
-
-# Radar simple para soft skills (0..100)
-def _draw_radar_chart(
-    c: canvas.Canvas,
-    center_x: float,
-    center_y: float,
-    radius: float,
-    data: List[Dict[str, Any]],
-    levels: int = 5,
-    label_color = colors.grey,
-) -> None:
+# --- Radar Chart (Customizado para Dark Mode) ---
+def _draw_radar_chart(c: canvas.Canvas, center_x: float, center_y: float, radius: float, data: List[Dict[str, Any]]) -> None:
     if not data:
         return
-    # Normalizar a pares (label, score)
-    pairs: List[Tuple[str, float]] = []
+    # Top 10 skills standard
+    pairs = []
     for item in data:
-        if isinstance(item, dict):
-            label = str(item.get("skill") or item.get("name") or item.get("label") or "").strip()
-            try:
-                score = float(item.get("score"))
-            except Exception:
-                score = 0.0
-            if label:
-                pairs.append((label, max(0.0, min(100.0, score))))
-        elif isinstance(item, str):
-            pairs.append((item, 50.0))
-    if not pairs:
-        return
+        lbl = item.get("skill") or item.get("name") or ""
+        scr = item.get("score") or 0
+        try:
+            scr = float(scr)
+        except:
+            scr = 0
+        pairs.append((lbl, max(0, min(100, scr))))
+    
     n = len(pairs)
-    # Ejes y anillos
+    if n < 3: return
+
+    # Ejes y anillos (Gris claro)
+    c.saveState()
     c.setStrokeColor(colors.grey)
-    c.setLineWidth(0.6)
-    for lvl in range(1, levels + 1):
-        r = radius * (lvl / levels)
-        # Polígono concéntrico
-        pts: List[Tuple[float, float]] = []
-        for i in range(n):
-            angle = (i / n) * 6.283185307179586  # 2*pi
-            x = center_x + r * math.cos(angle - 1.57079632679)  # rotar 90º
-            y = center_y + r * math.sin(angle - 1.57079632679)
-            pts.append((x, y))
-        # Dibujar
-        for i in range(n):
-            x1, y1 = pts[i]
-            x2, y2 = pts[(i + 1) % n]
-            c.line(x1, y1, x2, y2)
-    # Ejes y etiquetas
-    c.setStrokeColor(colors.lightgrey)
-    for i, (label, _score) in enumerate(pairs):
-        angle = (i / n) * 6.283185307179586
-        x2 = center_x + radius * math.cos(angle - 1.57079632679)
-        y2 = center_y + radius * math.sin(angle - 1.57079632679)
-        c.line(center_x, center_y, x2, y2)
-        # Etiqueta
-        lx = center_x + (radius + 6 * mm) * math.cos(angle - 1.57079632679)
-        ly = center_y + (radius + 6 * mm) * math.sin(angle - 1.57079632679)
-        c.setFillColor(label_color)
+    c.setLineWidth(0.5)
+    
+    # 5 Niveles
+    for i in range(1, 6):
+        r = radius * (i/5)
+        # Dibujar polígono
+        p = c.beginPath()
+        for j in range(n):
+            ang = (j / n) * 2 * math.pi - (math.pi / 2)
+            x = center_x + r * math.cos(ang)
+            y = center_y + r * math.sin(ang)
+            if j == 0: p.moveTo(x, y)
+            else: p.lineTo(x, y)
+        p.close()
+        c.drawPath(p, stroke=1, fill=0)
+
+    # Ejes radiales
+    for j in range(n):
+        ang = (j / n) * 2 * math.pi - (math.pi / 2)
+        x = center_x + radius * math.cos(ang)
+        y = center_y + radius * math.sin(ang)
+        c.line(center_x, center_y, x, y)
+        
+        # Etiquetas
+        lbl_x = center_x + (radius + 15) * math.cos(ang)
+        lbl_y = center_y + (radius + 10) * math.sin(ang)
+        
+        # Ajuste de alineación según cuadrante
+        align = "diferente"
+        # Usar drawCentredString por simplicidad
+        c.setFillColor(colors.white)
         c.setFont("Helvetica", 8)
-        c.drawCentredString(lx, ly, label[:22])
-    # Polígono de datos
-    c.setFillColorRGB(0.2, 0.45, 0.85, alpha=0.25)
-    c.setStrokeColorRGB(0.2, 0.45, 0.85)
-    c.setLineWidth(1.2)
-    first: Optional[Tuple[float, float]] = None
-    prev: Optional[Tuple[float, float]] = None
-    for i, (_label, score) in enumerate(pairs):
-        r = radius * (score / 100.0)
-        angle = (i / n) * 6.283185307179586
-        x = center_x + r * math.cos(angle - 1.57079632679)
-        y = center_y + r * math.sin(angle - 1.57079632679)
-        if prev is not None:
-            c.line(prev[0], prev[1], x, y)
+        # Dividir etiquetas largas
+        palabras = pairs[j][0].split(" ")
+        if len(palabras) > 2:
+            lbl_txt1 = " ".join(palabras[:2])
+            lbl_txt2 = " ".join(palabras[2:])
+            c.drawCentredString(lbl_x, lbl_y + 4, lbl_txt1)
+            c.drawCentredString(lbl_x, lbl_y - 4, lbl_txt2)
         else:
-            first = (x, y)
-        prev = (x, y)
-    if prev and first:
-        c.line(prev[0], prev[1], first[0], first[1])
-    # Puntos
-    c.setFillColorRGB(0.2, 0.45, 0.85)
-    for i, (_label, score) in enumerate(pairs):
-        r = radius * (score / 100.0)
-        angle = (i / n) * 6.283185307179586
-        x = center_x + r * math.cos(angle - 1.57079632679)
-        y = center_y + r * math.sin(angle - 1.57079632679)
-        c.circle(x, y, 1.6, stroke=0, fill=1)
+            c.drawCentredString(lbl_x, lbl_y, pairs[j][0])
 
-def _stars(val: Optional[int]) -> str:
-    n = int(val or 0)
-    if n < 0: n = 0
-    if n > 5: n = 5
-    return "★" * n + "☆" * (5 - n)
-
-# Dibuja una estrella de 5 puntas
-def _draw_star_shape(c: canvas.Canvas, cx: float, cy: float, outer_r: float, inner_r: float, filled: bool = True) -> None:
-    path = c.beginPath()
-    for i in range(10):
-        ang = (i * 36 - 90) * 3.141592653589793 / 180.0
-        r = outer_r if i % 2 == 0 else inner_r
-        x = cx + r * math.cos(ang)
-        y = cy + r * math.sin(ang)
-        if i == 0:
-            path.moveTo(x, y)
+    # Datos (Relleno azul transparente)
+    c.setStrokeColor(ACCENT_COLOR)
+    c.setLineWidth(2)
+    c.setFillColor(colors.Color(0.26, 0.6, 0.88, alpha=0.3)) # #4299E1 con alpha
+    
+    p = c.beginPath()
+    first_pt = None
+    for j in range(n):
+        val = pairs[j][1]
+        r = radius * (val / 100.0)
+        ang = (j / n) * 2 * math.pi - (math.pi / 2)
+        x = center_x + r * math.cos(ang)
+        y = center_y + r * math.sin(ang)
+        if j == 0:
+            p.moveTo(x, y)
+            first_pt = (x, y)
         else:
-            path.lineTo(x, y)
-    path.close()
-    c.drawPath(path, stroke=1, fill=1 if filled else 0)
+            p.lineTo(x, y)
+        
+        # Puntito
+        c.circle(x, y, 3, stroke=0, fill=1) # Dibuja puntos azules en los vértices
+        
+    p.close()
+    c.drawPath(p, stroke=1, fill=1)
+    c.restoreState()
 
-def _draw_star_rating_line(c: canvas.Canvas, x: float, y: float, label: str, rating: int, size: float = 3.0 * mm) -> float:
-    c.setFont("Helvetica", 10)
-    c.drawString(x, y, label)
-    start_x = x + c.stringWidth(label) + 6
-    cy = y + 3
-    filled = max(0, min(5, int(rating)))
-    for i in range(5):
-        cx = start_x + i * (size + 2)
-        # Borde en negro para todas
-        c.setStrokeColor(colors.black)
-        c.setFillColor(colors.black if i < filled else colors.white)
-        _draw_star_shape(c, cx, cy, size / 2, size / 5 * 2, filled=(i < filled))
-    return y - 12
-
-def _draw_star_rating_block(c: canvas.Canvas, x: float, y: float, items: List[Tuple[str, int]], size: float = 3.0 * mm) -> float:
-    """Dibuja un bloque de N líneas de calificación con estrellas alineadas.
-    Calcula el ancho máximo de etiqueta para alinear las 5 estrellas en una misma columna.
-    Devuelve la nueva coordenada y.
-    """
-    if not items:
-        return y
-    c.setFont("Helvetica", 10)
-    label_widths = [c.stringWidth(label + " ") for label, _ in items]
-    pad = 6
-    align_x = x + (max(label_widths) if label_widths else 0) + pad
-    for label, rating in items:
-        # etiqueta
-        c.drawString(x, y, label)
-        # estrellas
-        cy = y + 3
-        filled = max(0, min(5, int(rating)))
-        for i in range(5):
-            cx = align_x + i * (size + 2)
-            c.setStrokeColor(colors.black)
-            c.setFillColor(colors.black if i < filled else colors.white)
-            _draw_star_shape(c, cx, cy, size / 2, size / 5 * 2, filled=(i < filled))
-        y -= 12
-    return y
-
-# Canon de habilidades (10 ejes fijos)
-ALL_SOFT_SKILLS: List[str] = [
-    "Toma de decisiones",
-    "Pensamiento analítico",
-    "Creatividad",
-    "Influencia social",
-    "Curiosidad y aprendizaje",
-    "Resiliencia y flexibilidad",
-    "Autoconciencia",
-    "Empatía",
-    "Pensamiento Crítico",
-    "Liderazgo",
+# --- Normalización Soft Skills ---
+ALL_SOFT_SKILLS = [
+    "Pensamiento analítico", "Toma de decisiones", "Liderazgo", "Creatividad",
+    "Influencia social", "Curiosidad y aprendizaje", "Resiliencia y flexibilidad",
+    "Autoconciencia", "Empatía", "Pensamiento Crítico"
 ]
 
-def _normalize_text(value: str) -> str:
-    txt = unicodedata.normalize("NFD", value or "").encode("ascii", "ignore").decode("ascii")
-    return txt.strip().lower()
+def _normalize_soft_skills(raw_data: List[Any]) -> List[Dict[str, Any]]:
+    # Crea lista fija de 10 skills, mapeando lo que venga
+    # Simplificado: si viene dict con name/skill, busca match fuzzy o exacto
+    mapping = {k.lower(): k for k in ALL_SOFT_SKILLS}
+    scores = {k: 0 for k in ALL_SOFT_SKILLS}
+    
+    for item in raw_data:
+        if isinstance(item, dict):
+            nm = str(item.get("skill") or item.get("name") or "").lower()
+            val = item.get("score") or 0
+            # Intentar buscar en mapping
+            for k in mapping:
+                if k in nm or nm in k:
+                    scores[mapping[k]] = int(val)
+    
+    return [{"skill": k, "score": v} for k, v in scores.items()]
 
-def _normalize_soft_skills(raw: Any) -> List[Dict[str, Any]]:
-    """Devuelve exactamente 10 habilidades canónicas con puntuación 0–100.
-    - Acepta lista de dicts/strings; usa máximos cuando hay duplicados/sinónimos.
-    - Rellena faltantes con 0.
-    """
-    synonyms: Dict[str, str] = {
-        "capacidad de aprendizaje": "Curiosidad y aprendizaje",
-        "aprendizaje": "Curiosidad y aprendizaje",
-        "adaptabilidad": "Resiliencia y flexibilidad",
-        "adaptabilidad al cambio": "Resiliencia y flexibilidad",
-        "trabajo en equipo": "Influencia social",
-        "comunicacion": "Influencia social",
-        "resolucion de problemas": "Pensamiento analitico",
-        "pensamiento analitico": "Pensamiento analítico",
-        "pensamiento critico": "Pensamiento Crítico",
-        "liderazgo de equipos": "Liderazgo",
-        "autoconocimiento": "Autoconciencia",
-        # Slugs comunes de juegos
-        "decision-making": "Toma de decisiones",
-        "analytical-thinking": "Pensamiento analítico",
-        "creativity": "Creatividad",
-        "social-influence": "Influencia social",
-        "curiosity-learning": "Curiosidad y aprendizaje",
-        "resilience-flexibility": "Resiliencia y flexibilidad",
-        "self-awareness": "Autoconciencia",
-        "empathy": "Empatía",
-        "critical-thinking": "Pensamiento Crítico",
-        "leadership": "Liderazgo",
-    }
-
-    # Índice de normalización para los nombres canónicos
-    canonical_index: Dict[str, str] = {}
-    for label in ALL_SOFT_SKILLS:
-        canonical_index[_normalize_text(label)] = label
-
-    scores: Dict[str, float] = {}
-    if isinstance(raw, list):
-        for item in raw:
-            if isinstance(item, dict):
-                label = str(item.get("skill") or item.get("name") or item.get("label") or "").strip()
-                if not label:
-                    continue
-                key = _normalize_text(label)
-                # Resolver sinónimos
-                mapped = synonyms.get(key) or synonyms.get(label)  # por si viene ya acentuado
-                if mapped:
-                    key = _normalize_text(mapped)
-                # Mapear a canónico si coincide
-                if key not in canonical_index:
-                    # Intentar coincidencia exacta con las canónicas sin acentos
-                    if key in canonical_index:
-                        canon = canonical_index[key]
-                    else:
-                        # Intento final: si coincide texto exacto sin normalizar con alguna canónica
-                        canon = next((c for c in ALL_SOFT_SKILLS if _normalize_text(c) == key), label)
-                else:
-                    canon = canonical_index[key]
-                try:
-                    sv = float(item.get("score"))
-                except Exception:
-                    sv = 0.0
-                sv = max(0.0, min(100.0, sv))
-                prev = scores.get(canon, 0.0)
-                if sv > prev:
-                    scores[canon] = sv
-            elif isinstance(item, str):
-                label = item.strip()
-                if not label:
-                    continue
-                key = _normalize_text(label)
-                mapped = synonyms.get(key) or synonyms.get(label)
-                canon = canonical_index.get(_normalize_text(mapped or label)) or label
-                prev = scores.get(canon, 0.0)
-                if prev <= 0:
-                    scores[canon] = 0.0
-
-    # Construir lista ordenada fija de 10
-    result: List[Dict[str, Any]] = []
-    for label in ALL_SOFT_SKILLS:
-        val = scores.get(label, 0.0)
-        try:
-            ival = int(round(val))
-        except Exception:
-            ival = 0
-        result.append({"skill": label, "score": ival})
-    return result
 
 def create_employability_pdf(report: NewReportSchema) -> bytes:
-    """
-    Construye un PDF multi-sección con datos REALES del payload.
-    - Usa, si existen: report.personal_data, report.cv_analysis, report.strengths,
-      report.improvement_areas, report.suggested_roles, report.action_plan,
-      report.job_search_advice, report.tools, report.completed_games.
-    - Acepta además: softSkills, jobPreferences, completedGames, cvAnalysis.
-    """
-
-    # ---------- Extracción de datos robusta ----------
-    def _ensure_list(value: Any) -> List[Any]:
-        if value is None:
-            return []
-        if isinstance(value, list):
-            return value
-        return [value]
-
-    report_data = report.dict()
-    cv_scores = report_data.get("cv_analysis") or {}
-    cv_details = report_data.get("cv_details") or {}
-    soft_skills = report_data.get("soft_skills") or []
-    job_prefs = report_data.get("job_preferences") or {}
-    completed_games = report_data.get("completed_games") or []
-
-    contact_from_personal = {
-        "emails": _ensure_list(report.personal_data.email) if report.personal_data.email else [],
-        "phones": _ensure_list(report.personal_data.phone) if report.personal_data.phone else [],
-        "location": report.personal_data.location or "",
-    }
-
-    cv_data = {
-        **cv_scores,
-        "experience": _ensure_list(cv_details.get("experience")) or _ensure_list(cv_details.get("experience_detailed")),
-        "experience_detailed": _ensure_list(cv_details.get("experience")) or _ensure_list(cv_details.get("experience_detailed")),
-        "education": _ensure_list(cv_details.get("education")) or _ensure_list(cv_details.get("education_detailed")),
-        "education_detailed": _ensure_list(cv_details.get("education")) or _ensure_list(cv_details.get("education_detailed")),
-        "languages": _ensure_list(cv_details.get("languages")),
-        "software": _ensure_list(cv_details.get("tools")) or _ensure_list(cv_details.get("software")),
-        "skills": _ensure_list(cv_details.get("tools")) or _ensure_list(cv_details.get("software")),
-        "contact": contact_from_personal,
-    }
-
-    # Datos personales básicos
-    full_name = report.personal_data.name or "Usuario"
-    personal = {
-        "name": report.personal_data.name,
-        "location": report.personal_data.location,
-        "email": report.personal_data.email,
-        "phone": report.personal_data.phone,
-        "disability_certificate": report.personal_data.disability_certificate,
-    }
-
-    # Puntuación global
-    global_score = int(report.employability_score or 0)
-
-    # ---------- Render PDF ----------
     buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4, pageCompression=0)
-    width, height = A4
-    margin_x = 20 * mm
-    margin_top = 20 * mm
-    margin_bottom = 18 * mm
-    y = height - margin_top
-    line_w = width - 2 * margin_x
-
-    # Cabecera (franja superior oscura con título, nombre y fecha)
-    header_h = 30 * mm
-    c.setFillColorRGB(0.12, 0.14, 0.18)
-    c.rect(0, height - header_h, width, header_h, stroke=0, fill=1)
-
-    # Logo
-    logo_path = os.path.join(os.path.dirname(__file__), "assets", "logo.png")
-    if os.path.exists(logo_path):
-        try:
-            # Centered logo at top of header
-            logo_w = 40 * mm
-            logo_h = 12 * mm
-            logo_x = (width - logo_w) / 2
-            logo_y = height - 16 * mm
-            c.drawImage(logo_path, logo_x, logo_y, width=logo_w, height=logo_h, mask='auto', preserveAspectRatio=True)
-        except Exception:
-            pass
-
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica-Bold", 18)
-    c.drawCentredString(width / 2, height - header_h + 8 * mm, "Informe de Empleabilidad")
-
-    c.setFont("Helvetica", 10)
-    today = date.today().strftime("%d/%m/%Y")
-    c.drawCentredString(width / 2, height - header_h + 4 * mm, f"{full_name}")
-    c.drawCentredString(width / 2, height - header_h + 1 * mm, f"{today}")
-
-    c.setFillColor(colors.black)
-    y = height - header_h - 6 * mm
-
-    # Bloque: Mapa de habilidades (radar) + resumen de puntuaciones + puntaje global
-    import math  # local import para evitar dependencia global si no se usa
-    chart_radius = 45 * mm
-    center_x = margin_x + chart_radius + 5 * mm
-    center_y = y - chart_radius - 4 * mm
-    # Título
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Mapa de habilidades")
-    y -= 14
-    # Radar
-    try:
-        # Normalizar a 10 habilidades canónicas
-        normalized_soft_skills = _normalize_soft_skills(soft_skills)
-        _draw_radar_chart(c, center_x, center_y, chart_radius, normalized_soft_skills)
-    except Exception:
-        pass
-    # Resumen de soft skills a la derecha
-    c.setFont("Helvetica", 9)
-    col_x = center_x + chart_radius + 14 * mm
-    y_list_top = y - 4
-    y2 = y_list_top
-    if soft_skills:
-        top_list = []
-        for it in _normalize_soft_skills(soft_skills):
-            if isinstance(it, dict):
-                nm = str(it.get("skill") or it.get("name") or "").strip()
-                sc = it.get("score")
-                try:
-                    sc_int = int(sc)
-                except Exception:
-                    sc_int = 0
-                if nm:
-                    top_list.append(f"{nm}: {sc_int}/100")
-        y2 = _draw_wrapped_text(c, col_x, y2, "Resumen de puntuaciones:", width - col_x - margin_x, leading=12)
-        c.setFont("Helvetica", 9)
-        for ln in top_list[:12]:
-            y2 = _draw_wrapped_text(c, col_x, y2, f"• {ln}", width - col_x - margin_x, leading=12)
-
-    # Burbuja de score global (si existe)
-    if global_score:
-        badge_x = width - margin_x - 22 * mm
-        badge_y = center_y - chart_radius + 8 * mm
-        c.setFillColorRGB(0.15, 0.18, 0.22)
-        c.roundRect(badge_x, badge_y, 22 * mm, 12 * mm, 6, stroke=0, fill=1)
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica", 9)
-        c.drawCentredString(badge_x + 11 * mm, badge_y + 4, f"{global_score}%")
-        c.setFillColor(colors.black)
-
-    # Salto de página explícito tras el bloque del radar para igualar la maqueta
+    c = canvas.Canvas(buf, pagesize=A4)
+    w, h = A4
+    margin = 25 * mm
+    printable_w = w - 2 * margin
+    
+    # Datos
+    rep_dict = report.dict()
+    soft_skills = _normalize_soft_skills(rep_dict.get("soft_skills") or [])
+    
+    # --- PÁGINA 1: Portada / Radar ---
+    _draw_background(c)
+    
+    # Header
+    # Logo text "Teamworkz" (simulado con texto dorado/amarillo)
+    _draw_centered_text(c, w/2, h - 30 * mm, "Teamworkz", font="Helvetica-Bold", size=14, color=colors.HexColor("#F6E05E"))
+    _draw_centered_text(c, w/2, h - 35 * mm, "ROMPIENDO BARRERAS", font="Helvetica", size=8, color=colors.HexColor("#F6E05E"))
+    
+    # Título Grande
+    _draw_centered_text(c, w/2, h - 50 * mm, "Informe de Empleabilidad", font="Helvetica-Bold", size=24)
+    
+    # Nombre
+    full_name = report.personal_data.name or "Usuario"
+    _draw_centered_text(c, w/2, h - 60 * mm, full_name, font="Helvetica-Bold", size=16, color=colors.lightgrey)
+    
+    # Fecha
+    _draw_centered_text(c, w/2, h - 68 * mm, date.today().strftime("%d/%m/%Y"), font="Helvetica", size=12, color=colors.grey)
+    
+    # Sección Mapa de Habilidades
+    y_radar = h - 110 * mm
+    _draw_text(c, margin, y_radar + 20, "Mapa de habilidades", font="Helvetica-Bold", size=16)
+    
+    # Radar Chart
+    radar_center_y = y_radar - 60
+    radar_radius = 45 * mm
+    # Ajustar centro X un poco a la izquierda para dejar espacio a la lista
+    radar_center_x = margin + radar_radius + 10
+    
+    _draw_radar_chart(c, radar_center_x, radar_center_y, radar_radius, soft_skills)
+    
+    # Lista de puntuaciones (a la derecha del radar)
+    list_x = radar_center_x + radar_radius + 30
+    list_y = y_radar
+    
+    _draw_text(c, list_x, list_y, "Resumen de puntuaciones:", font="Helvetica-Bold", size=10)
+    list_y -= 15
+    for sk in soft_skills:
+        sc = sk["score"]
+        color = colors.white
+        if sc > 70: color = colors.HexColor("#68D391") # Green
+        elif sc < 40: color = colors.HexColor("#FC8181") # Red
+        
+        _draw_text(c, list_x, list_y, f"{sk['skill']}: {sc}%", font="Helvetica", size=9, color=color)
+        list_y -= 12
+        
+    # Puntaje Global (Abajo a la derecha)
+    glob_score = int(report.employability_score or 0)
+    badge_x = w - margin - 50
+    badge_y = margin + 20
+    # Circulo o Rectangulo redondeado
+    c.setFillColor(colors.HexColor("#2D3748"))
+    c.roundRect(badge_x, badge_y, 40, 25, 10, fill=1, stroke=0)
+    _draw_centered_text(c, badge_x + 20, badge_y + 8, f"{glob_score}%", font="Helvetica-Bold", size=12)
+    
     c.showPage()
-    c.setFont("Helvetica", 10)
-    y = A4[1] - margin_top
-
-    # Página 2: Resumen ejecutivo, Datos personales, Resumen del CV
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Resumen ejecutivo")
-    y -= 14
-    c.setFont("Helvetica", 10)
-    y = _draw_wrapped_text(
-        c,
-        margin_x,
-        y,
-        report.profile_summary,
-        line_w,
-    )
-
-    y -= 6
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Datos personales")
-    y -= 14
-    c.setFont("Helvetica", 10)
-    pd_lines: List[str] = []
-    if personal.get("name") or full_name:
-        pd_lines.append(f"Nombre: {personal.get('name') or full_name}")
-    if personal.get("location"):
-        pd_lines.append(f"Ubicación: {personal.get('location')}")
-    if personal.get("email"):
-        pd_lines.append(f"Email: {personal.get('email')}")
-    if personal.get("phone"):
-        pd_lines.append(f"Teléfono: {personal.get('phone')}")
-    y = _draw_bulleted_list(c, margin_x, y, pd_lines, line_w)
-
-    def _cv_item_to_str(it: Any) -> str:
-        if it is None:
-            return ""
-        if isinstance(it, str):
-            return it.strip()
-        if isinstance(it, dict):
-            parts: List[str] = []
-            for k in ("title", "name", "language", "tool", "technology", "software"):
-                v = it.get(k)
-                if v:
-                    parts.append(str(v))
-                    break
-            for k in ("subtitle", "company", "institution", "school", "level"):
-                v = it.get(k)
-                if v:
-                    parts.append(str(v))
-            for k in ("period", "duration"):
-                v = it.get(k)
-                if v:
-                    parts.append(str(v))
-            detail = it.get("detail")
-            if detail:
-                parts.append(str(detail))
-            return " — ".join([p for p in parts if p]).strip(" —")
-        return str(it).strip()
-
-    # Utilidad para limpiar placeholders sintéticos
-    def _clean_list(items: List[Any]) -> List[str]:
-        noise = ("Cargo detectado", "Empresa detectada", "Fecha detectada", "Experiencia extraída del CV")
-        cleaned: List[str] = []
-        for it in items:
-            if it is None:
-                continue
-            txt = _cv_item_to_str(it)
-            if not txt:
-                continue
-            if any(n.lower() in txt.lower() for n in noise):
-                continue
-            cleaned.append(txt)
-        return cleaned
-
-    # Resumen del CV (experiencia/educación/idiomas/software)
-    y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Resumen del CV")
-    y -= 14
-    c.setFont("Helvetica", 10)
-    if report_data.get("cv_analysis_summary"):
-        y = _draw_wrapped_text(c, margin_x, y, str(report_data.get("cv_analysis_summary")), line_w)
-        y -= 4
-    # Experiencia
-    y = _draw_wrapped_text(c, margin_x, y, "Experiencia (selección)", line_w)
-    xp = _clean_list(cv_data.get("experience") or cv_data.get("experience_detailed") or [])
-    y = _draw_bulleted_list(c, margin_x, y, xp[:8], line_w)
-    # Educación
-    y -= 6
-    y = _draw_wrapped_text(c, margin_x, y, "Formación (selección)", line_w)
-    edu = _clean_list(cv_data.get("education") or cv_data.get("education_detailed") or [])
-    y = _draw_bulleted_list(c, margin_x, y, edu[:8], line_w)
-    # Idiomas
-    langs = _clean_list(cv_data.get("languages") or [])
-    if langs:
-        y -= 6
-        y = _draw_wrapped_text(c, margin_x, y, "Idiomas", line_w)
-        items = []
-        for it in langs:
-            if isinstance(it, dict):
-                nm = it.get("name") or it.get("language") or "Idioma"
-                lvl = it.get("level") or it.get("nivel") or ""
-                items.append(f"{nm} — {lvl}".strip(" —"))
-            else:
-                items.append(str(it))
-        y = _draw_bulleted_list(c, margin_x, y, items, line_w)
-    # Software / herramientas
-    sw = _clean_list(cv_data.get("software") or cv_data.get("skills") or [])
-    if sw:
-        y -= 6
-        y = _draw_wrapped_text(c, margin_x, y, "Herramientas/Software", line_w)
-        y = _draw_bulleted_list(c, margin_x, y, sw[:12], line_w)
-
-    # Fortalezas clave
-    y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Fortalezas clave")
-    y -= 14
-    c.setFont("Helvetica", 10)
-    strengths = report_data.get("strengths") or []
-    y = _draw_bulleted_list(c, margin_x, y, strengths[:12], line_w)
-
-    # Áreas de mejora priorizadas
-    y = _ensure_space(c, y, 60 * mm, margin_top, margin_bottom)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Áreas de mejora priorizadas")
-    y -= 14
-    c.setFont("Helvetica", 10)
-    improvements = report_data.get("improvement_areas") or []
-    formatted_improvements: List[str] = []
-    for it in improvements:
-        if isinstance(it, dict):
-            label = it.get("area") or it.get("name") or str(it)
-            action = it.get("suggested_action") or it.get("action") or ""
-            score = it.get("score")
-            line = f"{label}"
-            if isinstance(score, int):
-                line += f": ({score}/100)"
-            if action:
-                line += f". Acción: {action}"
-            formatted_improvements.append(line)
-        else:
-            formatted_improvements.append(str(it))
-    if not formatted_improvements and isinstance(soft_skills, list):
-        for it in soft_skills:
-            if isinstance(it, dict):
-                try:
-                    sc = int(it.get("score") or 0)
-                except Exception:
-                    sc = 0
-                if sc <= 50:
-                    formatted_improvements.append(f"{it.get('skill') or it.get('name')}: ({sc}/100). Acción: Definir un micro-plan de mejora")
-    y = _draw_bulleted_list(c, margin_x, y, formatted_improvements[:12], line_w)
-
-    # Página 4: Análisis del CV (1–5) + Entornos ideales, Roles sugeridos, Plan de acción
-    y = _ensure_space(c, y, 80 * mm, margin_top, margin_bottom)
-    # Bloque: Análisis del CV con estrellas y observaciones
-    if isinstance(report_data.get("cv_analysis"), dict) or isinstance(cv_data, dict):
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Análisis del CV (con puntuación 1–5 por apartado)")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        scores = (report_data.get("cv_analysis") or cv_data) or {}
-        # Dibujar las 5 líneas con estrellas vectoriales alineadas
-        def get_int(key: str) -> int:
-            try:
-                return int(scores.get(key) or 0)
-            except Exception:
-                return 0
-        rating_items: List[Tuple[str, int]] = [
-            ("Formato:", get_int("structure_score")),
-            ("Claridad:", get_int("clarity_score")),
-            ("Coherencia:", get_int("coherence_score")),
-            ("Información clave:", get_int("key_info_score")),
-            ("Ortografía y estilo:", get_int("style_score")),
-        ]
-        y = _draw_star_rating_block(c, margin_x, y, rating_items)
-        evidence = (scores.get("evidence") if isinstance(scores, dict) else {}) or {}
-        if isinstance(evidence, dict):
-            y -= 6
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(margin_x, y, "Observaciones del análisis:")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            items: List[str] = []
-            if evidence.get("structure"): items.append(f"Formato: {evidence.get('structure')}")
-            if evidence.get("coherence"): items.append(f"Coherencia: {evidence.get('coherence')}")
-            if evidence.get("key_info"): items.append(f"Información clave: {evidence.get('key_info')}")
-            if evidence.get("clarity"): items.append(f"Claridad: {evidence.get('clarity')}")
-            if evidence.get("style"): items.append(f"Estilo: {evidence.get('style')}")
-            if not items:
-                items.append("No se pudo extraer evidencia del CV. Añade logros, fechas y responsabilidades claras.")
-            y = _draw_bulleted_list(c, margin_x, y, items, line_w)
-        corrections = scores.get("corrections") if isinstance(scores, dict) else []
-        if isinstance(corrections, list) and corrections:
-            y -= 6
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(margin_x, y, "Correcciones/Acciones:")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_bulleted_list(c, margin_x, y, corrections, line_w)
-        reorders = scores.get("reordering_suggestions") if isinstance(scores, dict) else []
-        if isinstance(reorders, list) and reorders:
-            y -= 6
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(margin_x, y, "Reordenación sugerida:")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_bulleted_list(c, margin_x, y, reorders, line_w)
-
-    y = _ensure_space(c, y, 80 * mm, margin_top, margin_bottom)
-    c.setFont("Helvetica-Bold", 12)
-    c.drawString(margin_x, y, "Entornos de trabajo ideales")
-    y -= 14
-    c.setFont("Helvetica", 10)
-    env_txt = ""
-    if isinstance(report_data.get("environments"), list) and report_data.get("environments"):
-        env_txt = ", ".join(str(x) for x in report_data.get("environments") if x)
-    elif isinstance(job_prefs, dict):
-        wm = job_prefs.get("workMode") or job_prefs.get("work_mode") or ""
-        roles = job_prefs.get("areas") or job_prefs.get("desired_roles") or []
-        env_txt = f"Modalidad preferida: {wm}. Áreas/roles de interés: {', '.join(roles) if roles else 'No especificado'}."
-    y = _draw_wrapped_text(c, margin_x, y, env_txt, line_w)
-
-    # Roles sugeridos
-    roles = report_data.get("suggested_roles") or []
-    if roles:
-        y -= 8
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Roles sugeridos")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        pretty_roles: List[str] = []
-        for r in roles:
-            if isinstance(r, dict):
-                line = f"{r.get('role')} — {r.get('seniority')} — 100% remoto" if r.get('remote_viable') else f"{r.get('role')} — {r.get('seniority')}"
-                if r.get("reason"):
-                    line += f". Razón: {r.get('reason')}"
-                pretty_roles.append(line)
-            else:
-                pretty_roles.append(str(r))
-        y = _draw_bulleted_list(c, margin_x, y, pretty_roles, line_w)
-
-    # Plan de acción
-    plan = report_data.get("action_plan") or {}
-    bloques = [
-        ("Corto plazo (0-30 días)", plan.get("short_term", [])),
-        ("Medio plazo (1-3 meses)", plan.get("mid_term", []) or plan.get("medium_term", [])),
-        ("Largo plazo (3-6+ meses)", plan.get("long_term", [])),
+    
+    # --- PÁGINA 2: Resumen, Datos, CV ---
+    _draw_background(c)
+    y = h - margin - 20
+    
+    # Resumen Ejecutivo (White box inverted? No, just text is fine or maybe a card look)
+    # User image shows clean text on whitebg... wait. 
+    # IF USER WANTS DARK THEME, I stick to dark.
+    # Title
+    _draw_text(c, margin, y, "Resumen ejecutivo", font="Helvetica-Bold", size=20)
+    y -= 10
+    c.setStrokeColor(colors.grey)
+    c.line(margin, y, w-margin, y)
+    y -= 20
+    
+    profile_summary = report.profile_summary or "No hay resumen disponible."
+    y = _draw_wrapped_text(c, margin, y, profile_summary, printable_w, size=11, leading=16)
+    
+    y -= 30
+    
+    # Datos personales
+    _draw_text(c, margin, y, "Datos personales", font="Helvetica-Bold", size=20)
+    y -= 10
+    c.line(margin, y, w-margin, y)
+    y -= 20
+    
+    pd = report.personal_data
+    datos = [
+        f"Nombre: {pd.name}",
+        f"Ubicación: {pd.location}",
+        f"Email: {pd.email}",
+        f"Teléfono: {pd.phone}",
+        f"LinkedIn: {pd.linkedin or 'No especificado'}"
     ]
-    for titulo, items in bloques:
-        if not items:
-            continue
-        y -= 8
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, titulo)
-        y -= 14
-        c.setFont("Helvetica", 10)
-        y = _draw_bulleted_list(c, margin_x, y, items, line_w)
-
-    # Página 5: Estrategias de búsqueda + Minijuegos + Herramientas
-    y = _ensure_space(c, y, 90 * mm, margin_top, margin_bottom)
-    advice = getattr(report, "job_search_advice", None)
-    if advice:
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Estrategias de búsqueda de empleo")
-        y -= 14
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(margin_x, y, "Optimización del CV")
-        y -= 12
-        c.setFont("Helvetica", 10)
-        y = _draw_bulleted_list(c, margin_x, y, getattr(advice, "cv_optimization", []) or [], line_w)
-        letters = getattr(advice, "letters_portfolio", []) or []
-        if letters:
-            y -= 6
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(margin_x, y, "Cartas y portfolio/casos")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_bulleted_list(c, margin_x, y, letters if isinstance(letters, list) else [letters], line_w)
-        platforms = getattr(advice, "recommended_platforms", []) or []
-        if platforms:
-            y -= 6
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(margin_x, y, "Plataformas")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_bulleted_list(c, margin_x, y, platforms, line_w)
-        networking = getattr(advice, "networking", []) or []
-        if networking:
-            y -= 6
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(margin_x, y, "Networking dirigido")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_bulleted_list(c, margin_x, y, networking if isinstance(networking, list) else [networking], line_w)
-        interview = getattr(advice, "interview_tips", []) or []
-        if interview:
-            y -= 6
-            c.setFont("Helvetica-Bold", 11)
-            c.drawString(margin_x, y, "Entrevistas")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_bulleted_list(c, margin_x, y, interview if isinstance(interview, list) else [interview], line_w)
-
-    # Lecturas recomendadas (si existen)
-    recs_block = report_data.get("readings") or {}
-    links = recs_block.get("links") if isinstance(recs_block, dict) else []
-    if links:
-        y -= 8
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Lecturas recomendadas")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        y = _draw_bulleted_list(c, margin_x, y, links, line_w)
-
-    # Minijuegos completados
-    games = completed_games or report_data.get("completed_games") or []
-    if games:
-        y -= 8
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Resultados de minijuegos")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        pretty_games: List[str] = []
-        for g in games:
-            if isinstance(g, dict):
-                nm = g.get("name") or g.get("id") or "Juego"
-                score = g.get("score")
-                if score is not None:
-                    pretty_games.append(f"{nm}: {score}")
-                else:
-                    pretty_games.append(str(nm))
-            else:
-                sg = str(g)
-                if sg.strip() and not sg.isdigit():
-                    pretty_games.append(sg)
-        y = _draw_bulleted_list(c, margin_x, y, pretty_games, line_w)
-
-    # Herramientas útiles
-    tools = report.useful_tools
-    if tools:
-        y -= 8
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Herramientas útiles")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        categories = [
-            ("Productividad", getattr(tools, "productivity", []) or []),
-            ("Búsqueda de empleo", getattr(tools, "job_search", []) or []),
-            ("Aprendizaje", getattr(tools, "learning", []) or []),
-            ("Accesibilidad", getattr(tools, "accessibility", []) or []),
-        ]
-        for title, items in categories:
-            if not items:
-                continue
-            c.setFont("Helvetica-Bold", 10)
-            y = _draw_wrapped_text(c, margin_x, y, title, line_w)
-            c.setFont("Helvetica", 10)
-            y = _draw_bulleted_list(c, margin_x, y, items, line_w)
-
-    # Frases listas (si existen)
-    rp = getattr(report, "ready_phrases", None)
-    if rp and (rp.headline or rp.about_me or rp.short_message):
-        y = _ensure_space(c, y, 60 * mm, margin_top, margin_bottom + 25 * mm) # Extra margin for footer
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Frases listas (para propuestas y LinkedIn)")
-        y -= 14
-
-        if rp.headline:
-            c.setFont("Helvetica-Bold", 10)
-            c.drawString(margin_x, y, "Titular")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_wrapped_text(c, margin_x, y, rp.headline, line_w)
-            y -= 6
-
-        if rp.about_me:
-            c.setFont("Helvetica-Bold", 10)
-            c.drawString(margin_x, y, "Acerca de (3 líneas)")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_wrapped_text(c, margin_x, y, rp.about_me, line_w)
-            y -= 6
-
-        if rp.short_message:
-            c.setFont("Helvetica-Bold", 10)
-            c.drawString(margin_x, y, "Mensaje corto a reclutador/cliente")
-            y -= 12
-            c.setFont("Helvetica", 10)
-            y = _draw_wrapped_text(c, margin_x, y, rp.short_message, line_w)
-            y -= 6
-
-    # Página final: Mensaje
-    msg = report.final_message
-    if msg:
-        y = _ensure_space(c, y, 40 * mm, margin_top, margin_bottom + 25 * mm)
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(margin_x, y, "Mensaje final")
-        y -= 14
-        c.setFont("Helvetica", 10)
-        y = _draw_wrapped_text(c, margin_x, y, str(msg), line_w)
-
-    # Footer Disclaimer (Blue Box)
-    footer_h = 22 * mm
-    c.setFillColorRGB(0.12, 0.14, 0.18)
-    c.rect(0, 0, width, footer_h, stroke=0, fill=1)
-
-    c.setFillColor(colors.white)
-    c.setFont("Helvetica", 8)
-    disclaimer_text = (
-        "Este informe ha sido elaborado a partir de tus preferencias laborales y la información extraída de tu CV. "
-        "Las sugerencias de roles, entornos y frases son orientativas y generadas mediante inteligencia artificial "
-        "para apoyarte en tu búsqueda de empleo. Te recomendamos revisarlas y adaptarlas a tu estilo personal."
-    )
-    # Centered text in footer
-    text_y = footer_h - 8 * mm
-    _draw_wrapped_text(c, margin_x, text_y, disclaimer_text, line_w, leading=10)
-
+    y = _draw_bulleted_list(c, margin, y, datos, printable_w)
+    
+    y -= 30
+    
+    # Resumen del CV
+    _draw_text(c, margin, y, "Resumen del CV", font="Helvetica-Bold", size=20)
+    y -= 10
+    c.line(margin, y, w-margin, y)
+    y -= 20
+    
+    _draw_text(c, margin, y, "Experiencia (selección)", font="Helvetica-Bold", size=12)
+    y -= 15
+    cv_dets = report.cv_details or {}
+    exps = cv_dets.get("experience") or []
+    y = _draw_bulleted_list(c, margin, y, exps[:5], printable_w) # Limit to 5
+    
+    # Badge (Global Score again usually on every page bottom right)
+    badge_x = w - margin - 40
+    badge_y = margin
+    c.setFillColor(colors.HexColor("#2D3748"))
+    c.roundRect(badge_x, badge_y, 35, 20, 8, fill=1, stroke=0)
+    _draw_centered_text(c, badge_x + 17.5, badge_y + 6, f"{glob_score}%", font="Helvetica-Bold", size=10)
+    
     c.showPage()
-    c.save()
-    pdf_bytes = buf.getvalue()
-    buf.close()
-    return pdf_bytes
+    
+    # --- PÁGINA 3: Áreas de mejora ---
+    _draw_background(c)
+    y = h - margin - 20
+    
+    _draw_text(c, margin, y, "Áreas de mejora priorizadas", font="Helvetica-Bold", size=20)
+    y -= 10
+    c.line(margin, y, w-margin, y)
+    y -= 20
+    
+    # Listado con acción
+    imps = rep_dict.get("improvement_areas") or []
+    if not imps:
+        # Fallback to soft skills < 50
+        imps = [{"name": s["skill"], "score": s["score"], "action": "Definir plan de práctica diaria."} for s in soft_skills if s["score"] < 60]
+    
+    for item in imps:
+        nm = ""
+        act = ""
+        sc = ""
+        if isinstance(item, dict):
+            nm = item.get("area") or item.get("name") or "Área"
+            act = item.get("suggested_action") or item.get("action") or ""
+            sc = item.get("score")
+        else:
+            nm = str(item)
+            
+        # Draw block
+        _draw_text(c, margin, y, f"• {nm}: ({sc}/100)", font="Helvetica-Bold", size=11)
+        y -= 15
+        if act:
+            y = _draw_wrapped_text(c, margin + 10, y, f"Acción: {act}", printable_w - 10, size=10)
+        y -= 15
+        
+    c.showPage()
+    
+    # --- PÁGINA 4: Fortalezas y Detalles ---
+    _draw_background(c)
+    y = h - margin - 20
+    
+    _draw_text(c, margin, y, "Fortalezas clave", font="Helvetica-Bold", size=20)
+    y -= 10
+    c.line(margin, y, w-margin, y)
+    y -= 20
+    
+    strs = rep_dict.get("strengths") or []
+    y = _draw_bulleted_list(c, margin, y, strs, printable_w)
+    
+    y -= 30
+    _draw_text(c, margin, y, "Herramientas / Software", font="Helvetica-Bold", size=16)
+    y -= 15
+    tools = cv_dets.get("tools") or []
+    y = _draw_bulleted_list(c, margin, y, tools, printable_w)
+    
+    c.showPage()
+    
+    return buf.getvalue()
