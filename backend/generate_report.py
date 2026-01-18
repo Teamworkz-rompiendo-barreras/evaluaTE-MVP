@@ -30,15 +30,18 @@ try:
 except ImportError:  # pragma: no cover - fallback cuando se ejecuta dentro de backend/
     from new_report_schema import NewReportSchema, convert_old_format_to_new, create_default_report, ImprovementArea
 
-# Cliente Azure OpenAI compartido con el analizador de CV
-try:
-    from backend.cv_analyzer import client as azure_client, DEPLOYMENT as AZURE_DEPLOYMENT
-except Exception:  # pragma: no cover - evitar fallo cuando no hay cliente
+# Configuración Gemini
+import os
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+
+genai_configured = False
+if GEMINI_API_KEY:
     try:
-        from cv_analyzer import client as azure_client, DEPLOYMENT as AZURE_DEPLOYMENT
-    except Exception:
-        azure_client = None
-        AZURE_DEPLOYMENT = None
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        genai_configured = True
+    except ImportError:
+        pass
 
 logger = logging.getLogger(__name__)
 
@@ -526,44 +529,50 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
             full_raw_text=cv_data.get("full_raw_text") or cv_data.get("rawText") or "",
         )
 
-        # Usar Azure OpenAI si está configurado
-        if azure_client and AZURE_DEPLOYMENT:
+        # Usar Gemini si está configurado
+        if genai_configured:
             logger.info(
-                "LLM request start",
+                "LLM request start (Gemini)",
                 extra={
                     "request_id": request_id,
-                    "deployment": AZURE_DEPLOYMENT,
+                    "model": "gemini-flash-latest",
                     "source": "generate_report",
                     "cv_has_text": bool(cv_data.get("rawText") if isinstance(cv_data, dict) else False),
                 },
             )
-            response = azure_client.chat.completions.create(
-                model=AZURE_DEPLOYMENT,
-                temperature=0.15,
-                max_tokens=2200,
-                messages=[
-                    {"role": "system", "content": PromptConfig.get_system_prompt()},
-                    {"role": "user", "content": prompt},
-                ],
+            
+            model = genai.GenerativeModel(
+                model_name="gemini-flash-latest",
+                system_instruction=PromptConfig.get_system_prompt()
             )
-            content = response.choices[0].message.content if response and response.choices else ""
+            
+            response = model.generate_content(
+                prompt,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.15,
+                    max_output_tokens=2200,
+                    response_mime_type="application/json"
+                )
+            )
+            
+            content = response.text if response else ""
             parsed = _extract_json_from_text(content)
             candidate_schema = _validate_report_json(parsed, fallback_report) if isinstance(parsed, dict) else None
             if candidate_schema:
                 LLM_SUCCESS_COUNT += 1
                 logger.info(
                     "LLM request success",
-                    extra={"request_id": request_id, "deployment": AZURE_DEPLOYMENT, "status": "ok"},
+                    extra={"request_id": request_id, "model": "gemini-flash-latest", "status": "ok"},
                 )
                 return candidate_schema
             LLM_FALLBACK_COUNT += 1
             logger.warning(
                 "LLM JSON inválido; se usa fallback",
-                extra={"request_id": request_id, "deployment": AZURE_DEPLOYMENT, "status": "invalid_json"},
+                extra={"request_id": request_id, "status": "invalid_json"},
             )
         else:
             logger.info(
-                "Azure OpenAI no configurado; se usa respuesta determinista",
+                "Gemini no configurado; se usa respuesta determinista",
                 extra={"request_id": request_id, "status": "no_llm"},
             )
 

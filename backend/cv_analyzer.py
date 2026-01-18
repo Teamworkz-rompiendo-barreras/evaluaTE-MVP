@@ -1,52 +1,34 @@
-try:
-    # Intentar reutilizar helper de Document Intelligence
-    from document_intelligence import _default_stars  # type: ignore
-except Exception:
-    def _default_stars() -> Dict[str, int]:
-        return {
-            "formato": 3,
-            "claridad": 3,
-            "coherencia": 3,
-            "informacion_clave": 2,
-            "ortografia": 3,
-        }
 #!/usr/bin/env python3
 # -*- coding: utf-8 -*-
 
 """
 cv_analyzer.py
 
-Este módulo proporciona utilidades para extraer texto de archivos PDF (incluyendo
-PDFs escaneados mediante OCR) y analizar su contenido para extraer información
-relevante de un Curriculum Vitae (CV). Está diseñado para ser utilizado tanto
-de forma independiente como integrado en una aplicación más grande que
-procesa múltiples CVs. La funcionalidad principal incluye:
-
-1. **Extracción de texto**: Utiliza PyMuPDF para extraer texto de PDFs. Si el
-   texto extraído es insuficiente (por ejemplo, en PDFs escaneados), recurre
-   a Tesseract OCR para reconocer el texto a partir de la imagen de la página.
-2. **Análisis de CV con IA**: Interactúa con Azure OpenAI (si las
-   credenciales están configuradas) para analizar el texto del CV y extraer
-   información estructurada. Si no se dispone de la configuración de Azure,
-   se aplica un análisis básico local que extrae datos clave mediante
-   expresiones regulares y heurísticas.
-3. **Análisis de estructura**: Evalúa la calidad del CV en términos de
-   estructura, experiencia, habilidades, idiomas, etc., y ofrece retroalimentación.
-
-Este archivo se basa en el código proporcionado en la descripción del
-problema. No se debe almacenar información personal de los CV analizados.
+Este módulo proporciona utilidades para extraer texto de archivos PDF y analizar
+su contenido para extraer información relevante de un Curriculum Vitae (CV) usando
+Google Gemini como motor de IA principal.
 """
 
-import fitz  # type: ignore  # PyMuPDF
-import re
-import json
-import sys
-import io
 import os
-import asyncio
+import fitz  # type: ignore  # PyMuPDF
+import json
 import logging
-from datetime import datetime
-from typing import Dict, List, Any, Optional, Tuple
+import asyncio
+import re
+from typing import Dict, Any, List, Optional
+import math
+from collections import Counter
+import base64
+import io
+
+def _default_stars() -> Dict[str, int]:
+    return {
+        "formato": 3,
+        "claridad": 3,
+        "coherencia": 3,
+        "informacion_clave": 2,
+        "ortografia": 3,
+    }
 
 logger = logging.getLogger(__name__)
 
@@ -61,29 +43,19 @@ except ModuleNotFoundError:
     # dotenv no está disponible; las variables de entorno no se cargarán de un archivo .env
     pass
 
-# Configuración de Azure OpenAI
-API_KEY = os.getenv("AZURE_OPENAI_API_KEY")
-ENDPOINT = os.getenv("AZURE_OPENAI_ENDPOINT")
-DEPLOYMENT = os.getenv("AZURE_OPENAI_DEPLOYMENT")
-API_VERSION = os.getenv("AZURE_OPENAI_API_VERSION")
+# Configuración de Google Gemini
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
 
-# Cliente de Azure OpenAI
-client = None
-try:
-    from openai import AzureOpenAI
-    # Si las credenciales están configuradas, inicializar el cliente
-    if all([API_KEY, ENDPOINT, DEPLOYMENT, API_VERSION]):
-        # Verificar que las variables no sean None antes de usarlas
-        if API_KEY and ENDPOINT and DEPLOYMENT and API_VERSION:
-            client = AzureOpenAI(
-                api_key=API_KEY,
-                api_version=API_VERSION,
-                azure_endpoint=ENDPOINT,
-                timeout=300.0
-            )
-except Exception as e:
-    # En caso de que el paquete openai no esté disponible o haya fallo
-    logger.warning("Error configurando Azure OpenAI: %s", e)
+genai_configured = False
+if GEMINI_API_KEY:
+    try:
+        import google.generativeai as genai
+        genai.configure(api_key=GEMINI_API_KEY)
+        genai_configured = True
+    except ImportError:
+        logger.warning("google-generativeai no instalado")
+else:
+    logger.warning("GEMINI_API_KEY no configurada")
 
 # Importaciones para OCR (carga lazy)
 OCR_AVAILABLE = False
@@ -264,8 +236,8 @@ async def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> tuple[str, Dict[s
                     text_segments.append(page_text)
                     seen_segments.add(page_text)
 
-            # Ejecutar OCR en paralelo para enriquecer el texto
-            if ocr_ready:
+            # Optimización: Solo usar OCR si no se detectó suficiente texto con PyMuPDF
+            if ocr_ready and len(page_text) < 50:
                 metadata["ocr_attempted"] = True
                 try:
                     zoom = 2.0  # Mayor resolución para OCR
@@ -344,21 +316,24 @@ def _normalize_ai_json_response(content: str) -> str:
 
 def analyze_cv_with_ai(text: str) -> Dict[str, Any]:
     """
-    Analiza el CV usando IA para extraer información de manera inteligente
+    Analiza el CV usando Gemini para extraer información de manera inteligente
     """
-    if not client:
-        logger.warning("Azure OpenAI no configurado, usando análisis básico")
-        return {"error": "Azure OpenAI no configurado"}
+    if not genai_configured:
+        logger.warning("Gemini no configurado, usando análisis básico")
+        return {"error": "Gemini no configurado"}
     
     try:
-        logger.info("Iniciando análisis con Azure OpenAI...")
+        logger.info("Iniciando análisis con Google Gemini...")
+        
+        # System instructions separate
+        system_instruction = "Eres un experto en análisis de CVs con más de 15 años de experiencia en recursos humanos y tecnología. Tu especialidad es extraer información precisa y estructurada de CVs en cualquier formato, idioma o estructura. Siempre devuelves JSON válido y bien estructurado."
         
         # Prompt profesional y completo para análisis de CV
         prompt = f"""
 Eres un experto en análisis de CVs y recursos humanos con más de 15 años de experiencia. Tu tarea es analizar el siguiente texto extraído de un CV y extraer toda la información relevante de manera estructurada y profesional.
 
 TEXTO DEL CV:
-{text[:4000]}
+{text[:10000]}
 
 INSTRUCCIONES DETALLADAS:
 1. **Información Personal**: Extrae nombre completo, email, teléfono, ubicación, LinkedIn, portfolio
@@ -452,27 +427,29 @@ IMPORTANTE:
 - Asegúrate de que el JSON sea válido
 """
 
-        print("📤 Enviando solicitud a Azure OpenAI...")
-        # Verificar que DEPLOYMENT no sea None antes de usarlo
-        if not DEPLOYMENT:
-            raise ValueError("DEPLOYMENT no está configurado")
-            
-        response = client.chat.completions.create(
-            model=DEPLOYMENT,
-            messages=[
-                {"role": "system", "content": "Eres un experto en análisis de CVs con más de 15 años de experiencia en recursos humanos y tecnología. Tu especialidad es extraer información precisa y estructurada de CVs en cualquier formato, idioma o estructura. Siempre devuelves JSON válido y bien estructurado."},
-                {"role": "user", "content": prompt}
-            ],
-            temperature=0.1,
-            max_tokens=2000
+        print("📤 Enviando solicitud a Gemini...")
+        
+        # Configurar modelo
+        model = genai.GenerativeModel(
+            model_name="gemini-flash-latest",
+            system_instruction=system_instruction
         )
         
-        print("📥 Respuesta recibida de Azure OpenAI")
+        response = model.generate_content(
+            prompt,
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.1,
+                max_output_tokens=4000,
+                response_mime_type="application/json"
+            )
+        )
         
-        # Extraer y normalizar el contenido de la respuesta
-        content = response.choices[0].message.content
-        if content is None:
-            raise ValueError("Respuesta vacía de Azure OpenAI")
+        print("📥 Respuesta recibida de Gemini")
+        
+        content = response.text
+        if not content:
+            raise ValueError("Respuesta vacía de Gemini")
+            
         normalized_content = _normalize_ai_json_response(content)
 
         # Intentar parsear el JSON
@@ -490,7 +467,7 @@ IMPORTANTE:
             return extract_basic_cv_data_from_text(text)
             
     except Exception as e:
-        print(f"❌ Error en análisis con Azure OpenAI: {str(e)}")
+        print(f"❌ Error en análisis con Gemini: {str(e)}")
         
         # Fallback: usar análisis básico
         print("🔄 Usando análisis básico como fallback...")
@@ -1075,13 +1052,8 @@ def extract_basic_cv_data_from_text(text: str) -> Dict[str, Any]:
         "voluntariado": []
     }
 
-# Importar Document Intelligence
-try:
-    from document_intelligence import analyze_cv_with_improved_intelligence
-    DOCUMENT_INTELLIGENCE_AVAILABLE = True
-except ImportError:
-    DOCUMENT_INTELLIGENCE_AVAILABLE = False
-    logger.warning("Document Intelligence no disponible, usando método tradicional")
+# Document Intelligence (Azure) eliminado
+DOCUMENT_INTELLIGENCE_AVAILABLE = False
 
 
 async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
