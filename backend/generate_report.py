@@ -839,8 +839,12 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     }
 
     report = create_default_report(full_name, normalized_soft_skills, cv_payload, job_pref_payload)
-    if not report.cv_details:
-        report.cv_details = cv_payload.get("cv_details") or {}
+    
+    # Asegurar que cv_details se propaga correctamente
+    if cv_payload.get("cv_details"):
+         report.cv_details = cv_payload.get("cv_details")
+    else:
+         report.cv_details = {}
 
     # cv_analysis_summary = resumen del CV
     # Usamos un resumen breve para esta parte, no la narrativa completa
