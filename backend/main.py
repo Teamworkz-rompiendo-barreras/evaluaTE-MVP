@@ -52,7 +52,7 @@ app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 # CORS configuration
 allowed_origins_env = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net",
+    "http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net,https://evaluate-frontend.onrender.com",
 )
 ALLOWED_ORIGINS = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
 
