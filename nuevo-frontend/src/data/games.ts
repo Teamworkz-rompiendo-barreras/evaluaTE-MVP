@@ -86,49 +86,6 @@ export const games: Game[] = [
     ]
   },
   {
-    id: 'task-organization',
-    title: 'Organización de Tareas',
-    subtitle: 'Día 11',
-    description: 'Organiza las tareas del día en el orden correcto.',
-    softSkill: 'Organización',
-    day: 'Lunes',
-    scenario: 'Undécimo día en IntegraPro. Demuestra tus habilidades de organización.',
-    icon: '📋',
-    color: '#BDB2FF',
-    completed: false,
-    logs: [],
-    scenes: [
-      {
-        id: 'organize-tasks',
-        title: 'Organiza las Tareas',
-        description: 'Arrastra y suelta las tareas en el orden correcto de ejecución.',
-        type: 'drag-drop',
-        dragDropConfig: {
-          items: [
-            { id: 'task-1', text: 'Revisar correos electrónicos' },
-            { id: 'task-2', text: 'Planificar las tareas del día' },
-            { id: 'task-3', text: 'Reunión de equipo' },
-            { id: 'task-4', text: 'Trabajar en el proyecto principal' }
-          ],
-          targetZones: [
-            { id: 'drop-zone', title: 'Tareas Ordenadas', accepts: ['task-1', 'task-2', 'task-3', 'task-4'] }
-          ],
-          correctOrder: ['task-1', 'task-2', 'task-3', 'task-4']
-        },
-        nextSceneId: 'game-complete'
-      },
-      {
-        id: 'game-complete',
-        title: '¡Bien Hecho!',
-        description: 'Has organizado las tareas correctamente.',
-        type: 'choice',
-        options: [
-          { id: 'volver-menu', text: 'Volver al menú', score: 0 }
-        ]
-      }
-    ]
-  },
-  {
     id: 'analytical-thinking',
     title: 'Pensamiento Analítico',
     subtitle: 'Día 2',
