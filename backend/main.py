@@ -529,6 +529,34 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             },
             "ai_analysis": result.get("full_cv_data") or {},
             "cv_analysis_structured": analysis,
+          # Post-processing: Sanitize candidate name
+        suspicious_keywords = {
+            "microsoft", "office", "adobe", "photoshop", "suite", "tool", "software", "windows", "linux", "macos",
+            "visual", "studio", "code", "python", "java", "javascript", "html", "css", "sql", "react", "node",
+            "word", "excel", "powerpoint", "paint", "movie maker", "curriculum", "vitae", "resume"
+        }
+        
+        candidates_names = []
+        if isinstance(normalized.get("contact"), dict):
+            candidates_names.append(normalized["contact"].get("name"))
+        if normalized.get("candidate"):
+            candidates_names.append(normalized.get("candidate"))
+            
+        valid_name = "Candidato"
+        for name in candidates_names:
+            if not name: continue
+            name_lower = str(name).lower()
+            if any(k in name_lower for k in suspicious_keywords):
+                continue
+            if len(name) > 50 or any(ch.isdigit() for ch in name):
+                continue
+            valid_name = name
+            break
+            
+        if isinstance(normalized.get("contact"), dict):
+            normalized["contact"]["name"] = valid_name
+        normalized["candidate"] = valid_name
+
             "document_intelligence_used": False,
         }
         logger.info("CV analysis normalizado correctamente")
