@@ -3,8 +3,8 @@ import { AZURE_CONFIG } from './azure-config';
 // Configuración centralizada de la API
 export const API_CONFIG = {
   // Usar la detección automática de Azure
-  BASE_URL: AZURE_CONFIG.getBackendUrl(),
-  
+  BASE_URL: 'https://evaluate-backend.onrender.com',
+
   // Endpoints específicos
   ENDPOINTS: {
     INFORME: '/api/informe-ia',
