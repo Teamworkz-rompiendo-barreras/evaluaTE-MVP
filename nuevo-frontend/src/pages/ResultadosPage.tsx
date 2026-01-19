@@ -8,7 +8,6 @@ import processRadarData from './processRadarData';
 import { useAppSelector } from '../app/hooks';
 import type { RootState } from '../app/store';
 import { buildApiUrl, API_CONFIG } from '../config/api';
-import { AZURE_CONFIG } from '../config/azure-config';
 import { ResponsiveRadar } from '@nivo/radar';
 import logo from '../assets/Logo_teamworkz.png';
 import ReactMarkdown from 'react-markdown';
@@ -31,7 +30,7 @@ import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewRep
 // Definir tipos locales para evitar importaciones problemáticas
 
 // Tipos del rating del CV
-type CvStars = 1|2|3|4|5;
+type CvStars = 1 | 2 | 3 | 4 | 5;
 
 
 
@@ -83,10 +82,10 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
   const empty = "☆".repeat(5 - n);
   return (
     <span aria-label={`${n} de 5`}>
-      <span 
-        className="star-filled" 
-        style={{ 
-          color: '#fbbf24 !important', 
+      <span
+        className="star-filled"
+        style={{
+          color: '#fbbf24 !important',
           fontWeight: 'bold',
           fontSize: '1.25rem',
           textShadow: '0 1px 2px rgba(0, 0, 0, 0.1)'
@@ -94,9 +93,9 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
       >
         {filled}
       </span>
-      <span 
-        className="star-empty" 
-        style={{ 
+      <span
+        className="star-empty"
+        style={{
           color: '#fbbf24 !important',
           opacity: '0.3',
           fontSize: '1.25rem'
@@ -266,10 +265,10 @@ const ResultadosPage: React.FC = () => {
     const personalJobPreferences = personal?.jobPreferences;
     const personalHasPreferences = Boolean(
       (typeof personalJobPreferences === 'string' && personalJobPreferences.trim().length > 0)
-        || (personalJobPreferences
-          && typeof personalJobPreferences === 'object'
-          && Array.isArray((personalJobPreferences as JobPreference).areas)
-          && (personalJobPreferences as JobPreference).areas.some(area => (area ?? '').toString().trim().length > 0)),
+      || (personalJobPreferences
+        && typeof personalJobPreferences === 'object'
+        && Array.isArray((personalJobPreferences as JobPreference).areas)
+        && (personalJobPreferences as JobPreference).areas.some(area => (area ?? '').toString().trim().length > 0)),
     );
 
     const validSoftSkillsPre = filterValidSoftSkills(personal.softSkills || []);
@@ -325,20 +324,20 @@ const ResultadosPage: React.FC = () => {
         completedGames: [...completedGamesForRequest].map(gameId => String(gameId)).sort(),
         cv: cvAnalysisPayload
           ? {
-              scores: [
-                Number(cvAnalysisPayload.structure_score) || 0,
-                Number(cvAnalysisPayload.coherence_score) || 0,
-                Number(cvAnalysisPayload.key_info_score) || 0,
-                Number(cvAnalysisPayload.clarity_score) || 0,
-                Number(cvAnalysisPayload.style_score) || 0,
-              ],
-              experience: Array.isArray((cvAnalysisPayload as any).experience_detailed)
-                ? (cvAnalysisPayload as any).experience_detailed.length
-                : 0,
-              education: Array.isArray((cvAnalysisPayload as any).education_detailed)
-                ? (cvAnalysisPayload as any).education_detailed.length
-                : 0,
-            }
+            scores: [
+              Number(cvAnalysisPayload.structure_score) || 0,
+              Number(cvAnalysisPayload.coherence_score) || 0,
+              Number(cvAnalysisPayload.key_info_score) || 0,
+              Number(cvAnalysisPayload.clarity_score) || 0,
+              Number(cvAnalysisPayload.style_score) || 0,
+            ],
+            experience: Array.isArray((cvAnalysisPayload as any).experience_detailed)
+              ? (cvAnalysisPayload as any).experience_detailed.length
+              : 0,
+            education: Array.isArray((cvAnalysisPayload as any).education_detailed)
+              ? (cvAnalysisPayload as any).education_detailed.length
+              : 0,
+          }
           : null,
       });
 
@@ -353,13 +352,13 @@ const ResultadosPage: React.FC = () => {
 
       setLoadingIa(true);
       setErrorIa('');
-      
+
       // DEBUG: Agregar logs para entender el estado
       console.log('🔍 DEBUG - Estado personal completo:', personal);
       console.log('🔍 DEBUG - cvAnalysis del estado:', personal?.cvAnalysis);
       console.log('🔍 DEBUG - cvFile del estado:', personal?.cvFile);
       console.log('🔍 DEBUG - report del estado:', personal?.report);
-      
+
       // Asegurar análisis del CV si existe un archivo subido pero no hay análisis
       if (personal?.cvFile && !personal?.cvAnalysis) {
         try {
@@ -404,12 +403,12 @@ const ResultadosPage: React.FC = () => {
           String(cvName || '').trim() ||
           'Usuario';
         const validSoftSkills = validSoftSkillsPre;
-        
+
         // DEBUG: Log del requestBody antes de enviarlo
         console.log('🔍 DEBUG - userFullName:', userFullName);
         console.log('🔍 DEBUG - validSoftSkills:', validSoftSkills);
         console.log('🔍 DEBUG - cvAnalysis antes del request:', cvAnalysis);
-        
+
         // Si no hay softSkills, proporcionar datos básicos para que el informe se genere
         const normalizeLevel = (value: unknown): 'bajo' | 'medio' | 'alto' => {
           if (typeof value !== 'string') return 'medio';
@@ -463,10 +462,10 @@ const ResultadosPage: React.FC = () => {
               if (typeof it === 'object') {
                 const parts: string[] = [];
                 const keys = [
-                  'title','cargo','position','role','puesto',
-                  'company','empresa','organization','organizacion',
-                  'period','duration','start_date','fecha_inicio','end_date','fecha_fin',
-                  'description','descripcion','degree','titulo','institution','institucion','school','name','language','idioma','level','nivel'
+                  'title', 'cargo', 'position', 'role', 'puesto',
+                  'company', 'empresa', 'organization', 'organizacion',
+                  'period', 'duration', 'start_date', 'fecha_inicio', 'end_date', 'fecha_fin',
+                  'description', 'descripcion', 'degree', 'titulo', 'institution', 'institucion', 'school', 'name', 'language', 'idioma', 'level', 'nivel'
                 ];
                 for (const k of keys) {
                   const v = (it as any)[k];
@@ -617,35 +616,18 @@ const ResultadosPage: React.FC = () => {
         console.log('🔍 DEBUG - cvAnalysis en requestBody:', requestBody.cvAnalysis);
 
         const primaryUrl = buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT);
-        let res: Response;
-        try {
-          res = await fetch(primaryUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(180000), // Timeout de 3 minutos
-          });
-        } catch (primaryErr) {
-          // Fallback automático: si el backend local no responde, intentar Azure
-          const azureBase = AZURE_CONFIG.AZURE_BACKEND_URL;
-          const azureUrl = `${azureBase}${API_CONFIG.ENDPOINTS.IA_REPORT}`;
-          if (import.meta.env.MODE !== 'production') {
-            // eslint-disable-next-line no-console
-            console.warn('⚠️ Conexión fallida hacia', primaryUrl, '→ intentando Azure:', azureUrl);
-          }
-          res = await fetch(azureUrl, {
-            method: 'POST',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(requestBody),
-            signal: AbortSignal.timeout(180000),
-          });
-        }
-        
+        const res = await fetch(primaryUrl, {
+          method: 'POST',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify(requestBody),
+          signal: AbortSignal.timeout(180000), // Timeout de 3 minutos
+        });
+
         if (import.meta.env.MODE !== 'production') {
           console.log('🔍 DEBUG - Response status:', res.status);
           console.log('🔍 DEBUG - Response headers:', Object.fromEntries(res.headers.entries()));
         }
-        
+
         const data = await res.json();
         if (import.meta.env.MODE !== 'production') {
           // eslint-disable-next-line no-console
@@ -679,7 +661,7 @@ const ResultadosPage: React.FC = () => {
           console.log('  - data.level:', data?.level);
           console.log('  - data.recommendations:', data?.recommendations);
         }
-        
+
         // NUEVA LÓGICA: Validar que la respuesta tenga la estructura esperada del backend
         const hasValidReport = res.ok && data && (
           // Verificar que exista al menos uno de estos campos requeridos
@@ -695,7 +677,7 @@ const ResultadosPage: React.FC = () => {
           ((data as any).job_search_advice && typeof (data as any).job_search_advice === 'object') ||
           (Array.isArray((data as any).softSkills))
         );
-        
+
         if (hasValidReport) {
           // Generar informe profesional con el nuevo formato
           const candidateName = String(data?.report?.fullName || userFullName);
@@ -1004,7 +986,7 @@ const ResultadosPage: React.FC = () => {
               if (/decisiones/.test(n)) return 'toma de decisiones';
               return String(val || 'fortalezas');
             };
-            const sorted = [...(normalized.soft_skills || [])].sort((a:any,b:any)=> (b?.score??0)-(a?.score??0));
+            const sorted = [...(normalized.soft_skills || [])].sort((a: any, b: any) => (b?.score ?? 0) - (a?.score ?? 0));
             const s1 = normalize(sorted[0]?.skill);
             const s2 = normalize(sorted[1]?.skill);
             const normalizeMode = (value: unknown): 'remoto' | 'híbrido' | 'presencial' | '' => {
@@ -1086,7 +1068,7 @@ const ResultadosPage: React.FC = () => {
             console.log('✅ DEBUG - Estado iaReport actualizado');
           }
         } else {
-            if (import.meta.env.MODE !== 'production') {
+          if (import.meta.env.MODE !== 'production') {
             // eslint-disable-next-line no-console
             console.log('❌ DEBUG - Condición falló. Motivos:');
             // eslint-disable-next-line no-console
@@ -1103,7 +1085,7 @@ const ResultadosPage: React.FC = () => {
             console.log('  - data.level:', data?.level);
             console.log('  - data completo:', data);
           }
-          
+
           // NUEVO: Mensaje de error más específico basado en la respuesta
           if (!res.ok) {
             setErrorIa(`Error del servidor: ${res.status} ${res.statusText}`);
@@ -1138,7 +1120,7 @@ const ResultadosPage: React.FC = () => {
       }
     };
     fetchIaReportRef.current = fetchIaReport;
-    
+
     // SOLUCIÓN: Ejecutar siempre el informe si hay datos básicos del usuario
     // Verificar tanto personal.softSkills como report?.softSkills
     const hasPersonalSoftSkills = validateSoftSkills(personal.softSkills);
@@ -1147,9 +1129,9 @@ const ResultadosPage: React.FC = () => {
 
     // NUEVO: También permitir generar informe si hay datos básicos del usuario
     const hasBasicUserData = (report?.firstName && report?.lastName) ||
-                            (cvAnalysisPayload) ||
-                            (report?.jobPreferences) ||
-                            hasJobPreferenceData;
+      (cvAnalysisPayload) ||
+      (report?.jobPreferences) ||
+      hasJobPreferenceData;
 
     if (hasMeaningfulData || hasSoftSkillsCombined || hasBasicUserData) {
       if (import.meta.env.MODE !== 'production') {
@@ -1199,7 +1181,7 @@ const ResultadosPage: React.FC = () => {
   };
 
   // Estado para feedback
-  const [feedback, setFeedback] = useState<{rating: string, comment: string}>({rating: '', comment: ''});
+  const [feedback, setFeedback] = useState<{ rating: string, comment: string }>({ rating: '', comment: '' });
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
 
@@ -1279,7 +1261,7 @@ const ResultadosPage: React.FC = () => {
     // Siempre obtener datos de minijuegos como base
     const personalSkills = filterValidSoftSkills(personal.softSkills || []);
     const gameSkills = Array.isArray(game?.softSkills) ? game.softSkills : [];
-    const mappedGame = gameSkills.map((s:any) => {
+    const mappedGame = gameSkills.map((s: any) => {
       const score = Math.round(Number(s?.score) || 0);
       const level = s?.level || (score < 50 ? 'bajo' : score < 75 ? 'medio' : 'alto');
       const conf = typeof s?.confidence === 'number' && s.confidence <= 1
@@ -1660,11 +1642,10 @@ const ResultadosPage: React.FC = () => {
         <button
           onClick={handleDownloadPdf}
           disabled={!iaReport}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${
-            !iaReport
-              ? 'bg-gray-300 text-gray-900 cursor-not-allowed'
-              : 'bg-[#374ba6] text-white hover:bg-[#2d3f96]'
-          }`}
+          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${!iaReport
+            ? 'bg-gray-300 text-gray-900 cursor-not-allowed'
+            : 'bg-[#374ba6] text-white hover:bg-[#2d3f96]'
+            }`}
         >
           <span className="flex items-center gap-2">
             <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1698,8 +1679,8 @@ const ResultadosPage: React.FC = () => {
 
   const radar = (
     <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 mb-8 print-report-section print-page-break-inside-avoid transition-colors">
-          {/* ScoreBadge eliminado */}
-          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
+      {/* ScoreBadge eliminado */}
+      <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Mapa de habilidades</h2>
       <div className="flex flex-col md:flex-row gap-8 items-center">
         <div className="w-full md:w-3/5 h-[26rem] min-h-[26rem]" ref={radarBoxRef}>
           <div className="h-full relative print:hidden">
@@ -1782,171 +1763,171 @@ const ResultadosPage: React.FC = () => {
   // === NUEVO: función común para renderizar markdown con el mismo estilo ===
   // eslint-disable-next-line @typescript-eslint/no-unused-vars, no-unused-vars
   const renderMarkdown = (content: string) => (
-              <ReactMarkdown
-                remarkPlugins={[remarkGfm]}
-                components={{
-                  h1: ({ children, ...props }) => (
-                    <h1 {...props} className="text-3xl font-bold mb-6 mt-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
-                      {children}
-                    </h1>
-                  ),
-                  h2: ({ children, ...props }) => (
-                    <h2 {...props} className="text-2xl font-semibold mb-4 mt-6 text-gray-900 dark:text-gray-100">
-                      {children}
-                    </h2>
-                  ),
-                  h3: ({ children, ...props }) => (
-                    <h3 {...props} className="text-xl font-semibold mb-3 mt-5 text-gray-900 dark:text-gray-100">
-                      {children}
-                    </h3>
-                  ),
-                  h4: ({ children, ...props }) => (
-                    <h4 {...props} className="text-lg font-semibold mb-2 mt-4 text-gray-900 dark:text-gray-100">
-                      {children}
-                    </h4>
-                  ),
-                  ul: ({ children, ...props }) => (
-                    <ul {...props} className="list-disc list-inside space-y-1 mb-2 text-gray-900 dark:text-gray-100">
-                      {children}
-                    </ul>
-                  ),
-                  ol: ({ children, ...props }) => (
-                    <ol {...props} className="list-decimal list-inside space-y-1 mb-2 text-gray-900 dark:text-gray-100">
-                      {children}
-                    </ol>
-                  ),
-                  li: ({ children, ...props }) => (
-                    <li {...props} className="leading-relaxed text-gray-900 dark:text-gray-100">
-                      {children}
-                    </li>
-                  ),
-                  strong: ({ children, ...props }) => (
-                    <strong {...props} className="font-semibold text-gray-900 dark:text-gray-100">
-                      {children}
-                    </strong>
-                  ),
-                  em: ({ children, ...props }) => (
-                    <em {...props} className="italic text-gray-900 dark:text-gray-100">
-                      {children}
-                    </em>
-                  ),
-                  blockquote: ({ children, ...props }) => (
-                    <blockquote {...props} className="border-l-4 border-blue-500 pl-4 italic text-gray-900 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/30 py-2 rounded-r">
-                      {children}
-                    </blockquote>
-                  ),
-                  code: ({ children, ...props }) => (
-                      <code {...props} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-gray-900 dark:text-gray-100">
-                      {children}
-                    </code>
-                  ),
-                  pre: ({ children, ...props }) => {
-                    // Ocultar el bloque JSON embebido usado solo para extraer radarData
-                    const toText = (node: any): string => {
-                      if (node == null) return '';
-                      if (typeof node === 'string' || typeof node === 'number') return String(node);
-                      if (Array.isArray(node)) return node.map(toText).join('');
-                      if (typeof node === 'object' && (node as any)?.props?.children) {
-                        return toText((node as any).props.children);
-                      }
-                      return '';
-                    };
-                    const text = toText(children);
-                    if (/"radarData"\s*:/.test(text)) {
-                      return null;
-                    }
-                    return (
-                      <pre {...props} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600">
-                        {children}
-                      </pre>
-                    );
-                  },
-                  table: ({ children, ...props }) => (
-                    <div className="overflow-x-auto mb-4">
-                      <table {...props} className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
-                        {children}
-                      </table>
-                    </div>
-                  ),
-                  th: ({ children, ...props }) => (
-                    <th {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100 text-left">
-                      {children}
-                    </th>
-                  ),
-                  td: ({ children, ...props }) => (
-                    <td {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-gray-900 dark:text-gray-100">
-                      {children}
-                    </td>
-                  ),
-                  a: ({ children, href, ...props }) => (
-                    <a {...props} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline">
-                      {children}
-                    </a>
-                  ),
-                  hr: ({ ...props }) => (
-                    <hr {...props} className="border-t border-gray-300 dark:border-gray-600 my-6" />
-                  ),
-                  p: ({ children, ...props }) => {
-                    const extractText = (node: unknown): string => {
-                      if (node == null) return '';
-                      if (typeof node === 'string' || typeof node === 'number') return String(node);
-                      if (Array.isArray(node)) return node.map(extractText).join('');
-                      if (typeof node === 'object' && (node as any)?.props?.children) {
-                        return extractText((node as any).props.children);
-                      }
-                      return '';
-                    };
+    <ReactMarkdown
+      remarkPlugins={[remarkGfm]}
+      components={{
+        h1: ({ children, ...props }) => (
+          <h1 {...props} className="text-3xl font-bold mb-6 mt-8 pb-2 border-b-2 border-gray-200 dark:border-gray-700 text-gray-900 dark:text-gray-100">
+            {children}
+          </h1>
+        ),
+        h2: ({ children, ...props }) => (
+          <h2 {...props} className="text-2xl font-semibold mb-4 mt-6 text-gray-900 dark:text-gray-100">
+            {children}
+          </h2>
+        ),
+        h3: ({ children, ...props }) => (
+          <h3 {...props} className="text-xl font-semibold mb-3 mt-5 text-gray-900 dark:text-gray-100">
+            {children}
+          </h3>
+        ),
+        h4: ({ children, ...props }) => (
+          <h4 {...props} className="text-lg font-semibold mb-2 mt-4 text-gray-900 dark:text-gray-100">
+            {children}
+          </h4>
+        ),
+        ul: ({ children, ...props }) => (
+          <ul {...props} className="list-disc list-inside space-y-1 mb-2 text-gray-900 dark:text-gray-100">
+            {children}
+          </ul>
+        ),
+        ol: ({ children, ...props }) => (
+          <ol {...props} className="list-decimal list-inside space-y-1 mb-2 text-gray-900 dark:text-gray-100">
+            {children}
+          </ol>
+        ),
+        li: ({ children, ...props }) => (
+          <li {...props} className="leading-relaxed text-gray-900 dark:text-gray-100">
+            {children}
+          </li>
+        ),
+        strong: ({ children, ...props }) => (
+          <strong {...props} className="font-semibold text-gray-900 dark:text-gray-100">
+            {children}
+          </strong>
+        ),
+        em: ({ children, ...props }) => (
+          <em {...props} className="italic text-gray-900 dark:text-gray-100">
+            {children}
+          </em>
+        ),
+        blockquote: ({ children, ...props }) => (
+          <blockquote {...props} className="border-l-4 border-blue-500 pl-4 italic text-gray-900 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/30 py-2 rounded-r">
+            {children}
+          </blockquote>
+        ),
+        code: ({ children, ...props }) => (
+          <code {...props} className="bg-gray-100 dark:bg-gray-700 px-2 py-1 rounded text-sm font-mono text-gray-900 dark:text-gray-100">
+            {children}
+          </code>
+        ),
+        pre: ({ children, ...props }) => {
+          // Ocultar el bloque JSON embebido usado solo para extraer radarData
+          const toText = (node: any): string => {
+            if (node == null) return '';
+            if (typeof node === 'string' || typeof node === 'number') return String(node);
+            if (Array.isArray(node)) return node.map(toText).join('');
+            if (typeof node === 'object' && (node as any)?.props?.children) {
+              return toText((node as any).props.children);
+            }
+            return '';
+          };
+          const text = toText(children);
+          if (/"radarData"\s*:/.test(text)) {
+            return null;
+          }
+          return (
+            <pre {...props} className="bg-gray-100 dark:bg-gray-700 p-4 rounded-lg overflow-x-auto text-sm font-mono text-gray-900 dark:text-gray-100 border border-gray-200 dark:border-gray-600">
+              {children}
+            </pre>
+          );
+        },
+        table: ({ children, ...props }) => (
+          <div className="overflow-x-auto mb-4">
+            <table {...props} className="min-w-full border-collapse border border-gray-300 dark:border-gray-600">
+              {children}
+            </table>
+          </div>
+        ),
+        th: ({ children, ...props }) => (
+          <th {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 bg-gray-50 dark:bg-gray-800 font-semibold text-gray-900 dark:text-gray-100 text-left">
+            {children}
+          </th>
+        ),
+        td: ({ children, ...props }) => (
+          <td {...props} className="border border-gray-300 dark:border-gray-600 px-4 py-2 text-gray-900 dark:text-gray-100">
+            {children}
+          </td>
+        ),
+        a: ({ children, href, ...props }) => (
+          <a {...props} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline">
+            {children}
+          </a>
+        ),
+        hr: ({ ...props }) => (
+          <hr {...props} className="border-t border-gray-300 dark:border-gray-600 my-6" />
+        ),
+        p: ({ children, ...props }) => {
+          const extractText = (node: unknown): string => {
+            if (node == null) return '';
+            if (typeof node === 'string' || typeof node === 'number') return String(node);
+            if (Array.isArray(node)) return node.map(extractText).join('');
+            if (typeof node === 'object' && (node as any)?.props?.children) {
+              return extractText((node as any).props.children);
+            }
+            return '';
+          };
 
-                    const text = extractText(children);
-                    if (text.includes('★')) {
-                      if (/(Formato|Claridad|Coherencia|Información clave|Ortografía(?: y estilo)?):\s*[★☆]/.test(text)) {
-                        const indicators: Array<{ label: string; stars: string }> = [];
-                        const re = /(Formato|Claridad|Coherencia|Información clave|Ortografía(?: y estilo)?):\s*([★☆]+)/g;
-                        let m: RegExpExecArray | null;
-                        // eslint-disable-next-line no-cond-assign
-                        while ((m = re.exec(text)) !== null) {
-                          const rawLabel = m[1];
-                          if (rawLabel && m[2]) {
-                            const normLabel = rawLabel.startsWith('Ortografía') ? 'Ortografía' : rawLabel;
-                            indicators.push({ label: normLabel, stars: m[2] });
-                          }
-                        }
-                        return (
-                          <div {...props} className="quality-indicators">
-                            <ul className="text-gray-900 dark:text-gray-100 leading-relaxed space-y-1">
-                              {indicators.length > 0 ? indicators.map((it, idx) => {
-                                const starMatch = it.stars.match(/(★+)(☆*)/);
-                                const filledStars = starMatch ? starMatch[1] : '';
-                                const emptyStars = starMatch ? starMatch[2] : '';
-                                return (
-                                  <li key={idx} className="flex items-center gap-2">
-                                    <span className="font-semibold text-gray-900 dark:text-gray-100">{it.label}:</span>
-                                    <span>
-                                      <span className="star-filled">{filledStars}</span>
-                                      <span className="star-empty">
-                                        {emptyStars}
-                                      </span>
-                                    </span>
-                                  </li>
-                                );
-                              }) : (
-                                <li className="text-gray-900 dark:text-gray-100">{text}</li>
-                              )}
-                            </ul>
-                          </div>
-                        );
-                      } else {
-                        const parts = text.split(/((?:★+)(?:☆*))/g);
-                        return (
-                          <p {...props} className="text-gray-900 dark:text-gray-100 leading-relaxed mb-4 text-justify">
-                            {parts.map((part, index) => {
-                              const starMatch = part.match(/(★+)(☆*)/);
-                              if (starMatch) {
-                                const [, filledStars, emptyStars] = starMatch;
-                                if (filledStars && emptyStars) {
-                                  const filledCount = filledStars.length;
-                                  const totalCount = filledCount + emptyStars.length;
-                                  const percentage = (filledCount / totalCount) * 100;
+          const text = extractText(children);
+          if (text.includes('★')) {
+            if (/(Formato|Claridad|Coherencia|Información clave|Ortografía(?: y estilo)?):\s*[★☆]/.test(text)) {
+              const indicators: Array<{ label: string; stars: string }> = [];
+              const re = /(Formato|Claridad|Coherencia|Información clave|Ortografía(?: y estilo)?):\s*([★☆]+)/g;
+              let m: RegExpExecArray | null;
+              // eslint-disable-next-line no-cond-assign
+              while ((m = re.exec(text)) !== null) {
+                const rawLabel = m[1];
+                if (rawLabel && m[2]) {
+                  const normLabel = rawLabel.startsWith('Ortografía') ? 'Ortografía' : rawLabel;
+                  indicators.push({ label: normLabel, stars: m[2] });
+                }
+              }
+              return (
+                <div {...props} className="quality-indicators">
+                  <ul className="text-gray-900 dark:text-gray-100 leading-relaxed space-y-1">
+                    {indicators.length > 0 ? indicators.map((it, idx) => {
+                      const starMatch = it.stars.match(/(★+)(☆*)/);
+                      const filledStars = starMatch ? starMatch[1] : '';
+                      const emptyStars = starMatch ? starMatch[2] : '';
+                      return (
+                        <li key={idx} className="flex items-center gap-2">
+                          <span className="font-semibold text-gray-900 dark:text-gray-100">{it.label}:</span>
+                          <span>
+                            <span className="star-filled">{filledStars}</span>
+                            <span className="star-empty">
+                              {emptyStars}
+                            </span>
+                          </span>
+                        </li>
+                      );
+                    }) : (
+                      <li className="text-gray-900 dark:text-gray-100">{text}</li>
+                    )}
+                  </ul>
+                </div>
+              );
+            } else {
+              const parts = text.split(/((?:★+)(?:☆*))/g);
+              return (
+                <p {...props} className="text-gray-900 dark:text-gray-100 leading-relaxed mb-4 text-justify">
+                  {parts.map((part, index) => {
+                    const starMatch = part.match(/(★+)(☆*)/);
+                    if (starMatch) {
+                      const [, filledStars, emptyStars] = starMatch;
+                      if (filledStars && emptyStars) {
+                        const filledCount = filledStars.length;
+                        const totalCount = filledCount + emptyStars.length;
+                        const percentage = (filledCount / totalCount) * 100;
                         let colorClass = 'star-very-poor';
                         if (percentage >= 90) colorClass = 'star-excellent';
                         else if (percentage >= 80) colorClass = 'star-very-good';
@@ -1956,34 +1937,34 @@ const ResultadosPage: React.FC = () => {
                         else if (percentage >= 40) colorClass = 'star-below-average';
                         else if (percentage >= 30) colorClass = 'star-poor';
                         else colorClass = 'star-very-poor';
-                                  return (
-                                    <span key={index}>
-                                      <span className={`${colorClass} star-filled`}>
-                                        {filledStars}
-                                      </span>
-                                      <span className="star-empty">
-                                        {emptyStars}
-                                      </span>
-                                    </span>
-                                  );
-                                }
-                              }
-                              return part;
-                            })}
-                          </p>
+                        return (
+                          <span key={index}>
+                            <span className={`${colorClass} star-filled`}>
+                              {filledStars}
+                            </span>
+                            <span className="star-empty">
+                              {emptyStars}
+                            </span>
+                          </span>
                         );
                       }
                     }
-                    return (
-                      <p {...props} className="text-gray-900 dark:text-gray-100 leading-relaxed mb-4 text-justify">
-                        {children}
-                      </p>
-                    );
-                  },
-                }}
-              >
+                    return part;
+                  })}
+                </p>
+              );
+            }
+          }
+          return (
+            <p {...props} className="text-gray-900 dark:text-gray-100 leading-relaxed mb-4 text-justify">
+              {children}
+            </p>
+          );
+        },
+      }}
+    >
       {content}
-              </ReactMarkdown>
+    </ReactMarkdown>
   );
 
   // === NUEVO: dividir el markdown para insertar el análisis justo después de "Áreas de mejora" ===
@@ -2030,7 +2011,7 @@ const ResultadosPage: React.FC = () => {
     const cvx = data.cv_analysis || {} as CvAnalysis;
     const details = data.cv_details || { experience: [], education: [], languages: [], tools: [] };
     const jobPrefs = data.job_preferences as NormalizedJobPreferences;
-    
+
     // Obtener LinkedIn desde cv_analysis.contact.linkedin o personal.jobPreferences.linkedin
     const linkedInFromCv = (cvx as any)?.contact?.linkedin || (cvx as any)?.cv_structured?.contact?.linkedin;
     const linkedInFromPrefs = (personal?.jobPreferences as any)?.linkedin;
@@ -2522,27 +2503,27 @@ const ResultadosPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 print:bg-white print:shadow-none print:p-0">
         {/* Informe de la IA y formulario de feedback */}
         {/* Estado iaReport disponible para debug en desarrollo */}
-        
+
         {/* SOLUCIÓN: Mostrar informe básico si no hay iaReport después de cargar */}
         {!loadingIa && !iaReport && !errorIa && (
           <div className="bg-yellow-100 border border-yellow-400 text-yellow-700 px-4 py-3 rounded-lg shadow-md p-6 mb-8" role="alert">
             <strong className="font-bold text-gray-900">Informe básico disponible.</strong>
             <span className="block sm:inline text-gray-900"> Tu informe está siendo procesado. Mientras tanto, aquí tienes un resumen de tus resultados.</span>
-            
+
             <div className="mt-4 bg-white rounded-lg p-4 transition-colors">
               <h3 className="text-lg font-semibold mb-2 text-gray-900">Resumen de Evaluación</h3>
               <p className="text-gray-900"><strong>Nombre:</strong> {report?.firstName} {report?.lastName}</p>
               <p className="text-gray-900"><strong>Puntaje de empleabilidad:</strong> {globalScore ?? info?.employability_score ?? report?.employabilityScore ?? 'Calculando...'}</p>
-              
-              
-              
+
+
+
               <p className="mt-3 text-sm text-gray-900">
                 Actualiza esta página en unos segundos para ver el informe completo.
               </p>
             </div>
           </div>
         )}
-        
+
         {(reportForRender || info) && renderStructuredReport(reportForRender || info!)}
 
         {finalPhrase && (
@@ -2562,16 +2543,16 @@ const ResultadosPage: React.FC = () => {
               <label className="block mb-2 font-semibold dark:text-white">¿Te resultó útil este informe?</label>
               <div className="flex gap-4 mb-4">
                 <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 bg-white dark:bg-transparent dark:border-gray-500">
-                  <input className="w-5 h-5" type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                  <input className="w-5 h-5" type="radio" name="rating" value="útil" required checked={feedback.rating === 'útil'} onChange={e => setFeedback(f => ({ ...f, rating: e.target.value }))} />
                   <span className="min-w-[3.5rem] text-center text-gray-900 dark:text-white">Útil</span>
                 </label>
                 <label className="flex items-center gap-2 px-3 py-1 rounded-full border border-gray-300 bg-white dark:bg-transparent dark:border-gray-500">
-                  <input className="w-5 h-5" type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({...f, rating: e.target.value}))} />
+                  <input className="w-5 h-5" type="radio" name="rating" value="no útil" required checked={feedback.rating === 'no útil'} onChange={e => setFeedback(f => ({ ...f, rating: e.target.value }))} />
                   <span className="min-w-[5rem] text-center text-gray-900 dark:text-white">No útil</span>
                 </label>
               </div>
               <label className="block mb-1 text-gray-900 dark:text-white">¿Algún comentario o sugerencia?</label>
-              <textarea className="w-full border rounded p-2 mb-2 bg-white text-gray-900 border-gray-300 dark:bg-transparent dark:text-white dark:border-gray-500" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({...f, comment: e.target.value}))} />
+              <textarea className="w-full border rounded p-2 mb-2 bg-white text-gray-900 border-gray-300 dark:bg-transparent dark:text-white dark:border-gray-500" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({ ...f, comment: e.target.value }))} />
               {feedbackError && <p className="text-red-400 mb-2">{feedbackError}</p>}
               <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Enviar feedback</button>
             </form>
