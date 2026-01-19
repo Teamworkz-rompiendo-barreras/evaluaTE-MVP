@@ -45,7 +45,7 @@ except ImportError:  # fallback a imports relativos al directorio actual
 FEEDBACK_STORE = os.getenv("FEEDBACK_FILE", os.path.join(os.getcwd(), "feedback_ia.json"))
 
 APP_TITLE = os.getenv("APP_TITLE", "EvaluaTE Backend")
-APP_VERSION = os.getenv("APP_VERSION", "1.0.0")
+APP_VERSION = os.getenv("APP_VERSION", "1.1.0 - Multimodal Fix")
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 
