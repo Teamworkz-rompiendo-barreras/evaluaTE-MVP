@@ -339,22 +339,22 @@ INSTRUCCIONES CLAVE:
 
 Devuelve SOLO un JSON válido con esta estructura:
 {{
-  "contacto": { "nombre": "...", "email": "...", "telefono": "...", "ubicacion": "...", "linkedin": "..." },
-  "experiencia_laboral": [ { "empresa": "...", "cargo": "...", "fecha_inicio": "...", "fecha_fin": "...", "responsabilidades": ["..."], "tecnologias": ["..."] } ],
-  "formacion_academica": [ { "titulo": "...", "institucion": "...", "fecha_inicio": "...", "fecha_fin": "..." } ],
-  "habilidades_tecnicas": [ { "herramienta": "...", "nivel": "..." } ],
+  "contacto": {{ "nombre": "...", "email": "...", "telefono": "...", "ubicacion": "...", "linkedin": "..." }},
+  "experiencia_laboral": [ {{ "empresa": "...", "cargo": "...", "fecha_inicio": "...", "fecha_fin": "...", "responsabilidades": ["..."], "tecnologias": ["..."] }} ],
+  "formacion_academica": [ {{ "titulo": "...", "institucion": "...", "fecha_inicio": "...", "fecha_fin": "..." }} ],
+  "habilidades_tecnicas": [ {{ "herramienta": "...", "nivel": "..." }} ],
   "habilidades_blandas": ["..."],
-  "idiomas": [ { "idioma": "...", "nivel": "..." } ],
+  "idiomas": [ {{ "idioma": "...", "nivel": "..." }} ],
   "proyectos": [],
   "certificaciones": [],
   "logros": [],
   "intereses": [],
   "raw_text": "Transcripción literal y completa del texto del CV. ES OBLIGATORIO."
-}
+}}
 
 INSTRUCCIONES ADICIONALES:
 - En "nombre", NO uses nombres de software (ej. "Microsoft Office", "Adobe", "Photoshop"). Si no hay nombre claro, usa "Candidato".
-- "raw_text" debe contener todo el texto legible del documento.}
+- "raw_text" debe contener todo el texto legible del documento.
 """
 
         # ESTRATEGIA HÍBRIDA:

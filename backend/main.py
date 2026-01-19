@@ -28,9 +28,10 @@ try:
     )
     from backend.pdf_service import create_employability_pdf
     from backend.new_report_schema import NewReportSchema
-    from backend.cv_analyzer import extract_pdf_info
+    from backend.cv_analyzer import analyze_cv_with_ai, extract_pdf_info
     from backend.feedback_notifications import feedback_notifier
 except ImportError:  # fallback a imports relativos al directorio actual
+    print("⚠️  Import backend.* falló, intentando import relativo/directo...")
     from generate_report import (
         generar_informe,
         LLM_SUCCESS_COUNT,
@@ -38,7 +39,7 @@ except ImportError:  # fallback a imports relativos al directorio actual
     )
     from pdf_service import create_employability_pdf
     from new_report_schema import NewReportSchema
-    from cv_analyzer import extract_pdf_info
+    from cv_analyzer import analyze_cv_with_ai, extract_pdf_info
     from feedback_notifications import feedback_notifier
 
 
