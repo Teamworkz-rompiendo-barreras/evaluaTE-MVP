@@ -1,8 +1,6 @@
-import { AZURE_CONFIG } from './azure-config';
-
 // Configuración centralizada de la API
 export const API_CONFIG = {
-  // Usar la detección automática de Azure
+  // Backend en Render
   BASE_URL: 'https://evaluate-backend.onrender.com',
 
   // Endpoints específicos
