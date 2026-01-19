@@ -1403,8 +1403,11 @@ async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         # Si Document Intelligence no está disponible o falló, usar el método tradicional
         logger.info("Aplicando método tradicional de extracción y análisis...")
 
-        if not candidate_text.strip():
-            logger.error("No se pudo extraer texto del PDF")
+        # PERMITE FLUJO MULTIMODAL:
+        # Si no hay texto extraído (PDF escaneado/imagen) pero tenemos el buffer del PDF,
+        # continuamos hacia Gemini para que use visión. 
+        if not candidate_text.strip() and not pdf_buffer:
+            logger.error("No se pudo extraer texto del PDF y no hay buffer disponible")
             return {
                 "error": "No se pudo extraer texto del PDF. El archivo puede estar corrupto o ser una imagen sin texto.",
                 "cv_info": {},
@@ -1413,6 +1416,9 @@ async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
                 "processing_metadata": processing_metadata,
                 "document_intelligence_used": False,
             }
+        
+        if not candidate_text.strip():
+             logger.warning("Texto extraído vacío. Intentando recuperación multimodal pura con Gemini...")
 
         logger.info("Texto extraído: %s caracteres", len(candidate_text))
         logger.debug("Primeros 200 caracteres: %s...", candidate_text[:200])
