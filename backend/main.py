@@ -52,32 +52,19 @@ app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 # CORS configuration
 allowed_origins_env = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net,https://evaluate-frontend.onrender.com",
+    "http://localhost:3005,http://localhost:3006,http://localhost:5173,http://localhost:8080,https://evaluate-frontend.onrender.com",
 )
 ALLOWED_ORIGINS = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
 
-# Permitir por regex cualquier dominio de Azure Static Web Apps
-# Ejemplo: https://<random>.<zone>.azurestaticapps.net
-ALLOW_ORIGIN_REGEX = os.getenv(
-    "ALLOW_ORIGIN_REGEX",
-    r"https://.*\\.azurestaticapps\\.net$",
-)
-
-# En producción, permitir también dominios de Azure Static Web Apps
+# En producción, permitir dominio de Render explícitamente si falta
 if os.getenv("PRODUCTION", "false").lower() == "true":
-    # Agregar dominios de Azure Static Web Apps si no están ya incluidos
-    azure_domains = [
-        "https://evaluador-frontend-fzbhemgtetfeeme6.spaincentral-01.azurestaticapps.net",
-        "https://*.azurestaticapps.net",  # Patrón para cualquier Azure Static Web App
-    ]
-    for domain in azure_domains:
-        if domain not in ALLOWED_ORIGINS:
-            ALLOWED_ORIGINS.append(domain)
+    render_domain = "https://evaluate-frontend.onrender.com"
+    if render_domain not in ALLOWED_ORIGINS:
+        ALLOWED_ORIGINS.append(render_domain)
 
 app.add_middleware(
     CORSMiddleware,
     allow_origins=ALLOWED_ORIGINS or ["*"],
-    allow_origin_regex=ALLOW_ORIGIN_REGEX,
     allow_credentials=True,
     allow_methods=["*"],
     allow_headers=["*"],

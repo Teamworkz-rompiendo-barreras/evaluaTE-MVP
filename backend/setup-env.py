@@ -38,18 +38,15 @@ def setup_environment():
     
     # Mostrar instrucciones
     print("\n📋 PRÓXIMOS PASOS:")
-    print("1. Edita el archivo .env con tus credenciales reales de Azure")
-    print("2. Las variables más importantes son:")
-    print("   - AZURE_OPENAI_API_KEY")
-    print("   - AZURE_OPENAI_ENDPOINT")
-    print("   - AZURE_OPENAI_DEPLOYMENT")
+    print("1. Edita el archivo .env con tu API Key de Google Gemini")
+    print("2. La variable más importante es:")
+    print("   - GEMINI_API_KEY")
     print("3. Reinicia el backend después de configurar")
     
-    print("\n🔗 Para obtener credenciales de Azure:")
-    print("   - Ve a https://portal.azure.com")
-    print("   - Crea un recurso 'Azure OpenAI'")
-    print("   - Ve a 'Keys and Endpoint'")
-    print("   - Copia la Key 1 y el Endpoint")
+    print("\n🔗 Para obtener tu API Key:")
+    print("   - Ve a https://aistudio.google.com/")
+    print("   - Crea una API Key gratuita")
+    print("   - Cópiala en el archivo .env")
     
     print("\n✅ Configuración completada!")
     print("📁 Archivo .env creado en:", env_file.absolute())
