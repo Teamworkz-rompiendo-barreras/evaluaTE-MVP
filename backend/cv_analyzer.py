@@ -330,102 +330,33 @@ def analyze_cv_with_ai(text: str, pdf_bytes: Optional[bytes] = None) -> Dict[str
         
         # Prompt base
         prompt_text = f"""
-Eres un experto en análisis de CVs y recursos humanos con más de 15 años de experiencia. Tu tarea es analizar el siguiente CV y extraer toda la información relevante de manera estructurada y profesional.
+Eres un experto en análisis de CVs y recursos humanos. Tu tarea es analizar el documento adjunto (o el texto proporcionado) y extraer toda la información relevante de manera estructurada.
 
-INSTRUCCIONES DETALLADAS:
-1. **Información Personal**: Extrae nombre completo, email, teléfono, ubicación, LinkedIn, portfolio
-2. **Experiencia Laboral**: Identifica empresas, cargos, fechas (inicio-fin), responsabilidades, logros cuantificables, tecnologías utilizadas
-3. **Formación Académica**: Títulos, instituciones, fechas, calificaciones, proyectos destacados
-4. **Habilidades Técnicas**: Lenguajes de programación, frameworks, herramientas, bases de datos, metodologías. Para cada herramienta, identifica el nivel de competencia (avanzado, intermedio, básico, experto, etc.) basándote en indicadores visuales como puntos, barras, estrellas o texto descriptivo
-5. **Habilidades Blandas**: Comunicación, liderazgo, trabajo en equipo, resolución de problemas, adaptabilidad
-6. **Idiomas**: Idiomas y niveles (nativo, avanzado, intermedio, básico)
-7. **Certificaciones**: Certificaciones profesionales, cursos, acreditaciones
-8. **Proyectos**: Proyectos personales o profesionales con descripción, tecnologías, resultados
-9. **Logros**: Premios, reconocimientos, publicaciones, contribuciones destacadas
-10. **Intereses**: Áreas de interés profesional, hobbies relevantes
+INSTRUCCIONES CLAVE:
+1. Prioriza la extracción de "Experiencia Laboral", "Educación" y "Habilidades Técnicas".
+2. Si el documento es una imagen o escaneo, usa tu capacidad de visión para leer todo el contenido.
+3. Si hay texto extraído disponible, úsalo como apoyo.
 
-REQUISITOS ESPECÍFICOS:
-- Maneja CVs en español e inglés indistintamente
-- Interpreta fechas en cualquier formato (MM/YYYY, YYYY-MM, etc.)
-- Identifica información aunque esté mal formateada o desordenada
-- Extrae habilidades aunque no estén en una sección específica
-- Detecta experiencia relevante aunque no esté claramente etiquetada
-- Identifica logros cuantificables (porcentajes, números, métricas)
-
-Devuelve SOLO un JSON válido con esta estructura exacta:
-
+Devuelve SOLO un JSON válido con esta estructura:
 {{
-  "contacto": {{
-    "nombre": "string",
-    "email": "string",
-    "telefono": "string",
-    "ubicacion": "string",
-    "linkedin": "string",
-    "portfolio": "string"
-  }},
-  "experiencia_laboral": [
-    {{
-      "empresa": "string",
-      "cargo": "string",
-      "fecha_inicio": "string",
-      "fecha_fin": "string",
-      "responsabilidades": ["string"],
-      "logros": ["string"],
-      "tecnologias": ["string"]
-    }}
-  ],
-  "formacion_academica": [
-    {{
-      "titulo": "string",
-      "institucion": "string",
-      "fecha_inicio": "string",
-      "fecha_fin": "string",
-      "calificacion": "string",
-      "proyectos": ["string"]
-    }}
-  ],
-  "habilidades_tecnicas": [
-    {{
-      "herramienta": "string",
-      "nivel": "string"
-    }}
-  ],
-  "habilidades_blandas": ["string"],
-  "idiomas": [
-    {{
-      "idioma": "string",
-      "nivel": "string"
-    }}
-  ],
-  "certificaciones": [
-    {{
-      "nombre": "string",
-      "institucion": "string",
-      "fecha": "string"
-    }}
-  ],
-  "proyectos": [
-    {{
-      "nombre": "string",
-      "descripcion": "string",
-      "tecnologias": ["string"],
-      "resultados": ["string"]
-    }}
-  ],
-  "logros": ["string"],
-  "intereses": ["string"]
+  "contacto": {{ "nombre": "...", "email": "...", "telefono": "...", "ubicacion": "...", "linkedin": "..." }},
+  "experiencia_laboral": [ {{ "empresa": "...", "cargo": "...", "fecha_inicio": "...", "fecha_fin": "...", "responsabilidades": ["..."], "tecnologias": ["..."] }} ],
+  "formacion_academica": [ {{ "titulo": "...", "institucion": "...", "fecha_inicio": "...", "fecha_fin": "..." }} ],
+  "habilidades_tecnicas": [ {{ "herramienta": "...", "nivel": "..." }} ],
+  "habilidades_blandas": ["..."],
+  "idiomas": [ {{ "idioma": "...", "nivel": "..." }} ],
+  "proyectos": [],
+  "certificaciones": [],
+  "logros": [],
+  "intereses": []
 }}
-
-IMPORTANTE:
-- Si no encuentras información para algún campo, usa null o array vacío
-- Mantén la estructura JSON exacta
-- No agregues campos adicionales
-- Usa arrays vacíos [] en lugar de null para listas
-- Asegúrate de que el JSON sea válido
 """
 
-        if text and not pdf_bytes:
-             prompt_text += f"\n\nTEXTO DEL CV:\n{text[:10000]}"
+        # ESTRATEGIA HÍBRIDA:
+        # Siempre incluir el texto extraído (aunque sea parcial/sucio) como contexto adicional
+        # para ayudar al modelo si la visión falla o viceversa.
+        if text:
+             prompt_text += f"\n\n--- TEXTO EXTRAÍDO (Referencia) ---\n{text[:15000]}\n-----------------------------------\n"
 
         print("📤 Enviando solicitud a Gemini...")
         
@@ -437,20 +368,28 @@ IMPORTANTE:
         
         content_parts = [prompt_text]
         if pdf_bytes:
-            print("📄 Adjuntando PDF nativo para análisis multimodal...")
+            print(f"📄 Adjuntando PDF nativo ({len(pdf_bytes)} bytes) para análisis multimodal...")
             content_parts.append({
                 "mime_type": "application/pdf",
                 "data": pdf_bytes
             })
         
-        response = model.generate_content(
-            content_parts,
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.1,
-                max_output_tokens=4000,
-                response_mime_type="application/json"
+        try:
+            response = model.generate_content(
+                content_parts,
+                generation_config=genai.types.GenerationConfig(
+                    temperature=0.1,
+                    max_output_tokens=8000,
+                    response_mime_type="application/json"
+                )
             )
-        )
+        except Exception as api_err:
+             logger.error(f"Error llamando a Gemini API: {api_err}")
+             # Si falla con el PDF (muy grande o corrupto), reintentar SOLO con texto si existe
+             if pdf_bytes and text:
+                 logger.warning("Reintentando solo con texto...")
+                 return analyze_cv_with_ai(text, None)
+             raise api_err
         
         print("📥 Respuesta recibida de Gemini")
         
@@ -463,7 +402,11 @@ IMPORTANTE:
         # Intentar parsear el JSON
         try:
             cv_data = json.loads(normalized_content)
-            logger.info("JSON parseado correctamente")
+            
+            # Validación básica de calidad
+            keys_found = sum(1 for k in ["experiencia_laboral", "formacion_academica", "habilidades_tecnicas"] if cv_data.get(k))
+            logger.info(f"JSON parseado. Secciones clave encontradas: {keys_found}/3")
+            
             return cv_data
         except (json.JSONDecodeError, TypeError) as e:
             logger.warning("Error parseando JSON: %s", e)
