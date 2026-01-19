@@ -636,7 +636,12 @@ def _generate_structured_response_from_data(candidate_data: dict, soft_skills_da
     edu_count = len(cv_payload.get("education") or cv_payload.get("education_detailed") or [])
     lang_count = len(cv_payload.get("languages") or [])
     tools_count = len(cv_payload.get("software") or cv_payload.get("skills") or [])
-    cv_missing = not any([exp_count, edu_count, lang_count, tools_count]) and not raw_text
+    
+    # Si tenemos soft skills o nombre válido, asumimos que el CV fue procesado (quizás multimodal)
+    has_valid_name = full_name and full_name.lower() not in ("usuario", "candidato", "unknown")
+    has_soft_skills = len(normalized_soft_skills) > 0
+    
+    cv_missing = not any([exp_count, edu_count, lang_count, tools_count, has_soft_skills, has_valid_name]) and not raw_text
 
     # Garantizar puntaje aunque no venga employability_score
     base_score = 0
