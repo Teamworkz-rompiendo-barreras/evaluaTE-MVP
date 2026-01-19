@@ -312,14 +312,31 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         for cand_list in candidates:
             cleaned = []
             for v in cand_list:
-                # Si es string, filtrar palabras clave de "placeholders"
+                # 1. Si es string, filtrar
                 if isinstance(v, str):
                     s = v.lower().strip()
                     if s in ("mejorable", "regular", "bueno", "excelente", "no consta", "no especificado", "ver cv", "none", "n/a"):
                         continue
                     if len(s) < 3:
                         continue
-                cleaned.append(v)
+                    cleaned.append(v)
+                
+                # 2. Si es objeto (dict), verificar valores clave
+                elif isinstance(v, dict):
+                    is_placeholder = False
+                    # Comprobar claves comunes donde podría haber un placeholder
+                    for key_check in ["empresa", "company", "title", "cargo", "institucion", "institution", "idioma", "language"]:
+                        val_check = v.get(key_check)
+                        if isinstance(val_check, str):
+                            chk = val_check.lower().strip()
+                            if chk in ("mejorable", "regular", "bueno", "excelente", "no consta", "no especificado", "ver cv", "none", "n/a"):
+                                is_placeholder = True
+                                break
+                    if not is_placeholder:
+                        cleaned.append(v)
+                else:
+                    cleaned.append(v)
+            
             if cleaned:
                 return cleaned
 

@@ -339,17 +339,22 @@ INSTRUCCIONES CLAVE:
 
 Devuelve SOLO un JSON válido con esta estructura:
 {{
-  "contacto": {{ "nombre": "...", "email": "...", "telefono": "...", "ubicacion": "...", "linkedin": "..." }},
-  "experiencia_laboral": [ {{ "empresa": "...", "cargo": "...", "fecha_inicio": "...", "fecha_fin": "...", "responsabilidades": ["..."], "tecnologias": ["..."] }} ],
-  "formacion_academica": [ {{ "titulo": "...", "institucion": "...", "fecha_inicio": "...", "fecha_fin": "..." }} ],
-  "habilidades_tecnicas": [ {{ "herramienta": "...", "nivel": "..." }} ],
+  "contacto": { "nombre": "...", "email": "...", "telefono": "...", "ubicacion": "...", "linkedin": "..." },
+  "experiencia_laboral": [ { "empresa": "...", "cargo": "...", "fecha_inicio": "...", "fecha_fin": "...", "responsabilidades": ["..."], "tecnologias": ["..."] } ],
+  "formacion_academica": [ { "titulo": "...", "institucion": "...", "fecha_inicio": "...", "fecha_fin": "..." } ],
+  "habilidades_tecnicas": [ { "herramienta": "...", "nivel": "..." } ],
   "habilidades_blandas": ["..."],
-  "idiomas": [ {{ "idioma": "...", "nivel": "..." }} ],
+  "idiomas": [ { "idioma": "...", "nivel": "..." } ],
   "proyectos": [],
   "certificaciones": [],
   "logros": [],
-  "intereses": []
-}}
+  "intereses": [],
+  "raw_text": "Transcripción literal y completa del texto del CV. ES OBLIGATORIO."
+}
+
+INSTRUCCIONES ADICIONALES:
+- En "nombre", NO uses nombres de software (ej. "Microsoft Office", "Adobe", "Photoshop"). Si no hay nombre claro, usa "Candidato".
+- "raw_text" debe contener todo el texto legible del documento.}
 """
 
         # ESTRATEGIA HÍBRIDA:
@@ -1433,6 +1438,27 @@ async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         pdf_payload = pdf_buffer if not di_result else None
         cv_data = analyze_cv_with_ai(candidate_text, pdf_payload)
 
+        # BACKFILL RAW TEXT:
+        # Si la extracción local falló (candidate_text vacío) pero Gemini devolvió "raw_text",
+        # lo usamos para que el análisis de estructura no falle.
+        if not candidate_text.strip() and isinstance(cv_data, dict):
+            ai_raw_text = cv_data.get("raw_text", "")
+            if ai_raw_text:
+                logger.info("Recuperado raw_text desde Gemini (%d caracteres)", len(ai_raw_text))
+                candidate_text = ai_raw_text
+                # Asegurar que esté en cv_data también
+                cv_data["raw_text"] = ai_raw_text
+
+        # SANITIZACIÓN POST-AI:
+        # Evitar "Microsoft Office" como nombre
+        if isinstance(cv_data, dict):
+            contact = cv_data.get("contacto") or cv_data.get("contact") or {}
+            name = contact.get("nombre") or contact.get("name") or ""
+            if name and ("Microsoft" in name or "Office" in name or "Adobe" in name or len(name) > 50):
+                logger.warning(f"Nombre sospechoso detectado '{name}', reemplazando por 'Candidato'")
+                if "contacto" in cv_data: cv_data["contacto"]["nombre"] = "Candidato"
+                if "contact" in cv_data: cv_data["contact"]["name"] = "Candidato"
+
         if "error" in cv_data:
             logger.warning("Error en análisis con IA: %s", cv_data['error'])
             cv_data = {
@@ -1448,6 +1474,10 @@ async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
             logger.info("Análisis con IA completado exitosamente")
 
         logger.info("Analizando estructura del CV (método tradicional)...")
+        # Inyectar raw_text recuperado para que el analizador de estructura funcione
+        if not cv_data.get("raw_text") and candidate_text:
+            cv_data["raw_text"] = candidate_text
+
         analysis = analyze_cv_structure_ai(cv_data)
         logger.info("Análisis estructural completado")
 
