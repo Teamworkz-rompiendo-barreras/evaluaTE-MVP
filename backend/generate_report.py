@@ -282,12 +282,14 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         cv_data = {}
 
     def _pick_list(primary_key: str, detailed_key: str, nested_key: str = "") -> list:
+        candidates = []
+        
         # 1. Direct lists
         p_val = cv_data.get(primary_key)
-        if isinstance(p_val, list) and p_val: return p_val
+        if isinstance(p_val, list) and p_val: candidates.append(p_val)
         
         d_val = cv_data.get(detailed_key)
-        if isinstance(d_val, list) and d_val: return d_val
+        if isinstance(d_val, list) and d_val: candidates.append(d_val)
         
         # 2. Nested in cv_structured or cv_analysis_structured
         target = nested_key or primary_key
@@ -295,27 +297,31 @@ def _build_cv_analysis_payload(cv_data: Dict[str, Any]) -> Dict[str, Any]:
             container = cv_data.get(root)
             if isinstance(container, dict):
                 # Try English and Spanish keys
-                candidates = [target]
-                if target == "experience": candidates.append("experiencia")
-                if target == "education": candidates.append("educacion")
-                if target == "languages": candidates.append("idiomas")
-                if target == "software": candidates.append("tools")
+                sub_keys = [target]
+                if target == "experience": sub_keys.append("experiencia")
+                if target == "education": sub_keys.append("educacion")
+                if target == "languages": sub_keys.append("idiomas")
+                if target == "software": sub_keys.append("tools")
                 
-                for c in candidates:
-                    val = container.get(c)
+                for k in sub_keys:
+                    val = container.get(k)
                     if isinstance(val, list) and val:
-                        # Clean noise from lists
-                        cleaned = []
-                        for v in val:
-                            if isinstance(v, str):
-                                s = v.lower().strip()
-                                if s in ("mejorable", "regular", "bueno", "excelente", "no consta", "no especificado"):
-                                    continue
-                                if len(s) < 3:
-                                    continue
-                            cleaned.append(v)
-                        if cleaned:
-                            return cleaned
+                        candidates.append(val)
+        
+        # 3. Clean and return first valid list
+        for cand_list in candidates:
+            cleaned = []
+            for v in cand_list:
+                # Si es string, filtrar palabras clave de "placeholders"
+                if isinstance(v, str):
+                    s = v.lower().strip()
+                    if s in ("mejorable", "regular", "bueno", "excelente", "no consta", "no especificado", "ver cv", "none", "n/a"):
+                        continue
+                    if len(s) < 3:
+                        continue
+                cleaned.append(v)
+            if cleaned:
+                return cleaned
 
         return []
 
@@ -547,6 +553,11 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
 
         full_text = cv_data.get("full_raw_text") or cv_data.get("rawText") or cv_data.get("raw_text") or ""
         
+        # Sanitizar nombre para el prompt
+        force_candidate_name = candidate_data.get("name") or cv_data.get("candidate", {}).get("name") or "Candidato"
+        if "Microsoft" in force_candidate_name or "Adobe" in force_candidate_name:
+             force_candidate_name = "Candidato"
+
         prompt = PromptConfig.get_employability_report_prompt(
             candidate_data=candidate_data,
             soft_skills_data=soft_skills_data,
@@ -559,6 +570,9 @@ def _generate_modern_report(candidate_data: dict, soft_skills_data: list, cv_dat
             analysis_block=analysis_block,
             full_raw_text=full_text,
         )
+        
+        # INSTRUCCIÓN FUERTE Anti-Alucinación
+        prompt += f"\n\nINSTRUCCIÓN CRÍTICA: El nombre VERDADERO del candidato es '{force_candidate_name}'. Úsalo obligatoriamente. IGNORA cualquier texto técnico como 'Microsoft Office', 'Adobe', 'Photoshop' que aparezca en el encabezado. Si el texto del CV está vacío o ilegible, no inventes datos."
 
         # Usar Gemini si está configurado
         if genai_configured:
