@@ -1454,10 +1454,29 @@ async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         if isinstance(cv_data, dict):
             contact = cv_data.get("contacto") or cv_data.get("contact") or {}
             name = contact.get("nombre") or contact.get("name") or ""
-            if name and ("Microsoft" in name or "Office" in name or "Adobe" in name or len(name) > 50):
-                logger.warning(f"Nombre sospechoso detectado '{name}', reemplazando por 'Candidato'")
-                if "contacto" in cv_data: cv_data["contacto"]["nombre"] = "Candidato"
-                if "contact" in cv_data: cv_data["contact"]["name"] = "Candidato"
+            if name:
+                # Normalización para chequeo
+                n_lower = name.lower().strip()
+                # Lista negra estricta (coincidencia exacta o muy parecida)
+                denylist = ["microsoft office", "adobe", "photoshop", "curriculum vitae", "hoja de vida", "cv", "resume", "adobe acrobat", "word", "microsoft word"]
+                
+                is_suspicious = False
+                # 1. Chequeo exacto contra lista negra
+                if n_lower in denylist:
+                    is_suspicious = True
+                
+                # 2. Chequeo de longitud excesiva (pero permitiendo nombres largos reales)
+                elif len(name) > 60:
+                     is_suspicious = True
+                     
+                # 3. Chequeo de que NO contenga palabras clave obvias de software al inicio
+                elif n_lower.startswith("microsoft") or n_lower.startswith("adobe"):
+                     is_suspicious = True
+
+                if is_suspicious:
+                    logger.warning(f"Nombre sospechoso detectado '{name}', reemplazando por 'Candidato'")
+                    if "contacto" in cv_data: cv_data["contacto"]["nombre"] = "Candidato"
+                    if "contact" in cv_data: cv_data["contact"]["name"] = "Candidato"
 
         if "error" in cv_data:
             logger.warning("Error en análisis con IA: %s", cv_data['error'])
