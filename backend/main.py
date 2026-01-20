@@ -409,6 +409,34 @@ async def api_analyze_cv(file: UploadFile = File(...)) -> Dict[str, Any]:
             logger.info("CV analysis normalizado correctamente (Document Intelligence)")
             return normalized
 
+@app.post("/api/debug/cv-data")
+async def api_debug_cv_data(file: UploadFile = File(...)) -> Dict[str, Any]:
+    """Return the raw CV extraction JSON for debugging purposes."""
+    try:
+        pdf_bytes = await file.read()
+        if not pdf_bytes:
+            raise HTTPException(status_code=400, detail="Archivo vacío")
+        result = await extract_pdf_info(pdf_bytes)
+        logger.info("debug endpoint returned CV data")
+        return result
+    except Exception as e:
+        logger.exception("Error in debug endpoint")
+        raise HTTPException(status_code=500, detail=f"Error debug CV: {e}")
+
+@app.post("/api/debug/cv-data")
+async def api_debug_cv_data(file: UploadFile = File(...)) -> Dict[str, Any]:
+    """Return the raw CV extraction JSON for debugging purposes."""
+    try:
+        pdf_bytes = await file.read()
+        if not pdf_bytes:
+            raise HTTPException(status_code=400, detail="Archivo vacío")
+        result = await extract_pdf_info(pdf_bytes)
+        logger.info("debug endpoint returned CV data")
+        return result
+    except Exception as e:
+        logger.exception("Error in debug endpoint")
+        raise HTTPException(status_code=500, detail=f"Error debug CV: {e}")
+
         # Formato tradicional
         cv_info: Dict[str, Any] = result.get("cv_info") or {}
         analysis: Dict[str, Any] = result.get("analysis") or {}

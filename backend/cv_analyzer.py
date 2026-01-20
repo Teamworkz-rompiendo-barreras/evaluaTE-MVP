@@ -1437,6 +1437,7 @@ async def extract_pdf_info(pdf_buffer: bytes) -> Dict[str, Any]:
         # para que haga su propia extracción/OCR
         pdf_payload = pdf_buffer if not di_result else None
         cv_data = analyze_cv_with_ai(candidate_text, pdf_payload)
+        logger.debug(f"cv_data keys after Gemini call: {list(cv_data.keys()) if isinstance(cv_data, dict) else 'N/A'}")
 
         # BACKFILL RAW TEXT:
         # Si la extracción local falló (candidate_text vacío) pero Gemini devolvió "raw_text",
