@@ -59,14 +59,20 @@ class PromptConfig:
             "bajo": "con oportunidades de crecimiento y desarrollo profesional"
         }.get(level, "con potencial de desarrollo profesional")
         
-        # Preparar datos del CV para el prompt
-        cv_sections = cv_data.get("sections", {})
-        cv_profile = cv_sections.get("profile", "No consta")
-        cv_experience = cv_sections.get("experience", [])
-        cv_education = cv_sections.get("education", [])
-        cv_languages = cv_sections.get("languages", [])
-        cv_software = cv_sections.get("software", [])
-        cv_contact = cv_sections.get("contact", {})
+        # Preparar datos del CV para el prompt - USAR ESTRUCTURA REAL
+        # El cv_data viene con claves directas, no anidadas en "sections"
+        cv_experience = cv_data.get("experience") or cv_data.get("experience_detailed") or cv_data.get("experiencia_laboral") or []
+        cv_education = cv_data.get("education") or cv_data.get("education_detailed") or cv_data.get("formacion_academica") or []
+        cv_languages = cv_data.get("languages") or cv_data.get("idiomas") or []
+        cv_software = cv_data.get("software") or cv_data.get("skills") or cv_data.get("habilidades_tecnicas") or []
+        
+        # Contacto puede estar en múltiples ubicaciones
+        cv_contact = cv_data.get("contact") or cv_data.get("contacto") or {}
+        if not cv_contact and "cv_info" in cv_data:
+            cv_contact = cv_data["cv_info"].get("contact") or cv_data["cv_info"].get("contacto") or {}
+        
+        # Perfil/summary si existe
+        cv_profile = cv_data.get("profile") or cv_data.get("perfil") or cv_data.get("summary") or "No consta"
         
         # Preparar soft skills con lenguaje motivador
         soft_skills_text = ""
