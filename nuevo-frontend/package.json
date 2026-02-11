@@ -5,7 +5,7 @@
   "type": "module",
   "scripts": {
     "dev": "vite --host 0.0.0.0 --port 3005 --strictPort",
-    "build": "tsc; vite build",
+    "build": "tsc && vite build",
     "build:analyze": "tsc && vite build --mode analyze",
     "preview": "vite preview --port 5173",
     "lint": "eslint . --ext .ts,.tsx --fix",
@@ -22,6 +22,7 @@
     "@reduxjs/toolkit": "^2.8.2",
     "@sentry/react": "^9.35.0",
     "@sentry/tracing": "^7.120.3",
+    "@supabase/supabase-js": "2.95.3",
     "react": "^18.3.1",
     "react-dom": "^18.3.1",
     "react-hook-form": "^7.57.0",

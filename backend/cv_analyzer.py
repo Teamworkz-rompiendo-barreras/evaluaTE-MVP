@@ -291,7 +291,7 @@ _JSON_CODE_BLOCK_RE = re.compile(r"```(?:json)?\s*(\{.*\})\s*```", re.DOTALL | r
 
 
 def _normalize_ai_json_response(content: str) -> str:
-    """Normaliza la respuesta de Azure OpenAI para extraer únicamente el JSON."""
+    """Normaliza la respuesta de la IA (Gemini) para extraer únicamente el JSON."""
 
     if not isinstance(content, str):
         return str(content)

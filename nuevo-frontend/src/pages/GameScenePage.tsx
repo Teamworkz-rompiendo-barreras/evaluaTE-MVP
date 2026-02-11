@@ -23,10 +23,10 @@ const GameScenePage: React.FC = () => {
 
   // Estado del juego
   const { currentGame, currentScene, gameProgress } = useGameController()
-  
+
   // Estado de accesibilidad
   const accessibility = useSelector((state: RootState) => state.accessibility)
-  
+
   // Estado de personal
   const personal = useSelector((state: RootState) => state.personal)
 
@@ -47,32 +47,32 @@ const GameScenePage: React.FC = () => {
     // console.log('🎮 GameScenePage - INICIO VALIDACIÓN');
     // console.log('🎮 GameScenePage - Estado personal:', personal);
     // console.log('🎮 GameScenePage - personal.completed:', personal.completed);
-    
+
     // Verificar si los datos de contacto están completos
     const hasContactData = Boolean(personal?.firstName && personal?.lastName);
-    
+
     // Verificar si las preferencias están completas
     const hasPreferences = personal?.jobPreferences && (
-      typeof personal.jobPreferences === 'string' 
+      typeof personal.jobPreferences === 'string'
         ? personal.jobPreferences.trim() !== ''
         : personal.jobPreferences?.areas && personal.jobPreferences?.areas?.length > 0
     );
-    
+
     // Los datos personales están completamente completos cuando se tienen tanto contact como preferences
     const hasPersonalData = hasContactData && (hasPreferences || personal.completed);
-    
+
     // Eliminar o comentar los console.log
     // console.log('🎮 GameScenePage - hasContactData:', hasContactData);
     // console.log('🎮 GameScenePage - hasPreferences:', hasPreferences);
     // console.log('🎮 GameScenePage - hasPersonalData:', hasPersonalData);
-    
+
     if (!hasPersonalData) {
       // Eliminar o comentar los console.log
       // console.log('🎮 GameScenePage - REDIRIGIENDO a /register/contact - datos personales no completados');
       navigate('/register/contact');
       return;
     }
-    
+
     // Eliminar o comentar los console.log
     // console.log('🎮 GameScenePage - ✅ Validaciones pasadas, continuando...');
   }, [personal, navigate]);
@@ -107,9 +107,15 @@ const GameScenePage: React.FC = () => {
           <p className="mb-4">Has terminado {currentGame.title}</p>
           <button
             onClick={() => navigate('/games')}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600"
+            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mr-4"
           >
             Volver al menú
+          </button>
+          <button
+            onClick={() => navigate('/resultados')}
+            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+          >
+            Ver Informe de Empleabilidad
           </button>
         </div>
       </div>
@@ -130,16 +136,16 @@ const GameScenePage: React.FC = () => {
               <p className="text-lg text-gray-600 dark:text-gray-300">{currentGame.subtitle}</p>
             </div>
           </div>
-          
+
           {/* Barra de progreso */}
           <div className="mb-4">
-            <ProgressBar 
-              current={gameProgress.current} 
+            <ProgressBar
+              current={gameProgress.current}
               total={gameProgress.total}
               label="Escena"
             />
           </div>
-          
+
           {/* Información general solo en la PRIMERA escena */}
           {isFirstScene && (
             <div className="bg-white dark:bg-slate-800 rounded-lg p-4 shadow-sm transition-colors">

@@ -31,7 +31,15 @@ const ProgressBar: React.FC<ProgressBarProps> = ({
       )}
 
       {/* Barra de progreso */}
-      <div className="bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 w-full transition-colors">
+      <div
+        role="progressbar"
+        aria-valuenow={percent}
+        aria-valuemin={0}
+        aria-valuemax={100}
+        aria-label={label || 'Progreso del juego'}
+        aria-valuetext={completedText}
+        className="bg-gray-200 dark:bg-gray-700 rounded-full h-2.5 w-full transition-colors"
+      >
         <div
           className={`bg-gradient-to-r from-${color}-600 to-${color}-500 dark:from-${color}-400 dark:to-${color}-300 h-2.5 rounded-full transition-all duration-300 ease-in-out`}
           style={{ width: `${percent}%` }}

@@ -25,6 +25,7 @@ import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
 import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData, type NormalizedJobPreferences, type UsefulTools } from '../config/reportConfig';
+import { useAuth } from '../context/AuthContext';
 // (import duplicado eliminado)
 
 // Definir tipos locales para evitar importaciones problemáticas
@@ -110,6 +111,7 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
 // Eliminado: indicador circular de porcentaje (ScoreBadge)
 
 const ResultadosPage: React.FC = () => {
+  const { user } = useAuth();
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
   const report = personal?.report;
@@ -587,39 +589,49 @@ const ResultadosPage: React.FC = () => {
           location: preferredLocation || (jp as any)?.location,
         } as JobPreference & Record<string, unknown>;
 
-        // Completar email/phone con contacto del CV si faltan
-        const cvContact = (cvAnalysisPayload as any)?.contact || (cvAnalysisPayload as any)?.cv_structured?.contact || {};
-        const emailFromCv = Array.isArray(cvContact?.emails) && cvContact.emails.length > 0 ? cvContact.emails[0] : undefined;
-        const phoneFromCv = Array.isArray(cvContact?.phones) && cvContact.phones.length > 0 ? cvContact.phones[0] : undefined;
+        // Datos de contacto normalizados
+        // (emailFromCv y phoneFromCv eliminados por no usarse)
         const completedGamesDetailed = completedGamesForRequest.map((g) => String(g)).filter(Boolean);
 
-        const requestBody = {
-          userId: report?.userId || 'user',
-          fullName: userFullName,
-          softSkills: softSkillsToSend,
-          // Incluir contacto básico, priorizando CV si el estado no lo trae
-          email: personal.email || emailFromCv || undefined,
-          phone: personal.whatsapp || phoneFromCv || undefined,
-          location: preferredLocation || undefined,
-          // Enviar análisis en ambas convenciones para máxima compatibilidad backend
-          cvAnalysis: cvAnalysisPayload,
-          cv_analysis: cvAnalysisPayload,
-          jobPreferences: enrichedJobPreferences,
-          employabilityScore: globalScore ?? undefined,
-          // Asegurar completedGames: usar del estado de juegos o derivar de softSkills como fallback
+        // Prepare data objects for JSON parts
+        const gameResultsData = {
           completedGames: completedGamesDetailed,
-          logs: []
+          softSkills: softSkillsToSend
         };
 
-        // DEBUG: Log del requestBody completo
-        console.log('🔍 DEBUG - requestBody completo:', requestBody);
-        console.log('🔍 DEBUG - cvAnalysis en requestBody:', requestBody.cvAnalysis);
+        const preferencesData = enrichedJobPreferences;
+
+        // Construct FormData
+        const formData = new FormData();
+        formData.append("game_results", JSON.stringify(gameResultsData));
+        formData.append("preferences", JSON.stringify(preferencesData));
+
+        // Add CV file if available
+        if (personal?.cvFile?.fileContent) {
+          try {
+            const res = await fetch(personal.cvFile.fileContent);
+            const blob = await res.blob();
+            formData.append("cv_file", blob, personal.cvFile.fileName || "cv.pdf");
+            console.log('📄 DEBUG - CV File appended to FormData');
+          } catch (e) {
+            console.warn('⚠️ DEBUG - Failed to process CV file for upload:', e);
+          }
+        }
 
         const primaryUrl = buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT);
+        console.log('🚀 DEBUG - Sending request to:', primaryUrl);
+
+        // Prepare headers
+        const headers: HeadersInit = {};
+        if (user?.id) {
+          headers['X-User-Id'] = user.id;
+        }
+
         const res = await fetch(primaryUrl, {
           method: 'POST',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify(requestBody),
+          // Content-Type header is set automatically by browser for FormData
+          headers: headers,
+          body: formData,
           signal: AbortSignal.timeout(180000), // Timeout de 3 minutos
         });
 
@@ -2043,9 +2055,9 @@ const ResultadosPage: React.FC = () => {
       <div className="space-y-8">
         <section>
           <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resumen ejecutivo</h2>
-          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
-            {data.profile_summary || data.summary}
-          </p>
+          <div className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
+            {renderMarkdown(data.profile_summary || data.summary || '')}
+          </div>
         </section>
 
         <section>
@@ -2062,7 +2074,9 @@ const ResultadosPage: React.FC = () => {
 
         <section>
           <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Resumen del CV</h2>
-          <p className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">{data.cv_analysis_summary}</p>
+          <div className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
+            {renderMarkdown(data.cv_analysis_summary || '')}
+          </div>
           <div className="mt-4 space-y-4">
             {details.experience?.length ? (
               <div>
@@ -2211,7 +2225,9 @@ const ResultadosPage: React.FC = () => {
 
         <section>
           <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Entornos de trabajo ideales</h2>
-          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{data.ideal_work_environment || 'No consta'}</p>
+          <div className="text-gray-900 dark:text-gray-100 leading-relaxed">
+            {renderMarkdown(data.ideal_work_environment || 'No consta')}
+          </div>
           {jobPrefs?.areas?.length ? (
             <p className="text-gray-900 dark:text-gray-100 mt-2"><strong>Áreas de interés:</strong> {jobPrefs.areas.join(', ')}</p>
           ) : null}
@@ -2352,7 +2368,7 @@ const ResultadosPage: React.FC = () => {
                         )}
                         {role.reason && (
                           <div className="text-sm mt-1">
-                            <strong>Motivo adicional del análisis:</strong> {role.reason}
+                            <strong>Motivo adicional del análisis:</strong> <span className="inline-block align-top">{renderMarkdown(role.reason)}</span>
                           </div>
                         )}
                         {(role as any).preference_reason && (
@@ -2471,7 +2487,9 @@ const ResultadosPage: React.FC = () => {
 
         <section>
           <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Mensaje final</h2>
-          <p className="text-gray-900 dark:text-gray-100 leading-relaxed">{data.final_message}</p>
+          <div className="text-gray-900 dark:text-gray-100 leading-relaxed">
+            {renderMarkdown(data.final_message || '')}
+          </div>
         </section>
       </div>
     );
@@ -2503,6 +2521,18 @@ const ResultadosPage: React.FC = () => {
       <div className="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 print:bg-white print:shadow-none print:p-0">
         {/* Informe de la IA y formulario de feedback */}
         {/* Estado iaReport disponible para debug en desarrollo */}
+
+        {/* Estado de carga EXPLÍCITO */}
+        {loadingIa && (
+          <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg shadow-md mb-8 transition-colors">
+            <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+            <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 animate-pulse">Generando tu Informe de Empleabilidad...</h3>
+            <p className="text-gray-600 dark:text-gray-400 mt-2 text-center max-w-md">
+              La IA está analizando tu perfil, tus resultados de juego y tus preferencias para crear un plan personalizado.
+              Esto puede tardar unos segundos.
+            </p>
+          </div>
+        )}
 
         {/* SOLUCIÓN: Mostrar informe básico si no hay iaReport después de cargar */}
         {!loadingIa && !iaReport && !errorIa && (

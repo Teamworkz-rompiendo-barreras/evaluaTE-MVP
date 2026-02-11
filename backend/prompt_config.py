@@ -59,8 +59,7 @@ class PromptConfig:
             "bajo": "con oportunidades de crecimiento y desarrollo profesional"
         }.get(level, "con potencial de desarrollo profesional")
         
-        # Preparar datos del CV para el prompt - USAR ESTRUCTURA REAL
-        # El cv_data viene con claves directas, no anidadas en "sections"
+        # Preparar datos del CV para el prompt
         cv_experience = cv_data.get("experience") or cv_data.get("experience_detailed") or cv_data.get("experiencia_laboral") or []
         cv_education = cv_data.get("education") or cv_data.get("education_detailed") or cv_data.get("formacion_academica") or []
         cv_languages = cv_data.get("languages") or cv_data.get("idiomas") or []
@@ -74,6 +73,38 @@ class PromptConfig:
         # Perfil/summary si existe
         cv_profile = cv_data.get("profile") or cv_data.get("perfil") or cv_data.get("summary") or "No consta"
         
+        # Preparar experiencia (lista formateada)
+        experience_list = []
+        for exp in cv_experience:
+            if isinstance(exp, str):
+                experience_list.append(f"- {exp}")
+            elif isinstance(exp, dict):
+                role = exp.get("title") or exp.get("role") or exp.get("puesto") or "Rol no especificado"
+                company = exp.get("company") or exp.get("empresa") or ""
+                dates = f"({exp.get('start_date') or ''} - {exp.get('end_date') or ''})"
+                experience_list.append(f"- {role} en {company} {dates}")
+        experience_text = "\n".join(experience_list) if experience_list else "No consta"
+
+        # Preparar educación
+        education_list = []
+        for edu in cv_education:
+            if isinstance(edu, str):
+                education_list.append(f"- {edu}")
+            elif isinstance(edu, dict):
+                title = edu.get("title") or edu.get("degree") or edu.get("titulo") or "Título no especificado"
+                center = edu.get("institution") or edu.get("school") or edu.get("centro") or ""
+                education_list.append(f"- {title} en {center}")
+        education_text = "\n".join(education_list) if education_list else "No consta"
+
+        # Preparar software/skills
+        software_input = cv_software
+        software_list = []
+        if isinstance(software_input, list):
+            for s in software_input:
+                if isinstance(s, str): software_list.append(s)
+                elif isinstance(s, dict): software_list.append(s.get("name") or s.get("tool") or "")
+        software_text = ", ".join([s for s in software_list if s]) if software_list else "No consta"
+
         # Preparar soft skills con lenguaje motivador
         soft_skills_text = ""
         for skill in soft_skills_data:
@@ -100,8 +131,6 @@ class PromptConfig:
         
         # Preparar juegos completados
         games_text = ", ".join(completed_games) if completed_games else "No consta"
-        
-        # Si se proporcionó analysis_json en cv_data, añadir reglas estrictas
         
         # CRÍTICO: Bloque de análisis del CV con estrellas deterministas
         analysis_block = analysis_block or ""
@@ -186,21 +215,27 @@ Dispones de los siguientes campos (cubre los que existan; si faltan, indica "No 
 ### SOFT SKILLS EVALUADAS
 {soft_skills_text}
 
-### CV ANALIZADO
+### CV ANALIZADO (DATOS ESTRUCTURADOS)
 - Perfil: {cv_profile}
-- Experiencia: {len(cv_experience) if isinstance(cv_experience, list) else 'No consta'} posiciones
-- Educación: {len(cv_education) if isinstance(cv_education, list) else 'No consta'} elementos
-- Idiomas: {len(cv_languages) if isinstance(cv_languages, list) else 'No consta'} detectados
-- Software/Herramientas: {len(cv_software) if isinstance(cv_software, list) else 'No consta'} herramientas
 - Contacto: {cv_contact if cv_contact else 'No consta'}
 
-**IMPORTANTE:** Si alguno de estos campos muestra "No consta" o está vacío, significa que la información del CV no se pudo extraer correctamente. En ese caso, indica claramente en el informe que "La información del CV no está disponible debido a limitaciones técnicas en la extracción de datos".
+**Experiencia Laboral:**
+{experience_text}
+
+**Formación Académica:**
+{education_text}
+
+**Software y Herramientas:**
+{software_text}
+
+**Idiomas Detectados:**
+{len(cv_languages) if isinstance(cv_languages, list) else 'No consta'} idiomas (ver sección Idiomas abajo)
 
 ### TEXTO RAW DEL CV (CRÍTICO PARA DETALLE)
 {full_raw_text[:8000]}
 
 **CRÍTICO:** Usa el texto raw del CV para:
-- **Detallar** la experiencia, idiomas y herramientas en el `cv_summary` y `cv_details`.
+- **Detallar** la experiencia, idiomas y herramientas en el `cv_summary` y `cv_details` si la información estructurada es insuficiente.
 - **Justificar** las fortalezas y áreas de mejora con evidencia textual.
 - **Informar** tu análisis de viabilidad del rol sugerido.
 - Detectar inconsistencias o errores

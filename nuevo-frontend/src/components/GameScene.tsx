@@ -28,10 +28,18 @@ const GameScene: React.FC<GameSceneProps> = ({
   const [startTime] = useState(Date.now());
   const [helpUsed, setHelpUsed] = useState(false);
   const [adaptations, setAdaptations] = useState<string[]>([]);
+  const titleRef = React.useRef<HTMLHeadingElement>(null);
+
+  // Mover el foco al título cuando cambia la escena para usuarios de lector de pantalla
+  React.useEffect(() => {
+    if (titleRef.current) {
+      titleRef.current.focus();
+    }
+  }, [scene.id]);
 
   const handleSceneComplete = (selectedOptionId?: string) => {
     const timeSpent = Date.now() - startTime;
-    
+
     const gameLog: GameLog = {
       sceneId: scene.id,
       selectedOptionId,
@@ -89,16 +97,21 @@ const GameScene: React.FC<GameSceneProps> = ({
   };
 
   return (
-    <div 
-      className={`game-scene p-6 rounded-lg shadow-lg transition-colors ${
-        accessibility.contrastLevel === 'high' 
-          ? 'bg-white text-black border-2 border-black dark:bg-black dark:text-white' 
-          : 'bg-gray-50 text-gray-800 dark:bg-slate-800 dark:text-gray-100'
-      }`}
+    <div
+      role="main"
+      aria-label={`Escena del juego: ${scene.title}`}
+      className={`game-scene p-6 rounded-lg shadow-lg transition-colors ${accessibility.contrastLevel === 'high'
+        ? 'bg-white text-black border-2 border-black dark:bg-black dark:text-white'
+        : 'bg-gray-50 text-gray-800 dark:bg-slate-800 dark:text-gray-100'
+        }`}
       style={{ fontSize: `${accessibility.fontScale}%` }}
     >
       {/* Título de la escena */}
-      <h2 className="text-2xl font-bold mb-4 text-center text-gray-900 dark:text-gray-100">
+      <h2
+        ref={titleRef}
+        tabIndex={-1}
+        className="text-2xl font-bold mb-4 text-center text-gray-900 dark:text-gray-100 outline-none focus:ring-2 focus:ring-blue-500 rounded px-2"
+      >
         {scene.title}
       </h2>
 

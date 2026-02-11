@@ -1,394 +1,423 @@
 # backend/pdf_service.py
-import os
 import math
-from io import BytesIO
-from typing import Any, Dict, List, Optional, Tuple
 from datetime import date
-import unicodedata
+from io import BytesIO
+from typing import Any, Dict, List, Optional
 
-from reportlab.lib.pagesizes import A4
-from reportlab.pdfgen import canvas
-from reportlab.lib.units import mm
 from reportlab.lib import colors
+from reportlab.lib.pagesizes import A4
+from reportlab.lib.units import mm
+from reportlab.pdfgen import canvas
+from reportlab.platypus import Paragraph
+from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
+from reportlab.lib.enums import TA_LEFT, TA_CENTER
 
 try:
-    from new_report_schema import NewReportSchema
-except ImportError:
     from backend.new_report_schema import NewReportSchema
+except ImportError:
+    from new_report_schema import NewReportSchema
 
-# --- Colores (Tema Oscuro) ---
-BG_COLOR = colors.HexColor("#171923")  # Deep Dark Blue/Slate
-TEXT_COLOR = colors.white
-ACCENT_COLOR = colors.HexColor("#4299E1") # Blue
-BOX_BG_COLOR = colors.HexColor("#A0AEC0") # For badges (light grey) - wait, images show dark badges?
-# Image analysis: Background is clearly dark (#171923 or similar). Text is white/light grey.
-# Radar chart background is dark.
-# Global score badge is dark grey/black with white text.
+# --- Configuración de Estilo (Tema Oscuro Profesional) ---
+BG_COLOR = colors.HexColor("#0f172a")     # Slate 900 (Fondo principal)
+CARD_BG_COLOR = colors.HexColor("#1e293b") # Slate 800 (Fondo tarjetas)
+TEXT_PRIMARY = colors.white
+TEXT_SECONDARY = colors.HexColor("#94a3b8") # Slate 400
+ACCENT_COLOR = colors.HexColor("#38_bdf8")  # Sky 400 (Azul claro vibrante)
+GOLD_COLOR = colors.HexColor("#facc15")     # Yellow 400
+SUCCESS_COLOR = colors.HexColor("#4ade80")
+WARNING_COLOR = colors.HexColor("#fbbf24")
+DANGER_COLOR = colors.HexColor("#f87171")
 
-# --- Helpers de Dibujo ---
+MARGIN = 20 * mm
+PAGE_W, PAGE_H = A4
 
 def _draw_background(c: canvas.Canvas):
-    """Pinta el fondo completo de la página."""
     c.saveState()
     c.setFillColor(BG_COLOR)
-    c.rect(0, 0, A4[0], A4[1], stroke=0, fill=1)
-    c.restoreState()
-
-def _draw_text(c: canvas.Canvas, x: float, y: float, text: str, font="Helvetica", size=10, color=TEXT_COLOR):
-    """Dibuja texto simple."""
-    c.saveState()
-    c.setFillColor(color)
-    c.setFont(font, size)
-    c.drawString(x, y, text)
-    c.restoreState()
-
-def _draw_centered_text(c: canvas.Canvas, x: float, y: float, text: str, font="Helvetica", size=10, color=TEXT_COLOR):
-    c.saveState()
-    c.setFillColor(color)
-    c.setFont(font, size)
-    c.drawCentredString(x, y, text)
-    c.restoreState()
-
-def _draw_wrapped_text(c: canvas.Canvas, x: float, y: float, text: str, max_width: float, leading: float = 12, font="Helvetica", size=10, color=TEXT_COLOR) -> float:
-    """Dibuja texto multilínea."""
-    if not text:
-        return y
-    c.saveState()
-    c.setFillColor(color)
-    c.setFont(font, size)
+    c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
     
-    lines: List[str] = []
-    for raw_line in text.split("\n"):
-        words = raw_line.split(" ")
-        line = ""
-        for w in words:
-            test = f"{line} {w}".strip()
-            if c.stringWidth(test, font, size) <= max_width:
-                line = test
-            else:
-                if line:
-                    lines.append(line)
-                line = w
-        if line:
-            lines.append(line)
-            
-    for ln in lines:
-        c.drawString(x, y, ln)
-        y -= leading
-    c.restoreState()
-    return y
-
-def _draw_bulleted_list(c: canvas.Canvas, x: float, y: float, items: List[Any], max_width: float, leading: float = 14) -> float:
-    """Renderiza lista con viñetas."""
-    if not items:
-        return y
-    for it in items:
-        if not it:
-            continue
-        # Convertir a string si es dict
-        txt = ""
-        if isinstance(it, str):
-            txt = it
-        elif isinstance(it, dict):
-            # Lógica heurística para diccionarios
-            labels = [str(it.get(k)) for k in ["name", "skill", "role", "title", "language", "empresa"] if it.get(k)]
-            txt = " - ".join(labels) if labels else str(it)
-        
-        y = _draw_wrapped_text(c, x, y, f"• {txt}", max_width, leading, font="Helvetica", size=10)
-    return y
-
-# --- Radar Chart (Customizado para Dark Mode) ---
-def _draw_radar_chart(c: canvas.Canvas, center_x: float, center_y: float, radius: float, data: List[Dict[str, Any]]) -> None:
-    if not data:
-        return
-    # Top 10 skills standard
-    pairs = []
-    for item in data:
-        lbl = item.get("skill") or item.get("name") or ""
-        scr = item.get("score") or 0
-        try:
-            scr = float(scr)
-        except:
-            scr = 0
-        pairs.append((lbl, max(0, min(100, scr))))
+    # Decoración sutil (header bar)
+    c.setFillColor(colors.HexColor("#1e293b"))
+    c.rect(0, PAGE_H - 18*mm, PAGE_W, 18*mm, stroke=0, fill=1)
     
-    n = len(pairs)
-    if n < 3: return
+    # Footer bar
+    c.rect(0, 0, PAGE_W, 12*mm, stroke=0, fill=1)
+    c.restoreState()
 
-    # Ejes y anillos (Gris claro)
+def _draw_header(c: canvas.Canvas, title: str = "INFORME DE EMPLEABILIDAD"):
     c.saveState()
-    c.setStrokeColor(colors.grey)
+    # Logo text
+    c.setFont("Helvetica-Bold", 14)
+    c.setFillColor(TEXT_PRIMARY)
+    c.drawString(MARGIN, PAGE_H - 12*mm, "Teamworkz")
+    
+    c.setFont("Helvetica", 12)
+    c.setFillColor(TEXT_SECONDARY)
+    c.drawRightString(PAGE_W - MARGIN, PAGE_H - 12*mm, title)
+    c.restoreState()
+
+def _draw_footer(c: canvas.Canvas, page_num: int):
+    c.saveState()
+    c.setFont("Helvetica", 9)
+    c.setFillColor(TEXT_SECONDARY)
+    c.drawString(MARGIN, 5*mm, f"Generado el {date.today().strftime('%d/%m/%Y')}")
+    c.drawRightString(PAGE_W - MARGIN, 5*mm, f"Página {page_num}")
+    c.restoreState()
+
+def _draw_card(c: canvas.Canvas, x: float, y: float, w: float, h: float, title: Optional[str] = None):
+    """Dibuja un fondo tipo tarjeta redondeada."""
+    c.saveState()
+    c.setFillColor(CARD_BG_COLOR)
+    # roundRect(x, y, width, height, radius)
+    c.roundRect(x, y, w, h, 6, fill=1, stroke=0)
+    
+    if title:
+        c.setFillColor(ACCENT_COLOR) # Título en acento
+        c.setFont("Helvetica-Bold", 12)
+        c.drawString(x + 5*mm, y + h - 8*mm, title.upper())
+        # Línea separadora
+        c.setStrokeColor(colors.HexColor("#334155"))
+        c.setLineWidth(1)
+        c.line(x + 5*mm, y + h - 11*mm, x + w - 5*mm, y + h - 11*mm)
+    
+    c.restoreState()
+
+def _wrapped_text(c: canvas.Canvas, text: str, x: float, y: float, max_w: float, 
+                  font="Helvetica", size=10, color=TEXT_SECONDARY, leading=14) -> float:
+    """Dibuja texto multilínea y retorna la nueva posición Y."""
+    if not text: return y
+    
+    # Usar Paragraph para mejor manejo de texto
+    estilos = getSampleStyleSheet()
+    estilo = ParagraphStyle(
+        'Custom',
+        parent=estilos['Normal'],
+        fontName=font,
+        fontSize=size,
+        textColor=color,
+        leading=leading,
+        alignment=TA_LEFT
+    )
+    
+    p = Paragraph(text.replace("\n", "<br/>"), estilo)
+    w, h = p.wrap(max_w, PAGE_H) # Altura disponible arbitraria grande
+    p.drawOn(c, x, y - h)
+    return y - h
+
+def _draw_skill_bar(c: canvas.Canvas, x: float, y: float, w: float, name: str, score: int):
+    c.saveState()
+    h = 6*mm
+    
+    # Nombre
+    c.setFont("Helvetica", 9)
+    c.setFillColor(TEXT_PRIMARY)
+    c.drawString(x, y + 2*mm, name)
+    
+    # Barra fondo
+    bar_x = x + 50*mm
+    bar_w = w - 60*mm
+    c.setFillColor(colors.HexColor("#334155"))
+    c.roundRect(bar_x, y, bar_w, h, 3, fill=1, stroke=0)
+    
+    # Barra progreso
+    progress = max(0, min(100, score))
+    fill_w = bar_w * (progress / 100)
+    
+    # Color según score
+    fill_color = SUCCESS_COLOR if score >= 75 else (WARNING_COLOR if score >= 50 else DANGER_COLOR)
+    c.setFillColor(fill_color)
+    c.roundRect(bar_x, y, fill_w, h, 3, fill=1, stroke=0)
+    
+    # Texto score
+    c.setFont("Helvetica-Bold", 8)
+    c.setFillColor(TEXT_PRIMARY)
+    c.drawRightString(bar_x + bar_w + 8*mm, y + 1.5*mm, f"{score}%")
+    
+    c.restoreState()
+
+def draw_radar_chart(c, data: List[Dict[str, Any]], cx, cy, radius=50):
+    """Dibuja un gráfico de radar hexagonal."""
+    if not data: return
+    
+    # Asegurar que hay datos
+    if len(data) < 3: return
+    
+    # Limitar a top 6 para limpieza visual
+    if not isinstance(data, list): data = list(data)
+    sorted_data = sorted(data, key=lambda x: x.get("score", 0), reverse=True)
+    data = sorted_data[:6]
+    n = len(data)
+    angle_step = 2 * math.pi / n
+    
+    c.saveState()
+    
+    # Ejes y fondo
+    c.setStrokeColor(colors.HexColor("#475569"))
     c.setLineWidth(0.5)
     
-    # 5 Niveles
+    # Anillos concéntricos (20%, 40%, 60%, 80%, 100%)
     for i in range(1, 6):
-        r = radius * (i/5)
-        # Dibujar polígono
-        p = c.beginPath()
+        level_r = radius * (i/5)
+        path = c.beginPath()
         for j in range(n):
-            ang = (j / n) * 2 * math.pi - (math.pi / 2)
-            x = center_x + r * math.cos(ang)
-            y = center_y + r * math.sin(ang)
-            if j == 0: p.moveTo(x, y)
-            else: p.lineTo(x, y)
-        p.close()
-        c.drawPath(p, stroke=1, fill=0)
-
-    # Ejes radiales
-    for j in range(n):
-        ang = (j / n) * 2 * math.pi - (math.pi / 2)
-        x = center_x + radius * math.cos(ang)
-        y = center_y + radius * math.sin(ang)
-        c.line(center_x, center_y, x, y)
-        
-        # Etiquetas
-        lbl_x = center_x + (radius + 15) * math.cos(ang)
-        lbl_y = center_y + (radius + 10) * math.sin(ang)
-        
-        # Ajuste de alineación según cuadrante
-        align = "diferente"
-        # Usar drawCentredString por simplicidad
-        c.setFillColor(colors.white)
-        c.setFont("Helvetica", 8)
-        # Dividir etiquetas largas
-        palabras = pairs[j][0].split(" ")
-        if len(palabras) > 2:
-            lbl_txt1 = " ".join(palabras[:2])
-            lbl_txt2 = " ".join(palabras[2:])
-            c.drawCentredString(lbl_x, lbl_y + 4, lbl_txt1)
-            c.drawCentredString(lbl_x, lbl_y - 4, lbl_txt2)
-        else:
-            c.drawCentredString(lbl_x, lbl_y, pairs[j][0])
-
-    # Datos (Relleno azul transparente)
-    c.setStrokeColor(ACCENT_COLOR)
-    c.setLineWidth(2)
-    c.setFillColor(colors.Color(0.26, 0.6, 0.88, alpha=0.3)) # #4299E1 con alpha
+            ang = j * angle_step - math.pi/2
+            px = cx + level_r * math.cos(ang)
+            py = cy + level_r * math.sin(ang)
+            if j == 0: path.moveTo(px, py)
+            else: path.lineTo(px, py)
+        path.close()
+        c.drawPath(path, stroke=1, fill=0)
     
-    p = c.beginPath()
-    first_pt = None
+    # Ejes radiales y etiquetas
+    c.setFont("Helvetica", 7)
+    c.setFillColor(TEXT_SECONDARY)
+    
+    value_points = []
+    
     for j in range(n):
-        val = pairs[j][1]
-        r = radius * (val / 100.0)
-        ang = (j / n) * 2 * math.pi - (math.pi / 2)
-        x = center_x + r * math.cos(ang)
-        y = center_y + r * math.sin(ang)
-        if j == 0:
-            p.moveTo(x, y)
-            first_pt = (x, y)
-        else:
-            p.lineTo(x, y)
+        ang = j * angle_step - math.pi/2
         
-        # Puntito
-        c.circle(x, y, 3, stroke=0, fill=1) # Dibuja puntos azules en los vértices
+        # Eje
+        end_x = cx + radius * math.cos(ang)
+        end_y = cy + radius * math.sin(ang)
+        c.line(cx, cy, end_x, end_y)
         
-    p.close()
-    c.drawPath(p, stroke=1, fill=1)
+        # Etiqueta
+        lbl_r = radius + 12
+        lbl_x = cx + lbl_r * math.cos(ang)
+        lbl_y = cy + lbl_r * math.sin(ang)
+        
+        # Ajuste alineación
+        align = TA_CENTER
+        item = data[j]
+        c.saveState() # Para texto
+        # Simple drawString centrado manual
+        c.drawCentredString(lbl_x, lbl_y, item.get("skill", "")[:15])
+        c.restoreState()
+        
+        # Punto de valor
+        score = item.get("score", 0)
+        val_r = radius * (score / 100)
+        val_x = cx + val_r * math.cos(ang)
+        val_y = cy + val_r * math.sin(ang)
+        value_points.append((val_x, val_y))
+        
+    # Polígono de valores
+    if value_points:
+        path = c.beginPath()
+        # Ensure value_points is indexable
+        vp_list = list(value_points)
+        path.moveTo(vp_list[0][0], vp_list[0][1])
+        for p in vp_list[1:]:
+            path.lineTo(p[0], p[1])
+        path.close()
+        
+        # Relleno semi-transparente
+        c.setFillColor(colors.Color(56/255, 189/255, 248/255, alpha=0.4)) # Sky 400 with alpha
+        c.setStrokeColor(ACCENT_COLOR)
+        c.setLineWidth(2)
+        c.drawPath(path, fill=1, stroke=1)
+        
+        # Puntos
+        c.setFillColor(ACCENT_COLOR)
+        for p in value_points:
+            c.circle(p[0], p[1], 2, fill=1, stroke=0)
+            
     c.restoreState()
-
-# --- Normalización Soft Skills ---
-ALL_SOFT_SKILLS = [
-    "Pensamiento analítico", "Toma de decisiones", "Liderazgo", "Creatividad",
-    "Influencia social", "Curiosidad y aprendizaje", "Resiliencia y flexibilidad",
-    "Autoconciencia", "Empatía", "Pensamiento Crítico"
-]
-
-def _normalize_soft_skills(raw_data: List[Any]) -> List[Dict[str, Any]]:
-    # Crea lista fija de 10 skills, mapeando lo que venga
-    # Simplificado: si viene dict con name/skill, busca match fuzzy o exacto
-    mapping = {k.lower(): k for k in ALL_SOFT_SKILLS}
-    scores = {k: 0 for k in ALL_SOFT_SKILLS}
-    
-    for item in raw_data:
-        if isinstance(item, dict):
-            nm = str(item.get("skill") or item.get("name") or "").lower()
-            val = item.get("score") or 0
-            # Intentar buscar en mapping
-            for k in mapping:
-                if k in nm or nm in k:
-                    scores[mapping[k]] = int(val)
-    
-    return [{"skill": k, "score": v} for k, v in scores.items()]
 
 
 def create_employability_pdf(report: NewReportSchema) -> bytes:
-    buf = BytesIO()
-    c = canvas.Canvas(buf, pagesize=A4)
-    w, h = A4
-    margin = 25 * mm
-    printable_w = w - 2 * margin
+    buffer = BytesIO()
+    c = canvas.Canvas(buffer, pagesize=A4)
+    c.setTitle(f"Informe Empleabilidad - {report.personal_data.name}")
     
-    # Datos
-    rep_dict = report.dict()
-    soft_skills = _normalize_soft_skills(rep_dict.get("soft_skills") or [])
-    
-    # --- PÁGINA 1: Portada / Radar ---
+    # --- PÁGINA 1: Dashboard Principal ---
     _draw_background(c)
+    _draw_header(c)
     
-    # Header
-    # Logo text "Teamworkz" (simulado con texto dorado/amarillo)
-    _draw_centered_text(c, w/2, h - 30 * mm, "Teamworkz", font="Helvetica-Bold", size=14, color=colors.HexColor("#F6E05E"))
-    _draw_centered_text(c, w/2, h - 35 * mm, "ROMPIENDO BARRERAS", font="Helvetica", size=8, color=colors.HexColor("#F6E05E"))
+    # Título Principal
+    y_cursor = PAGE_H - 40*mm
+    c.setFillColor(TEXT_PRIMARY)
+    c.setFont("Helvetica-Bold", 24)
+    c.drawCentredString(PAGE_W/2, y_cursor, "PERFIL DE COMPETENCIAS PROFESIONALES")
     
-    # Título Grande
-    _draw_centered_text(c, w/2, h - 50 * mm, "Informe de Empleabilidad", font="Helvetica-Bold", size=24)
+    # Datos Candidato (Tarjeta Superior)
+    y_cursor -= 15*mm
+    card_h = 45*mm
+    _draw_card(c, MARGIN, y_cursor - card_h, PAGE_W - 2*MARGIN, card_h, "DATOS PERSONALES")
     
-    # Nombre
-    full_name = report.personal_data.name or "Usuario"
-    _draw_centered_text(c, w/2, h - 60 * mm, full_name, font="Helvetica-Bold", size=16, color=colors.lightgrey)
+    # Contenido Datos
+    content_y = y_cursor - 18*mm
+    c.setFont("Helvetica-Bold", 14)
+    c.setFillColor(TEXT_PRIMARY)
+    c.drawString(MARGIN + 10*mm, content_y, report.personal_data.name)
     
-    # Fecha
-    _draw_centered_text(c, w/2, h - 68 * mm, date.today().strftime("%d/%m/%Y"), font="Helvetica", size=12, color=colors.grey)
+    c.setFont("Helvetica", 10)
+    c.setFillColor(TEXT_SECONDARY)
+    # Columna 1
+    c.drawString(MARGIN + 10*mm, content_y - 8*mm, f"📍 {report.personal_data.location}")
+    c.drawString(MARGIN + 10*mm, content_y - 14*mm, f"📧 {report.personal_data.email}")
+    # Columna 2
+    c.drawString(PAGE_W/2, content_y - 8*mm, f"📞 {report.personal_data.phone}")
+    c.drawString(PAGE_W/2, content_y - 14*mm, f"🔗 {report.personal_data.linkedin or 'No disponible'}")
     
-    # Sección Mapa de Habilidades
-    y_radar = h - 110 * mm
-    _draw_text(c, margin, y_radar + 20, "Mapa de habilidades", font="Helvetica-Bold", size=16)
+    # Score Global (Badge)
+    score = report.employability_score or 75
+    score_color = SUCCESS_COLOR if score >= 70 else (WARNING_COLOR if score >= 50 else DANGER_COLOR)
+    c.setFillColor(score_color)
+    c.circle(PAGE_W - MARGIN - 25*mm, y_cursor - 22*mm, 18*mm, fill=1, stroke=0)
+    c.setFillColor(colors.black)
+    c.setFont("Helvetica-Bold", 16)
+    c.drawCentredString(PAGE_W - MARGIN - 25*mm, y_cursor - 20*mm, f"{score}%")
+    c.setFont("Helvetica", 7)
+    c.drawCentredString(PAGE_W - MARGIN - 25*mm, y_cursor - 28*mm, "EMPLEABILIDAD")
     
-    # Radar Chart
-    radar_center_y = y_radar - 60
-    radar_radius = 45 * mm
-    # Ajustar centro X un poco a la izquierda para dejar espacio a la lista
-    radar_center_x = margin + radar_radius + 10
+    y_cursor -= (card_h + 10*mm)
     
-    _draw_radar_chart(c, radar_center_x, radar_center_y, radar_radius, soft_skills)
+    # Resumen Perfil
+    summary_h = 35*mm
+    _draw_card(c, MARGIN, y_cursor - summary_h, PAGE_W - 2*MARGIN, summary_h, "RESUMEN EJECUTIVO")
+    _wrapped_text(c, report.profile_summary, MARGIN + 5*mm, y_cursor - 15*mm, PAGE_W - 2*MARGIN - 10*mm)
     
-    # Lista de puntuaciones (a la derecha del radar)
-    list_x = radar_center_x + radar_radius + 30
-    list_y = y_radar
+    y_cursor -= (summary_h + 10*mm)
     
-    _draw_text(c, list_x, list_y, "Resumen de puntuaciones:", font="Helvetica-Bold", size=10)
-    list_y -= 15
-    for sk in soft_skills:
-        sc = sk["score"]
-        color = colors.white
-        if sc > 70: color = colors.HexColor("#68D391") # Green
-        elif sc < 40: color = colors.HexColor("#FC8181") # Red
+    # Dos columnas: Radar (Izq) y Soft Skills (Der)
+    col_w = (PAGE_W - 2*MARGIN - 10*mm) / 2
+    chart_h = 80*mm
+    
+    # Tarjeta Izq: Radar
+    _draw_card(c, MARGIN, y_cursor - chart_h, col_w, chart_h, "MAPA DE HABILIDADES")
+    # Centro del radar relativo a la tarjeta
+    rx = MARGIN + col_w/2
+    ry = y_cursor - chart_h/2 - 5*mm
+    draw_radar_chart(c, report.soft_skills or [], rx, ry, 25*mm)
+    
+    # Tarjeta Der: Top Skills
+    _draw_card(c, MARGIN + col_w + 10*mm, y_cursor - chart_h, col_w, chart_h, "COMPETENCIAS CLAVE")
+    
+    skill_y = y_cursor - 18*mm
+    # Ordenar y tomar top 5
+    soft_skills: List[Dict[str, Any]] = report.soft_skills or []
+    if not isinstance(soft_skills, list): soft_skills = list(soft_skills)
+    sorted_skills = sorted(soft_skills, key=lambda x: x.get("score", 0), reverse=True)
+    top_skills = sorted_skills[:5]
+    for sk in top_skills:
+        _draw_skill_bar(c, MARGIN + col_w + 15*mm, skill_y, col_w - 10*mm, sk.get("skill", "")[:20], sk.get("score", 0))
+        skill_y -= 12*mm
         
-        _draw_text(c, list_x, list_y, f"{sk['skill']}: {sc}%", font="Helvetica", size=9, color=color)
-        list_y -= 12
-        
-    # Puntaje Global (Abajo a la derecha)
-    glob_score = int(report.employability_score or 0)
-    badge_x = w - margin - 50
-    badge_y = margin + 20
-    # Circulo o Rectangulo redondeado
-    c.setFillColor(colors.HexColor("#2D3748"))
-    c.roundRect(badge_x, badge_y, 40, 25, 10, fill=1, stroke=0)
-    _draw_centered_text(c, badge_x + 20, badge_y + 8, f"{glob_score}%", font="Helvetica-Bold", size=12)
-    
+    _draw_footer(c, 1)
     c.showPage()
     
-    # --- PÁGINA 2: Resumen, Datos, CV ---
+    # --- PÁGINA 2: Diagnóstico y Análisis CV ---
     _draw_background(c)
-    y = h - margin - 20
+    _draw_header(c)
+    y_cursor = PAGE_H - 30*mm
     
-    # Resumen Ejecutivo (White box inverted? No, just text is fine or maybe a card look)
-    # User image shows clean text on whitebg... wait. 
-    # IF USER WANTS DARK THEME, I stick to dark.
-    # Title
-    _draw_text(c, margin, y, "Resumen ejecutivo", font="Helvetica-Bold", size=20)
-    y -= 10
-    c.setStrokeColor(colors.grey)
-    c.line(margin, y, w-margin, y)
-    y -= 20
+    _draw_card(c, MARGIN, y_cursor - 70*mm, PAGE_W - 2*MARGIN, 70*mm, "ANÁLISIS TÉCNICO DEM CV")
     
-    profile_summary = report.profile_summary or "No hay resumen disponible."
-    y = _draw_wrapped_text(c, margin, y, profile_summary, printable_w, size=11, leading=16)
-    
-    y -= 30
-    
-    # Datos personales
-    _draw_text(c, margin, y, "Datos personales", font="Helvetica-Bold", size=20)
-    y -= 10
-    c.line(margin, y, w-margin, y)
-    y -= 20
-    
-    pd = report.personal_data
-    datos = [
-        f"Nombre: {pd.name}",
-        f"Ubicación: {pd.location}",
-        f"Email: {pd.email}",
-        f"Teléfono: {pd.phone}",
-        f"LinkedIn: {pd.linkedin or 'No especificado'}"
+    # Scores del análisis (Estrellas / Barras)
+    an = report.cv_analysis
+    metrics = [
+        ("Estructura", an.structure_score),
+        ("Claridad", an.clarity_score),
+        ("Contenido", an.key_info_score),
+        ("Coherencia", an.coherence_score),
+        ("Estilo", an.style_score),
     ]
-    y = _draw_bulleted_list(c, margin, y, datos, printable_w)
     
-    y -= 30
-    
-    # Resumen del CV
-    _draw_text(c, margin, y, "Resumen del CV", font="Helvetica-Bold", size=20)
-    y -= 10
-    c.line(margin, y, w-margin, y)
-    y -= 20
-    
-    _draw_text(c, margin, y, "Experiencia (selección)", font="Helvetica-Bold", size=12)
-    y -= 15
-    cv_dets = report.cv_details or {}
-    exps = cv_dets.get("experience") or []
-    y = _draw_bulleted_list(c, margin, y, exps[:5], printable_w) # Limit to 5
-    
-    # Badge (Global Score again usually on every page bottom right)
-    badge_x = w - margin - 40
-    badge_y = margin
-    c.setFillColor(colors.HexColor("#2D3748"))
-    c.roundRect(badge_x, badge_y, 35, 20, 8, fill=1, stroke=0)
-    _draw_centered_text(c, badge_x + 17.5, badge_y + 6, f"{glob_score}%", font="Helvetica-Bold", size=10)
-    
-    c.showPage()
-    
-    # --- PÁGINA 3: Áreas de mejora ---
-    _draw_background(c)
-    y = h - margin - 20
-    
-    _draw_text(c, margin, y, "Áreas de mejora priorizadas", font="Helvetica-Bold", size=20)
-    y -= 10
-    c.line(margin, y, w-margin, y)
-    y -= 20
-    
-    # Listado con acción
-    imps = rep_dict.get("improvement_areas") or []
-    if not imps:
-        # Fallback to soft skills < 50
-        imps = [{"name": s["skill"], "score": s["score"], "action": "Definir plan de práctica diaria."} for s in soft_skills if s["score"] < 60]
-    
-    for item in imps:
-        nm = ""
-        act = ""
-        sc = ""
-        if isinstance(item, dict):
-            nm = item.get("area") or item.get("name") or "Área"
-            act = item.get("suggested_action") or item.get("action") or ""
-            sc = item.get("score")
-        else:
-            nm = str(item)
-            
-        # Draw block
-        _draw_text(c, margin, y, f"• {nm}: ({sc}/100)", font="Helvetica-Bold", size=11)
-        y -= 15
-        if act:
-            y = _draw_wrapped_text(c, margin + 10, y, f"Acción: {act}", printable_w - 10, size=10)
-        y -= 15
+    met_y = y_cursor - 20*mm
+    col_gap = 60*mm
+    for i, (label, val) in enumerate(metrics):
+        # Dibujar estrellas
+        x_pos = MARGIN + 10*mm + (i % 2) * 90*mm 
+        y_pos = met_y - (i // 2) * 15*mm
         
+        c.setFillColor(TEXT_PRIMARY)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(x_pos, y_pos, f"{label}:")
+        
+        # Estrellas de 5 ptos
+        for st in range(5):
+            sx = x_pos + 25*mm + st*5*mm
+            c.setFillColor(GOLD_COLOR if st < val else colors.HexColor("#475569"))
+            c.circle(sx, y_pos + 1*mm, 1.5*mm, fill=1, stroke=0)
+            
+    # Feedback texto
+    feed_y = met_y - 45*mm
+    c.setFillColor(TEXT_SECONDARY)
+    c.setFont("Helvetica-Oblique", 9)
+    # Usamos cv_summary como feedback general o evidence
+    feedback_text = f"Observaciones: {report.cv_summary[:300]}..."
+    _wrapped_text(c, feedback_text, MARGIN + 10*mm, feed_y, PAGE_W - 2*MARGIN - 20*mm)
+
+    y_cursor -= (80*mm)
+    
+    # Áreas de Mejora
+    improve_h = 100*mm
+    _draw_card(c, MARGIN, y_cursor - improve_h, PAGE_W - 2*MARGIN, improve_h, "ÁREAS DE MEJORA PRIORITARIAS")
+    
+    im_y = y_cursor - 20*mm
+    for item in report.improvement_areas[:4]: # Max 4
+        c.setFillColor(DANGER_COLOR)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(MARGIN + 10*mm, im_y, f"• {item.area}")
+        
+        new_y = _wrapped_text(c, f"Acción: {item.suggested_action}", MARGIN + 15*mm, im_y - 5*mm, PAGE_W - 2*MARGIN - 30*mm, size=9)
+        im_y = new_y - 8*mm
+        
+    _draw_footer(c, 2)
     c.showPage()
     
-    # --- PÁGINA 4: Fortalezas y Detalles ---
+    # --- PÁGINA 3: Plan de Acción y Roles ---
     _draw_background(c)
-    y = h - margin - 20
+    _draw_header(c)
+    y_cursor = PAGE_H - 30*mm
     
-    _draw_text(c, margin, y, "Fortalezas clave", font="Helvetica-Bold", size=20)
-    y -= 10
-    c.line(margin, y, w-margin, y)
-    y -= 20
+    # Roles Sugeridos
+    roles_h = 60*mm
+    _draw_card(c, MARGIN, y_cursor - roles_h, PAGE_W - 2*MARGIN, roles_h, "ROLES RECOMENDADOS")
     
-    strs = rep_dict.get("strengths") or []
-    y = _draw_bulleted_list(c, margin, y, strs, printable_w)
+    r_y = y_cursor - 20*mm
+    for role in report.suggested_roles[:3]:
+        c.setFillColor(ACCENT_COLOR)
+        c.setFont("Helvetica-Bold", 11)
+        c.drawString(MARGIN + 10*mm, r_y, f"Role: {role.role} ({role.seniority})")
+        
+        c.setFillColor(TEXT_SECONDARY)
+        c.setFont("Helvetica", 9)
+        c.drawRightString(PAGE_W - MARGIN - 10*mm, r_y, "Remoto: Sí" if role.remote_viable else "Remoto: No")
+        
+        new_y = _wrapped_text(c, role.reason, MARGIN + 10*mm, r_y - 5*mm, PAGE_W - 2*MARGIN - 20*mm, size=9)
+        r_y = new_y - 8*mm
+        
+    y_cursor -= (roles_h + 10*mm)
     
-    y -= 30
-    _draw_text(c, margin, y, "Herramientas / Software", font="Helvetica-Bold", size=16)
-    y -= 15
-    tools = cv_dets.get("tools") or []
-    y = _draw_bulleted_list(c, margin, y, tools, printable_w)
+    # Plan de Acción
+    plan_h = 120*mm
+    _draw_card(c, MARGIN, y_cursor - plan_h, PAGE_W - 2*MARGIN, plan_h, "PLAN DE ACCIÓN (30-60-90 DÍAS)")
     
+    p_y = y_cursor - 15*mm
+    
+    # 3 Columnas conceptuales o bloques apilados
+    periods = [
+        ("CORTO PLAZO (0-30 Días)", report.action_plan.short_term),
+        ("MEDIO PLAZO (30-60 Días)", report.action_plan.medium_term),
+        ("LARGO PLAZO (60-90+ Días)", report.action_plan.long_term),
+    ]
+    
+    for title, items in periods:
+        c.setFillColor(TEXT_PRIMARY)
+        c.setFont("Helvetica-Bold", 10)
+        c.drawString(MARGIN + 10*mm, p_y, title)
+        p_y -= 5*mm
+        
+        for it in items[:3]: # Limit 3 bullet points
+            p_y = _wrapped_text(c, f"• {it}", MARGIN + 15*mm, p_y, PAGE_W - 2*MARGIN - 30*mm, size=9)
+            p_y -= 2*mm
+        p_y -= 5*mm
+
+    _draw_footer(c, 3)
     c.showPage()
     
-    return buf.getvalue()
+    c.save()
+    return buffer.getvalue()
