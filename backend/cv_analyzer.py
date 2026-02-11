@@ -10,7 +10,12 @@ Google Gemini como motor de IA principal.
 """
 
 import os
-import fitz  # type: ignore  # PyMuPDF
+try:
+    import fitz  # type: ignore  # PyMuPDF
+    FITZ_AVAILABLE = True
+except ImportError:
+    fitz = None  # type: ignore
+    FITZ_AVAILABLE = False
 import json
 import logging
 import asyncio

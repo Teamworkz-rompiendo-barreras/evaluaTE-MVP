@@ -2,9 +2,6 @@ fastapi==0.104.1
 python-dotenv==1.0.0
 pypdf==3.17.4
 python-multipart==0.0.20
-pillow==11.3.0
-PyMuPDF>=1.25.0
-reportlab==4.0.7
 pyspellchecker==0.8.1
 dateparser==1.2.0
 phonenumbers==8.13.42
@@ -13,4 +10,5 @@ requests
 regex
 pydantic
 supabase>=2.0.0
+
 
