@@ -26,7 +26,7 @@ logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
 # Configurar Gemini
-GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY")
+GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 if not GOOGLE_API_KEY:
     logger.warning("GOOGLE_API_KEY no está configurada. La IA no funcionará correctamente.")
 else:
@@ -40,15 +40,14 @@ app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 # Configuración CORS
 allowed_origins_env = os.getenv(
     "ALLOWED_ORIGINS",
-    "http://localhost:3000,http://localhost:5173,https://evaluate-app.vercel.app"
+    "http://localhost:3000,http://localhost:5173,https://evalua-te-mvp.vercel.app"
 )
 ALLOWED_ORIGINS = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
 
-# En producción, asegurarse de que los orígenes permitidos incluyan la URL de Vercel/Render
+# En producción, asegurarse de que los orígenes permitidos incluyan la URL de Vercel
 if os.getenv("PRODUCTION", "false").lower() == "true":
     default_domains = [
-        "https://evaluate-app.vercel.app", 
-        "https://evaluate-frontend.onrender.com"
+        "https://evalua-te-mvp.vercel.app",
     ]
     for dom in default_domains:
         if dom not in ALLOWED_ORIGINS:

@@ -1,7 +1,7 @@
 // Configuración centralizada de la API
 export const API_CONFIG = {
-  // Backend en Render
-  BASE_URL: 'https://evaluate-backend.onrender.com',
+  // En Vercel, frontend y backend están en el mismo dominio
+  BASE_URL: '',
 
   // Endpoints específicos
   ENDPOINTS: {
@@ -19,3 +19,4 @@ export const API_CONFIG = {
 export const buildApiUrl = (endpoint: string): string => {
   return `${API_CONFIG.BASE_URL}${endpoint}`;
 };
+
