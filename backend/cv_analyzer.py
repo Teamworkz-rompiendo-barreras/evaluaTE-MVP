@@ -386,24 +386,41 @@ def analyze_cv_with_ai(text: str, pdf_bytes: Optional[bytes] = None) -> Dict[str
     try:
         logger.info("Iniciando análisis con Google Gemini...")
         
-        system_instruction = "Eres un experto en análisis de CVs con más de 15 años de experiencia en recursos humanos y tecnología. Tu especialidad es extraer información precisa y estructurada de CVs en cualquier formato, idioma o estructura. Siempre devuelves JSON válido y bien estructurado."
+        system_instruction = "Eres un experto en análisis de CVs con amplia experiencia en reclutamiento IT y ejecutivo. Tu capacidad visual te permite entender layouts complejos (columnas, gráficos, barras de progreso). Tu objetivo es extraer CADA detalle relevante del documento."
         
         # Prompt base
         prompt_text = f"""
-Eres un experto en análisis de CVs y recursos humanos. Tu tarea es analizar el documento adjunto (o el texto proporcionado) y extraer toda la información relevante de manera estructurada.
+ANALIZA ESTE CURRICULUM VITAE (CV) CON ATENCIÓN AL DETALLE VISUAL Y ESTRUCTURAL.
 
-INSTRUCCIONES CLAVE:
-1. Prioriza la extracción de "Experiencia Laboral", "Educación" y "Habilidades Técnicas".
-2. Si el documento es una imagen o escaneo, usa tu capacidad de visión para leer todo el contenido.
-3. Si hay texto extraído disponible, úsalo como apoyo.
-4. ATENCIÓN: El CV puede tener un diseño de dos o más columnas. Asegúrate de leer el contenido en el orden visual correcto (izquierda a derecha, arriba a abajo, respetando las columnas). No mezcles información de distintas columnas.
-5. Extrae TODO el contenido: barra lateral (contacto, skills, idiomas) y cuerpo principal (experiencia, educación).
-6. Interpreta indicadores visuales: Si hay barras de nivel, puntos o estrellas junto a habilidades/idiomas, estima el nivel. (Ej: 4/5 puntos = Avanzado).
+ROL: Reclutador Senior experto en Parsing de CVs.
+OBJETIVO: Extraer información estructurada garantizando que NO SE PIERDA NADA por formato (columnas, sidebars, pies de página).
 
-Devuelve SOLO un JSON válido con esta estructura:
+instrucciones_visuales:
+1.  **DETECTA COLUMNAS**: Muchos CVs modernos tienen 2 columnas. Lee AMBAS. A veces la columna izquierda tiene "Contacto", "Idiomas" y "Habilidades", y la derecha "Experiencia" y "Educación". O viceversa. NO IGNORES NINGUNA COLUMNA.
+2.  **INTERPRETA GRÁFICOS**: Si ves barras de progreso, círculos rellenos o estrellas en "Idiomas" o "Habilidades", conviértelos a texto (Ej: 3/5 círculos -> "Intermedio", 5/5 -> "Nativo/Avanzado").
+3.  **ASOCIACIÓN VISUAL**: Asocia correctamente los títulos de sección (ej: "FORMACIÓN", "EDUCACIÓN") con su contenido debajo, incluso si el diseño es confuso.
+
+instrucciones_extraccion:
+1.  **CONTACTO**: Busca nombre, email, teléfono, LinkedIn y ubicación.
+2.  **EXPERIENCIA**: Extrae Cargo, Empresa, Fechas (Inicio - Fin) y una descripción DETALLADA de responsabilidades y logros. Si no hay descripción, usa el texto disponible.
+3.  **EDUCACIÓN**: BUSCA ACTIVAMENTE ESTA SECCIÓN. Puede llamarse "Formación", "Estudios", "Academic Background", etc. Extrae Título, Institución y Años.
+4.  **IDIOMAS**: Extrae idioma y NIVEL. Si el nivel es un gráfico, ESTÍMALO.
+5.  **HABILIDADES**: Separa técnicas (Hard) de blandas (Soft).
+
+Devuelve SOLO un JSON válido con esta estructura exacta:
 {{
   "contacto": {{ "nombre": "...", "email": "...", "telefono": "...", "ubicacion": "...", "linkedin": "..." }},
-  "experiencia_laboral": [ {{ "empresa": "...", "cargo": "...", "fecha_inicio": "...", "fecha_fin": "...", "responsabilidades": ["..."], "tecnologias": ["..."] }} ],
+  "experiencia_laboral": [ 
+      {{ 
+        "empresa": "...", 
+        "cargo": "...", 
+        "fecha_inicio": "...", 
+        "fecha_fin": "...", 
+        "descripcion": "Texto completo de la descripción...",
+        "responsabilidades": ["..."], 
+        "tecnologias": ["..."] 
+      }} 
+  ],
   "formacion_academica": [ {{ "titulo": "...", "institucion": "...", "fecha_inicio": "...", "fecha_fin": "..." }} ],
   "habilidades_tecnicas": [ {{ "herramienta": "...", "nivel": "..." }} ],
   "habilidades_blandas": ["..."],
@@ -412,12 +429,13 @@ Devuelve SOLO un JSON válido con esta estructura:
   "certificaciones": [],
   "logros": [],
   "intereses": [],
-  "raw_text": "Transcripción literal y completa del texto del CV. ES OBLIGATORIO."
+  "raw_text": "Texto plano recuperado..."
 }}
 
-INSTRUCCIONES ADICIONALES:
-- En "nombre", NO uses nombres de software (ej. "Microsoft Office", "Adobe", "Photoshop"). Si no hay nombre claro, usa "Candidato".
-- "raw_text" debe contener todo el texto legible del documento.
+NOTAS FINALES:
+- Si una sección no existe, déjala como lista vacía [].
+- En "raw_text", incluye todo el texto que pudiste leer.
+- SE EXHAUSTIVO. Mejor que sobre información a que falte "Educación" o "Idiomas".
 """
 
         # ESTRATEGIA HÍBRIDA:
@@ -432,7 +450,7 @@ INSTRUCCIONES ADICIONALES:
         # Configurar modelo
         if genai:
              model = genai.GenerativeModel(  # type: ignore
-                model_name="gemini-2.5-flash-lite-preview-09-2025",
+                model_name="gemini-2.0-flash",
                 system_instruction=system_instruction
             )
         else:
