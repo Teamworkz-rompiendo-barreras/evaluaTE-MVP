@@ -4,7 +4,13 @@ import os
 import time
 from typing import Any, Dict, List, Optional
 
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    try:
+        from backend import gemini_lite as genai
+    except ImportError:
+        import gemini_lite as genai
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 

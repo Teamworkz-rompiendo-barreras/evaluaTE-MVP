@@ -49,16 +49,25 @@ except ModuleNotFoundError:
     pass
 
 # Configuración de Google Gemini
-GEMINI_API_KEY = os.getenv("GEMINI_API_KEY")
+GEMINI_API_KEY = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
 
 genai_configured = False
+genai = None  # type: ignore
 if GEMINI_API_KEY:
     try:
         import google.generativeai as genai
         genai.configure(api_key=GEMINI_API_KEY)
         genai_configured = True
     except ImportError:
-        logger.warning("google-generativeai no instalado")
+        try:
+            try:
+                from backend import gemini_lite as genai
+            except ImportError:
+                import gemini_lite as genai  # type: ignore
+            genai.configure(api_key=GEMINI_API_KEY)
+            genai_configured = True
+        except ImportError:
+            logger.warning("Neither google-generativeai nor gemini_lite available")
 else:
     logger.warning("GEMINI_API_KEY no configurada")
 
