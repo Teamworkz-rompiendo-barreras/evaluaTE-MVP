@@ -203,7 +203,7 @@ async def analyze_computational_profile(
                  "final_message": "Mock message"
              }
 
-        model = genai.GenerativeModel('gemini-1.5-flash')
+        model = genai.GenerativeModel('gemini-2.0-flash')
         generation_config = genai.types.GenerationConfig(
             response_mime_type="application/json"
         )
