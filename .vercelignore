@@ -1,0 +1,35 @@
+# Python virtual environments
+backend/venv311/
+backend/venv/
+backend/__pycache__/
+**/__pycache__/
+*.pyc
+
+# Node modules (built during deploy)
+nuevo-frontend/node_modules/
+node_modules/
+
+# Local env files
+.env
+**/.env
+**/.env.local
+
+# IDE
+.vscode/
+.idea/
+
+# Git
+.git/
+
+# Build artifacts
+nuevo-frontend/dist/
+
+# Test files
+*.test.*
+e2e-*
+test-*
+demo-*
+
+# Docs
+*.md
+!README.md
