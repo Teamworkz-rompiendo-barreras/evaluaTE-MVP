@@ -139,6 +139,10 @@ class GeminiLiteConfig:
             "response_mime_type": self.response_mime_type,
         }
 
+    def get(self, key: str, default: Any = None) -> Any:
+        """Allow dict-like access."""
+        return getattr(self, key, default)
+
 
 # Module-level API mimicking google.generativeai interface
 _api_key: Optional[str] = None
