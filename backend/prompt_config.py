@@ -277,7 +277,7 @@ Señala ausencias críticas: logros cuantificables (KPI), enlaces (LinkedIn/web)
 Califica y justifica cada apartado con evidencia del CV y correcciones accionables:
 
 - **Estructura (1–5)**: orden lógico, secciones y jerarquía
-- **Coherencia (1–5)**: consistencia de nombres, fechas, ubicaciones, términos
+- **Coherencia (1–5)**: consistencia de nombres, fechas, ubicaciones, términos. NOTA: El uso de "Actualidad", "Presente" o "Current" para roles activos ES CONSISTENTE y correcto; no lo consideres un error frente a fechas numéricas o de texto explícitas (ej. "Enero 2020").
 - **Información clave (1–5)**: logros medibles, KPIs, métricas, enlaces de contacto
 - **Claridad (1–5)**: calidad de bullets y verbos de acción
 - **Ortografía y estilo (1–5)**: tildes, nombres propios, marcas registradas, mayúsculas
