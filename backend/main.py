@@ -17,15 +17,23 @@ from fastapi.middleware.cors import CORSMiddleware
 # Importaciones locales
 try:
     from backend.cv_analyzer import extract_pdf_info
-    from backend.pdf_service import create_employability_pdf
     from backend.prompt_config import PromptConfig
     from backend.new_report_schema import NewReportSchema
 except ImportError:
     # Fallback para ejecución directa
     from cv_analyzer import extract_pdf_info
-    from pdf_service import create_employability_pdf
     from prompt_config import PromptConfig
     from new_report_schema import NewReportSchema
+
+# pdf_service is optional (requires reportlab which is not in serverless)
+create_employability_pdf = None
+try:
+    from backend.pdf_service import create_employability_pdf
+except ImportError:
+    try:
+        from pdf_service import create_employability_pdf
+    except ImportError:
+        pass  # create_employability_pdf stays None
 
 # Configurar logs
 logging.basicConfig(level=logging.INFO)
