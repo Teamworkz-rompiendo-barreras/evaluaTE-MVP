@@ -259,8 +259,8 @@ async def extract_text_with_advanced_ocr(pdf_buffer: bytes) -> tuple[str, Dict[s
                     page = doc[page_num]
                     metadata["pages"] = max(metadata["pages"], page_num + 1)
 
-                    # Siempre intentamos extraer texto con PyMuPDF
-                    page_text = (page.get_text("text") or "").strip()
+                    # Siempre intentamos extraer texto con PyMuPDF (sort=True ayuda con columnas)
+                    page_text = (page.get_text("text", sort=True) or "").strip()
                     metadata["py_mupdf_pages"].append(page_num)
                     if page_text:
                         metadata["py_mupdf_used"] = True
@@ -396,6 +396,9 @@ INSTRUCCIONES CLAVE:
 1. Prioriza la extracción de "Experiencia Laboral", "Educación" y "Habilidades Técnicas".
 2. Si el documento es una imagen o escaneo, usa tu capacidad de visión para leer todo el contenido.
 3. Si hay texto extraído disponible, úsalo como apoyo.
+4. ATENCIÓN: El CV puede tener un diseño de dos o más columnas. Asegúrate de leer el contenido en el orden visual correcto (izquierda a derecha, arriba a abajo, respetando las columnas). No mezcles información de distintas columnas.
+5. Extrae TODO el contenido: barra lateral (contacto, skills, idiomas) y cuerpo principal (experiencia, educación).
+6. Interpreta indicadores visuales: Si hay barras de nivel, puntos o estrellas junto a habilidades/idiomas, estima el nivel. (Ej: 4/5 puntos = Avanzado).
 
 Devuelve SOLO un JSON válido con esta estructura:
 {{

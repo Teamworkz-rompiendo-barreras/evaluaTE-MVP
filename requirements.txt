@@ -6,6 +6,7 @@ requests
 regex
 pydantic
 reportlab
+pymupdf
 
 
 
