@@ -11,7 +11,8 @@ import logging
 import base64
 from typing import Any, Dict, List, Optional
 
-import requests
+import asyncio
+import requests  # type: ignore  # type: ignore
 
 logger = logging.getLogger(__name__)
 
@@ -65,14 +66,17 @@ class GeminiLiteModel:
                 "parts": [{"text": self.system_instruction}]
             }
 
-        if generation_config:
+        # Use local variable to satisfy strict type checker
+        gen_config: Dict[str, Any] = generation_config if generation_config is not None else {}  # type: ignore
+
+        if gen_config:
             gc: Dict[str, Any] = {}
-            if "temperature" in generation_config:
-                gc["temperature"] = generation_config["temperature"]
-            if "max_output_tokens" in generation_config:
-                gc["maxOutputTokens"] = generation_config["max_output_tokens"]
-            if "response_mime_type" in generation_config:
-                gc["responseMimeType"] = generation_config["response_mime_type"]
+            if gen_config.get("temperature") is not None:
+                gc["temperature"] = gen_config["temperature"]
+            if gen_config.get("max_output_tokens") is not None:
+                gc["maxOutputTokens"] = gen_config["max_output_tokens"]
+            if gen_config.get("response_mime_type") is not None:
+                gc["responseMimeType"] = gen_config["response_mime_type"]
             if gc:
                 payload["generationConfig"] = gc
 
@@ -96,6 +100,16 @@ class GeminiLiteModel:
             text += p.get("text", "")
 
         return GeminiLiteResponse(text=text)
+
+    async def generate_content_async(
+        self,
+        content_parts: List[Any],
+        generation_config: Optional[Dict[str, Any]] = None,
+    ) -> "GeminiLiteResponse":
+        """Async wrapper for generate_content."""
+        return await asyncio.to_thread(
+            self.generate_content, content_parts, generation_config  # type: ignore
+        )
 
 
 class GeminiLiteResponse:

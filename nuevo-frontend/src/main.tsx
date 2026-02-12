@@ -66,11 +66,7 @@ root.render(
   <React.StrictMode>
     <ErrorBoundary>
       <Provider store={store}>
-        {/* Visual debug indicator */}
-        <div style={{ position: 'fixed', top: 0, left: 0, zIndex: 9999, color: 'red', background: 'yellow', padding: '4px' }}>
-          React Mounted (v2)
-        </div>
-        <PersistGate loading={<div style={{ padding: 20, fontSize: 24 }}>Loading Persisted State...</div>} persistor={persistor}>
+        <PersistGate loading={null} persistor={persistor}>
           {/* <AccessibilitySettings /> */}
           <AuthProvider>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>

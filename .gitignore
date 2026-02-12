@@ -56,3 +56,6 @@ backend/uploads/
 nuevo-frontend/.env
 backend/*.pdf
 .env.production
+
+.vercel
+.env*.local
