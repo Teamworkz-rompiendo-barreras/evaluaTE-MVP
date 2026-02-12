@@ -1,25 +1,14 @@
 {
-    "builds": [
+    "buildCommand": "cd nuevo-frontend && npm install && npm run build",
+    "outputDirectory": "nuevo-frontend/dist",
+    "rewrites": [
         {
-            "src": "nuevo-frontend/package.json",
-            "use": "@vercel/static-build",
-            "config": {
-                "distDir": "dist"
-            }
+            "source": "/api/(.*)",
+            "destination": "/api/index.py"
         },
         {
-            "src": "api/index.py",
-            "use": "@vercel/python"
-        }
-    ],
-    "routes": [
-        {
-            "src": "/api/(.*)",
-            "dest": "/api/index.py"
-        },
-        {
-            "src": "/(.*)",
-            "dest": "/nuevo-frontend/$1"
+            "source": "/(.*)",
+            "destination": "/index.html"
         }
     ]
 }
