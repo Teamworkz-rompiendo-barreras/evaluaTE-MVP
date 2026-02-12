@@ -8,7 +8,13 @@
   </head>
   <body>
     <div id="root"></div>
+    <script>console.log('HTML Loaded, starting scripts...');</script>
     <!-- Asegúrate de que aquí coincide con el nombre de tu entry file: main.tsx -->
     <script type="module" src="/src/main.tsx"></script>
+    <script>
+      window.addEventListener('error', function(e) {
+        document.body.innerHTML += '<div style="color:red; background:white; padding:10px; border:1px solid red;">Global Error: ' + e.message + '</div>';
+      });
+    </script>
   </body>
 </html>
