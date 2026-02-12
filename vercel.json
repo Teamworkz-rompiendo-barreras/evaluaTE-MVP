@@ -1,4 +1,10 @@
 {
     "buildCommand": "cd nuevo-frontend && npm install && npm run build",
-    "outputDirectory": "nuevo-frontend/dist"
+    "outputDirectory": "nuevo-frontend/dist",
+    "rewrites": [
+        {
+            "source": "/((?!api/).*)",
+            "destination": "/index.html"
+        }
+    ]
 }

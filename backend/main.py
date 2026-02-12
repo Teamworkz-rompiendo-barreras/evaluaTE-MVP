@@ -276,7 +276,7 @@ async def generate_pdf_report(report_data: dict, filename: Optional[str] = "repo
         logger.exception("Error generando PDF")
         raise HTTPException(status_code=500, detail=str(e))
 
-@app.post("/api/debug/cv-data")
+@app.post("/api/debug/cv_data")
 async def api_debug_cv_data(file: UploadFile = File(...)) -> Dict[str, Any]:
     """Return the raw CV extraction JSON for debugging purposes."""
     try:
