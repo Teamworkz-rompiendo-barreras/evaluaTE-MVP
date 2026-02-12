@@ -16,14 +16,14 @@ class handler(BaseHTTPRequestHandler):
         status_info = {
             "status": "ok",
             "service": "EvaluaTE Backend",
-            "version": "2.0.0",
             "runtime": "vercel-python",
         }
         
         # Try to check if backend.main can be imported
         try:
-            from backend.main import app
+            from backend.main import app, APP_VERSION
             status_info["fastapi"] = "loaded"
+            status_info["version"] = APP_VERSION
         except Exception as e:
             status_info["fastapi"] = "error"
             status_info["error"] = str(e)
