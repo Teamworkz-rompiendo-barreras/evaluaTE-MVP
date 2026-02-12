@@ -429,7 +429,7 @@ INSTRUCCIONES ADICIONALES:
         # Configurar modelo
         if genai:
              model = genai.GenerativeModel(  # type: ignore
-                model_name="gemini-2.0-flash-exp",
+                model_name="gemini-2.5-flash-lite-preview-09-2025",
                 system_instruction=system_instruction
             )
         else:
