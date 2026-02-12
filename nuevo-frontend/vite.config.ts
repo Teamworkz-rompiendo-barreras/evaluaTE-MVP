@@ -11,7 +11,7 @@ const __dirname = dirname(__filename)
 
 export default defineConfig({
   plugins: [react()],
-  base: './',
+  base: '/',
   server: {
     port: 3005,
     open: true,
@@ -29,7 +29,7 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1600,
     outDir: 'dist',
-    sourcemap: false,
+    sourcemap: true, // Enable sourcemaps for better debugging
     assetsDir: 'assets',
     rollupOptions: {
       output: {
@@ -48,8 +48,8 @@ export default defineConfig({
     minify: 'terser',
     terserOptions: {
       compress: {
-        drop_console: true,
-        drop_debugger: true
+        drop_console: false, // Enable console logs for debugging
+        drop_debugger: false
       }
     }
   },
