@@ -21,10 +21,12 @@ const sentryConfig = {
 // Inicializar Sentry
 export function initSentry() {
   const dsn = import.meta.env['VITE_SENTRY_DSN'];
-  
+
   // Solo inicializar si hay DSN y está habilitado
   if (!dsn || !sentryConfig.enabled) {
-    console.log('🔍 Sentry deshabilitado - DSN no encontrado o no habilitado');
+    if (import.meta.env.DEV) {
+      console.log('🔍 Sentry deshabilitado - DSN no encontrado o no habilitado');
+    }
     return;
   }
 
@@ -43,7 +45,7 @@ export function initSentry() {
       tracesSampleRate: config.tracesSampleRate,
       replaysSessionSampleRate: config.replaysSessionSampleRate,
       replaysOnErrorSampleRate: config.replaysOnErrorSampleRate,
-      
+
       beforeSend(event) {
         // Filtrar eventos duplicados y no deseados
         if (event.exception) {
@@ -52,7 +54,7 @@ export function initSentry() {
             return null;
           }
         }
-        
+
         // Filtrar mensajes de redirección duplicados
         if (event.message && event.message.includes('Redirección de acceso')) {
           if (import.meta.env.PROD) {
@@ -64,14 +66,14 @@ export function initSentry() {
             (window as any).__lastRedirectTime = now;
           }
         }
-        
+
         return event;
       },
-      
+
       environment: import.meta.env.MODE,
       release: import.meta.env['VITE_APP_VERSION'] || '1.0.0',
       debug: config.debug,
-      
+
       initialScope: {
         tags: {
           app: 'evaluate',
@@ -79,8 +81,10 @@ export function initSentry() {
         },
       },
     });
-    
-    console.log('✅ Sentry inicializado correctamente');
+
+    if (import.meta.env.DEV) {
+      console.log('✅ Sentry inicializado correctamente');
+    }
   } catch (error) {
     console.error('❌ Error al inicializar Sentry:', error);
   }
@@ -117,7 +121,7 @@ export function reportMessage(message: string, level: Sentry.SeverityLevel = 'in
         }
         (window as any).__lastMessageTime = now;
       }
-      
+
       Sentry.captureMessage(message, level);
     } catch (e) {
       console.error('Error al reportar mensaje a Sentry:', e);

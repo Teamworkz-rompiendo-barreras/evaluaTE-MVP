@@ -47,7 +47,7 @@ export interface PersonalState {
   logs: SceneLog[];
 
   accessibilitySettings?: AccessibilitySettings;
-  
+
   // Campo para marcar si los datos personales están completos
   completed: boolean;
 }
@@ -83,13 +83,16 @@ const initialState: PersonalState = {
     contrastLevel: 'normal',
     fontScale: 120,
   },
-  
+
   // Inicialmente los datos personales no están completos
   completed: false,
 };
 
 // DEBUG: Log del estado inicial
-console.log('🔍 DEBUG - Estado inicial del personalSlice:', initialState);
+if (import.meta?.env?.DEV) {
+  console.log('🔍 DEBUG - Estado inicial del personalSlice:', initialState);
+}
+
 
 // Definición del slice
 export const personalSlice = createSlice({
@@ -251,7 +254,7 @@ export const personalSlice = createSlice({
     generateFinalReport(state) {
       // Validación del estado antes de procesar usando utilidades especializadas
       const validSkills = filterValidSoftSkills(state.softSkills);
-      
+
       if (validSkills.length === 0) {
         if (import.meta?.env?.MODE !== 'production') {
           // eslint-disable-next-line no-console
@@ -275,12 +278,12 @@ export const personalSlice = createSlice({
       // Ajuste según el CV
       const cvScore = state.cvAnalysis
         ? (
-            state.cvAnalysis.structure_score +
-            state.cvAnalysis.coherence_score +
-            state.cvAnalysis.key_info_score +
-            state.cvAnalysis.clarity_score +
-            state.cvAnalysis.style_score
-          ) / 5
+          state.cvAnalysis.structure_score +
+          state.cvAnalysis.coherence_score +
+          state.cvAnalysis.key_info_score +
+          state.cvAnalysis.clarity_score +
+          state.cvAnalysis.style_score
+        ) / 5
         : undefined;
       if (typeof cvScore === 'number' && cvScore < 3) {
         employabilityScore = Math.max(20, employabilityScore - 10);
@@ -291,8 +294,8 @@ export const personalSlice = createSlice({
         employabilityScore >= 80
           ? 'alto'
           : employabilityScore >= 50
-          ? 'medio'
-          : 'bajo';
+            ? 'medio'
+            : 'bajo';
 
       // Recomendaciones personalizadas
       const recommendationsObj = getRecommendationsFromProfile({
@@ -319,19 +322,19 @@ export const personalSlice = createSlice({
         jobPreferences:
           typeof state.jobPreferences === 'string'
             ? {
-                areas: [state.jobPreferences],
-                needs: [],
-                workMode: state.workMode,
-                availability: state.availability,
-                willingToRelocate: state.willingToRelocate,
-                hasDisabilityCert: state.hasDisabilityCert,
-                accessibilitySettings: state.accessibilitySettings,
-              }
+              areas: [state.jobPreferences],
+              needs: [],
+              workMode: state.workMode,
+              availability: state.availability,
+              willingToRelocate: state.willingToRelocate,
+              hasDisabilityCert: state.hasDisabilityCert,
+              accessibilitySettings: state.accessibilitySettings,
+            }
             : {
-                ...state.jobPreferences,
-                willingToRelocate: state.willingToRelocate,
-                hasDisabilityCert: state.hasDisabilityCert,
-              },
+              ...state.jobPreferences,
+              willingToRelocate: state.willingToRelocate,
+              hasDisabilityCert: state.hasDisabilityCert,
+            },
         cvAnalysis: state.cvAnalysis,
         createdAt: new Date().toISOString(),
         updatedAt: new Date().toISOString(),
@@ -358,7 +361,7 @@ function getRecommendationsFromProfile(params: {
 }) {
   // Validación de parámetros de entrada usando utilidades especializadas
   const validSkills = filterValidSoftSkills(params.softSkills);
-  
+
   if (validSkills.length === 0) {
     if (import.meta?.env?.MODE !== 'production') {
       // eslint-disable-next-line no-console
