@@ -143,6 +143,12 @@ class GeminiLiteConfig:
         """Allow dict-like access."""
         return getattr(self, key, default)
 
+    def __getitem__(self, key: str) -> Any:
+        try:
+            return getattr(self, key)
+        except AttributeError:
+             raise KeyError(key)
+
 
 # Module-level API mimicking google.generativeai interface
 _api_key: Optional[str] = None
