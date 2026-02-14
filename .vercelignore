@@ -33,11 +33,9 @@ scripts/
 !README.md
 
 # Exclude large binary/temp files
+# Exclude large binary/temp files
 *.pdf
 # Exclude specific large json files but allow config files
 cv_output.json
-*.png
-*.jpg
-*.jpeg
 *.zip
 *.tar.gz
