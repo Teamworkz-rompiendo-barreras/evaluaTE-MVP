@@ -1,5 +1,5 @@
 {
-    "buildCommand": "cd nuevo-frontend && npm install --no-audit && npx vite build",
+    "buildCommand": "cd nuevo-frontend && npx pnpm install && npx pnpm run build",
     "outputDirectory": "nuevo-frontend/dist",
     "rewrites": [
         {
