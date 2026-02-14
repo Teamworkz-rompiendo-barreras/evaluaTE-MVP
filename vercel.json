@@ -1,5 +1,5 @@
 {
-    "buildCommand": "ls -R",
+    "buildCommand": "cd nuevo-frontend && npm install && ./node_modules/.bin/vite build",
     "outputDirectory": "nuevo-frontend/dist",
     "rewrites": [
         {
