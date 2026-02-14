@@ -76,7 +76,7 @@ app.add_middleware(
 )
 
 
-@app.get("/health")
+@app.get("/api/health")
 def health_check():
     return {"status": "ok", "service": "evaluate-backend", "version": APP_VERSION}
 
