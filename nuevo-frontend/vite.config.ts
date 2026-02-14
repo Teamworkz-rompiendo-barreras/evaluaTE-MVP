@@ -29,7 +29,7 @@ export default defineConfig({
   build: {
     chunkSizeWarningLimit: 1600,
     outDir: 'dist',
-    sourcemap: true, // Enable sourcemaps for better debugging
+    sourcemap: false, // Disable sourcemaps to save build resources
     assetsDir: 'assets',
     rollupOptions: {
       output: {
