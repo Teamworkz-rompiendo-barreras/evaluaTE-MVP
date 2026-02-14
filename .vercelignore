@@ -1,46 +1,42 @@
-# Python virtual environments
-backend/venv311/
-backend/venv/
-backend/__pycache__/
+# Exclude ALL virtual environments everywhere
+**/venv*/
+**/venv311*/
+**/env*/
+**/bin/
+**/include/
+**/lib/
+**/share/
+
+# Exclude ALL cache
 **/__pycache__/
+**/.pytest_cache/
+**/.cache/
 *.pyc
 
-# Node modules
-nuevo-frontend/node_modules/
-node_modules/
+# Exclude ALL node_modules
+**/node_modules/
 
-# Local env files
-.env
-**/.env
-**/.env.local
-
-# IDE
+# Exclude IDE and Git
 .vscode/
 .idea/
-
-# Git
 .git/
 
-# Build artifacts
-nuevo-frontend/dist/
+# Exclude Local Env
+.env*
+**/.env*
 
-# Test files and samples
-tests/
+# Exclude documentation and samples
 backend/cv_samples/
-*.test.*
-e2e-*
-test-*
-demo-*
+tests/
+scripts/
+*.md
+!README.md
+
+# Exclude large binary/temp files
 *.pdf
 *.json
 *.png
 *.jpg
 *.jpeg
-
-# Docs
-*.md
-!README.md
-
-# Application folders not used by API
-app/
-scripts/
+*.zip
+*.tar.gz
