@@ -32,6 +32,7 @@ from collections import Counter
 import base64
 import io
 import sys
+import tempfile
 from datetime import datetime
 
 def _default_stars() -> Dict[str, int]:
@@ -386,64 +387,108 @@ def analyze_cv_with_ai(text: str, pdf_bytes: Optional[bytes] = None) -> Dict[str
     try:
         logger.info("Iniciando análisis con Google Gemini...")
         
-        system_instruction = "Eres un experto en análisis de CVs con amplia experiencia en reclutamiento IT y ejecutivo. Tu capacidad visual te permite entender layouts complejos (columnas, gráficos, barras de progreso). Tu objetivo es extraer CADA detalle relevante del documento."
+        system_instruction = "Eres un experto reclutador técnico. Tu tarea es extraer datos de este documento. ADVERTENCIA: El documento puede tener múltiples columnas. Lee visualmente de izquierda a derecha y de arriba a abajo dentro de cada columna, no cruces líneas de texto entre columnas distintas."
         
-        # Prompt base
-        prompt_text = f"""
+        # Prompt base reforzado
+        prompt_text = """
 ANALIZA ESTE CURRICULUM VITAE (CV) CON ATENCIÓN AL DETALLE VISUAL Y ESTRUCTURAL.
 
-ROL: Reclutador Senior experto en Parsing de CVs.
 OBJETIVO: Extraer información estructurada garantizando que NO SE PIERDA NADA por formato (columnas, sidebars, pies de página).
 
-instrucciones_visuales:
-1.  **DETECTA COLUMNAS**: Muchos CVs modernos tienen 2 columnas. Lee AMBAS. A veces la columna izquierda tiene "Contacto", "Idiomas" y "Habilidades", y la derecha "Experiencia" y "Educación". O viceversa. NO IGNORES NINGUNA COLUMNA.
-2.  **INTERPRETA GRÁFICOS**: Si ves barras de progreso, círculos rellenos o estrellas en "Idiomas" o "Habilidades", conviértelos a texto (Ej: 3/5 círculos -> "Intermedio", 5/5 -> "Nativo/Avanzado").
-3.  **ASOCIACIÓN VISUAL**: Asocia correctamente los títulos de sección (ej: "FORMACIÓN", "EDUCACIÓN") con su contenido debajo, incluso si el diseño es confuso.
+Instrucciones Críticas:
+1.  **DETECTA COLUMNAS**: Muchos CVs modernos tienen 2 columnas. Lee visualmente de izquierda a derecha y de arriba a abajo dentro de cada columna, no cruces líneas de texto entre columnas distintas. NO IGNORES NINGUNA COLUMNA (sidebars, etc).
+2.  **INTERPRETA GRÁFICOS**: Si ves barras de progreso, círculos rellenos o estrellas (ej. ★★★★☆) en "Idiomas" o "Habilidades", conviértelos a una escala numérica (ej. 4/5) o cualitativa (Alto, Nativo, etc).
+3.  **ASOCIACIÓN VISUAL**: Asocia correctamente los títulos de sección con su contenido debajo, incluso si el diseño es complejo.
 
-instrucciones_extraccion:
-1.  **CONTACTO**: Busca nombre, email, teléfono, LinkedIn y ubicación.
-2.  **EXPERIENCIA**: Extrae Cargo, Empresa, Fechas (Inicio - Fin) y una descripción DETALLADA de responsabilidades y logros. Si no hay descripción, usa el texto disponible.
-3.  **EDUCACIÓN**: BUSCA ACTIVAMENTE ESTA SECCIÓN. Puede llamarse "Formación", "Estudios", "Academic Background", etc. Extrae Título, Institución y Años.
-4.  **IDIOMAS**: Extrae idioma y NIVEL. Si el nivel es un gráfico, ESTÍMALO.
+Extracción Detallada:
+1.  **DATOS PERSONALES**: Nombre, email, teléfono, LinkedIn y ubicación.
+2.  **EXPERIENCIA**: Extrae Cargo, Empresa, Fechas (Inicio - Fin) y una descripción DETALLADA de responsabilidades y logros.
+3.  **EDUCACIÓN**: Busca activamente esta sección (Formación, Estudios, Academic Background). Extrae Título, Institución y Fechas.
+4.  **IDIOMAS**: Extrae idioma y NIVEL.
 5.  **HABILIDADES**: Separa técnicas (Hard) de blandas (Soft).
 
-Devuelve SOLO un JSON válido con esta estructura exacta:
-{{
-  "contacto": {{ "nombre": "...", "email": "...", "telefono": "...", "ubicacion": "...", "linkedin": "..." }},
-  "experiencia_laboral": [ 
-      {{ 
-        "empresa": "...", 
-        "cargo": "...", 
-        "fecha_inicio": "...", 
-        "fecha_fin": "...", 
-        "descripcion": "Texto completo de la descripción...",
-        "responsabilidades": ["..."], 
-        "tecnologias": ["..."] 
-      }} 
+Devuelve un JSON válido con esta estructura EXACTA. Si un campo no existe, pon null o una lista vacía [], NO INVENTES información:
+{
+  "datos_personales": {
+    "nombre": null,
+    "email": null,
+    "telefono": null,
+    "ubicacion": null,
+    "linkedin": null
+  },
+  "experiencia": [
+    {
+      "empresa": null,
+      "rol": null,
+      "fecha_inicio": null,
+      "fecha_fin": null,
+      "descripcion": null,
+      "responsabilidades": [],
+      "tecnologias": []
+    }
   ],
-  "formacion_academica": [ {{ "titulo": "...", "institucion": "...", "fecha_inicio": "...", "fecha_fin": "..." }} ],
-  "habilidades_tecnicas": [ {{ "herramienta": "...", "nivel": "..." }} ],
-  "habilidades_blandas": ["..."],
-  "idiomas": [ {{ "idioma": "...", "nivel": "..." }} ],
+  "educacion": [
+    {
+      "titulo": null,
+      "institucion": null,
+      "fecha_inicio": null,
+      "fecha_fin": null
+    }
+  ],
+  "habilidades_detectadas": [
+    {
+      "herramienta": null,
+      "nivel": null
+    }
+  ],
+  "habilidades_blandas": [],
+  "idiomas": [
+    {
+      "idioma": null,
+      "nivel": null
+    }
+  ],
   "proyectos": [],
   "certificaciones": [],
   "logros": [],
   "intereses": [],
-  "raw_text": "Texto plano recuperado..."
-}}
-
-NOTAS FINALES:
-- Si una sección no existe, déjala como lista vacía [].
-- En "raw_text", incluye todo el texto que pudiste leer.
-- SE EXHAUSTIVO. Mejor que sobre información a que falte "Educación" o "Idiomas".
+  "raw_text": "Texto completo recuperado visualmente..."
+}
 """
 
-        # ESTRATEGIA HÍBRIDA:
-        # Siempre incluir el texto extraído (aunque sea parcial/sucio) como contexto adicional
-        # para ayudar al modelo si la visión falla o viceversa.
-        if text:
-             extracted_text_snippet = str(text or "")[:15000]  # type: ignore
-             prompt_text += f"\n\n--- TEXTO EXTRAÍDO (Referencia) ---\n{extracted_text_snippet}\n-----------------------------------\n"
+        # ESTRATEGIA: Multimodal NATIVA si hay PDF
+        # Si NO hay PDF, usamos el texto extraído
+        content_parts: List[Any] = []
+        
+        if pdf_bytes and hasattr(genai, "upload_file"):
+             print(f"📄 Procesando PDF ({len(pdf_bytes)} bytes) con File API...")
+             # Escribir a un archivo temporal para subirlo
+             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                 tmp.write(pdf_bytes)
+                 tmp_path = tmp.name
+             
+             try:
+                # Subir el archivo
+                 uploaded_file = genai.upload_file(tmp_path, mime_type="application/pdf") # type: ignore
+                 content_parts.append(uploaded_file)
+                 # En modo PDF nativo NO enviamos el texto extraído para evitar confundir al modelo con ruido plano
+                 content_parts.append(prompt_text)
+             finally:
+                 # Limpiar archivo temporal
+                 if os.path.exists(tmp_path):
+                     os.remove(tmp_path)
+        else:
+             # Fallback: Solo texto o multimodal sin File API (dict)
+             content_parts.append(prompt_text)
+             if pdf_bytes:
+                  # Si no hay upload_file, usamos el método dict tradicional
+                  content_parts.append({
+                      "mime_type": "application/pdf",
+                      "data": pdf_bytes
+                  })
+             elif text:
+                  text_str = str(text or "")
+                  content_parts.append(f"\n\n--- TEXTO EXTRAÍDO (Referencia) ---\n{text_str[:15000]}\n") # type: ignore
 
         print("📤 Enviando solicitud a Gemini...")
         
@@ -455,15 +500,6 @@ NOTAS FINALES:
             )
         else:
              raise ImportError("Gemini no está importado correctamente")
-        
-        # Content parts mixto (str y dict)
-        content_parts: List[Any] = [prompt_text]
-        if pdf_bytes:
-            print(f"📄 Adjuntando PDF nativo ({len(pdf_bytes)} bytes) para análisis multimodal...")
-            content_parts.append({
-                "mime_type": "application/pdf",
-                "data": pdf_bytes
-            })
         
         try:
             response = model.generate_content(
@@ -494,11 +530,44 @@ NOTAS FINALES:
         try:
             cv_data = json.loads(normalized_content)
             
-            # Validación básica de calidad
-            keys_found = sum(1 for k in ["experiencia_laboral", "formacion_academica", "habilidades_tecnicas"] if cv_data.get(k))
-            logger.info(f"JSON parseado. Secciones clave encontradas: {keys_found}/3")
+            # Mapeo para compatibilidad con el resto del backend (Backward Compatibility)
+            mapped_data = {
+                # Nuevas claves (según requerimiento)
+                "datos_personales": cv_data.get("datos_personales", {}),
+                "experiencia": cv_data.get("experiencia", []),
+                "educacion": cv_data.get("educacion", []),
+                "habilidades_detectadas": cv_data.get("habilidades_detectadas", []),
+                
+                # Claves antiguas (para no romper el resto de la app)
+                "contacto": cv_data.get("datos_personales", {}),
+                "experiencia_laboral": [
+                    {
+                        "empresa": e.get("empresa"),
+                        "cargo": e.get("rol"),
+                        "fecha_inicio": e.get("fecha_inicio"),
+                        "fecha_fin": e.get("fecha_fin"),
+                        "descripcion": e.get("descripcion"),
+                        "responsabilidades": e.get("responsabilidades", []),
+                        "tecnologias": e.get("tecnologias", [])
+                    }
+                    for e in cv_data.get("experiencia", []) if isinstance(e, dict)
+                ],
+                "formacion_academica": cv_data.get("educacion", []),
+                "habilidades_tecnicas": cv_data.get("habilidades_detectadas", []),
+                "habilidades_blandas": cv_data.get("habilidades_blandas", []),
+                "idiomas": cv_data.get("idiomas", []),
+                "proyectos": cv_data.get("proyectos", []),
+                "certificaciones": cv_data.get("certificaciones", []),
+                "logros": cv_data.get("logros", []),
+                "intereses": cv_data.get("intereses", []),
+                "raw_text": cv_data.get("raw_text", "")
+            }
             
-            return cv_data
+            # Preservar la clave 'resumen_profesional' si se usa en otros sitios
+            if "perfil" not in mapped_data:
+                mapped_data["resumen_profesional"] = cv_data.get("raw_text", "")[:400]
+            
+            return mapped_data
         except (json.JSONDecodeError, TypeError) as e:
             logger.warning("Error parseando JSON: %s", e)
             print(f"📝 Contenido recibido: {str(content)[:200]}...")  # type: ignore
