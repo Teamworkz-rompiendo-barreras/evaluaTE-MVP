@@ -10,8 +10,8 @@ dist/
 downloads/
 eggs/
 .eggs/
-lib/
-lib64/
+/lib/
+/lib64/
 parts/
 sdist/
 var/
@@ -59,4 +59,3 @@ backend/*.pdf
 
 .vercel
 .env*.local
-!nuevo-frontend/src/lib/
