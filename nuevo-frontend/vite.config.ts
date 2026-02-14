@@ -45,13 +45,7 @@ export default defineConfig({
       }
     },
     target: 'es2015',
-    minify: 'terser',
-    terserOptions: {
-      compress: {
-        drop_console: false, // Enable console logs for debugging
-        drop_debugger: false
-      }
-    }
+    minify: 'esbuild'
   },
   resolve: {
     alias: {
