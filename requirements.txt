@@ -7,9 +7,6 @@ pydantic
 google-generativeai
 supabase
 reportlab
-PyMuPDF
-tesseract
-watchfiles
 uvicorn
 websockets
 tqdm

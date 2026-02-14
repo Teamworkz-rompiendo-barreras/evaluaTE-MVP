@@ -1,6 +1,6 @@
 {
     "installCommand": "cd nuevo-frontend && npm install --legacy-peer-deps --include=dev",
-    "buildCommand": "echo 'Build skipped for debugging' && mkdir -p nuevo-frontend/dist && echo 'Debugging' > nuevo-frontend/dist/index.html",
+    "buildCommand": "cd nuevo-frontend && NODE_OPTIONS=--max-old-space-size=4096 npm run build",
     "outputDirectory": "nuevo-frontend/dist",
     "rewrites": [
         {
