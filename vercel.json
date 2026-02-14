@@ -1,5 +1,5 @@
 {
-    "buildCommand": "node -v && npm -v",
+    "buildCommand": "cd nuevo-frontend && corepack enable && pnpm install && pnpm run build",
     "outputDirectory": "nuevo-frontend/dist",
     "rewrites": [
         {
