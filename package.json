@@ -1,0 +1,8 @@
+{
+    "name": "evaluate-root",
+    "private": true,
+    "scripts": {
+        "build": "npm run build --prefix nuevo-frontend",
+        "install": "npm install --prefix nuevo-frontend"
+    }
+}
