@@ -34,7 +34,8 @@ scripts/
 
 # Exclude large binary/temp files
 *.pdf
-*.json
+# Exclude specific large json files but allow config files
+cv_output.json
 *.png
 *.jpg
 *.jpeg
