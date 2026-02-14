@@ -1,6 +1,6 @@
 {
     "installCommand": "cd nuevo-frontend && npm install --legacy-peer-deps --include=dev",
-    "buildCommand": "cd nuevo-frontend && NODE_OPTIONS=--max-old-space-size=4096 npm run build",
+    "buildCommand": "cd nuevo-frontend && CI=false NODE_OPTIONS=--max-old-space-size=4096 npm run build",
     "outputDirectory": "nuevo-frontend/dist",
     "rewrites": [
         {
