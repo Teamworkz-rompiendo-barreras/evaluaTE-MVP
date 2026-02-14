@@ -59,3 +59,4 @@ backend/*.pdf
 
 .vercel
 .env*.local
+!nuevo-frontend/src/lib/
