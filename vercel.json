@@ -1,5 +1,5 @@
 {
-    "buildCommand": "sh scripts/build-vercel.sh",
+    "buildCommand": "ls -R",
     "outputDirectory": "nuevo-frontend/dist",
     "rewrites": [
         {
