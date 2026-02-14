@@ -1,5 +1,5 @@
 {
-    "buildCommand": "cd nuevo-frontend && npm install --no-audit && export NODE_OPTIONS=--max-old-space-size=4096 && npx vite build",
+    "buildCommand": "echo 'Skipping frontend build to isolate API' && mkdir -p nuevo-frontend/dist && touch nuevo-frontend/dist/index.html",
     "outputDirectory": "nuevo-frontend/dist",
     "rewrites": [
         {
