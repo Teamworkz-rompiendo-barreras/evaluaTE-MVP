@@ -1,5 +1,5 @@
 {
-    "buildCommand": "echo 'Skipping frontend build to isolate API' && mkdir -p nuevo-frontend/dist && touch nuevo-frontend/dist/index.html",
+    "buildCommand": "cd nuevo-frontend && npm install --no-audit && npx vite build",
     "outputDirectory": "nuevo-frontend/dist",
     "rewrites": [
         {
