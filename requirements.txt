@@ -6,7 +6,6 @@ requests
 regex
 pydantic
 reportlab
-pymupdf
 google-generativeai
 supabase
 uvicorn

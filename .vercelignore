@@ -5,7 +5,7 @@ backend/__pycache__/
 **/__pycache__/
 *.pyc
 
-# Node modules (built during deploy)
+# Node modules
 nuevo-frontend/node_modules/
 node_modules/
 
@@ -24,12 +24,23 @@ node_modules/
 # Build artifacts
 nuevo-frontend/dist/
 
-# Test files
+# Test files and samples
+tests/
+backend/cv_samples/
 *.test.*
 e2e-*
 test-*
 demo-*
+*.pdf
+*.json
+*.png
+*.jpg
+*.jpeg
 
 # Docs
 *.md
 !README.md
+
+# Application folders not used by API
+app/
+scripts/
