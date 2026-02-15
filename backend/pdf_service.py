@@ -1,423 +1,295 @@
 # backend/pdf_service.py
-import math
+import io
+import os
+from typing import List, Dict, Any, Optional
 from datetime import date
-from io import BytesIO
-from typing import Any, Dict, List, Optional
 
 from reportlab.lib import colors
 from reportlab.lib.pagesizes import A4
-from reportlab.lib.units import mm
-from reportlab.pdfgen import canvas
-from reportlab.platypus import Paragraph
+from reportlab.lib.units import mm, inch
+from reportlab.lib.enums import TA_LEFT, TA_CENTER, TA_JUSTIFY, TA_RIGHT
 from reportlab.lib.styles import getSampleStyleSheet, ParagraphStyle
-from reportlab.lib.enums import TA_LEFT, TA_CENTER
+from reportlab.platypus import (
+    SimpleDocTemplate, Paragraph, Spacer, Table, TableStyle, 
+    Image, KeepTogether, PageTemplate, Frame, PageBreak
+)
+from reportlab.graphics.shapes import Drawing
+from reportlab.graphics.charts.spider import SpiderChart
+from reportlab.pdfgen import canvas
 
 try:
     from backend.new_report_schema import NewReportSchema
 except ImportError:
     from new_report_schema import NewReportSchema
 
-# --- Configuración de Estilo (Tema Oscuro Profesional) ---
-BG_COLOR = colors.HexColor("#0f172a")     # Slate 900 (Fondo principal)
-CARD_BG_COLOR = colors.HexColor("#1e293b") # Slate 800 (Fondo tarjetas)
-TEXT_PRIMARY = colors.white
-TEXT_SECONDARY = colors.HexColor("#94a3b8") # Slate 400
-ACCENT_COLOR = colors.HexColor("#38_bdf8")  # Sky 400 (Azul claro vibrante)
-GOLD_COLOR = colors.HexColor("#facc15")     # Yellow 400
-SUCCESS_COLOR = colors.HexColor("#4ade80")
-WARNING_COLOR = colors.HexColor("#fbbf24")
-DANGER_COLOR = colors.HexColor("#f87171")
+# --- CONFIGURACIÓN CORPORATIVA ---
+COLOR_PRIMARY = colors.HexColor("#0f172a") # Slate 900
+COLOR_ACCENT = colors.HexColor("#38bdf8")  # Sky 400
+COLOR_P2 = colors.HexColor("#374BA6")      # Corporate Blue
+COLOR_BG_BOX = colors.HexColor("#E6F0FF")  # Light Blue Box
+COLOR_TEXT_MAIN = colors.HexColor("#1e293b")
+COLOR_TEXT_LIGHT = colors.HexColor("#64748b")
+COLOR_WHITE = colors.white
 
-MARGIN = 20 * mm
-PAGE_W, PAGE_H = A4
+def create_drawing(data: List[Dict[str, Any]], width=150, height=150):
+    """Genera el gráfico Radar vectorial (SpiderChart)."""
+    d = Drawing(width, height)
+    chart = SpiderChart()
+    chart.x = width / 2
+    chart.y = height / 2
+    chart.width = width * 0.7
+    chart.height = height * 0.7
+    
+    # Procesar datos (top 6 skills)
+    # data es lista de dicts {skill: str, score: int}
+    sorted_data = sorted(data, key=lambda x: x.get('score', 0), reverse=True)[:6]
+    
+    if not sorted_data:
+        sorted_data = [{"skill": "General", "score": 50}]
 
-def _draw_background(c: canvas.Canvas):
-    c.saveState()
-    c.setFillColor(BG_COLOR)
-    c.rect(0, 0, PAGE_W, PAGE_H, stroke=0, fill=1)
+    labels = [d.get('skill', '')[:12] for d in sorted_data]
+    data_points = [d.get('score', 0) for d in sorted_data]
     
-    # Decoración sutil (header bar)
-    c.setFillColor(colors.HexColor("#1e293b"))
-    c.rect(0, PAGE_H - 18*mm, PAGE_W, 18*mm, stroke=0, fill=1)
+    chart.data = [data_points]
+    chart.labels = labels
+    chart.strands[0].strokeColor = COLOR_ACCENT
+    chart.strands[0].fillColor = colors.Color(55/255, 75/255, 166/255, alpha=0.4) # P2 con opacidad
+    chart.strands[0].strokeWidth = 2
     
-    # Footer bar
-    c.rect(0, 0, PAGE_W, 12*mm, stroke=0, fill=1)
-    c.restoreState()
+    chart.spokes.strokeColor = colors.HexColor("#cbd5e1")
+    chart.strandLabels.fontName = "Helvetica"
+    chart.strandLabels.fontSize = 8
+    
+    d.add(chart)
+    return d
 
-def _draw_header(c: canvas.Canvas, title: str = "INFORME DE EMPLEABILIDAD"):
-    c.saveState()
-    # Logo text
-    c.setFont("Helvetica-Bold", 14)
-    c.setFillColor(TEXT_PRIMARY)
-    c.drawString(MARGIN, PAGE_H - 12*mm, "Teamworkz")
+def header_footer(canvas, doc):
+    """Template para Cabecera y Pie de Página en todas las páginas."""
+    canvas.saveState()
     
-    c.setFont("Helvetica", 12)
-    c.setFillColor(TEXT_SECONDARY)
-    c.drawRightString(PAGE_W - MARGIN, PAGE_H - 12*mm, title)
-    c.restoreState()
-
-def _draw_footer(c: canvas.Canvas, page_num: int):
-    c.saveState()
-    c.setFont("Helvetica", 9)
-    c.setFillColor(TEXT_SECONDARY)
-    c.drawString(MARGIN, 5*mm, f"Generado el {date.today().strftime('%d/%m/%Y')}")
-    c.drawRightString(PAGE_W - MARGIN, 5*mm, f"Página {page_num}")
-    c.restoreState()
-
-def _draw_card(c: canvas.Canvas, x: float, y: float, w: float, h: float, title: Optional[str] = None):
-    """Dibuja un fondo tipo tarjeta redondeada."""
-    c.saveState()
-    c.setFillColor(CARD_BG_COLOR)
-    # roundRect(x, y, width, height, radius)
-    c.roundRect(x, y, w, h, 6, fill=1, stroke=0)
+    # Cabecera
+    # Logo (Texto simulado por ahora, idealmente una imagen)
+    canvas.setFont("Helvetica-Bold", 14)
+    canvas.setFillColor(COLOR_P2)
+    canvas.drawString(20*mm, A4[1] - 15*mm, "Teamworkz")
     
-    if title:
-        c.setFillColor(ACCENT_COLOR) # Título en acento
-        c.setFont("Helvetica-Bold", 12)
-        c.drawString(x + 5*mm, y + h - 8*mm, title.upper())
-        # Línea separadora
-        c.setStrokeColor(colors.HexColor("#334155"))
-        c.setLineWidth(1)
-        c.line(x + 5*mm, y + h - 11*mm, x + w - 5*mm, y + h - 11*mm)
+    canvas.setFont("Helvetica", 10)
+    canvas.setFillColor(COLOR_TEXT_LIGHT)
+    canvas.drawRightString(A4[0] - 20*mm, A4[1] - 15*mm, "Informe de Empleabilidad 360°")
     
-    c.restoreState()
-
-def _wrapped_text(c: canvas.Canvas, text: str, x: float, y: float, max_w: float, 
-                  font="Helvetica", size=10, color=TEXT_SECONDARY, leading=14) -> float:
-    """Dibuja texto multilínea y retorna la nueva posición Y."""
-    if not text: return y
+    # Línea separadora header
+    canvas.setStrokeColor(colors.HexColor("#e2e8f0"))
+    canvas.line(20*mm, A4[1] - 18*mm, A4[0] - 20*mm, A4[1] - 18*mm)
     
-    # Usar Paragraph para mejor manejo de texto
-    estilos = getSampleStyleSheet()
-    estilo = ParagraphStyle(
-        'Custom',
-        parent=estilos['Normal'],
-        fontName=font,
-        fontSize=size,
-        textColor=color,
-        leading=leading,
-        alignment=TA_LEFT
-    )
+    # Pie de Página
+    canvas.setFont("Helvetica", 8)
+    canvas.setFillColor(COLOR_TEXT_LIGHT)
+    canvas.drawString(20*mm, 10*mm, f"Generado el {date.today().strftime('%d/%m/%Y')}")
+    canvas.drawRightString(A4[0] - 20*mm, 10*mm, f"Página {doc.page}")
     
-    p = Paragraph(text.replace("\n", "<br/>"), estilo)
-    w, h = p.wrap(max_w, PAGE_H) # Altura disponible arbitraria grande
-    p.drawOn(c, x, y - h)
-    return y - h
-
-def _draw_skill_bar(c: canvas.Canvas, x: float, y: float, w: float, name: str, score: int):
-    c.saveState()
-    h = 6*mm
-    
-    # Nombre
-    c.setFont("Helvetica", 9)
-    c.setFillColor(TEXT_PRIMARY)
-    c.drawString(x, y + 2*mm, name)
-    
-    # Barra fondo
-    bar_x = x + 50*mm
-    bar_w = w - 60*mm
-    c.setFillColor(colors.HexColor("#334155"))
-    c.roundRect(bar_x, y, bar_w, h, 3, fill=1, stroke=0)
-    
-    # Barra progreso
-    progress = max(0, min(100, score))
-    fill_w = bar_w * (progress / 100)
-    
-    # Color según score
-    fill_color = SUCCESS_COLOR if score >= 75 else (WARNING_COLOR if score >= 50 else DANGER_COLOR)
-    c.setFillColor(fill_color)
-    c.roundRect(bar_x, y, fill_w, h, 3, fill=1, stroke=0)
-    
-    # Texto score
-    c.setFont("Helvetica-Bold", 8)
-    c.setFillColor(TEXT_PRIMARY)
-    c.drawRightString(bar_x + bar_w + 8*mm, y + 1.5*mm, f"{score}%")
-    
-    c.restoreState()
-
-def draw_radar_chart(c, data: List[Dict[str, Any]], cx, cy, radius=50):
-    """Dibuja un gráfico de radar hexagonal."""
-    if not data: return
-    
-    # Asegurar que hay datos
-    if len(data) < 3: return
-    
-    # Limitar a top 6 para limpieza visual
-    if not isinstance(data, list): data = list(data)
-    sorted_data = sorted(data, key=lambda x: x.get("score", 0), reverse=True)
-    data = sorted_data[:6]
-    n = len(data)
-    angle_step = 2 * math.pi / n
-    
-    c.saveState()
-    
-    # Ejes y fondo
-    c.setStrokeColor(colors.HexColor("#475569"))
-    c.setLineWidth(0.5)
-    
-    # Anillos concéntricos (20%, 40%, 60%, 80%, 100%)
-    for i in range(1, 6):
-        level_r = radius * (i/5)
-        path = c.beginPath()
-        for j in range(n):
-            ang = j * angle_step - math.pi/2
-            px = cx + level_r * math.cos(ang)
-            py = cy + level_r * math.sin(ang)
-            if j == 0: path.moveTo(px, py)
-            else: path.lineTo(px, py)
-        path.close()
-        c.drawPath(path, stroke=1, fill=0)
-    
-    # Ejes radiales y etiquetas
-    c.setFont("Helvetica", 7)
-    c.setFillColor(TEXT_SECONDARY)
-    
-    value_points = []
-    
-    for j in range(n):
-        ang = j * angle_step - math.pi/2
-        
-        # Eje
-        end_x = cx + radius * math.cos(ang)
-        end_y = cy + radius * math.sin(ang)
-        c.line(cx, cy, end_x, end_y)
-        
-        # Etiqueta
-        lbl_r = radius + 12
-        lbl_x = cx + lbl_r * math.cos(ang)
-        lbl_y = cy + lbl_r * math.sin(ang)
-        
-        # Ajuste alineación
-        align = TA_CENTER
-        item = data[j]
-        c.saveState() # Para texto
-        # Simple drawString centrado manual
-        c.drawCentredString(lbl_x, lbl_y, item.get("skill", "")[:15])
-        c.restoreState()
-        
-        # Punto de valor
-        score = item.get("score", 0)
-        val_r = radius * (score / 100)
-        val_x = cx + val_r * math.cos(ang)
-        val_y = cy + val_r * math.sin(ang)
-        value_points.append((val_x, val_y))
-        
-    # Polígono de valores
-    if value_points:
-        path = c.beginPath()
-        # Ensure value_points is indexable
-        vp_list = list(value_points)
-        path.moveTo(vp_list[0][0], vp_list[0][1])
-        for p in vp_list[1:]:
-            path.lineTo(p[0], p[1])
-        path.close()
-        
-        # Relleno semi-transparente
-        c.setFillColor(colors.Color(56/255, 189/255, 248/255, alpha=0.4)) # Sky 400 with alpha
-        c.setStrokeColor(ACCENT_COLOR)
-        c.setLineWidth(2)
-        c.drawPath(path, fill=1, stroke=1)
-        
-        # Puntos
-        c.setFillColor(ACCENT_COLOR)
-        for p in value_points:
-            c.circle(p[0], p[1], 2, fill=1, stroke=0)
-            
-    c.restoreState()
-
+    canvas.restoreState()
 
 def create_employability_pdf(report: NewReportSchema) -> bytes:
-    buffer = BytesIO()
-    c = canvas.Canvas(buffer, pagesize=A4)
-    c.setTitle(f"Informe Empleabilidad - {report.personal_data.name}")
+    """Función principal que genera el PDF usando Platypus."""
+    buffer = io.BytesIO()
     
-    # --- PÁGINA 1: Dashboard Principal ---
-    _draw_background(c)
-    _draw_header(c)
+    # Configurar documento
+    doc = SimpleDocTemplate(
+        buffer,
+        pagesize=A4,
+        rightMargin=20*mm,
+        leftMargin=20*mm,
+        topMargin=25*mm,
+        bottomMargin=20*mm
+    )
     
-    # Título Principal
-    y_cursor = PAGE_H - 40*mm
-    c.setFillColor(TEXT_PRIMARY)
-    c.setFont("Helvetica-Bold", 24)
-    c.drawCentredString(PAGE_W/2, y_cursor, "PERFIL DE COMPETENCIAS PROFESIONALES")
+    # Estilos
+    styles = getSampleStyleSheet()
     
-    # Datos Candidato (Tarjeta Superior)
-    y_cursor -= 15*mm
-    card_h = 45*mm
-    _draw_card(c, MARGIN, y_cursor - card_h, PAGE_W - 2*MARGIN, card_h, "DATOS PERSONALES")
+    # Estilo Título Principal
+    style_title = ParagraphStyle(
+        'MainTitle',
+        parent=styles['Heading1'],
+        fontSize=24,
+        textColor=COLOR_P2,
+        alignment=TA_CENTER,
+        spaceAfter=15*mm
+    )
     
-    # Contenido Datos
-    content_y = y_cursor - 18*mm
-    c.setFont("Helvetica-Bold", 14)
-    c.setFillColor(TEXT_PRIMARY)
-    c.drawString(MARGIN + 10*mm, content_y, report.personal_data.name)
+    # Estilo H2 (Secciones)
+    style_h2 = ParagraphStyle(
+        'SectionTitle',
+        parent=styles['Heading2'],
+        fontSize=14,
+        textColor=COLOR_PRIMARY,
+        spaceBefore=10*mm,
+        spaceAfter=5*mm,
+        borderPadding=(0, 0, 5, 0), # underline visual hack
+        borderColor=COLOR_ACCENT,
+        borderWidth=0, # borderBottomWidth no existe directo en arg simple, usamos tabla o linea
+    )
     
-    c.setFont("Helvetica", 10)
-    c.setFillColor(TEXT_SECONDARY)
-    # Columna 1
-    c.drawString(MARGIN + 10*mm, content_y - 8*mm, f"📍 {report.personal_data.location}")
-    c.drawString(MARGIN + 10*mm, content_y - 14*mm, f"📧 {report.personal_data.email}")
-    # Columna 2
-    c.drawString(PAGE_W/2, content_y - 8*mm, f"📞 {report.personal_data.phone}")
-    c.drawString(PAGE_W/2, content_y - 14*mm, f"🔗 {report.personal_data.linkedin or 'No disponible'}")
+    # Estilo Normal
+    style_normal = ParagraphStyle(
+        'NormalCustom',
+        parent=styles['Normal'],
+        fontSize=10,
+        textColor=COLOR_TEXT_MAIN,
+        leading=14,
+        alignment=TA_JUSTIFY
+    )
     
-    # Score Global (Badge)
-    score = report.employability_score or 75
-    score_color = SUCCESS_COLOR if score >= 70 else (WARNING_COLOR if score >= 50 else DANGER_COLOR)
-    c.setFillColor(score_color)
-    c.circle(PAGE_W - MARGIN - 25*mm, y_cursor - 22*mm, 18*mm, fill=1, stroke=0)
-    c.setFillColor(colors.black)
-    c.setFont("Helvetica-Bold", 16)
-    c.drawCentredString(PAGE_W - MARGIN - 25*mm, y_cursor - 20*mm, f"{score}%")
-    c.setFont("Helvetica", 7)
-    c.drawCentredString(PAGE_W - MARGIN - 25*mm, y_cursor - 28*mm, "EMPLEABILIDAD")
-    
-    y_cursor -= (card_h + 10*mm)
-    
-    # Resumen Perfil
-    summary_h = 35*mm
-    _draw_card(c, MARGIN, y_cursor - summary_h, PAGE_W - 2*MARGIN, summary_h, "RESUMEN EJECUTIVO")
-    _wrapped_text(c, report.profile_summary, MARGIN + 5*mm, y_cursor - 15*mm, PAGE_W - 2*MARGIN - 10*mm)
-    
-    y_cursor -= (summary_h + 10*mm)
-    
-    # Dos columnas: Radar (Izq) y Soft Skills (Der)
-    col_w = (PAGE_W - 2*MARGIN - 10*mm) / 2
-    chart_h = 80*mm
-    
-    # Tarjeta Izq: Radar
-    _draw_card(c, MARGIN, y_cursor - chart_h, col_w, chart_h, "MAPA DE HABILIDADES")
-    # Centro del radar relativo a la tarjeta
-    rx = MARGIN + col_w/2
-    ry = y_cursor - chart_h/2 - 5*mm
-    draw_radar_chart(c, report.soft_skills or [], rx, ry, 25*mm)
-    
-    # Tarjeta Der: Top Skills
-    _draw_card(c, MARGIN + col_w + 10*mm, y_cursor - chart_h, col_w, chart_h, "COMPETENCIAS CLAVE")
-    
-    skill_y = y_cursor - 18*mm
-    # Ordenar y tomar top 5
-    soft_skills: List[Dict[str, Any]] = report.soft_skills or []
-    if not isinstance(soft_skills, list): soft_skills = list(soft_skills)
-    sorted_skills = sorted(soft_skills, key=lambda x: x.get("score", 0), reverse=True)
-    top_skills = sorted_skills[:5]
-    for sk in top_skills:
-        _draw_skill_bar(c, MARGIN + col_w + 15*mm, skill_y, col_w - 10*mm, sk.get("skill", "")[:20], sk.get("score", 0))
-        skill_y -= 12*mm
-        
-    _draw_footer(c, 1)
-    c.showPage()
-    
-    # --- PÁGINA 2: Diagnóstico y Análisis CV ---
-    _draw_background(c)
-    _draw_header(c)
-    y_cursor = PAGE_H - 30*mm
-    
-    _draw_card(c, MARGIN, y_cursor - 70*mm, PAGE_W - 2*MARGIN, 70*mm, "ANÁLISIS TÉCNICO DEM CV")
-    
-    # Scores del análisis (Estrellas / Barras)
-    an = report.cv_analysis
-    metrics = [
-        ("Estructura", an.structure_score),
-        ("Claridad", an.clarity_score),
-        ("Contenido", an.key_info_score),
-        ("Coherencia", an.coherence_score),
-        ("Estilo", an.style_score),
-    ]
-    
-    met_y = y_cursor - 20*mm
-    col_gap = 60*mm
-    for i, (label, val) in enumerate(metrics):
-        # Dibujar estrellas
-        x_pos = MARGIN + 10*mm + (i % 2) * 90*mm 
-        y_pos = met_y - (i // 2) * 15*mm
-        
-        c.setFillColor(TEXT_PRIMARY)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(x_pos, y_pos, f"{label}:")
-        
-        # Estrellas de 5 ptos
-        for st in range(5):
-            sx = x_pos + 25*mm + st*5*mm
-            c.setFillColor(GOLD_COLOR if st < val else colors.HexColor("#475569"))
-            c.circle(sx, y_pos + 1*mm, 1.5*mm, fill=1, stroke=0)
-            
-    # Feedback texto
-    feed_y = met_y - 45*mm
-    c.setFillColor(TEXT_SECONDARY)
-    c.setFont("Helvetica-Oblique", 9)
-    # Usamos cv_summary como feedback general o evidence
-    feedback_text = f"Observaciones: {report.cv_summary[:300]}..."
-    _wrapped_text(c, feedback_text, MARGIN + 10*mm, feed_y, PAGE_W - 2*MARGIN - 20*mm)
+    # Estilo Caja Azul (Mensaje Final)
+    style_blue_box = ParagraphStyle(
+        'BlueBox',
+        parent=styles['Normal'],
+        fontSize=11,
+        textColor=COLOR_P2,
+        backColor=COLOR_BG_BOX,
+        borderColor=COLOR_P2,
+        borderWidth=1,
+        borderPadding=15,
+        alignment=TA_CENTER,
+        leading=16,
+        spaceBefore=10*mm
+    )
 
-    y_cursor -= (80*mm)
+    story = []
+    
+    # --- PÁGINA 1: PORTADA / DASHBOARD ---
+    
+    # Título
+    story.append(Paragraph("PERFIL DE COMPETENCIAS PROFESIONALES", style_title))
+    
+    # Datos Personales (Tabla)
+    p_data = [
+        [f"NOMBRE: {report.datos_personales.nombre}", f"UBICACIÓN: {report.datos_personales.ubicacion}"],
+        [f"EMAIL: {report.datos_personales.email or 'No consta'}", f"TELÉFONO: {report.datos_personales.telefono or 'No consta'}"]
+    ]
+    t_personal = Table(p_data, colWidths=[90*mm, 80*mm])
+    t_personal.setStyle(TableStyle([
+        ('TEXTCOLOR', (0,0), (-1,-1), COLOR_TEXT_MAIN),
+        ('FONTNAME', (0,0), (-1,-1), 'Helvetica-Bold'),
+        ('FONTSIZE', (0,0), (-1,-1), 10),
+        ('BOTTOMPADDING', (0,0), (-1,-1), 8),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#cbd5e1")),
+        ('BACKGROUND', (0,0), (-1,-1), colors.HexColor("#f8fafc")),
+    ]))
+    story.append(t_personal)
+    story.append(Spacer(1, 10*mm))
+    
+    # Score y Nivel
+    score = report.employability_score or 0
+    story.append(Paragraph(f"<b>PUNTUACIÓN DE EMPLEABILIDAD: {score}/100</b>", 
+                           ParagraphStyle('Score', parent=style_normal, alignment=TA_CENTER, textColor=COLOR_ACCENT, fontSize=14)))
+    story.append(Spacer(1, 10*mm))
+
+    # Dos columnas: Radar (Izq) y Resumen (Der) -> Usando Tabla invisible
+    radar = create_drawing(report.soft_skills or [], width=150, height=150)
+    
+    # Resumen Ejecutivo (Texto)
+    resumen_text = Paragraph(f"<b>RESUMEN EJECUTIVO:</b><br/><br/>{report.resumen_ejecutivo}", style_normal)
+    
+    t_summary = Table([[radar, resumen_text]], colWidths=[60*mm, 110*mm])
+    t_summary.setStyle(TableStyle([
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+    ]))
+    story.append(t_summary)
+    story.append(Spacer(1, 15*mm))
+    
+    # Entornos Ideales
+    story.append(Paragraph("ENTORNOS DE TRABAJO IDEALES", style_h2))
+    for env in report.entornos_ideales:
+        story.append(Paragraph(f"• {env}", style_normal))
+        
+    story.append(PageBreak())
+    
+    # --- PÁGINA 2: ANÁLISIS DETALLADO ---
+    
+    # Análisis FODA
+    story.append(Paragraph("ANÁLISIS FODA PERSONALIZADO", style_h2))
+    
+    # Fortalezas
+    story.append(Paragraph("<b>FORTALEZAS CLAVE</b>", style_normal))
+    for f in report.analisis_foda.fortalezas_clave:
+        story.append(Paragraph(f"• {f}", style_normal))
+    story.append(Spacer(1, 5*mm))
     
     # Áreas de Mejora
-    improve_h = 100*mm
-    _draw_card(c, MARGIN, y_cursor - improve_h, PAGE_W - 2*MARGIN, improve_h, "ÁREAS DE MEJORA PRIORITARIAS")
+    story.append(Paragraph("<b>ÁREAS DE MEJORA PRIORITARIAS</b>", style_normal))
+    for idx, area in enumerate(report.analisis_foda.areas_mejora):
+        # area string formato "Area: problema -> accion"
+        story.append(Paragraph(f"{idx+1}. {area}", style_normal))
+    story.append(Spacer(1, 10*mm))
     
-    im_y = y_cursor - 20*mm
-    for item in report.improvement_areas[:4]: # Max 4
-        c.setFillColor(DANGER_COLOR)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(MARGIN + 10*mm, im_y, f"• {item.area}")
+    # Análisis CV
+    story.append(KeepTogether([
+        Paragraph("ANÁLISIS TÉCNICO DEL CV", style_h2),
+        Paragraph(report.analisis_detallado_cv, style_normal)
+    ]))
+    story.append(Spacer(1, 10*mm))
+    
+    # Roles Sugeridos (Tabla)
+    story.append(Paragraph("ROLES SUGERIDOS", style_h2))
+    
+    roles_data = [["ROL", "AJUSTE", "JUSTIFICACIÓN"]]
+    for r in report.roles_sugeridos:
+        roles_data.append([
+            Paragraph(r.rol, style_normal),
+            r.ajuste,
+            Paragraph(r.justificacion, style_normal)
+        ])
         
-        new_y = _wrapped_text(c, f"Acción: {item.suggested_action}", MARGIN + 15*mm, im_y - 5*mm, PAGE_W - 2*MARGIN - 30*mm, size=9)
-        im_y = new_y - 8*mm
-        
-    _draw_footer(c, 2)
-    c.showPage()
+    t_roles = Table(roles_data, colWidths=[40*mm, 25*mm, 105*mm])
+    t_roles.setStyle(TableStyle([
+        ('TEXTCOLOR', (0,0), (-1,0), COLOR_WHITE),
+        ('BACKGROUND', (0,0), (-1,0), COLOR_PRIMARY), # Header negro/azul oscuro
+        ('ALIGN', (0,0), (-1,0), 'CENTER'),
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+        ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#94a3b8")),
+        ('VALIGN', (0,0), (-1,-1), 'TOP'),
+        ('ROWBACKGROUNDS', (1,0), (-1,-1), [colors.white, colors.HexColor("#f1f5f9")]),
+    ]))
+    story.append(t_roles)
     
-    # --- PÁGINA 3: Plan de Acción y Roles ---
-    _draw_background(c)
-    _draw_header(c)
-    y_cursor = PAGE_H - 30*mm
+    story.append(PageBreak())
     
-    # Roles Sugeridos
-    roles_h = 60*mm
-    _draw_card(c, MARGIN, y_cursor - roles_h, PAGE_W - 2*MARGIN, roles_h, "ROLES RECOMENDADOS")
+    # --- PÁGINA 3: PLAN DE ACCIÓN ---
     
-    r_y = y_cursor - 20*mm
-    for role in report.suggested_roles[:3]:
-        c.setFillColor(ACCENT_COLOR)
-        c.setFont("Helvetica-Bold", 11)
-        c.drawString(MARGIN + 10*mm, r_y, f"Role: {role.role} ({role.seniority})")
-        
-        c.setFillColor(TEXT_SECONDARY)
-        c.setFont("Helvetica", 9)
-        c.drawRightString(PAGE_W - MARGIN - 10*mm, r_y, "Remoto: Sí" if role.remote_viable else "Remoto: No")
-        
-        new_y = _wrapped_text(c, role.reason, MARGIN + 10*mm, r_y - 5*mm, PAGE_W - 2*MARGIN - 20*mm, size=9)
-        r_y = new_y - 8*mm
-        
-    y_cursor -= (roles_h + 10*mm)
+    story.append(Paragraph("PLAN DE ACCIÓN ESTRATÉGICO", style_h2))
     
-    # Plan de Acción
-    plan_h = 120*mm
-    _draw_card(c, MARGIN, y_cursor - plan_h, PAGE_W - 2*MARGIN, plan_h, "PLAN DE ACCIÓN (30-60-90 DÍAS)")
+    # Pasos
+    p_steps = [Paragraph(f"✅ {paso}", style_normal) for paso in report.plan_accion.pasos]
+    story.append(Paragraph("<b>PASOS CLAVE:</b>", style_normal))
+    for p in p_steps:
+        story.append(p)
+     
+    story.append(Spacer(1, 5*mm))
     
-    p_y = y_cursor - 15*mm
+    # Herramientas
+    story.append(Paragraph(f"<b>HERRAMIENTAS:</b> {', '.join(report.plan_accion.herramientas)}", style_normal))
+    story.append(Spacer(1, 5*mm))
     
-    # 3 Columnas conceptuales o bloques apilados
-    periods = [
-        ("CORTO PLAZO (0-30 Días)", report.action_plan.short_term),
-        ("MEDIO PLAZO (30-60 Días)", report.action_plan.medium_term),
-        ("LARGO PLAZO (60-90+ Días)", report.action_plan.long_term),
-    ]
+    # Kit Búsqueda
+    story.append(Paragraph("KIT DE BÚSQUEDA", style_h2))
     
-    for title, items in periods:
-        c.setFillColor(TEXT_PRIMARY)
-        c.setFont("Helvetica-Bold", 10)
-        c.drawString(MARGIN + 10*mm, p_y, title)
-        p_y -= 5*mm
-        
-        for it in items[:3]: # Limit 3 bullet points
-            p_y = _wrapped_text(c, f"• {it}", MARGIN + 15*mm, p_y, PAGE_W - 2*MARGIN - 30*mm, size=9)
-            p_y -= 2*mm
-        p_y -= 5*mm
+    story.append(Paragraph("<b>TITULAR LINKEDIN SUGERIDO:</b>", style_normal))
+    story.append(Paragraph(report.kit_busqueda.frases_linkedin.get("titular", ""), 
+                           ParagraphStyle('Italic', parent=style_normal, fontName='Helvetica-Oblique')))
+    story.append(Spacer(1, 5*mm))
+    
+    story.append(Paragraph("<b>EXTRACTO (ACERCA DE):</b>", style_normal))
+    story.append(Paragraph(report.kit_busqueda.frases_linkedin.get("acerca_de", ""), 
+                           ParagraphStyle('Italic', parent=style_normal, fontName='Helvetica-Oblique')))
+    
+    story.append(Spacer(1, 15*mm))
+    
+    # Mensaje Final (Blue Box)
+    story.append(KeepTogether([
+        Paragraph(report.mensaje_final_azul, style_blue_box)
+    ]))
 
-    _draw_footer(c, 3)
-    c.showPage()
+    # Generar PDF
+    doc.build(story, onFirstPage=header_footer, onLaterPages=header_footer)
     
-    c.save()
     return buffer.getvalue()

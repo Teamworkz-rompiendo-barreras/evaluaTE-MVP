@@ -7,10 +7,12 @@ from typing import Any, Dict, List, Optional
 try:
     import google.generativeai as genai
 except ImportError:
+    # Si falla, intentamos usar el lite o mock si no está en Render (pero requirements lo tiene)
     try:
         from backend import gemini_lite as genai
     except ImportError:
         import gemini_lite as genai
+
 from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
 from fastapi.middleware.cors import CORSMiddleware
 
@@ -20,12 +22,11 @@ try:
     from backend.prompt_config import PromptConfig
     from backend.new_report_schema import NewReportSchema
 except ImportError:
-    # Fallback para ejecución directa
     from cv_analyzer import extract_pdf_info
     from prompt_config import PromptConfig
     from new_report_schema import NewReportSchema
 
-# pdf_service is optional (requires reportlab which is not in serverless)
+# Importar servicio PDF (opcional si falla reportlab, pero necesario para reportes)
 create_employability_pdf = None
 try:
     from backend.pdf_service import create_employability_pdf
@@ -33,7 +34,7 @@ except ImportError:
     try:
         from pdf_service import create_employability_pdf
     except ImportError:
-        pass  # create_employability_pdf stays None
+        pass
 
 # Configurar logs
 logging.basicConfig(level=logging.INFO)
@@ -104,18 +105,11 @@ async def analyze_computational_profile(
 ):
     """
     Endpoint principal para generar el informe de empleabilidad.
-    Recibe:
-    - cv_file: Archivo PDF o imagen del CV (Opcional).
-    - game_results: JSON string con los resultados de los juegos.
-    - preferences: JSON string con las preferencias del candidato.
     """
     try:
-        # Get user_id from header if authenticated (set by frontend/gateway)
-        # For MVP without full backend auth middleware, we might accept it from a header or form
-        # Warning: In production, validate this via a proper JWT token
+        # Get user_id from header
         user_id = request.headers.get("X-User-Id")
         
-        # 1. Parsear datos del formulario
         try:
             games_data = json.loads(game_results)
             prefs_data = json.loads(preferences)
@@ -129,34 +123,49 @@ async def analyze_computational_profile(
         if cv_file:
             pdf_bytes = await cv_file.read()
             if pdf_bytes:
+                # A. Subir CV a Supabase Storage 'cvs'
+                if supabase_client and user_id:
+                    try:
+                        # Sanitize filename or use timestamp
+                        file_ext = "pdf"
+                        if cv_file.filename:
+                           parts = cv_file.filename.split('.')
+                           if len(parts) > 1: file_ext = parts[-1]
+                        
+                        file_path = f"{user_id}/{int(time.time())}.{file_ext}"
+                        
+                        supabase_client.storage.from_("cvs").upload(
+                            path=file_path,
+                            file=pdf_bytes,
+                            file_options={"content-type": cv_file.content_type or "application/pdf"}
+                        )
+                        logger.info(f"CV uploaded to Supabase: {file_path}")
+                    except Exception as storage_err:
+                        logger.error(f"Failed to upload CV to Supabase: {storage_err}")
+
+                # B. Analizar CV con Gemini
                 cv_extraction = await extract_pdf_info(pdf_bytes)
                 if cv_extraction:
                     cv_data = cv_extraction.get("cv_info", {})
                     full_text = cv_extraction.get("raw_text", "")
         
-        # Si no hay CV, cv_data y full_text quedan vacíos, el prompt debe manejarlo.
-        
         # 3. Preparar datos para el prompt
-        candidate_name = cv_data.get("contact", {}).get("name") or "Candidato"
+        candidate_name = cv_data.get("datos_personales", {}).get("nombre") or "Candidato"
         
-        # Calcular/Extraer score de empleabilidad (mock o calculado)
-        employability_score = 75 # Placeholder
-        level = "medio" # Placeholder
+        # Mock scores si no vienen del juego
+        employability_score = 75 
+        level = "medio" 
 
         if isinstance(games_data, list):
-             # Legacy/Simpler format where games_data is just a list of games
              completed_games_list = [g.get("name", "Juego desconocido") for g in games_data]
-             soft_skills_data = [] # Fallback
+             soft_skills_data = [] 
         elif isinstance(games_data, dict):
-             # Rich format from frontend
              completed_games_list = games_data.get("completedGames", [])
-             # Extract explicit skill objects
              soft_skills_data = games_data.get("softSkills", [])
         else:
              completed_games_list = []
              soft_skills_data = []
 
-        # Fallback if no soft skills provided
         if not soft_skills_data:
              soft_skills_data = [
                 {"skill": "Resolución de problemas", "score": 80, "level": "alto"},
@@ -173,41 +182,27 @@ async def analyze_computational_profile(
             employability_score=employability_score,
             level=level,
             completed_games=completed_games_list,
-            languages_data=cv_data.get("languages", []),
+            languages_data=cv_data.get("idiomas", []),
             full_raw_text=full_text
         )
 
         # 5. Llamar a Gemini
         if not GOOGLE_API_KEY:
              logger.warning("API Key no configurada, retornando mock data")
-             # Retornar JSON Mock seguro
              return {
-                 "summary": "Informe MOCK generado porque no hay API Key.",
-                 "personal_data": {"name": candidate_name, "location": "Madrid", "email": "mock@email.com", "phone": "600000000", "disability_certificate": "No consta"},
-                 "profile_summary": "Este es un resumen simulado.",
-                 "cv_summary": "Resumen del CV simulado.",
-                 "strengths": ["Simulación", "Test"],
-                 "improvement_areas": [{"area": "Mock", "reason": "No API", "suggested_action": "Configurar API Key"}],
-                 "cv_analysis": {
-                     "structure_score": 3, "coherence_score": 3, "key_info_score": 3, "clarity_score": 3, "style_score": 3,
-                     "evidence": {"structure": "ok", "coherence": "ok", "key_info": "ok", "clarity": "ok", "style": "ok"},
-                     "corrections": [], "reordering_suggestions": []
-                 },
-                 "ideal_work_environment": "Remoto",
-                 "suggested_roles": [{"role": "Desarrollador Mock", "reason": "Test", "seniority": "Junior", "remote_viable": True}],
-                 "action_plan": {"short_term": ["Test"], "medium_term": ["Test"], "long_term": ["Test"]},
-                 "job_search_advice": {"cv_optimization": [], "letters_portfolio": "", "recommended_platforms": [], "networking": "", "interview_tips": ""},
-                 "useful_tools": {"productivity": [], "job_search": [], "learning": [], "accessibility": []},
-                 "completed_games": completed_games_list,
-                 "ready_phrases": {"headline": "Mock", "about_me": "Mock", "short_message": "Mock"},
-                 "final_message": "Mock message"
+                 "resumen_ejecutivo": "MOCK: No API Key configured.",
+                 "datos_personales": {"nombre": candidate_name, "ubicacion": "Madrid", "email": "mock@email.com", "phone": "000000000"},
+                 # ... rellenar resto de mock compliant con Schema Español si fuera necesario
+                 "mensaje_final_azul": "Mock Mode"
              }
 
-        model = genai.GenerativeModel('gemini-2.5-flash-lite-preview-09-2025')
+        # Modelo oficial que soporta JSON mode bien
+        model = genai.GenerativeModel('gemini-1.5-flash')
         generation_config = genai.types.GenerationConfig(
             response_mime_type="application/json"
         )
         
+        logger.info("Sending prompt to Gemini...")
         response = await model.generate_content_async(
             prompt,
             generation_config=generation_config
@@ -215,43 +210,38 @@ async def analyze_computational_profile(
         
         response_text = response.text
         
-        # 6. Parsear y validar JSON de respuesta
+        # 6. Parsear
         try:
             analysis_result = json.loads(response_text)
         except json.JSONDecodeError:
-            start = response_text.find('{')
-            end = response_text.rfind('}') + 1
-            if start != -1 and end != -1:
-                analysis_result = json.loads(response_text[start:end])
-            else:
-                raise HTTPException(status_code=500, detail="La IA no generó un JSON válido")
+            # Intentar limpiar
+            msg = response_text
+            if "```json" in msg:
+                msg = msg.split("```json")[1].split("```")[0]
+            elif "```" in msg:
+                msg = msg.split("```")[1].split("```")[0]
+            analysis_result = json.loads(msg.strip())
 
-        # 7. Persistir en Supabase (si está configurado y tenemos user_id)
+        # 7. Persistir en Supabase
         if supabase_client and user_id:
             try:
-                # Prepare data for employability_reports
-                # Note: employability_score and level might be recalculated or taken from AI result
-                # For now, we use the placeholder or parsed values
+                # Inyectar scores si la AI no los devolvió (que NO debería según prompt, pero bueno)
+                # El prompt dice que JSON debe ser estricto.
+                # Guardamos el JSON tal cual en report_json
                 
-                # Try to extract score/level from analysis_result if present, else fallback
-                final_score = analysis_result.get("employability_score", employability_score)
-                final_level = analysis_result.get("level", level) # AI doesn't explicitly return level in root usually
-
                 report_payload = {
                     "user_id": user_id,
-                    "employability_score": final_score,
-                    "level": str(final_level),
+                    "employability_score": employability_score, # Usamos el calculado/mock
+                    "level": str(level),
                     "report_json": analysis_result,
                     "created_at": "now()"
                 }
                 
-                data, count = supabase_client.table("employability_reports").insert(report_payload).execute()
+                supabase_client.table("employability_reports").insert(report_payload).execute()
                 logger.info(f"Report saved to Supabase for user {user_id}")
                 
             except Exception as db_err:
                 logger.error(f"Error saving to Supabase: {db_err}")
-                # Don't fail the request if DB save fails, just log it
-                pass
 
         return analysis_result
 
@@ -265,7 +255,19 @@ async def generate_pdf_report(report_data: dict, filename: Optional[str] = "repo
     Genera el PDF a partir del JSON del informe.
     """
     try:
-        pdf_bytes = create_employability_pdf(report_data)
+        if not create_employability_pdf:
+             raise HTTPException(status_code=500, detail="PDF Service not available (reportlab missing)")
+        
+        # Validar con Schema (Pydantic hará el parsing de dict a objeto)
+        try:
+            report_schema = NewReportSchema(**report_data)
+        except Exception as  val_err:
+            logger.error(f"Schema Validation Failed: {val_err}")
+            # Intento de 'best effort' si falla validacion estricta? 
+            # No, mejor fallar para detectar errores de P0.
+            raise HTTPException(status_code=400, detail=f"Invalid JSON Schema: {val_err}")
+
+        pdf_bytes = create_employability_pdf(report_schema)
         
         return Response(
             content=pdf_bytes,
@@ -284,7 +286,6 @@ async def api_debug_cv_data(file: UploadFile = File(...)) -> Dict[str, Any]:
         if not pdf_bytes:
             raise HTTPException(status_code=400, detail="Archivo vacío")
         result = await extract_pdf_info(pdf_bytes)
-        logger.info("debug endpoint returned CV data")
         return result
     except Exception as e:
         logger.exception("Error in debug endpoint")
