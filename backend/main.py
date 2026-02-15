@@ -2,12 +2,13 @@ import json
 import logging
 import os
 import time
+import base64
 from typing import Any, Dict, List, Optional
+from pydantic import BaseModel
 
 try:
     import google.generativeai as genai
 except ImportError:
-    # Si falla, intentamos usar el lite o mock si no está en Render (pero requirements lo tiene)
     try:
         from backend import gemini_lite as genai
     except ImportError:
@@ -26,7 +27,7 @@ except ImportError:
     from prompt_config import PromptConfig
     from new_report_schema import NewReportSchema
 
-# Importar servicio PDF (opcional si falla reportlab, pero necesario para reportes)
+# Importar servicio PDF
 create_employability_pdf = None
 try:
     from backend.pdf_service import create_employability_pdf
@@ -48,7 +49,7 @@ else:
     genai.configure(api_key=GOOGLE_API_KEY)
 
 APP_TITLE = os.getenv("APP_TITLE", "EvaluaTE Backend")
-APP_VERSION = "2.0.0 - Gemini Integration"
+APP_VERSION = "2.0.1 - Gemini JSON/Base64"
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 
@@ -59,7 +60,6 @@ allowed_origins_env = os.getenv(
 )
 ALLOWED_ORIGINS = [o.strip() for o in allowed_origins_env.split(",") if o.strip()]
 
-# En producción, asegurarse de que los orígenes permitidos incluyan la URL de Vercel
 if os.getenv("PRODUCTION", "false").lower() == "true":
     default_domains = [
         "https://evalua-te-mvp.vercel.app",
@@ -96,75 +96,94 @@ if SUPABASE_URL and SUPABASE_KEY:
     except Exception as e:
         logger.error(f"Failed to initialize Supabase client: {e}")
 
+# --- MODELO DE ENTRADA JSON ---
+class AnalyzeRequest(BaseModel):
+    firstName: str
+    lastName: str
+    email: Optional[str] = None
+    cvFile: Optional[str] = None # Base64 string
+    gameResults: Optional[Dict[str, Any]] = {} # Frontend sends 'gameResults' logic seems to expect this structure
+    jobPreferences: Optional[Dict[str, Any]] = {} # Frontend sends preferences here
+    user_id: Optional[str] = None # Optional user_id if passed in body
+
 @app.post("/api/analyze")
 async def analyze_computational_profile(
-    request: Request,
-    cv_file: Optional[UploadFile] = File(None),
-    game_results: str = Form(...),
-    preferences: str = Form(...)
+    request: AnalyzeRequest,
+    req: Request # To get headers
 ):
     """
-    Endpoint principal para generar el informe de empleabilidad.
+    Endpoint principal (JSON/Base64) para generar el informe de empleabilidad.
     """
     try:
-        # Get user_id from header
-        user_id = request.headers.get("X-User-Id")
+        # Get user_id from header or body
+        user_id = req.headers.get("X-User-Id") or request.user_id
         
-        try:
-            games_data = json.loads(game_results)
-            prefs_data = json.loads(preferences)
-        except json.JSONDecodeError as e:
-            raise HTTPException(status_code=400, detail=f"Error al decodificar JSON: {e}")
+        games_data = request.gameResults or {}
+        prefs_data = request.jobPreferences or {}
 
         # 2. Leer y extraer texto del CV (si existe)
         cv_data = {}
         full_text = ""
+        pdf_bytes = None
         
-        if cv_file:
-            pdf_bytes = await cv_file.read()
+        if request.cvFile:
+            try:
+                # Limpieza y Decodificación del Base64
+                encoded_data = request.cvFile
+                if "," in encoded_data:
+                    # Eliminar el prefijo 'data:application/pdf;base64,' si existe
+                    _, encoded_data = encoded_data.split(",", 1)
+
+                pdf_bytes = base64.b64decode(encoded_data)
+                
+                # Validar magic number PDF
+                if not pdf_bytes.startswith(b"%PDF"):
+                     logger.warning("El archivo decodificado no parece ser un PDF estándar.")
+            except Exception as e:
+                logger.error(f"Error decodificando Base64: {e}")
+                raise HTTPException(status_code=400, detail="Formato de archivo inválido (Base64 corrupto).")
+                
             if pdf_bytes:
                 # A. Subir CV a Supabase Storage 'cvs'
                 if supabase_client and user_id:
                     try:
-                        # Sanitize filename or use timestamp
                         file_ext = "pdf"
-                        if cv_file.filename:
-                           parts = cv_file.filename.split('.')
-                           if len(parts) > 1: file_ext = parts[-1]
-                        
                         file_path = f"{user_id}/{int(time.time())}.{file_ext}"
                         
                         supabase_client.storage.from_("cvs").upload(
                             path=file_path,
                             file=pdf_bytes,
-                            file_options={"content-type": cv_file.content_type or "application/pdf"}
+                            file_options={"content-type": "application/pdf"}
                         )
                         logger.info(f"CV uploaded to Supabase: {file_path}")
                     except Exception as storage_err:
                         logger.error(f"Failed to upload CV to Supabase: {storage_err}")
 
-                # B. Analizar CV con Gemini
+                # B. Analizar CV con Gemini (Usando la implementación existente)
                 cv_extraction = await extract_pdf_info(pdf_bytes)
                 if cv_extraction:
                     cv_data = cv_extraction.get("cv_info", {})
                     full_text = cv_extraction.get("raw_text", "")
         
         # 3. Preparar datos para el prompt
-        candidate_name = cv_data.get("datos_personales", {}).get("nombre") or "Candidato"
+        # Si Gemini extrajo el nombre, usémoslo, sino el del formulario
+        candidate_name = cv_data.get("datos_personales", {}).get("nombre")
+        if not candidate_name:
+             candidate_name = f"{request.firstName} {request.lastName}".strip()
         
-        # Mock scores si no vienen del juego
+        # Mock scores
         employability_score = 75 
         level = "medio" 
+        
+        # Normalizar game results
+        completed_games_list = []
+        soft_skills_data = []
 
         if isinstance(games_data, list):
              completed_games_list = [g.get("name", "Juego desconocido") for g in games_data]
-             soft_skills_data = [] 
         elif isinstance(games_data, dict):
              completed_games_list = games_data.get("completedGames", [])
              soft_skills_data = games_data.get("softSkills", [])
-        else:
-             completed_games_list = []
-             soft_skills_data = []
 
         if not soft_skills_data:
              soft_skills_data = [
@@ -191,12 +210,11 @@ async def analyze_computational_profile(
              logger.warning("API Key no configurada, retornando mock data")
              return {
                  "resumen_ejecutivo": "MOCK: No API Key configured.",
-                 "datos_personales": {"nombre": candidate_name, "ubicacion": "Madrid", "email": "mock@email.com", "phone": "000000000"},
-                 # ... rellenar resto de mock compliant con Schema Español si fuera necesario
+                 "datos_personales": {"nombre": candidate_name, "ubicacion": "Madrid", "email": request.email or "mock@email.com", "phone": "000000000"},
                  "mensaje_final_azul": "Mock Mode"
+                 # ... (resto del mock omitido por brevedad, debería ser completo)
              }
 
-        # Modelo oficial que soporta JSON mode bien
         model = genai.GenerativeModel('gemini-1.5-flash')
         generation_config = genai.types.GenerationConfig(
             response_mime_type="application/json"
@@ -214,7 +232,6 @@ async def analyze_computational_profile(
         try:
             analysis_result = json.loads(response_text)
         except json.JSONDecodeError:
-            # Intentar limpiar
             msg = response_text
             if "```json" in msg:
                 msg = msg.split("```json")[1].split("```")[0]
@@ -225,13 +242,9 @@ async def analyze_computational_profile(
         # 7. Persistir en Supabase
         if supabase_client and user_id:
             try:
-                # Inyectar scores si la AI no los devolvió (que NO debería según prompt, pero bueno)
-                # El prompt dice que JSON debe ser estricto.
-                # Guardamos el JSON tal cual en report_json
-                
                 report_payload = {
                     "user_id": user_id,
-                    "employability_score": employability_score, # Usamos el calculado/mock
+                    "employability_score": employability_score, 
                     "level": str(level),
                     "report_json": analysis_result,
                     "created_at": "now()"
@@ -258,13 +271,10 @@ async def generate_pdf_report(report_data: dict, filename: Optional[str] = "repo
         if not create_employability_pdf:
              raise HTTPException(status_code=500, detail="PDF Service not available (reportlab missing)")
         
-        # Validar con Schema (Pydantic hará el parsing de dict a objeto)
         try:
             report_schema = NewReportSchema(**report_data)
         except Exception as  val_err:
             logger.error(f"Schema Validation Failed: {val_err}")
-            # Intento de 'best effort' si falla validacion estricta? 
-            # No, mejor fallar para detectar errores de P0.
             raise HTTPException(status_code=400, detail=f"Invalid JSON Schema: {val_err}")
 
         pdf_bytes = create_employability_pdf(report_schema)
