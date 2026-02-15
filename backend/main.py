@@ -4,36 +4,36 @@ import os
 import time
 import base64
 from typing import Any, Dict, List, Optional
-from pydantic import BaseModel
+from pydantic import BaseModel # type: ignore
 
 try:
-    import google.generativeai as genai
+    import google.generativeai as genai # type: ignore
 except ImportError:
     try:
-        from backend import gemini_lite as genai
+        from backend import gemini_lite as genai # type: ignore
     except ImportError:
-        import gemini_lite as genai
+        import gemini_lite as genai # type: ignore
 
-from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile
-from fastapi.middleware.cors import CORSMiddleware
+from fastapi import FastAPI, File, Form, HTTPException, Request, Response, UploadFile # type: ignore
+from fastapi.middleware.cors import CORSMiddleware # type: ignore
 
 # Importaciones locales
 try:
-    from backend.cv_analyzer import extract_pdf_info
-    from backend.prompt_config import PromptConfig
-    from backend.new_report_schema import NewReportSchema
+    from backend.cv_analyzer import extract_pdf_info # type: ignore
+    from backend.prompt_config import PromptConfig # type: ignore
+    from backend.new_report_schema import NewReportSchema # type: ignore
 except ImportError:
-    from cv_analyzer import extract_pdf_info
-    from prompt_config import PromptConfig
-    from new_report_schema import NewReportSchema
+    from cv_analyzer import extract_pdf_info # type: ignore
+    from prompt_config import PromptConfig # type: ignore
+    from new_report_schema import NewReportSchema # type: ignore
 
 # Importar servicio PDF
 create_employability_pdf = None
 try:
-    from backend.pdf_service import create_employability_pdf
+    from backend.pdf_service import create_employability_pdf # type: ignore
 except ImportError:
     try:
-        from pdf_service import create_employability_pdf
+        from pdf_service import create_employability_pdf # type: ignore
     except ImportError:
         pass
 
@@ -41,15 +41,30 @@ except ImportError:
 logging.basicConfig(level=logging.INFO)
 logger = logging.getLogger(__name__)
 
+# Configurar Supabase
+SUPABASE_URL = os.getenv("SUPABASE_URL")
+SUPABASE_KEY = os.getenv("SUPABASE_KEY")
+supabase_client = None
+
+if SUPABASE_URL and SUPABASE_KEY:
+    try:
+        from supabase import create_client, Client # type: ignore
+        supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
+        logger.info("Supabase client initialized")
+    except ImportError:
+        logger.warning("Supabase library not found. Install it with `pip install supabase`")
+    except Exception as e:
+        logger.error(f"Failed to initialize Supabase client: {e}")
+
 # Configurar Gemini
 GOOGLE_API_KEY = os.getenv("GOOGLE_API_KEY") or os.getenv("GEMINI_API_KEY")
 if not GOOGLE_API_KEY:
     logger.warning("GOOGLE_API_KEY no está configurada. La IA no funcionará correctamente.")
-else:
+elif genai:
     genai.configure(api_key=GOOGLE_API_KEY)
 
 APP_TITLE = os.getenv("APP_TITLE", "EvaluaTE Backend")
-APP_VERSION = "2.0.1 - Gemini JSON/Base64"
+APP_VERSION = "2.0.2 - Gemini JSON/Base64 Fix"
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 
@@ -81,20 +96,6 @@ app.add_middleware(
 def health_check():
     return {"status": "ok", "service": "evaluate-backend", "version": APP_VERSION}
 
-# Configurar Supabase
-SUPABASE_URL = os.getenv("SUPABASE_URL")
-SUPABASE_KEY = os.getenv("SUPABASE_KEY")
-supabase_client = None
-
-if SUPABASE_URL and SUPABASE_KEY:
-    try:
-        from supabase import create_client, Client
-        supabase_client: Client = create_client(SUPABASE_URL, SUPABASE_KEY)
-        logger.info("Supabase client initialized")
-    except ImportError:
-        logger.warning("Supabase library not found. Install it with `pip install supabase`")
-    except Exception as e:
-        logger.error(f"Failed to initialize Supabase client: {e}")
 
 # --- MODELO DE ENTRADA JSON ---
 class AnalyzeRequest(BaseModel):
@@ -122,14 +123,15 @@ async def analyze_computational_profile(
         prefs_data = request.jobPreferences or {}
 
         # 2. Leer y extraer texto del CV (si existe)
-        cv_data = {}
+        cv_data: Dict[str, Any] = {}
         full_text = ""
         pdf_bytes = None
         
         if request.cvFile:
             try:
                 # Limpieza y Decodificación del Base64
-                encoded_data = request.cvFile
+                # Forzamos str() para que el linter estricto sepa que es string
+                encoded_data = str(request.cvFile)
                 if "," in encoded_data:
                     # Eliminar el prefijo 'data:application/pdf;base64,' si existe
                     _, encoded_data = encoded_data.split(",", 1)
@@ -215,29 +217,35 @@ async def analyze_computational_profile(
                  # ... (resto del mock omitido por brevedad, debería ser completo)
              }
 
-        model = genai.GenerativeModel('gemini-1.5-flash')
-        generation_config = genai.types.GenerationConfig(
-            response_mime_type="application/json"
-        )
-        
-        logger.info("Sending prompt to Gemini...")
-        response = await model.generate_content_async(
-            prompt,
-            generation_config=generation_config
-        )
-        
-        response_text = response.text
-        
-        # 6. Parsear
-        try:
-            analysis_result = json.loads(response_text)
-        except json.JSONDecodeError:
-            msg = response_text
-            if "```json" in msg:
-                msg = msg.split("```json")[1].split("```")[0]
-            elif "```" in msg:
-                msg = msg.split("```")[1].split("```")[0]
-            analysis_result = json.loads(msg.strip())
+        if genai:
+            model = genai.GenerativeModel('gemini-1.5-flash')
+            generation_config = genai.types.GenerationConfig(
+                response_mime_type="application/json"
+            )
+            
+            logger.info("Sending prompt to Gemini...")
+            response = await model.generate_content_async(
+                prompt,
+                generation_config=generation_config
+            )
+            
+            response_text = response.text
+            
+            # 6. Parsear
+            try:
+                analysis_result = json.loads(response_text)
+            except json.JSONDecodeError:
+                msg = response_text
+                if "```json" in msg:
+                    msg = msg.split("```json")[1].split("```")[0]
+                elif "```" in msg:
+                    msg = msg.split("```")[1].split("```")[0]
+                analysis_result = json.loads(msg.strip())
+        else:
+             # Fallback if genai is missing
+             analysis_result = {
+                 "error": "Generative AI library not available"
+             }
 
         # 7. Persistir en Supabase
         if supabase_client and user_id:
@@ -304,5 +312,5 @@ async def api_debug_cv_data(file: UploadFile = File(...)) -> Dict[str, Any]:
 if __name__ == "__main__":
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8080"))
-    import uvicorn
+    import uvicorn # type: ignore
     uvicorn.run("main:app", host=host, port=port, reload=False)
