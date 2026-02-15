@@ -370,7 +370,9 @@ const ResultadosPage: React.FC = () => {
           const blob = await respBlob.blob();
           const form = new FormData();
           const fileName = personal.cvFile.fileName || 'cv.pdf';
-          form.append('file', new File([blob], fileName, { type: 'application/pdf' }));
+          form.append('cv_file', new File([blob], fileName, { type: 'application/pdf' }));
+          form.append('game_results', '{}');
+          form.append('preferences', '{}');
           const analyzeRes = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.PDF_ANALYZE), {
             method: 'POST',
             body: form,
