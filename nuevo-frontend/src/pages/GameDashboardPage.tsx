@@ -94,12 +94,11 @@ const GameDashboardPage: React.FC = () => {
             ← Datos Personales
           </button>
           <button
-            onClick={() => allCompleted && navigate('/resultados')}
-            className={`px-6 py-3 rounded-lg transition-colors font-semibold ${
-              allCompleted
+            onClick={() => allCompleted && navigate('/upload-cv')}
+            className={`px-6 py-3 rounded-lg transition-colors font-semibold ${allCompleted
                 ? 'bg-[#374ba6] text-white shadow-md hover:bg-[#2d3f96] hover:shadow-lg'
                 : 'bg-gray-300 text-gray-600 cursor-not-allowed'
-            }`}
+              }`}
             disabled={!allCompleted}
           >
             Ir a adjuntar currículum →
