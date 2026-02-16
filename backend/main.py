@@ -17,11 +17,11 @@ from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 
 # Importaciones locales
 try:
-    from backend.cv_analyzer import extract_pdf_info  # type: ignore
+    from backend.cv_analyzer import extract_pdf_info, analyze_multimodal_report  # type: ignore
     from backend.prompt_config import PromptConfig  # type: ignore
     from backend.new_report_schema import NewReportSchema  # type: ignore
 except ImportError:
-    from cv_analyzer import extract_pdf_info  # type: ignore
+    from cv_analyzer import extract_pdf_info, analyze_multimodal_report  # type: ignore
     from prompt_config import PromptConfig  # type: ignore
     from new_report_schema import NewReportSchema  # type: ignore
 
@@ -124,118 +124,104 @@ async def analyze_computational_profile(
         except json.JSONDecodeError:
             prefs_data = {}
 
-        # 2. Leer y analizar CV (si existe)
-        cv_data: Dict[str, Any] = {}
-        full_text = ""
-
+        # 2. Leer y gestionar archivo PDF
+        pdf_bytes = None
         if cv_file:
             pdf_bytes = await cv_file.read()
-            if pdf_bytes:
-                # A. Subir CV a Supabase Storage
-                if supabase_client and user_id:
-                    try:
-                        file_ext = "pdf"
-                        if cv_file.filename:
-                            parts = cv_file.filename.split(".")
-                            if len(parts) > 1:
-                                file_ext = parts[-1]
-                        file_path = f"{user_id}/{int(time.time())}.{file_ext}"
-                        supabase_client.storage.from_("cvs").upload(
-                            path=file_path,
-                            file=pdf_bytes,
-                            file_options={
-                                "content-type": cv_file.content_type or "application/pdf"
-                            },
-                        )
-                        logger.info(f"CV uploaded to Supabase: {file_path}")
-                    except Exception as storage_err:
-                        logger.error(f"Failed to upload CV to Supabase: {storage_err}")
+            # A. Subir CV a Supabase (Backup)
+            if pdf_bytes and supabase_client and user_id:
+                try:
+                    file_ext = cv_file.filename.split(".")[-1] if cv_file.filename else "pdf"
+                    file_path = f"{user_id}/{int(time.time())}.{file_ext}"
+                    supabase_client.storage.from_("cvs").upload(
+                        path=file_path,
+                        file=pdf_bytes,
+                        file_options={"content-type": cv_file.content_type or "application/pdf"}
+                    )
+                    logger.info(f"CV uploaded to Supabase: {file_path}")
+                except Exception as storage_err:
+                    logger.error(f"Supabase upload failed: {storage_err}")
 
-                # B. Analizar CV con Gemini
-                cv_extraction = await extract_pdf_info(pdf_bytes)
-                if cv_extraction:
-                    cv_data = cv_extraction.get("cv_info", {})
-                    full_text = cv_extraction.get("raw_text", "")
-
-        # 3. Preparar datos para el prompt
-        candidate_name = cv_data.get("datos_personales", {}).get("nombre", "Candidato")
-
+        # 3. Preparar contexto (Juegos y Preferencias)
         employability_score = 75
         level = "medio"
-
+        
         # Normalizar game results
         completed_games_list: list = []
         soft_skills_data: list = []
 
         if isinstance(games_data, list):
-            completed_games_list = [
-                g.get("name", "Juego desconocido") for g in games_data
-            ]
+            completed_games_list = [g.get("name", "Juego") for g in games_data]
         elif isinstance(games_data, dict):
             completed_games_list = games_data.get("completedGames", [])
             soft_skills_data = games_data.get("softSkills", [])
 
         if not soft_skills_data:
+            # Fallback soft skills if empty
             soft_skills_data = [
                 {"skill": "Resolución de problemas", "score": 80, "level": "alto"},
                 {"skill": "Adaptabilidad", "score": 75, "level": "medio"},
                 {"skill": "Atención al detalle", "score": 85, "level": "alto"},
             ]
 
-        # 4. Generar Prompt
-        prompt = PromptConfig.get_employability_report_prompt(
-            candidate_data={"fullName": candidate_name},
-            soft_skills_data=soft_skills_data,
-            cv_data=cv_data,
-            job_preferences_data=prefs_data,
-            employability_score=employability_score,
-            level=level,
-            completed_games=completed_games_list,
-            languages_data=cv_data.get("idiomas", []),
-            full_raw_text=full_text,
-        )
-
-        # 5. Llamar a Gemini
+        # 4. Validar API Key
         if not GOOGLE_API_KEY:
-            logger.warning("API Key no configurada, retornando mock data")
+            logger.warning("No API Key. Returning mock.")
             return {
-                "resumen_ejecutivo": "MOCK: No API Key configured.",
-                "datos_personales": {
-                    "nombre": candidate_name,
-                    "ubicacion": "Madrid",
-                    "email": "mock@email.com",
-                    "phone": "000000000",
-                },
-                "mensaje_final_azul": "Mock Mode",
+                "resumen_ejecutivo": "MOCK MODE (No API Key)",
+                "datos_personales": {"nombre": "Mock Candidate"},
+                "mensaje_final_azul": "Mock Mode"
             }
-
+            
         if not genai:
-            raise HTTPException(
-                status_code=500, detail="Generative AI library not available"
+             raise HTTPException(500, "Generative AI service not initialized")
+
+        # 5. Generar Informe (Multimodal o Texto)
+        analysis_result = {}
+        
+        if pdf_bytes:
+            # MODO MULTIMODAL (Optimizado)
+            prompt = PromptConfig.get_employability_report_prompt(
+                candidate_data={"fullName": "Candidato"},
+                soft_skills_data=soft_skills_data,
+                cv_data={}, 
+                job_preferences_data=prefs_data,
+                employability_score=employability_score,
+                level=level,
+                completed_games=completed_games_list,
+                languages_data=[],
+                is_multimodal=True
             )
-
-        model = genai.GenerativeModel("gemini-1.5-flash")
-        generation_config = genai.types.GenerationConfig(
-            response_mime_type="application/json"
-        )
-
-        logger.info("Sending prompt to Gemini...")
-        response = await model.generate_content_async(
-            prompt, generation_config=generation_config
-        )
-
-        response_text = response.text
-
-        # 6. Parsear respuesta
-        try:
-            analysis_result = json.loads(response_text)
-        except json.JSONDecodeError:
-            msg = response_text
-            if "```json" in msg:
-                msg = msg.split("```json")[1].split("```")[0]
-            elif "```" in msg:
-                msg = msg.split("```")[1].split("```")[0]
-            analysis_result = json.loads(msg.strip())
+            analysis_result = await analyze_multimodal_report(pdf_bytes, prompt)
+            
+            if "error" in analysis_result:
+                 raise HTTPException(500, detail=analysis_result["error"])
+        else:
+            # MODO TEXTO (Sin CV)
+            prompt = PromptConfig.get_employability_report_prompt(
+                candidate_data={"fullName": "Candidato"},
+                soft_skills_data=soft_skills_data,
+                cv_data={}, 
+                job_preferences_data=prefs_data,
+                employability_score=employability_score,
+                level=level,
+                completed_games=completed_games_list,
+                languages_data=[],
+                is_multimodal=False
+            )
+            
+            model = genai.GenerativeModel("gemini-1.5-flash")
+            response = await model.generate_content_async(
+                prompt, 
+                generation_config=genai.types.GenerationConfig(response_mime_type="application/json")
+            )
+            # Parsear respuesta manual (o usar helper si estuviéramos en cv_analyzer)
+            try:
+                analysis_result = json.loads(response.text)
+            except:
+                # Cleanup simple json markdown
+                txt = response.text.replace("```json", "").replace("```", "").strip()
+                analysis_result = json.loads(txt)
 
         # 7. Persistir en Supabase
         if supabase_client and user_id:

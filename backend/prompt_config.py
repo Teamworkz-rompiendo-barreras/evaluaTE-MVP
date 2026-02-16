@@ -20,6 +20,7 @@ class PromptConfig:
         languages_data: list,
         analysis_block: str = "",
         full_raw_text: str = "",
+        is_multimodal: bool = False,
     ) -> str:
         """
         Genera el prompt maestro para el informe de empleabilidad completo.
@@ -39,29 +40,48 @@ class PromptConfig:
         pref_modality = ", ".join(prefs.get('work_modes', [])) or "No especificado"
         pref_availability = prefs.get('availability', 'No especificada')
         
-        # 2. Preparar datos del CV (Adaptador para keys en español del nuevo cv_analyzer)
-        # El cv_data viene del nuevo cv_analyzer que usa keys en español
-        cv_exp = cv_data.get("experiencia", [])
-        cv_edu = cv_data.get("educacion", [])
-        cv_skills = cv_data.get("habilidades_detectadas", [])
-        cv_langs = cv_data.get("idiomas", [])
-        cv_profile = cv_data.get("resumen_profesional", "No consta")
-        
-        # Formatear experiencia para el prompt
-        exp_text_list = []
-        for e in cv_exp:
-            if isinstance(e, dict):
-                row = f"- {e.get('rol', 'Rol?')} en {e.get('empresa', 'Empresa?')} ({e.get('fecha_inicio','?')} - {e.get('fecha_fin','?')})"
-                if e.get('descripcion'): row += f": {e.get('descripcion')}"
-                exp_text_list.append(row)
-        experience_text = "\n".join(exp_text_list) if exp_text_list else "No consta experiencia."
+        # 2. Preparar datos del CV
+        if is_multimodal:
+            experience_text = "(Ver archivo adjunto - Extraer visualmente)"
+            education_text = "(Ver archivo adjunto - Extraer visualmente)"
+            cv_profile = "(Ver archivo adjunto)"
+            cv_context_block = """
+        **DATOS DEL CV:**
+        El CV se adjunta como archivo PDF. DEBES LEERLO VISUALMENTE.
+        Extrae la experiencia, educación y habilidades directamente del documento para generar el reporte.
+            """
+        else:
+            # El cv_data viene del nuevo cv_analyzer que usa keys en español
+            cv_exp = cv_data.get("experiencia", [])
+            cv_edu = cv_data.get("educacion", [])
+            cv_skills = cv_data.get("habilidades_detectadas", [])
+            cv_langs = cv_data.get("idiomas", [])
+            cv_profile = cv_data.get("resumen_profesional", "No consta")
+            
+            # Formatear experiencia para el prompt
+            exp_text_list = []
+            for e in cv_exp:
+                if isinstance(e, dict):
+                    row = f"- {e.get('rol', 'Rol?')} en {e.get('empresa', 'Empresa?')} ({e.get('fecha_inicio','?')} - {e.get('fecha_fin','?')})"
+                    if e.get('descripcion'): row += f": {e.get('descripcion')}"
+                    exp_text_list.append(row)
+            experience_text = "\n".join(exp_text_list) if exp_text_list else "No consta experiencia."
 
-        # Formatear educación
-        edu_text_list = []
-        for e in cv_edu:
-            if isinstance(e, dict):
-                edu_text_list.append(f"- {e.get('titulo', '')} en {e.get('institucion', '')} ({e.get('fecha_inicio','')} - {e.get('fecha_fin','')})")
-        education_text = "\n".join(edu_text_list) if edu_text_list else "No consta formación."
+            # Formatear educación
+            edu_text_list = []
+            for e in cv_edu:
+                if isinstance(e, dict):
+                    edu_text_list.append(f"- {e.get('titulo', '')} en {e.get('institucion', '')} ({e.get('fecha_inicio','')} - {e.get('fecha_fin','')})")
+            education_text = "\n".join(edu_text_list) if edu_text_list else "No consta formación."
+            
+            cv_context_block = f"""
+        **DATOS DEL CV:**
+        - Resumen: {cv_profile}
+        - Experiencia: 
+        {experience_text}
+        - Formación:
+        {education_text}
+            """
         
         # Soft Skills (Minijuegos)
         soft_skills_text = "\n".join([f"- {s.get('skill')}: {s.get('score')}/100 ({s.get('level')})" for s in soft_skills_data])
@@ -100,15 +120,10 @@ class PromptConfig:
         **RESULTADOS SOFT SKILLS (JUEGOS):**
         {soft_skills_text}
         
-        **DATOS DEL CV:**
-        - Resumen: {cv_profile}
-        - Experiencia: 
-        {experience_text}
-        - Formación:
-        {education_text}
+        {cv_context_block}
         
         **TEXTO RAW COMPLETO (Contexto Visual):**
-        {full_raw_text[:6000]}
+        {str(full_raw_text)[:6000]}
         
         ---
         

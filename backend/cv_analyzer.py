@@ -247,6 +247,58 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
     
     return {}
 
+async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dict[str, Any]:
+    """
+    Función optimizada: Genera reporte directo desde PDF usando prompt multimodal.
+    Evita la latencia de doble llamada.
+    """
+    if not genai_configured or not genai:
+        return {"error": "Servicio de IA no disponible"}
+    
+    tmp_path = None
+    uploaded_file = None
+
+    try:
+        # 1. Temp File
+        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+            tmp.write(pdf_bytes)
+            tmp_path = tmp.name
+        
+        # 2. Upload
+        uploaded_file = genai.upload_file(tmp_path, mime_type="application/pdf")
+        logger.info(f"✅ Archivo subido para reporte: {uploaded_file.uri}")
+
+        # 3. Generate
+        model = genai.GenerativeModel(
+            model_name="gemini-1.5-flash",
+            system_instruction="Eres un experto orientador laboral. Analiza el CV visualmente y genera el informe JSON estricto."
+        )
+        
+        logger.info("🧠 Generando informe multimodal (Single-Shot)...")
+        response = await model.generate_content_async(
+            [uploaded_file, report_prompt],
+            generation_config=genai.types.GenerationConfig(
+                temperature=0.4,
+                response_mime_type="application/json"
+            )
+        )
+        
+        # 4. Parse
+        json_text = _normalize_ai_json_response(response.text)
+        return json.loads(json_text)
+
+    except Exception as e:
+        logger.exception(f"❌ Error multimodal: {e}")
+        return {"error": str(e)}
+        
+    finally:
+        if tmp_path and os.path.exists(tmp_path):
+            try: os.remove(tmp_path)
+            except: pass
+        if uploaded_file and genai:
+            try: genai.delete_file(uploaded_file.name)
+            except: pass
+
 # Backward compatibility functions
 def extract_contact_info_enhanced(text: str) -> Dict[str, str]:
     return {}

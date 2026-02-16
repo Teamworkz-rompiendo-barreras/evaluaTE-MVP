@@ -26,6 +26,12 @@ const GameScenePage: React.FC = () => {
 
   // Estado de accesibilidad
   const accessibility = useSelector((state: RootState) => state.accessibility)
+  const completedGames = useSelector((state: RootState) => state.game.completedGames)
+
+  // Variables auxiliares para la UI
+  const allGamesCount = 10; // Total de juegos
+  const allGamesCompleted = completedGames.length >= allGamesCount;
+  const hasCv = Boolean(useSelector((state: RootState) => state.personal.cvFile));
 
   // Estado de personal
   const personal = useSelector((state: RootState) => state.personal)
@@ -111,12 +117,26 @@ const GameScenePage: React.FC = () => {
           >
             Volver al menú
           </button>
-          <button
-            onClick={() => navigate('/resultados')}
-            className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
-          >
-            Ver Informe de Empleabilidad
-          </button>
+
+          {/* Solo mostrar si TODOS los juegos están completados Y hay CV */}
+          {allGamesCompleted && hasCv && (
+            <button
+              onClick={() => navigate('/resultados')}
+              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
+            >
+              Ver Informe de Empleabilidad
+            </button>
+          )}
+
+          {/* Si todos los juegos están completados pero NO hay CV, llevar a subir CV */}
+          {allGamesCompleted && !hasCv && (
+            <button
+              onClick={() => navigate('/upload-cv')}
+              className="px-6 py-3 bg-[#374ba6] text-white rounded-lg hover:bg-[#2d3f96]"
+            >
+              Ir a adjuntar CV
+            </button>
+          )}
         </div>
       </div>
     )

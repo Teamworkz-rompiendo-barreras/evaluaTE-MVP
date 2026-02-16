@@ -8,8 +8,8 @@ api_dir = os.path.dirname(current_dir)
 root_dir = os.path.dirname(api_dir)
 
 sys.path.insert(0, root_dir)
-sys.path.insert(0, os.path.join(root_dir, "backend"))
 
+# type: ignore
 from backend.main import app
 
 # Vercel entry point
