@@ -30,13 +30,13 @@ COLOR_BG_BOX = colors.HexColor("#E6F0FF")  # Light Blue Box
 COLOR_TEXT_MAIN = colors.HexColor("#1e293b")
 COLOR_TEXT_LIGHT = colors.HexColor("#64748b")
 COLOR_WHITE = colors.white
-
+#revisar medidas
 def create_drawing(data: List[Dict[str, Any]], width=150, height=150):
     """Genera el gráfico Radar vectorial (SpiderChart)."""
     d = Drawing(width, height)
     chart = SpiderChart()
-    chart.x = width / 2
-    chart.y = height / 2
+    chart.x = (width - chart.width) / 2 #Cambio prueba grafico
+    chart.y = (height - chart.height) / 2 #Cambio prueba grafico
     chart.width = width * 0.7
     chart.height = height * 0.7
     
@@ -183,6 +183,8 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
     story.append(Paragraph(f"<b>PUNTUACIÓN DE EMPLEABILIDAD: {score}/100</b>", 
                            ParagraphStyle('Score', parent=style_normal, alignment=TA_CENTER, textColor=COLOR_ACCENT, fontSize=14)))
     story.append(Spacer(1, 10*mm))
+
+    # Prueba comprobacion grafico
 
     # Dos columnas: Radar (Izq) y Resumen (Der) -> Usando Tabla invisible
     radar = create_drawing(report.soft_skills or [], width=150, height=150)
