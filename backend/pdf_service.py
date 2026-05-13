@@ -203,8 +203,9 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
     story.append(Paragraph("ENTORNOS DE TRABAJO IDEALES", style_h2))
     for env in report.entornos_ideales:
         story.append(Paragraph(f"• {env}", style_normal))
-        
-    story.append(PageBreak())
+
+    #comentado, para que no salte a la pagina siguiente   
+    #story.append(PageBreak())
     
     # --- PÁGINA 2: ANÁLISIS DETALLADO ---
     
@@ -250,7 +251,7 @@ def create_employability_pdf(report: NewReportSchema) -> bytes:
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
         ('GRID', (0,0), (-1,-1), 0.5, colors.HexColor("#94a3b8")),
         ('VALIGN', (0,0), (-1,-1), 'TOP'),
-        ('ROWBACKGROUNDS', (1,0), (-1,-1), [colors.white, colors.HexColor("#f1f5f9")]),
+        ('ROWBACKGROUNDS', (0,1), (-1,-1), [colors.white, colors.HexColor("#f1f5f9")]),#cambio (1,0) por (0,1)
     ]))
     story.append(t_roles)
     
