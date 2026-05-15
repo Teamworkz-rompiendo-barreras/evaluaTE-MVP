@@ -1227,7 +1227,8 @@ const ResultadosPage: React.FC = () => {
   const handleDownloadPdf = async () => {
     try {
       if (!reportForRender && !iaReport) {
-        window.print();
+       //window.print();
+       alert("pdf fallido, revisar backend");
         return;
       }
       const payload = reportForRender ?? info ?? null;
@@ -1238,7 +1239,8 @@ const ResultadosPage: React.FC = () => {
       });
       if (!res.ok) {
         // Fallback suave a impresión si el backend no responde
-        window.print();
+        //window.print();
+       alert("pdf fallido, revisar backend");
         return;
       }
       const blob = await res.blob();
@@ -1253,7 +1255,8 @@ const ResultadosPage: React.FC = () => {
       URL.revokeObjectURL(url);
     } catch {
       // Último recurso: impresión del informe HTML
-      window.print();
+      //window.print();
+      alert("pdf fallido, revisar backend");
     }
   };
 
