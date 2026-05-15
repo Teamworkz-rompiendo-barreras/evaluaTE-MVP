@@ -19,11 +19,11 @@ from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 try:
     from backend.cv_analyzer import extract_pdf_info, analyze_multimodal_report  # type: ignore
     from backend.prompt_config import PromptConfig  # type: ignore
-    from backend.new_report_schema import NewReportSchema  # type: ignore
+    from backend.new_report_schema import NewReportSchema, convert_old_format_to_new  # type: ignore
 except ImportError:
     from cv_analyzer import extract_pdf_info, analyze_multimodal_report  # type: ignore
     from prompt_config import PromptConfig  # type: ignore
-    from new_report_schema import NewReportSchema  # type: ignore
+    from new_report_schema import NewReportSchema, convert_old_format_to_new  # type: ignore
 
 # Importar servicio PDF
 create_employability_pdf = None
@@ -34,6 +34,7 @@ except ImportError:
         from pdf_service import create_employability_pdf  # type: ignore
     except ImportError:
         pass
+
 
 # Configurar logs
 logging.basicConfig(level=logging.INFO)
@@ -260,9 +261,10 @@ async def generate_pdf_report(
             raise HTTPException(
                 status_code=500, detail="PDF Service not available (reportlab missing)"
             )
-
+        #convierte al formato correcto y los valida para usarlos en pdf_service.py
         try:
-            report_schema = NewReportSchema(**report_data)
+            converted_data = convert_old_format_to_new(report_data)
+            report_schema = NewReportSchema(**converted_data)
         except Exception as val_err:
             logger.error(f"Schema Validation Failed: {val_err}")
             raise HTTPException(
@@ -274,8 +276,11 @@ async def generate_pdf_report(
         return Response(
             content=pdf_bytes,
             media_type="application/pdf",
-            headers={"Content-Disposition": f"attachment; filename={filename}"},
+            headers={"Content-Disposition": f'attachment; filename="{filename}"'},
         )
+
+        except HTTPException:
+            raise
     except Exception as e:
         logger.exception("Error generando PDF")
         raise HTTPException(status_code=500, detail=str(e))
