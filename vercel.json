@@ -1,6 +1,4 @@
 {
-  "buildCommand": "cd nuevo-frontend && npm install --legacy-peer-deps && npm run build",
-  "outputDirectory": "nuevo-frontend/dist",
   "rewrites": [
     {
       "source": "/api/(.*)",
