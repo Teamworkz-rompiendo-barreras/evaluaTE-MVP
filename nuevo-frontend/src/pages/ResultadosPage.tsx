@@ -19,8 +19,7 @@ import { resolveJobPreferences } from '@/utils/jobPreferences';
 import '../styles/print.css';
 import '../styles/report.css'; // Importar los nuevos estilos
 import '../styles/stars.css'; // Importar estilos para estrellas
-import { validateSoftSkills } from '../utils/debug-state';
-import { filterValidSoftSkills } from '../utils/data-validation';
+import { validateSoftSkills, filterValidSoftSkills } from '../utils/data-validation';
 import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';

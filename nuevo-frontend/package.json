@@ -10,7 +10,6 @@
     "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
   },
   "dependencies": {
-    "@apollo/client": "^3.13.8",
     "@nivo/radar": "^0.99.0",
     "@reduxjs/toolkit": "^2.8.2",
     "@sentry/react": "^8.0.0",

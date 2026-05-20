@@ -2,7 +2,7 @@
 import { useEffect } from "react";
 import { useDispatch, useSelector } from "react-redux";
 import type { RootState } from "../app/store";
-import { toggleContrast, setFontScale, setFontFamily } from "../app/accessibilitySlice";
+import { toggleContrast, setFontScale, setFontFamily, setContrastLevel } from "../app/accessibilitySlice";
 
 export const useAccessibility = () => {
   const dispatch = useDispatch();
@@ -44,8 +44,8 @@ export const useAccessibility = () => {
 
   }, [accessibility.contrastLevel, accessibility.fontScale, accessibility.fontFamily]);
 
-  const setContrastLevel = (_level: 'normal' | 'high') => {
-    dispatch(toggleContrast());
+  const setContrastLevelHandler = (level: 'normal' | 'alto' | 'muy-alto') => {
+    dispatch(setContrastLevel(level));
   };
 
   const toggleContrastHandler = () => {
@@ -60,19 +60,9 @@ export const useAccessibility = () => {
     dispatch(setFontFamily(family));
   };
 
-  const setVisualHelp = (_enabled: boolean) => {
-    // Implementation needed
-  };
-
-  const setTimeExtensions = (_enabled: boolean) => {
-    // Implementation needed
-  };
-
   return {
     ...accessibility,
-    setContrastLevel,
-    setVisualHelp,
-    setTimeExtensions,
+    setContrastLevel: setContrastLevelHandler,
     toggleContrast: toggleContrastHandler,
     setFontScale: setFontScaleHandler,
     setFontFamily: setFontFamilyHandler,

@@ -94,6 +94,12 @@ export const filterValidSoftSkills = (skills: unknown[]): Array<{
 };
 
 /**
+ * Alias de validateSoftSkillsArray para compatibilidad con imports existentes
+ */
+export const validateSoftSkills = (softSkills: unknown[]): boolean =>
+  validateSoftSkillsArray(softSkills);
+
+/**
  * Valida un objeto de recomendaciones
  */
 export const validateRecommendations = (recommendations: unknown): {

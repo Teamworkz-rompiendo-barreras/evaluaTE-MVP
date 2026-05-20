@@ -12,14 +12,15 @@ import DatosPersonalesPage from './pages/DatosPersonalesPage';
 import PreferencesStep from './features/personal/PreferencesStep';
 import GameDashboardPage from './pages/GameDashboardPage';
 import GameScenePage from './pages/GameScenePage';
-import UploadCVPage from './pages/UploadCVPage';
-import ResultadosPage from './pages/ResultadosPage';
 import PrivacidadPage from './pages/PrivacidadPage';
+
+// Lazy-load heavy pages so their chunks are only fetched when the user reaches them
+const UploadCVPage = React.lazy(() => import('./pages/UploadCVPage'));
+const ResultadosPage = React.lazy(() => import('./pages/ResultadosPage'));
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';
 import CookieConsent from './components/CookieConsent';
-// import { AccessibilitySettings } from './components/AccessibilitySettings';
 
 import { initSentry } from './sentry';
 
@@ -67,10 +68,10 @@ root.render(
     <ErrorBoundary>
       <Provider store={store}>
         <PersistGate loading={null} persistor={persistor}>
-          {/* <AccessibilitySettings /> */}
           <AuthProvider>
             <BrowserRouter future={{ v7_startTransition: true, v7_relativeSplatPath: true }}>
               <div className="min-h-screen bg-gray-50 text-gray-900 dark:bg-gray-900 dark:text-gray-100 transition-colors">
+                <React.Suspense fallback={<div className="flex items-center justify-center min-h-screen"><div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-600" /></div>}>
                 <Routes>
                   {/* 1) Inicio → registro: datos personales */}
                   <Route path="/" element={<Navigate to="/register/contact" replace />} />
@@ -132,6 +133,7 @@ root.render(
                   {/* Cualquier otra ruta → vuelta al registro */}
                   <Route path="*" element={<Navigate to="/register/contact" replace />} />
                 </Routes>
+                </React.Suspense>
 
                 {/* Aviso de cookies - aparece en todas las pantallas */}
                 <CookieConsent />
