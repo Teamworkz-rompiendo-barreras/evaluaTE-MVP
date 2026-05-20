@@ -219,10 +219,6 @@ export default function UploadCVPage() {
           </Link>
           <button
             onClick={() => {
-              // Generar reporte si no existe
-              if (!cvFile) {
-                dispatch(generateFinalReport())
-              }
               navigate('/resultados')
             }}
             className="bg-green-600 text-white px-6 py-2 rounded hover:bg-green-700"

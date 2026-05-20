@@ -116,14 +116,3 @@ export const {
   useSendGameLogMutation,
 } = scenesApi
 
-export const logSceneInteraction = async (
-  sceneId: number,
-  step: number,
-  choice: string
-) => {
-  await fetch(buildApiUrl('/api/logs/scene'), {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({ sceneId, step, choice }),
-  })
-}

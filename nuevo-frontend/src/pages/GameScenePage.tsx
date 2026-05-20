@@ -13,34 +13,28 @@ import { RootState } from '../app/store'
 import { GameLog } from '../types/game';
 
 const GameScenePage: React.FC = () => {
-  // Eliminar o comentar los console.log
   const { id } = useParams<{ id: string }>()
   const navigate = useNavigate()
 
-  // Eliminar o comentar los console.log
-  // console.log('GameScenePage - id del minijuego:', id);
-  // console.log('GameScenePage - ruta actual:', window.location.pathname);
-
-  // Estado del juego
-  const { currentGame, currentScene, gameProgress } = useGameController()
+  // Estado del juego — una sola llamada al hook
+  const {
+    currentGame,
+    currentScene,
+    gameProgress,
+    startGame,
+    completeScene,
+    goToScene,
+  } = useGameController()
 
   // Estado de accesibilidad
   const accessibility = useSelector((state: RootState) => state.accessibility)
   const completedGames = useSelector((state: RootState) => state.game.completedGames)
-
-  // Variables auxiliares para la UI
-  const allGamesCount = 10; // Total de juegos
-  const allGamesCompleted = completedGames.length >= allGamesCount;
-  const hasCv = Boolean(useSelector((state: RootState) => state.personal.cvFile));
-
-  // Estado de personal
   const personal = useSelector((state: RootState) => state.personal)
 
-  const {
-    startGame,
-    completeScene,
-    goToScene
-  } = useGameController()
+  // Variables auxiliares para la UI
+  const allGamesCount = 10;
+  const allGamesCompleted = completedGames.length >= allGamesCount;
+  const hasCv = Boolean(personal.cvFile);
 
   useEffect(() => {
     if (id && !currentGame) {
@@ -49,38 +43,17 @@ const GameScenePage: React.FC = () => {
   }, [id, currentGame, startGame])
 
   useEffect(() => {
-    // Eliminar o comentar los console.log
-    // console.log('🎮 GameScenePage - INICIO VALIDACIÓN');
-    // console.log('🎮 GameScenePage - Estado personal:', personal);
-    // console.log('🎮 GameScenePage - personal.completed:', personal.completed);
-
-    // Verificar si los datos de contacto están completos
     const hasContactData = Boolean(personal?.firstName && personal?.lastName);
-
-    // Verificar si las preferencias están completas
     const hasPreferences = personal?.jobPreferences && (
       typeof personal.jobPreferences === 'string'
         ? personal.jobPreferences.trim() !== ''
         : personal.jobPreferences?.areas && personal.jobPreferences?.areas?.length > 0
     );
-
-    // Los datos personales están completamente completos cuando se tienen tanto contact como preferences
     const hasPersonalData = hasContactData && (hasPreferences || personal.completed);
 
-    // Eliminar o comentar los console.log
-    // console.log('🎮 GameScenePage - hasContactData:', hasContactData);
-    // console.log('🎮 GameScenePage - hasPreferences:', hasPreferences);
-    // console.log('🎮 GameScenePage - hasPersonalData:', hasPersonalData);
-
     if (!hasPersonalData) {
-      // Eliminar o comentar los console.log
-      // console.log('🎮 GameScenePage - REDIRIGIENDO a /register/contact - datos personales no completados');
       navigate('/register/contact');
-      return;
     }
-
-    // Eliminar o comentar los console.log
-    // console.log('🎮 GameScenePage - ✅ Validaciones pasadas, continuando...');
   }, [personal, navigate]);
 
   const handleSceneComplete = (log: GameLog) => {

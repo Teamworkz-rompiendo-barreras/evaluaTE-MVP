@@ -7,9 +7,6 @@ import { useNavigate } from 'react-router-dom'
 import { useAppDispatch, useAppSelector } from './../../app/hooks'
 import { savePreferences } from './personalSlice'
 
-// Componentes reutilizables
-// import ProgressBar from './../../components/ProgressBar'
-
 // Tipos definidos en skills.ts
 type PrefData = {
   jobPreferences: string // Ej: "Desarrollo web"

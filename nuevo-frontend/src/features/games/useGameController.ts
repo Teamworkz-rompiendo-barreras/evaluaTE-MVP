@@ -18,15 +18,6 @@ export const useGameController = () => {
   const currentSceneIndex = gameState.currentGameId && currentGame ? (gameState.gameLogs[currentGame.id]?.length || 0) : 0;
   const currentScene = currentGame && currentSceneIndex < currentGame.scenes.length ? currentGame.scenes[currentSceneIndex] : null;
   
-  // Debug: Log para verificar el estado
-  // console.log('🎮 useGameController Debug:', {
-  //   currentGameId: gameState.currentGameId,
-  //   currentGame: currentGame?.title,
-  //   currentSceneIndex,
-  //   totalScenes: currentGame?.scenes.length,
-  //   currentScene: currentScene?.id,
-  //   gameLogs: gameState.gameLogs[currentGame?.id || '']?.length || 0
-  // });
   const gameLogs = useMemo(() => currentGame ? (gameState.gameLogs[currentGame.id] || []) : [], [currentGame, gameState.gameLogs]);
 
   // Inicializar un juego
