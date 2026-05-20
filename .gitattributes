@@ -1,0 +1,10 @@
+# Tratar lockfile de pnpm como generado (mostrar diffs)
+nuevo-frontend/pnpm-lock.yaml linguist-generated
+
+# Colapsar assets
+*.png -diff linguist-generated
+*.zip -diff linguist-generated
+*.log -diff linguist-generated
+
+# Normalizar fin de línea
+* text=auto eol=lf

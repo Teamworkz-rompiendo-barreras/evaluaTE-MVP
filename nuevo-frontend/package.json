@@ -1,0 +1,8 @@
+{
+  "name": "evaluate-root",
+  "private": true,
+  "scripts": {
+    "install-frontend": "pnpm --filter nuevo-frontend install",
+    "build-frontend": "pnpm --filter nuevo-frontend build"
+  }
+}

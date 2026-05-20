@@ -1,0 +1,41 @@
+# Exclude ALL virtual environments everywhere
+**/venv*/
+**/venv311*/
+**/env*/
+**/bin/
+**/include/
+**/lib/
+**/share/
+
+# Exclude ALL cache
+**/__pycache__/
+**/.pytest_cache/
+**/.cache/
+*.pyc
+
+# Exclude ALL node_modules
+**/node_modules/
+
+# Exclude IDE and Git
+.vscode/
+.idea/
+.git/
+
+# Exclude Local Env
+.env*
+**/.env*
+
+# Exclude documentation and samples
+backend/cv_samples/
+tests/
+scripts/
+*.md
+!README.md
+
+# Exclude large binary/temp files
+# Exclude large binary/temp files
+*.pdf
+# Exclude specific large json files but allow config files
+cv_output.json
+*.zip
+*.tar.gz

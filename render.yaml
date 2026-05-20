@@ -1,0 +1,26 @@
+services:
+  - type: web
+    name: evaluate-backend
+    env: python
+    region: frankfurt
+    plan: free
+    rootDir: backend
+    buildCommand: pip install -r requirements.txt
+    startCommand: uvicorn main:app --host 0.0.0.0 --port $PORT
+    envVars:
+      - key: PORT
+        value: 10000
+      - key: PYTHON_VERSION
+        value: 3.11.9
+
+  - type: web
+    name: evaluate-frontend
+    env: node
+    region: frankfurt
+    plan: free
+    rootDir: nuevo-frontend
+    buildCommand: npm install && npm run build
+    startCommand: npx serve -s dist -p $PORT
+    envVars:
+      - key: VITE_API_URL
+        value: https://evaluate-backend.onrender.com
