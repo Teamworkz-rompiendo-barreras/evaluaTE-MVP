@@ -808,7 +808,7 @@
 .dark .informe-empleabilidad blockquote { background-color: #eff6ff !important; color: #4b5563 !important; }
 
 /*PDF Area*/
-.pdf_export-area {
+.pdf-export-area {
   width: 100% !important;
   max-width: none !important;
   margin: 0 !important;
@@ -816,11 +816,11 @@
   background: #0f172a;
 }
 
-.pdf_export-area > * {
+.pdf-export-area > * {
   width: 100% !important;
   max-width: none !important;
 }
 
-.pdf_export-area * {
+.pdf-export-area * {
   box-sizing: border-box;
 }
