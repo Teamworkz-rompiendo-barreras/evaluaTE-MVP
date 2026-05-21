@@ -1662,35 +1662,41 @@ const reportRef = useRef<HTMLDivElement>(null);
   }, [softSkillsData, radarDataFromIa]);
 
   // 1. Portada
-  
-  const portada = (
-    <div className="bg-white dark:bg-gray-800 rounded-lg shadow-md p-8 flex flex-col items-center mb-8 print-report-section print-page-break-inside-avoid transition-colors">
-      {/* ScoreBadge eliminado */}
-      <img src={logo} alt="Logo EvalúaTE" className="w-32 mb-4 print-shadow-none" />
-      <h1 className="text-4xl font-bold mb-2 text-gray-900 dark:text-gray-100">Informe de Empleabilidad</h1>
-      <h2 className="text-2xl font-semibold mb-1 text-gray-900 dark:text-gray-100">{report?.firstName} {report?.lastName}</h2>
-      <p className="text-gray-900 dark:text-gray-100">{fecha}</p>
+  const initials = `${(report?.firstName || '?')[0]}${(report?.lastName || '?')[0]}`.toUpperCase();
 
-      {/* Botones de acción */}
-      <div className="flex gap-4 mt-6 print-hidden">
+  const portada = (
+    <div className="report-portada pdf-no-break print-report-section">
+      <div className="report-portada-header">
+        <img src={logo} alt="Logo EvalúaTE" className="report-portada-logo print-shadow-none" />
+        <div className="report-portada-avatar">{initials}</div>
+        <div className="report-portada-title">Informe de Empleabilidad</div>
+        <div className="report-portada-name">{report?.firstName} {report?.lastName}</div>
+        <div className="report-portada-date">{fecha}</div>
+        {globalScore != null && (
+          <div className="report-portada-score">
+            <div className="report-portada-score-label">Puntuación Global</div>
+            <div className="report-portada-score-value">
+              {globalScore}<span className="report-portada-score-unit">/100</span>
+            </div>
+          </div>
+        )}
+      </div>
+
+      <div className="report-portada-footer print-hidden">
         <button
           onClick={handleDownloadPdf}
           disabled={!iaReport}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors ${!iaReport
-            ? 'bg-gray-300 text-gray-900 cursor-not-allowed'
-            : 'bg-[#374ba6] text-white hover:bg-[#2d3f96]'
+          className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${!iaReport
+            ? 'bg-white/20 text-white/50 cursor-not-allowed'
+            : 'bg-white text-[#374ba6] hover:bg-blue-50'
             }`}
         >
-          <span className="flex items-center gap-2">
-            <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M17 17h2a2 2 0 002-2v-4a2 2 0 00-2-2H5a2 2 0 00-2 2v4a2 2 0 002 2h2m2 4h6a2 2 0 002-2v-4a2 2 0 00-2-2H9a2 2 0 00-2 2v4a2 2 0 002 2zm8-12V5a2 2 0 00-2-2H9a2 2 0 00-2 2v4h10z" />
-            </svg>
-            Descargar Informe
-          </span>
+          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+          </svg>
+          Descargar Informe PDF
         </button>
       </div>
-
-      {/* Eliminado: mensaje de error del PDF */}
     </div>
   );
   // Color de etiquetas del radar según modo (claro/oscuro)
@@ -1774,17 +1780,25 @@ const reportRef = useRef<HTMLDivElement>(null);
           )}
         </div>
         <div className="w-full md:w-2/5 max-h-[26rem]">
-          <h3 className="font-semibold mb-2 text-gray-900 dark:text-gray-100 text-sm">Resumen de puntuaciones:</h3>
-          <ul className="space-y-1 text-sm max-h-[22rem] overflow-y-auto pr-2">
+          <h3 className="font-semibold mb-3 text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide">Puntuaciones</h3>
+          <div className="max-h-[20rem] overflow-y-auto pr-1 space-y-0.5">
             {radarData.map((item: { softskill: string; score: number }, idx: number) => (
-              <li key={idx}>
-                <span className="font-medium text-gray-900 dark:text-gray-100">{item.softskill}:</span> {item.score}%
-              </li>
+              <div key={idx} className="skill-bar-row">
+                <span className="skill-bar-label" title={item.softskill}>{item.softskill}</span>
+                <div className="skill-bar-track">
+                  <div
+                    className={`skill-bar-fill ${item.score >= 70 ? 'high' : item.score >= 40 ? 'medium' : 'low'}`}
+                    style={{ width: `${item.score}%` }}
+                  />
+                </div>
+                <span className="skill-bar-score">{item.score}%</span>
+              </div>
             ))}
-          </ul>
-          <p className="font-semibold mt-2 text-gray-900 dark:text-gray-100 text-sm">
-            Puntaje global de empleabilidad: {globalScore ?? '-'}
-          </p>
+          </div>
+          <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
+            <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Puntuación global: </span>
+            <span className="text-sm font-bold text-[#374BA6]">{globalScore ?? '-'}/100</span>
+          </div>
         </div>
       </div>
     </div>
@@ -2074,125 +2088,128 @@ const reportRef = useRef<HTMLDivElement>(null);
       }).filter(Boolean);
 
     return (
-      <div className="space-y-8">
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resumen ejecutivo</h2>
-          <div className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
+      <div className="space-y-0">
+        <section className="report-section">
+          <h2 className="report-section-title">Resumen ejecutivo</h2>
+          <div className="text-gray-700 dark:text-gray-200 leading-relaxed text-justify">
             {renderMarkdown(data.profile_summary || data.summary || '')}
           </div>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Datos personales</h2>
-          <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100">
-            <li><strong>Nombre:</strong> {pd.name || 'No consta'}</li>
-            <li><strong>Ubicación:</strong> {pd.location || 'No consta'}</li>
-            <li><strong>Email:</strong> {pd.email || 'No consta'}</li>
-            <li><strong>Teléfono:</strong> {pd.phone || 'No especificado'}</li>
-            <li><strong>LinkedIn:</strong> {linkedIn || 'No consta'}</li>
-            <li><strong>Certificado de discapacidad:</strong> {pd.disability_certificate || 'No especificado'}</li>
-          </ul>
+        <section className="report-section">
+          <h2 className="report-section-title">Datos personales</h2>
+          <div className="personal-data-grid">
+            {[
+              ['Nombre', pd.name || 'No consta'],
+              ['Ubicación', pd.location || 'No consta'],
+              ['Email', pd.email || 'No consta'],
+              ['Teléfono', pd.phone || 'No especificado'],
+              ['LinkedIn', linkedIn || 'No consta'],
+              ['Certificado discapacidad', pd.disability_certificate || 'No especificado'],
+            ].map(([label, value]) => (
+              <div key={label} className="personal-data-item">
+                <span className="personal-data-label">{label}</span>
+                <span className="personal-data-value">{value}</span>
+              </div>
+            ))}
+          </div>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Resumen del CV</h2>
-          <div className="text-gray-900 dark:text-gray-100 leading-relaxed text-justify">
+        <section className="report-section">
+          <h2 className="report-section-title">Resumen del CV</h2>
+          <div className="text-gray-700 dark:text-gray-200 leading-relaxed text-justify mb-4">
             {renderMarkdown(data.cv_analysis_summary || '')}
           </div>
-          <div className="mt-4 space-y-4">
+          <div className="space-y-3">
             {details.experience?.length ? (
               <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Experiencia (selección)</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Experiencia</h3>
                 {renderList(formatCvItems(details.experience))}
               </div>
             ) : null}
             {details.education?.length ? (
               <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Formación (selección)</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Formación</h3>
                 {renderList(formatCvItems(details.education))}
               </div>
             ) : null}
             {details.languages?.length ? (
               <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Idiomas</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Idiomas</h3>
                 {renderList(formatCvItems(details.languages))}
               </div>
-            ) : (
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Idiomas</h3>
-                <p className="text-gray-900 dark:text-gray-100">No consta</p>
-              </div>
-            )}
+            ) : null}
             {details.tools?.length ? (
               <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Herramientas/Software</h3>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-500 dark:text-gray-400 mb-1.5">Herramientas / Software</h3>
                 {renderList(formatCvItems(details.tools))}
               </div>
-            ) : (
-              <div>
-                <h3 className="text-lg font-semibold mb-2 text-gray-900 dark:text-gray-100">Herramientas/Software</h3>
-                <p className="text-gray-900 dark:text-gray-100">No consta</p>
-              </div>
-            )}
+            ) : null}
           </div>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Fortalezas clave</h2>
-          {renderList(data.strengths as string[])}
+        <section className="report-section">
+          <h2 className="report-section-title">Fortalezas clave</h2>
+          <div className="strength-tags-grid">
+            {((data.strengths as string[]) || []).filter(Boolean).map((s, i) => (
+              <span key={i} className="strength-tag">{s}</span>
+            ))}
+          </div>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Áreas de mejora priorizadas</h2>
-          <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100">
+        <section className="report-section">
+          <h2 className="report-section-title">Áreas de mejora priorizadas</h2>
+          <div className="improvement-cards">
             {(data.improvement_areas || []).map((it, idx) => (
-              <li key={idx}>
-                <strong>{it.area}</strong>: {it.reason}. <strong>Acción:</strong> {it.suggested_action}
-              </li>
+              <div key={idx} className="improvement-card">
+                <div className="improvement-area">⚡ {it.area}</div>
+                <div className="improvement-reason">{it.reason}</div>
+                <div className="improvement-action">→ Acción: {it.suggested_action}</div>
+              </div>
             ))}
-          </ul>
+          </div>
         </section>
 
         {cvx && (cvx.structure_score || cvx.clarity_score || cvx.coherence_score || cvx.key_info_score || cvx.style_score) && (
-          <section className="print-page-break-inside-avoid">
-            <h2 className="text-2xl font-bold mb-4 text-gray-900 dark:text-gray-100">Análisis del CV (con puntuación 1–5 por apartado)</h2>
+          <section className="report-section print-page-break-inside-avoid">
+            <h2 className="report-section-title">Análisis del CV</h2>
 
-            {/* Sección de puntuaciones con estrellas */}
-            <div className="mb-4">
-              <div className="border-l-4 border-blue-500 pl-4 rounded-md dark:bg-gray-800" style={{ backgroundColor: '#F9FAFB' }}>
-                <div className="space-y-1">
-                  {cvx.structure_score != null && (
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">Formato:</span>
-                      <span className="text-lg">{formatStars(cvx.structure_score)}</span>
-                    </div>
-                  )}
-                  {cvx.clarity_score != null && (
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">Claridad:</span>
-                      <span className="text-lg">{formatStars(cvx.clarity_score)}</span>
-                    </div>
-                  )}
-                  {cvx.coherence_score != null && (
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">Coherencia:</span>
-                      <span className="text-lg">{formatStars(cvx.coherence_score)}</span>
-                    </div>
-                  )}
-                  {cvx.key_info_score != null && (
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">Información clave:</span>
-                      <span className="text-lg">{formatStars(cvx.key_info_score)}</span>
-                    </div>
-                  )}
-                  {cvx.style_score != null && (
-                    <div className="flex items-center gap-3">
-                      <span className="font-semibold text-gray-900 dark:text-gray-100">Ortografía:</span>
-                      <span className="text-lg">{formatStars(cvx.style_score)}</span>
-                    </div>
-                  )}
+            <div className="cv-score-grid mb-4">
+              {cvx.structure_score != null && (
+                <div className="cv-score-item">
+                  <div className="cv-score-label">Formato</div>
+                  <div className="cv-score-stars">{formatStars(cvx.structure_score)}</div>
+                  <div className="cv-score-number">{cvx.structure_score}/5</div>
                 </div>
-              </div>
+              )}
+              {cvx.clarity_score != null && (
+                <div className="cv-score-item">
+                  <div className="cv-score-label">Claridad</div>
+                  <div className="cv-score-stars">{formatStars(cvx.clarity_score)}</div>
+                  <div className="cv-score-number">{cvx.clarity_score}/5</div>
+                </div>
+              )}
+              {cvx.coherence_score != null && (
+                <div className="cv-score-item">
+                  <div className="cv-score-label">Coherencia</div>
+                  <div className="cv-score-stars">{formatStars(cvx.coherence_score)}</div>
+                  <div className="cv-score-number">{cvx.coherence_score}/5</div>
+                </div>
+              )}
+              {cvx.key_info_score != null && (
+                <div className="cv-score-item">
+                  <div className="cv-score-label">Info. clave</div>
+                  <div className="cv-score-stars">{formatStars(cvx.key_info_score)}</div>
+                  <div className="cv-score-number">{cvx.key_info_score}/5</div>
+                </div>
+              )}
+              {cvx.style_score != null && (
+                <div className="cv-score-item">
+                  <div className="cv-score-label">Ortografía</div>
+                  <div className="cv-score-stars">{formatStars(cvx.style_score)}</div>
+                  <div className="cv-score-number">{cvx.style_score}/5</div>
+                </div>
+              )}
             </div>
 
             {/* Observaciones del análisis */}
@@ -2245,17 +2262,23 @@ const reportRef = useRef<HTMLDivElement>(null);
           </section>
         )}
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Entornos de trabajo ideales</h2>
-          <div className="text-gray-900 dark:text-gray-100 leading-relaxed">
+        <section className="report-section">
+          <h2 className="report-section-title">Entornos de trabajo ideales</h2>
+          <div className="text-gray-700 dark:text-gray-200 leading-relaxed mb-3">
             {renderMarkdown(data.ideal_work_environment || 'No consta')}
           </div>
-          {jobPrefs?.areas?.length ? (
-            <p className="text-gray-900 dark:text-gray-100 mt-2"><strong>Áreas de interés:</strong> {jobPrefs.areas.join(', ')}</p>
-          ) : null}
-          {jobPrefs?.work_mode ? (
-            <p className="text-gray-900 dark:text-gray-100"><strong>Modalidad preferida:</strong> {jobPrefs.work_mode}</p>
-          ) : null}
+          {(jobPrefs?.areas?.length || jobPrefs?.work_mode) && (
+            <div className="flex flex-wrap gap-2 mt-2">
+              {jobPrefs?.areas?.map((area, i) => (
+                <span key={i} className="strength-tag">{area}</span>
+              ))}
+              {jobPrefs?.work_mode && (
+                <span className="strength-tag" style={{ background: '#F0FDF4', color: '#166534', borderColor: '#86efac' }}>
+                  {jobPrefs.work_mode}
+                </span>
+              )}
+            </div>
+          )}
         </section>
 
         {(() => {
@@ -2346,112 +2369,121 @@ const reportRef = useRef<HTMLDivElement>(null);
             return bCount - aCount;
           });
 
-          const computeFitLabel = (r: any) => {
-            const score = typeof r.fit_score === 'number' ? r.fit_score : undefined;
-            if (score != null) {
-              if (score >= 80) return 'Ajuste: muy buen encaje';
-              if (score >= 60) return 'Ajuste: encaje razonable';
-              if (score > 0) return 'Ajuste: encaje inicial';
-            }
-            const count = r.matched_skills?.length || 0;
-            if (count >= 5) return 'Ajuste: muy buen encaje';
-            if (count >= 3) return 'Ajuste: encaje razonable';
-            if (count >= 1) return 'Ajuste: encaje inicial';
-            return 'Ajuste: por revisar';
+
+          const getBadge = (role: any) => {
+            const score = typeof role.fit_score === 'number' ? role.fit_score : (role.matched_skills?.length || 0) * 20;
+            if (score >= 80) return { cls: 'high', label: 'Muy buen encaje' };
+            if (score >= 60) return { cls: 'medium', label: 'Encaje razonable' };
+            return { cls: 'low', label: 'Encaje inicial' };
           };
 
           return (
-            <section>
-              <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Roles sugeridos</h2>
+            <section className="report-section">
+              <h2 className="report-section-title">Roles sugeridos</h2>
 
               {sortedValidated.length > 0 && (
                 <div className="mb-4">
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    Roles validados por encaje con tu perfil
-                  </h3>
-                  <ul className="list-disc list-inside space-y-3 text-gray-900 dark:text-gray-100 mt-2">
-                    {sortedValidated.map((role, idx) => (
-                      <li key={`validated-${idx}`}>
-                        <div className="font-semibold">
-                          {role.role}
-                          {role.seniority ? ` — ${role.seniority}` : ''}
-                          {typeof role.remote_viable === 'boolean' &&
-                            ` — ${role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}`}
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Validados por encaje con tu perfil</p>
+                  <div className="roles-grid">
+                    {sortedValidated.map((role, idx) => {
+                      const { cls, label } = getBadge(role);
+                      const fitScore = typeof role.fit_score === 'number' ? role.fit_score : 0;
+                      return (
+                        <div key={`validated-${idx}`} className="role-card">
+                          <div className="role-card-header">
+                            <div className="role-card-name">{role.role}</div>
+                            <span className={`role-card-badge ${cls}`}>{label}</span>
+                          </div>
+                          {(role.seniority || typeof role.remote_viable === 'boolean') && (
+                            <div className="role-card-meta">
+                              {role.seniority && <span>{role.seniority}</span>}
+                              {typeof role.remote_viable === 'boolean' && (
+                                <span>{role.seniority ? ' · ' : ''}{role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}</span>
+                              )}
+                            </div>
+                          )}
+                          {fitScore > 0 && (
+                            <div className="role-fit-bar">
+                              <div className="role-fit-fill" style={{ width: `${fitScore}%` }} />
+                            </div>
+                          )}
+                          {role.fit_by_skills && (
+                            <div className="role-card-reason">{role.fit_by_skills}</div>
+                          )}
+                          {Array.isArray(role.matched_skills) && role.matched_skills.length > 0 && (
+                            <div className="role-card-skills">
+                              {role.matched_skills.map((skill: string, si: number) => (
+                                <span key={si} className="role-skill-tag">{skill}</span>
+                              ))}
+                            </div>
+                          )}
                         </div>
-                        <div className="text-sm">
-                          {computeFitLabel(role)}
-                          {role.fit_by_skills ? `. Motivo de encaje: ${role.fit_by_skills}` : ''}
-                        </div>
-                        {Array.isArray(role.matched_skills) && role.matched_skills.length > 0 && (
-                          <div className="text-sm mt-1">
-                            <strong>Experiencias y habilidades que encajan:</strong>{' '}
-                            {role.matched_skills.join(' · ')}
-                          </div>
-                        )}
-                        {role.reason && (
-                          <div className="text-sm mt-1">
-                            <strong>Motivo adicional del análisis:</strong> <span className="inline-block align-top">{renderMarkdown(role.reason)}</span>
-                          </div>
-                        )}
-                        {(role as any).preference_reason && (
-                          <div className="text-sm mt-1">
-                            <strong>Motivo de preferencia:</strong>{' '}
-                            {(role as any).preference_reason}
-                          </div>
-                        )}
-                      </li>
-                    ))}
-                  </ul>
+                      );
+                    })}
+                  </div>
                 </div>
               )}
 
               {preferencesOnly.length > 0 && (
                 <div>
-                  <h3 className="font-semibold text-gray-900 dark:text-gray-100">
-                    Roles según tus preferencias (no validados por skills)
-                  </h3>
-                  <ul className="list-disc list-inside space-y-2 text-gray-900 dark:text-gray-100 mt-2">
+                  <p className="text-xs font-bold uppercase tracking-wide text-gray-400 mb-2">Según tus preferencias</p>
+                  <div className="roles-grid">
                     {preferencesOnly.map((role, idx) => (
-                      <li key={`pref-${idx}`}>
-                        <div className="font-semibold">
-                          {role.role}
-                          {role.seniority ? ` — ${role.seniority}` : ''}
-                          {typeof role.remote_viable === 'boolean' &&
-                            ` — ${role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}`}
+                      <div key={`pref-${idx}`} className="role-card">
+                        <div className="role-card-header">
+                          <div className="role-card-name">{role.role}</div>
+                          <span className="role-card-badge low">Por preferencia</span>
                         </div>
-                        <div className="text-sm">
-                          Preferencia del candidato (no validada por skills).
-                          {role.reason ? ` Motivo indicado: ${role.reason}` : ''}
-                        </div>
-                      </li>
+                        {(role.seniority || typeof role.remote_viable === 'boolean') && (
+                          <div className="role-card-meta">
+                            {role.seniority && <span>{role.seniority}</span>}
+                            {typeof role.remote_viable === 'boolean' && (
+                              <span>{role.seniority ? ' · ' : ''}{role.remote_viable ? '100% remoto' : 'Presencial/Híbrido'}</span>
+                            )}
+                          </div>
+                        )}
+                        {role.reason && <div className="role-card-reason">{role.reason}</div>}
+                      </div>
                     ))}
-                  </ul>
+                  </div>
                 </div>
               )}
             </section>
           );
         })()}
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Plan de acción</h2>
-          <div className="space-y-3">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Corto plazo (0-30 días)</h3>
-              {renderList(data.action_plan?.short_term as string[])}
+        <section className="report-section">
+          <h2 className="report-section-title">Plan de acción</h2>
+          <div className="plan-timeline">
+            <div className="plan-phase short">
+              <div className="plan-phase-title">Corto plazo · 0–30 días</div>
+              <ul className="plan-phase-list">
+                {((data.action_plan?.short_term as string[]) || []).filter(Boolean).map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Medio plazo (1-3 meses)</h3>
-              {renderList(data.action_plan?.medium_term as string[])}
+            <div className="plan-phase medium">
+              <div className="plan-phase-title">Medio plazo · 1–3 meses</div>
+              <ul className="plan-phase-list">
+                {((data.action_plan?.medium_term as string[]) || []).filter(Boolean).map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
             </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Largo plazo (3-6+ meses)</h3>
-              {renderList(data.action_plan?.long_term as string[])}
+            <div className="plan-phase long">
+              <div className="plan-phase-title">Largo plazo · 3–6+ meses</div>
+              <ul className="plan-phase-list">
+                {((data.action_plan?.long_term as string[]) || []).filter(Boolean).map((s, i) => (
+                  <li key={i}>{s}</li>
+                ))}
+              </ul>
             </div>
           </div>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Estrategias de búsqueda de empleo</h2>
+        <section className="report-section">
+          <h2 className="report-section-title">Estrategias de búsqueda de empleo</h2>
           <h3 className="font-semibold text-gray-900 dark:text-gray-100">Optimización del CV</h3>
           {renderList(data.job_search_advice?.cv_optimization as string[])}
           {data.job_search_advice?.letters_portfolio?.length ? (
@@ -2480,36 +2512,44 @@ const reportRef = useRef<HTMLDivElement>(null);
           ) : null}
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Resultados de minijuegos</h2>
+        <section className="report-section">
+          <h2 className="report-section-title">Resultados de minijuegos</h2>
           {renderList(data.completed_games as string[])}
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Herramientas útiles</h2>
-          <div className="space-y-2">
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Productividad</h3>
-              {renderList(data.useful_tools?.productivity as string[])}
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Búsqueda de empleo</h3>
-              {renderList(data.useful_tools?.job_search as string[])}
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Aprendizaje</h3>
-              {renderList(data.useful_tools?.learning as string[])}
-            </div>
-            <div>
-              <h3 className="font-semibold text-gray-900 dark:text-gray-100">Accesibilidad</h3>
-              {renderList(data.useful_tools?.accessibility as string[])}
-            </div>
+        <section className="report-section">
+          <h2 className="report-section-title">Herramientas útiles</h2>
+          <div className="space-y-3">
+            {data.useful_tools?.productivity?.length ? (
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-1.5">Productividad</h3>
+                {renderList(data.useful_tools.productivity as string[])}
+              </div>
+            ) : null}
+            {data.useful_tools?.job_search?.length ? (
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-1.5">Búsqueda de empleo</h3>
+                {renderList(data.useful_tools.job_search as string[])}
+              </div>
+            ) : null}
+            {data.useful_tools?.learning?.length ? (
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-1.5">Aprendizaje</h3>
+                {renderList(data.useful_tools.learning as string[])}
+              </div>
+            ) : null}
+            {data.useful_tools?.accessibility?.length ? (
+              <div>
+                <h3 className="text-sm font-bold uppercase tracking-wide text-gray-400 mb-1.5">Accesibilidad</h3>
+                {renderList(data.useful_tools.accessibility as string[])}
+              </div>
+            ) : null}
           </div>
         </section>
 
-        <section>
-          <h2 className="text-2xl font-bold mb-3 text-gray-900 dark:text-gray-100">Mensaje final</h2>
-          <div className="text-gray-900 dark:text-gray-100 leading-relaxed">
+        <section className="report-section" style={{ borderBottom: 'none' }}>
+          <h2 className="report-section-title">Mensaje final</h2>
+          <div className="final-message-box">
             {renderMarkdown(data.final_message || '')}
           </div>
         </section>
