@@ -1260,17 +1260,6 @@ const reportRef = useRef<HTMLDivElement>(null);
             avoid: ['.avoid-break','.section-card'],
           },
         };
-
-        const elementsToHide = element.querySelectorAll(".no-pdf");
-        const originalDisplays: string[] = [];
-
-        elementsToHide.forEach((el) => {
-          const htmlEl = el as HTMLElement;
-          originalDisplays.push(htmlEl.style.display);
-          htmlEl.style.display = "none";
-        });
-      
-
         
     
       try {
@@ -1278,11 +1267,7 @@ const reportRef = useRef<HTMLDivElement>(null);
       } catch (error) {
         console.error("ERROR html2pdf:", error);
         alert(`No se ha podido generar el PDF. ${error}`);
-      }finally{
-        elementsToHide.forEach((el, index) => {
-          const htmlEl = el as HTMLElement;
-          htmlEl.style.display = originalDisplays[index];
-        });
+      });
       }
   };
 
@@ -1682,7 +1667,7 @@ const reportRef = useRef<HTMLDivElement>(null);
       <p className="text-gray-900 dark:text-gray-100">{fecha}</p>
 
       {/* Botones de acción */}
-      <div className="no-pdf flex gap-4 mt-6 print-hidden">
+      <div className="flex gap-4 mt-6 print-hidden">
         <button
           onClick={handleDownloadPdf}
           disabled={!iaReport}
