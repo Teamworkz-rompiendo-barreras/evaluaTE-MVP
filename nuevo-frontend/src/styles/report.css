@@ -806,3 +806,21 @@
 .dark .informe-empleabilidad .report-content table td { border-color: #d1d5db !important; color: #374151 !important; }
 .dark .informe-empleabilidad .report-content table th { background-color: #f8fafc !important; color: #1f2937 !important; }
 .dark .informe-empleabilidad blockquote { background-color: #eff6ff !important; color: #4b5563 !important; }
+
+/*PDF Area*/
+.pdf_export-area {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #ffffff;
+}
+
+.pdf_export-area > * {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.pdf_export-area * {
+  box-sizing: border-box;
+}
