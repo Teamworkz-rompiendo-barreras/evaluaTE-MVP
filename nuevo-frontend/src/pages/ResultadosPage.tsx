@@ -1236,16 +1236,18 @@ const reportRef = useRef<HTMLDivElement>(null);
         .replace(/\s+/g, '_');
     
         const options: any = {
-          margin: [10, 10, 10, 10],
+          margin: [8, 8, 8, 8],
           filename: safeName,
           image: {
             type: 'jpeg',
-            quality: 0.95,
+            quality: 0.98,
           },
           html2canvas: {
-            scale: 2,
+            scale: 1.5,
             useCORS: true,
             backgroundColor: '#ffffff',
+            screenX:0,
+            screenY:0,
             //logging: true,
           },
           jsPDF: {
@@ -1254,8 +1256,9 @@ const reportRef = useRef<HTMLDivElement>(null);
             orientation: 'portrait',
           },
           pagebreak:{
-            mode: ['avoid-all','css','legacy'],
-          }
+            mode: ['css','legacy'],
+            avoid: ['.avoid-break','.section-card'],
+          },
         };
     
       try {
