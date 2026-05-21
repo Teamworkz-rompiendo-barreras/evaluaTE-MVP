@@ -1236,7 +1236,7 @@ const reportRef = useRef<HTMLDivElement>(null);
         .replace(/\s+/g, '_');
     
         const options: any = {
-          margin: [8, 8, 8, 8],
+          margin: [0, 0, 0, 0],
           filename: safeName,
           image: {
             type: 'jpeg',
