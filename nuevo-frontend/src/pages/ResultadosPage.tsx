@@ -2529,7 +2529,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           </div>
         </div>
       )}
-      <div ref={reportRef} className="pdf-export-area">
+      <div ref={reportRef} className="pdf-export-area bg-white dark:bg-[#1e293b]">
         {/* Contenido del informe que no depende de la IA */}
         {portada}
         {radar}
