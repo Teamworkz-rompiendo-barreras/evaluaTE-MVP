@@ -1236,24 +1236,26 @@ const reportRef = useRef<HTMLDivElement>(null);
         .replace(/\s+/g, '_');
     
         const options: any = {
-          margin: 10,
+          margin: [10, 10, 10, 10],
           filename: safeName,
           image: {
             type: 'jpeg',
             quality: 0.95,
           },
           html2canvas: {
-            scale: 1,
+            scale: 2,
             useCORS: true,
             backgroundColor: '#ffffff',
-            logging: true,
+            //logging: true,
           },
           jsPDF: {
             unit: 'mm',
             format: 'a4',
             orientation: 'portrait',
           },
-          
+          pagebreak:{
+            mode: ['avoid-all','css','legacy'],
+          }
         };
     
       try {
