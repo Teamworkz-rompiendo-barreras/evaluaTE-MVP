@@ -824,3 +824,8 @@
 .pdf-export-area * {
   box-sizing: border-box;
 }
+
+.avoid-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
