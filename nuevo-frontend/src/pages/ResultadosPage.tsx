@@ -1245,7 +1245,6 @@ const reportRef = useRef<HTMLDivElement>(null);
           html2canvas: {
             scale: 1.5,
             useCORS: true,
-            backgroundColor: '#ffffff',
             screenX:0,
             screenY:0,
             //logging: true,
