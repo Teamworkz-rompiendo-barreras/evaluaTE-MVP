@@ -825,7 +825,26 @@
   box-sizing: border-box;
 }
 
-.avoid-break {
+.avoid-break,
+.pdf-no-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Evitar fragmentos en secciones principales del PDF */
+.pdf-export-area .rounded-lg {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.pdf-export-area h1,
+.pdf-export-area h2,
+.pdf-export-area h3 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.pdf-export-area li {
   break-inside: avoid;
   page-break-inside: avoid;
 }

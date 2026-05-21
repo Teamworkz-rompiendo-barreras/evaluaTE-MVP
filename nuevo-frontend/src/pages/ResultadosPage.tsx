@@ -1226,15 +1226,20 @@ const reportRef = useRef<HTMLDivElement>(null);
   // Descarga de PDF (usa el servicio del backend). Mantiene window.print como fallback
   const handleDownloadPdf = async () => {
       const element = reportRef.current;
-    
+
       if (!element) {
         alert("No se ha encontrado el contenido del informe para exportar.");
         return;
       }
-    
+
+      const isDark = document.documentElement.classList.contains('dark');
+
       const safeName = `${(report?.firstName || 'Informe')}_${(report?.lastName || 'EvaluaTE')}_CV.pdf`
         .replace(/\s+/g, '_');
-    
+
+      const printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden');
+      printHiddenEls.forEach(el => { el.style.display = 'none'; });
+
         const options: any = {
           margin: [0, 0, 0, 0],
           filename: safeName,
@@ -1245,10 +1250,9 @@ const reportRef = useRef<HTMLDivElement>(null);
           html2canvas: {
             scale: 1.5,
             useCORS: true,
-            backgroundColor: '#ffffff',
+            backgroundColor: isDark ? '#1e293b' : '#ffffff',
             scrollX: 0,
             scrollY: 0,
-            //logging: true,
           },
           jsPDF: {
             unit: 'mm',
@@ -1257,17 +1261,18 @@ const reportRef = useRef<HTMLDivElement>(null);
           },
           pagebreak:{
             mode: ['css','legacy'],
-            avoid: ['.avoid-break','.section-card'],
+            avoid: ['.avoid-break','.section-card','.pdf-no-break'],
           },
         };
-        
-    
+
+
       try {
         await html2pdf().set(options).from(element).save();
       } catch (error) {
         console.error("ERROR html2pdf:", error);
         alert(`No se ha podido generar el PDF. ${error}`);
-      });
+      } finally {
+        printHiddenEls.forEach(el => { el.style.display = ''; });
       }
   };
 
