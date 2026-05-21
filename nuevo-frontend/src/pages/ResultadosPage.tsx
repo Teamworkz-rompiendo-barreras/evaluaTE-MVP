@@ -1688,7 +1688,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           disabled={!iaReport}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${!iaReport
             ? 'bg-white/20 text-white/50 cursor-not-allowed'
-            : 'bg-white text-[#374ba6] hover:bg-blue-50'
+            : 'bg-white text-[#166534] hover:bg-green-50'
             }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -1748,13 +1748,13 @@ const reportRef = useRef<HTMLDivElement>(null);
                     legends: { text: { fill: radarLabelColor, fontSize: 12 } },
                     crosshair: { line: { stroke: '#F3F4F6' } },
                   }}
-                  borderColor="#3B82F6"
+                  borderColor="#166534"
                   gridLabelOffset={32}
                   dotSize={12}
-                  dotColor="#3B82F6"
+                  dotColor="#166534"
                   dotBorderWidth={2}
                   dotBorderColor={{ theme: 'background' }}
-                  colors={['#3B82F6']}
+                  colors={['#16a34a']}
                   fillOpacity={0.35}
                   blendMode="multiply"
                   animate={true}
@@ -1797,7 +1797,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           </div>
           <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
             <span className="text-xs font-semibold uppercase tracking-wide text-gray-500 dark:text-gray-400">Puntuación global: </span>
-            <span className="text-sm font-bold text-[#374BA6]">{globalScore ?? '-'}/100</span>
+            <span className="text-sm font-bold text-[#166534]">{globalScore ?? '-'}/100</span>
           </div>
         </div>
       </div>
@@ -1860,7 +1860,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           </em>
         ),
         blockquote: ({ children, ...props }) => (
-          <blockquote {...props} className="border-l-4 border-blue-500 pl-4 italic text-gray-900 dark:text-gray-100 bg-blue-50 dark:bg-blue-900/30 py-2 rounded-r">
+          <blockquote {...props} className="border-l-4 border-green-600 pl-4 italic text-gray-900 dark:text-gray-100 bg-green-50 dark:bg-green-900/30 py-2 rounded-r">
             {children}
           </blockquote>
         ),
@@ -1908,7 +1908,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           </td>
         ),
         a: ({ children, href, ...props }) => (
-          <a {...props} href={href} target="_blank" rel="noopener noreferrer" className="text-blue-600 dark:text-blue-400 hover:text-blue-800 dark:hover:text-blue-300 underline">
+          <a {...props} href={href} target="_blank" rel="noopener noreferrer" className="text-green-700 dark:text-green-400 hover:text-green-900 dark:hover:text-green-300 underline">
             {children}
           </a>
         ),
@@ -2569,7 +2569,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           <div className="mt-4">
             <button
               onClick={handleRetry}
-              className="bg-blue-500 hover:bg-blue-600 text-white font-bold py-2 px-4 rounded"
+              className="bg-green-700 hover:bg-green-800 text-white font-bold py-2 px-4 rounded"
             >
               Reintentar
             </button>
@@ -2587,7 +2587,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           {/* Estado de carga EXPLÍCITO */}
           {loadingIa && (
             <div className="flex flex-col items-center justify-center p-12 bg-white dark:bg-gray-800 rounded-lg shadow-md mb-8 transition-colors">
-             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-blue-600 mb-4"></div>
+             <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-600 mb-4"></div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 animate-pulse">Generando tu Informe de Empleabilidad...</h3>
               <p className="text-gray-600 dark:text-gray-400 mt-2 text-center max-w-md">
                La IA está analizando tu perfil, tus resultados de juego y tus preferencias para crear un plan personalizado.
@@ -2646,7 +2646,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           <label className="block mb-1 text-gray-900 dark:text-white">¿Algún comentario o sugerencia?</label>
           <textarea className="w-full border rounded p-2 mb-2 bg-white text-gray-900 border-gray-300 dark:bg-transparent dark:text-white dark:border-gray-500" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({ ...f, comment: e.target.value }))} />
           {feedbackError && <p className="text-red-400 mb-2">{feedbackError}</p>}
-           <button type="submit" className="bg-blue-600 text-white px-4 py-2 rounded">Enviar feedback</button>
+           <button type="submit" className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Enviar feedback</button>
         </form>
       </div>
     )}

@@ -9,31 +9,33 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#374BA6',     // Azul principal para botones e interacciones
-        secondary: '#F2D680',   // Amarillo suave para fondos destacados
-        accent: '#2563EB',     // Azul más oscuro para texto o gráficos
+        primary: '#166534',     // Verde oscuro principal
+        secondary: '#4ade80',   // Verde clarito para acentos
+        accent: '#16a34a',      // Verde medio para hover/interacciones
         neutral: {
           light: '#F9F9F9',
           DEFAULT: '#EAEAEA',
           dark: '#454545',
         },
-        success: '#4CAF50',
+        success: '#16a34a',
         warning: '#FFA726',
         error: '#EF5350',
-        info: '#2196F3',
+        info: '#0ea5e9',
       },
       fontFamily: {
-        // Fuentes principales - ordenadas por accesibilidad cognitiva
+        // Fuentes principales
         sans: [
-          'OpenDyslexic',           // Fuente específica para dislexia
-          'Verdana',                // Fuente clara y espaciada
-          'Arial',                  // Fallback universal
+          'Montserrat',
+          'OpenDyslexic',
+          'Verdana',
+          'Arial',
           'Helvetica',
           'system-ui',
           'sans-serif'
         ],
-        // Fuentes para encabezados - más legibles
+        // Fuentes para encabezados
         heading: [
+          'Montserrat',
           'OpenDyslexic',
           'Verdana',
           'Arial',
