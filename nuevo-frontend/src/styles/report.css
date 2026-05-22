@@ -1350,20 +1350,6 @@
   margin-bottom: 0;
 }
 
-.pdf-page {
-  whidth: 210mm;
-  min-height: 297mm;
-  background: #1e293b;
-  color: #ffffff;
-  padding: 18mm;
-  box-sizing: border-box;
-  page-break-after: page;
-}
-
-.pdf-page:last-child {
-  page-break-after: auto;
-  break-after: auto;
-}
 
 /* =====================================================
    DARK MODE — overrides para nuevas clases
