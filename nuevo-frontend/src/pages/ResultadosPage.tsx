@@ -1261,7 +1261,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           },
           pagebreak:{
             mode: ['css','legacy'],
-            before: ['.pdf-page-break'],
+            //before: ['.pdf-page-break'],
             avoid: ['.avoid-break','.section-card','.pdf-no-break'],
           },
         };
