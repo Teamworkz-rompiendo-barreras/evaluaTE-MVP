@@ -1349,6 +1349,23 @@
 .final-message-box p:last-child {
   margin-bottom: 0;
 }
+.pdf-section,
+.section-card,
+.avoid-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.pdf-section {
+  margin-bottom: 18px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.pdf-page-break {
+  break-before: page;
+  page-break-before: always;
+}
 
 /* =====================================================
    DARK MODE — overrides para nuevas clases
@@ -1405,3 +1422,21 @@
 .dark .skill-bar-label { color: #d1d5db; }
 .dark .skill-bar-track { background: #374151; }
 .dark .skill-bar-score { color: #9ca3af; }
+
+.dark.pdf-section,
+.dark.section-card,
+.dark.avoid-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.dark.pdf-section {
+  margin-bottom: 18px;
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.dark.pdf-page-break {
+  break-before: page;
+  page-break-before: always;
+}
