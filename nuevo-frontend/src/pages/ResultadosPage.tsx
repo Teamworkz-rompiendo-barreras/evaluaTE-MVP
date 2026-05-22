@@ -1785,15 +1785,22 @@ const reportRef = useRef<HTMLDivElement>(null);
           <div className="max-h-[20rem] overflow-y-auto pr-1 space-y-0.5">
             {radarData.map((item: { softskill: string; score: number }, idx: number) => (
               <div key={idx} className="skill-bar-row">
-                <span className="skill-bar-label" title={item.softskill}>{item.softskill}</span>
-                <div className="skill-bar-track">
-                  <div
-                    className={`skill-bar-fill ${item.score >= 70 ? 'high' : item.score >= 40 ? 'medium' : 'low'}`}
-                    style={{ width: `${item.score}%` }}
-                  />
-                </div>
-                <span className="skill-bar-score">{item.score}%</span>
+              <div className="skill-bar-header">
+                <span className="skill-bar-label" title={item.softskill}>
+                  {item.softskill}
+                </span>
+                <span className="skill-bar-score">
+                  {item.score}%
+                </span>
               </div>
+            
+              <div className="skill-bar-track">
+                <div
+                  className={`skill-bar-fill ${item.score >= 70 ? 'high' : item.score >= 40 ? 'medium' : 'low'}`}
+                  style={{ width: `${item.score}%` }}
+                />
+              </div>
+            </div>
             ))}
           </div>
           <div className="mt-3 pt-2 border-t border-gray-200 dark:border-gray-600">
