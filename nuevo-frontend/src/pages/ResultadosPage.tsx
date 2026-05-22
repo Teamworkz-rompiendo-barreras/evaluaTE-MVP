@@ -1232,13 +1232,31 @@ const reportRef = useRef<HTMLDivElement>(null);
         return;
       }
 
-      const isDark = document.documentElement.classList.contains('dark');
+      const isDark = document.documentElement.classList.contains('dark') || document.body.classList.contains('dark');
+
+      const pdfBackgroundColor = isDark ? '#1e293b' : '#ffffff';
 
       const safeName = `${(report?.firstName || 'Informe')}_${(report?.lastName || 'EvaluaTE')}_CV.pdf`
         .replace(/\s+/g, '_');
 
       const printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden');
       printHiddenEls.forEach(el => { el.style.display = 'none'; });
+
+      // Guardar estilos originales
+      const originalPaddingBottom = element.style.paddingBottom;
+      const originalBackgroundColor = element.style.backgroundColor;
+
+      // Forzar fondo del área capturada
+      element.style.backgroundColor = pdfBackgroundColor;
+
+      // Rellenar el final de la última página con el color correcto
+      const a4Ratio = 297 / 210;
+      const pageHeightPx = element.scrollWidth * a4Ratio;
+      const currentHeight = element.scrollHeight;
+      const remainder = currentHeight % pageHeightPx;
+      const extraPadding = remainder === 0 ? 0 : pageHeightPx - remainder;
+
+      element.style.paddingBottom = `${extraPadding}px`;
 
         const options: any = {
           margin: [0, 0, 0, 0],
@@ -1250,7 +1268,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           html2canvas: {
             scale: 1.5,
             useCORS: true,
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+            backgroundColor: pdfBackgroundColor,
             scrollX: 0,
             scrollY: 0,
           },
@@ -1261,7 +1279,6 @@ const reportRef = useRef<HTMLDivElement>(null);
           },
           pagebreak:{
             mode: ['css','legacy'],
-            //before: ['.pdf-page-break'],
             avoid: ['.avoid-break','.section-card','.pdf-no-break'],
           },
         };
