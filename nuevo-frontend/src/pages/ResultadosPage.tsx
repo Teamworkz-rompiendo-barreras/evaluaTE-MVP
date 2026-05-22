@@ -2579,8 +2579,13 @@ const reportRef = useRef<HTMLDivElement>(null);
       )}
       <div ref={reportRef} className="pdf-export-area bg-white dark:bg-[#1e293b]">
         {/* Contenido del informe que no depende de la IA */}
-        {portada}
+        <div className="pdf-page">
+           {portada}
+        </div>
+       
+        <div className="pdf-page">
         {radar}
+        </div>
         <div className="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 print:bg-white print:shadow-none print:p-0">
           {/* Informe de la IA y formulario de feedback */}
           {/* Estado iaReport disponible para debug en desarrollo */}
