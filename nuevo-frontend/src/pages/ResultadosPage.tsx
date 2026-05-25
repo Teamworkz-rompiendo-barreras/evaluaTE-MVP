@@ -1232,13 +1232,26 @@ const reportRef = useRef<HTMLDivElement>(null);
         return;
       }
 
-      const isDark = document.documentElement.classList.contains('dark');
+      const wasDarkHtml = document.documentElement.classList.contains('dark');
+      const wasDarkBody = document.body.classList.contains('dark');
+
+      document.documentElement.classList.remove('dark');
+      document.body.classList.remove('dark');
 
       const safeName = `${(report?.firstName || 'Informe')}_${(report?.lastName || 'EvaluaTE')}_CV.pdf`
         .replace(/\s+/g, '_');
+      
+      const printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden, .no-pdf');
+      printHiddenEls.forEach(el => {
+        el.style.display = 'none';
+      });
 
-      const printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden');
-      printHiddenEls.forEach(el => { el.style.display = 'none'; });
+      //const isDark = document.documentElement.classList.contains('dark');
+
+
+
+      //const printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden');
+     // printHiddenEls.forEach(el => { el.style.display = 'none'; });
 
         const options: any = {
           margin: [0, 0, 0, 0],
@@ -1250,7 +1263,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           html2canvas: {
             scale: 1.5,
             useCORS: true,
-            backgroundColor: isDark ? '#1e293b' : '#ffffff',
+            backgroundColor: /*isDark ? '#1e293b' : */'#ffffff',
             scrollX: 0,
             scrollY: 0,
           },
@@ -1273,6 +1286,14 @@ const reportRef = useRef<HTMLDivElement>(null);
         alert(`No se ha podido generar el PDF. ${error}`);
       } finally {
         printHiddenEls.forEach(el => { el.style.display = ''; });
+
+        if(wasDarkHtml) {
+          document.documentElement.classList.add('dark');
+        }
+
+        if(wasDarkBody){
+          document.body.classList.add('dark');
+        }
       }
   };
 
