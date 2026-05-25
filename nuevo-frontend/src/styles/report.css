@@ -786,7 +786,7 @@
 /* Modo oscuro: forzar el mismo esquema visual que en modo claro dentro del informe */
 .dark .informe-empleabilidad,
 .dark .informe-empleabilidad .report-content {
-  background-color: #ffffff !important;
+  background-color: #374151 !important;
   color: #374151 !important;
 }
 
