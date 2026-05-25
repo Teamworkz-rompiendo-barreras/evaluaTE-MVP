@@ -1252,6 +1252,7 @@ const reportRef = useRef<HTMLDivElement>(null);
       try {  
         document.documentElement.classList.remove('dark');
 
+        element.classList.add('pdf-light-export');
         await new Promise(resolve => setTimeout(resolve, 300));
 
         printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden, .no-pdf');
@@ -1293,6 +1294,7 @@ const reportRef = useRef<HTMLDivElement>(null);
         printHiddenEls.forEach(el => { el.style.display = ''; });
        } 
 
+       element.classList.remove('pdf-light-export');
         if(wasDarkHtml) {
           document.documentElement.classList.add('dark');
         }
