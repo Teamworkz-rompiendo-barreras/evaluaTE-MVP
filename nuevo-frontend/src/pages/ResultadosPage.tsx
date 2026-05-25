@@ -1233,18 +1233,14 @@ const reportRef = useRef<HTMLDivElement>(null);
       }
 
       const wasDarkHtml = document.documentElement.classList.contains('dark');
-      const wasDarkBody = document.body.classList.contains('dark');
+      //const wasDarkBody = document.body.classList.contains('dark');
 
-      document.documentElement.classList.remove('dark');
-      document.body.classList.remove('dark');
+      
 
       const safeName = `${(report?.firstName || 'Informe')}_${(report?.lastName || 'EvaluaTE')}_CV.pdf`
         .replace(/\s+/g, '_');
       
-      const printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden, .no-pdf');
-      printHiddenEls.forEach(el => {
-        el.style.display = 'none';
-      });
+      let printHiddenEls: NodeListOf<HTMLElement> | null = null;
 
       //const isDark = document.documentElement.classList.contains('dark');
 
@@ -1252,6 +1248,15 @@ const reportRef = useRef<HTMLDivElement>(null);
 
       //const printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden');
      // printHiddenEls.forEach(el => { el.style.display = 'none'; });
+
+      try {  
+        document.documentElement.classList.remove('dark');
+
+        await new Promise(resolve => setTimeout(resolve, 300));
+
+        printHiddenEls = element.querySelectorAll<HTMLElement>('.print-hidden, .no-pdf');
+        printHiddenEls.forEach(el => { el.style.display = 'none'; 
+        });
 
         const options: any = {
           margin: [0, 0, 0, 0],
@@ -1279,21 +1284,19 @@ const reportRef = useRef<HTMLDivElement>(null);
         };
 
 
-      try {
         await html2pdf().set(options).from(element).save();
       } catch (error) {
         console.error("ERROR html2pdf:", error);
         alert(`No se ha podido generar el PDF. ${error}`);
       } finally {
+       if(printHiddenEls){
         printHiddenEls.forEach(el => { el.style.display = ''; });
+       } 
 
         if(wasDarkHtml) {
           document.documentElement.classList.add('dark');
         }
 
-        if(wasDarkBody){
-          document.body.classList.add('dark');
-        }
       }
   };
 
