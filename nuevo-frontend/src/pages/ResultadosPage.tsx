@@ -1805,7 +1805,7 @@ const reportRef = useRef<HTMLDivElement>(null);
             <img src={radarImg} alt="Mapa de habilidades" className="hidden print:block w-full h-[26rem] object-contain" />
           )}
         </div>
-        <div className="w-full md:w-1/2 max-h-none
+        <div className="w-full md:w-1/2 max-h-none">
           <h3 className="font-semibold mb-3 text-gray-900 dark:text-gray-100 text-sm uppercase tracking-wide">Puntuaciones</h3>
           <div className="max-h-none overflow-visible pr-1 space-y-1">
             {radarData.map((item: { softskill: string; score: number }, idx: number) => (
