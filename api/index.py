@@ -14,7 +14,7 @@ if root_dir not in sys.path:
 # Global error storage for debug
 init_error = None
 try:
-    from backend.main import app as backend_app
+    from backend.main import app #as backend_app
     # If we got here, backend_app is loaded
     # Instead of replacing global 'app', we can delegate
 except Exception as e:
