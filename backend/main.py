@@ -248,6 +248,11 @@ async def analyze_computational_profile(
         raise HTTPException(status_code=500, detail=str(e))
 
 
+#test
+
+@app.get("/api/test-main")
+async def test_main():
+    return {"ok": True, "message": "main activo"}
 # ──────────────────────────────────────────────────────────────────────
 # ENDPOINT CONEXION FEEDBACK
 # ──────────────────────────────────────────────────────────────────────
