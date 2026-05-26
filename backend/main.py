@@ -249,6 +249,22 @@ async def analyze_computational_profile(
 
 
 # ──────────────────────────────────────────────────────────────────────
+# ENDPOINT CONEXION FEEDBACK
+# ──────────────────────────────────────────────────────────────────────
+@app.post("/api/informe-ia/feedback")
+async def receive_feedback(feedback_data: dict):
+    try:
+        logger.info(f"feedback recibido: {feedback_data}")
+        return {
+            "ok": True,
+            "message": "feedback recibido"
+        }
+    except Exception as e:
+        logger.exception("error al guardar el feedback")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ──────────────────────────────────────────────────────────────────────
 # ENDPOINT DE GENERACIÓN DE PDF
 # ──────────────────────────────────────────────────────────────────────
 @app.post("/api/report/generate")
