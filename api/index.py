@@ -9,7 +9,7 @@ root_dir = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
 if root_dir not in sys.path:
     sys.path.insert(0, root_dir)
 
-app = FastAPI()
+#app = FastAPI()
 
 # Global error storage for debug
 init_error = None
@@ -19,7 +19,15 @@ try:
     # Instead of replacing global 'app', we can delegate
 except Exception as e:
     init_error = f"{type(e).__name__}: {str(e)}\n{traceback.format_exc()}"
-    backend_app = None
+    #backend_app = None
+    app = FastAPI()
+
+    @app.get("/api/debug/init_error")
+    async def debug_init_error():
+        return {
+            "ok": False,
+            "error": init_error
+        }
 
 @app.get("/api/health")
 async def health():
