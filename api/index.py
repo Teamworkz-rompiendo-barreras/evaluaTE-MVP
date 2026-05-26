@@ -45,6 +45,10 @@ async def health():
         "service": "unified-router",
         "backend": "loaded"
     }
+
+@app.get("/api/test-index")
+async def test_index():
+    return {"ok": True, "message": "index activo"}
 """
 @app.api_route("/api/{path_name:path}", methods=["GET", "POST", "PUT", "DELETE"])
 async def catch_all(request: Request, path_name: str):
