@@ -253,6 +253,15 @@ async def analyze_computational_profile(
 @app.get("/api/test-main")
 async def test_main():
     return {"ok": True, "message": "main activo"}
+
+@app.post("/api/test-post")
+async def test_post(data: dict):
+    return {
+        "ok": True,
+        "message": "POST funcionando correctamente",
+        "data": data
+    }
+    
 # ──────────────────────────────────────────────────────────────────────
 # ENDPOINT CONEXION FEEDBACK
 # ──────────────────────────────────────────────────────────────────────
