@@ -261,35 +261,6 @@ async def test_post(data: dict):
         "message": "POST funcionando correctamente",
         "data": data
     }
-    
-# ──────────────────────────────────────────────────────────────────────
-# ENDPOINT CONEXION FEEDBACK
-# ──────────────────────────────────────────────────────────────────────
-@app.post("/api/informe-ia/feedback")
-async def receive_feedback(feedback_data: dict):
-    try:
-        logger.info(f"feedback recibido: {feedback_data}")
-
-        user_data = feedback_data.get("userData", {})
-        informe = feedback_data.get("informe", {})
-
-        data_to_insert = {
-            "user_id": informe.get("userId"),  # tiene que ser UUID válido
-            "skill": "feedback_informe",
-            "score": 0,
-            "level": feedback_data.get("rating"),
-            "feedback": feedback_data.get("comment"),
-        }
-
-        result = supabase.table("soft_skill_results").insert(data_to_insert).execute()
-
-        return {
-            "ok": True,
-            "message": "feedback guardado"
-        }
-    except Exception as e:
-        logger.exception("error al guardar el feedback")
-        raise HTTPException(status_code=500, detail=str(e))
 
 
 # ──────────────────────────────────────────────────────────────────────
