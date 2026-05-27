@@ -1199,31 +1199,32 @@ const ResultadosPage: React.FC = () => {
   const [feedbackSent, setFeedbackSent] = useState(false);
   const [feedbackError, setFeedbackError] = useState('');
 
-  const handleFeedbackSubmit = async (e: React.FormEvent) => {
-    e.preventDefault();
-    setFeedbackError('');
+const reportRef = useRef<HTMLDivElement>(null);
+
+  const handleDownloadPdf = async () => {
+    const element = reportRef.current;
+    if (!element) {
+      alert('No se ha encontrado el contenido del informe para exportar.');
+      return;
+    }
+    document.documentElement.classList.add('pdf-light-export');
+    document.body.classList.add('pdf-light-export');
+    element.classList.add('pdf-light-export');
     try {
-      const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.IA_FEEDBACK), {
-        method: 'POST',
-        headers: { 'Content-Type': 'application/json' },
-        body: JSON.stringify({
-          informe: iaReport,
-          rating: feedback.rating,
-          comment: feedback.comment,
-          userData: { preferences: report?.jobPreferences, minigames: personal.softSkills, cvAnalysis },
-        }),
-      });
-      if (res.ok) {
-        setFeedbackSent(true);
-      } else {
-        setFeedbackError('No se pudo enviar el feedback.');
-      }
-    } catch {
-      setFeedbackError('Error de conexión al enviar feedback.');
+      await html2pdf().set({
+        margin: 0,
+        filename: 'informe-empleabilidad.pdf',
+        image: { type: 'jpeg', quality: 0.98 },
+        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+      }).from(element).save();
+    } finally {
+      document.documentElement.classList.remove('pdf-light-export');
+      document.body.classList.remove('pdf-light-export');
+      element.classList.remove('pdf-light-export');
     }
   };
-const reportRef = useRef<HTMLDivElement>(null);
-  // Descarga de PDF (usa el servicio del backend). Mantiene window.print como fallback
+
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
     setFeedbackError('');
