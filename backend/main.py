@@ -348,6 +348,118 @@ async def api_debug_cv_data(file: UploadFile = File(...)) -> Dict[str, Any]:
         raise HTTPException(status_code=500, detail=f"Error debug CV: {e}")
 
 
+# ──────────────────────────────────────────────────────────────────────
+# FEEDBACK DE INFORME IA
+# ──────────────────────────────────────────────────────────────────────
+
+import smtplib
+import datetime
+import uuid as uuid_lib
+from email.mime.text import MIMEText
+from email.mime.multipart import MIMEMultipart
+
+FEEDBACK_SMTP_HOST = os.getenv("SMTP_HOST", "")
+FEEDBACK_SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
+FEEDBACK_SMTP_USER = os.getenv("SMTP_USER", "")
+FEEDBACK_SMTP_PASS = os.getenv("SMTP_PASSWORD", "")
+FEEDBACK_FROM     = os.getenv("FROM_EMAIL", FEEDBACK_SMTP_USER)
+FEEDBACK_TO       = os.getenv("FEEDBACK_EMAIL", "coordinacion@delphosinnovation.com")
+
+
+def _send_feedback_email(data: dict) -> None:
+    if not (FEEDBACK_SMTP_HOST and FEEDBACK_SMTP_USER and FEEDBACK_SMTP_PASS):
+        return
+    try:
+        rating_icon = "👍" if data.get("rating") == "Útil" else "👎"
+        msg = MIMEMultipart()
+        msg["From"]    = FEEDBACK_FROM
+        msg["To"]      = FEEDBACK_TO
+        msg["Subject"] = f"[evaluaTE] Nuevo feedback: {data.get('rating', '?')}"
+        body = f"""
+        <html><body style="font-family:Arial,sans-serif;max-width:600px;margin:0 auto">
+        <h2>{rating_icon} Nuevo feedback en evaluaTE</h2>
+        <p><strong>Valoración:</strong> {data.get('rating', '?')}</p>
+        <p><strong>Comentario:</strong> {data.get('comment') or '(sin comentario)'}</p>
+        <p><strong>Fecha:</strong> {data.get('timestamp', '')}</p>
+        </body></html>
+        """
+        msg.attach(MIMEText(body, "html"))
+        with smtplib.SMTP(FEEDBACK_SMTP_HOST, FEEDBACK_SMTP_PORT) as s:
+            s.ehlo(); s.starttls(); s.ehlo()
+            s.login(FEEDBACK_SMTP_USER, FEEDBACK_SMTP_PASS)
+            s.sendmail(FEEDBACK_FROM, [FEEDBACK_TO], msg.as_string())
+        logger.info(f"Feedback email sent to {FEEDBACK_TO}")
+    except Exception as e:
+        logger.error(f"Error sending feedback email: {e}")
+
+
+@app.post("/api/informe-ia/feedback")
+async def submit_feedback(request: Request):
+    """Recibe el feedback del usuario sobre el informe de IA."""
+    try:
+        body = await request.json()
+    except Exception:
+        raise HTTPException(status_code=400, detail="JSON inválido")
+
+    timestamp = datetime.datetime.utcnow().isoformat()
+    record = {
+        "id": str(uuid_lib.uuid4()),
+        "rating": body.get("rating", ""),
+        "comment": body.get("comment", ""),
+        "timestamp": timestamp,
+        "user_data": body.get("userData", {}),
+    }
+
+    # Guardar en Supabase
+    if supabase_client:
+        try:
+            supabase_client.table("feedback_ia").insert(record).execute()
+            logger.info(f"Feedback saved to Supabase: {record['id']}")
+        except Exception as e:
+            logger.error(f"Supabase insert failed (table may not exist): {e}")
+
+    # Notificar por email
+    _send_feedback_email(record)
+
+    logger.info(f"Feedback received: rating={record['rating']}")
+    return {"ok": True, "id": record["id"]}
+
+
+@app.get("/api/informe-ia/feedback/stats")
+async def feedback_stats():
+    """Devuelve estadísticas de feedback para el dashboard."""
+    if not supabase_client:
+        return {
+            "total_feedback": 0,
+            "useful_feedback": 0,
+            "not_useful_feedback": 0,
+            "satisfaction_rate": 0,
+            "recent_feedback": [],
+        }
+    try:
+        res = supabase_client.table("feedback_ia").select("*").order("timestamp", desc=True).limit(100).execute()
+        rows = res.data or []
+        useful     = [r for r in rows if r.get("rating") == "Útil"]
+        not_useful = [r for r in rows if r.get("rating") != "Útil"]
+        total      = len(rows)
+        return {
+            "total_feedback": total,
+            "useful_feedback": len(useful),
+            "not_useful_feedback": len(not_useful),
+            "satisfaction_rate": round(len(useful) / total * 100, 1) if total else 0,
+            "recent_feedback": rows[:20],
+        }
+    except Exception as e:
+        logger.error(f"Error fetching feedback stats: {e}")
+        return {
+            "total_feedback": 0,
+            "useful_feedback": 0,
+            "not_useful_feedback": 0,
+            "satisfaction_rate": 0,
+            "recent_feedback": [],
+        }
+
+
 if __name__ == "__main__":
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8080"))
