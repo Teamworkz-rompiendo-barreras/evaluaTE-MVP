@@ -1,34 +1,8 @@
 {
-  "version": 2,
-  "builds": [
+  "rewrites": [
     {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "includeFiles": ["backend/**", "api/**"]
-      }
-    },
-    {
-      "src": "nuevo-frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    }
-  ],
-  "routes": [
-    {
-      "src": "/api/(.*)",
-      "methods": ["GET", "POST", "PUT", "PATCH", "DELETE", "OPTIONS", "HEAD"],
-      "dest": "/api/index.py"
-    },
-    {
-      "src": "/(.*\\.(css|png|jpg|jpeg|svg|json|ico|js|woff|woff2|ttf|eot))",
-      "dest": "/nuevo-frontend/dist/$1"
-    },
-    {
-      "src": "/(.*)",
-      "dest": "/nuevo-frontend/dist/index.html"
+      "source": "/(.*)",
+      "destination": "/index.html"
     }
   ]
 }
