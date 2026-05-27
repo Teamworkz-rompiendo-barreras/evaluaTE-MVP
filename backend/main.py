@@ -363,7 +363,7 @@ FEEDBACK_SMTP_PORT = int(os.getenv("SMTP_PORT", "587"))
 FEEDBACK_SMTP_USER = os.getenv("SMTP_USER", "")
 FEEDBACK_SMTP_PASS = os.getenv("SMTP_PASSWORD", "")
 FEEDBACK_FROM     = os.getenv("FROM_EMAIL", FEEDBACK_SMTP_USER)
-FEEDBACK_TO       = os.getenv("FEEDBACK_EMAIL", "coordinacion@delphosinnovation.com")
+FEEDBACK_TO       = os.getenv("FEEDBACK_EMAIL", "rural.minds@teamworkz.co")
 
 
 def _send_feedback_email(data: dict) -> None:
