@@ -1,5 +1,4 @@
 {
-  "version": 2,
   "buildCommand": "cd nuevo-frontend && npm install && npm run build",
   "outputDirectory": "nuevo-frontend/dist",
   "functions": {
