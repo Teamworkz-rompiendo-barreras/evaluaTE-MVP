@@ -1,21 +1,14 @@
 {
   "version": 2,
-  "builds": [
-    {
-      "src": "nuevo-frontend/package.json",
-      "use": "@vercel/static-build",
-      "config": {
-        "distDir": "dist"
-      }
-    },
-    {
-      "src": "api/index.py",
-      "use": "@vercel/python",
-      "config": {
-        "includeFiles": ["backend/**"]
-      }
+  "buildCommand": "cd nuevo-frontend && npm install && npm run build",
+  "outputDirectory": "nuevo-frontend/dist",
+  "functions": {
+    "api/index.py": {
+      "runtime": "python3.12",
+      "maxDuration": 60,
+      "includeFiles": "backend/**"
     }
-  ],
+  },
   "routes": [
     {
       "src": "/api/(.*)",
