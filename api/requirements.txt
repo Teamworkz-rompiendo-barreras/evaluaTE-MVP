@@ -1,12 +1,7 @@
 fastapi==0.104.1
-python-dotenv==1.0.0
-google-generativeai>=0.8.3
-python-multipart==0.0.20
-reportlab>=4.0.0
-requests
+uvicorn
 pydantic
 supabase
-uvicorn
-websockets
-tqdm
+python-dotenv==1.0.0
+python-multipart==0.0.20
 mangum
