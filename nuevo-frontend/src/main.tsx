@@ -14,9 +14,27 @@ import GameDashboardPage from './pages/GameDashboardPage';
 import GameScenePage from './pages/GameScenePage';
 import PrivacidadPage from './pages/PrivacidadPage';
 
-// Lazy-load heavy pages so their chunks are only fetched when the user reaches them
-const UploadCVPage = React.lazy(() => import('./pages/UploadCVPage'));
-const ResultadosPage = React.lazy(() => import('./pages/ResultadosPage'));
+// Lazy-load heavy pages so their chunks are only fetched when the user reaches them.
+// lazyWithRetry: on chunk load failure (e.g. after a Vercel deploy that changed the hash),
+// reload the page once to pick up the new HTML/manifest, preventing a stale-chunk 404.
+const lazyWithRetry = (importFn: () => Promise<{ default: React.ComponentType<any> }>) =>
+  React.lazy(async () => {
+    try {
+      return await importFn();
+    } catch {
+      const key = 'lazy-chunk-refresh';
+      if (!sessionStorage.getItem(key)) {
+        sessionStorage.setItem(key, '1');
+        window.location.reload();
+        return new Promise<never>(() => {}); // page is reloading, never resolve
+      }
+      sessionStorage.removeItem(key);
+      throw new Error('Failed to fetch dynamically imported module after reload');
+    }
+  });
+
+const UploadCVPage = lazyWithRetry(() => import('./pages/UploadCVPage'));
+const ResultadosPage = lazyWithRetry(() => import('./pages/ResultadosPage'));
 
 import ProtectedRoute from './components/ProtectedRoute';
 import ErrorBoundary from './components/ErrorBoundary';

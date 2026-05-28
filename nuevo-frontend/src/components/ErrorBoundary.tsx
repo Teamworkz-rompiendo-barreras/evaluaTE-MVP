@@ -51,11 +51,46 @@ class ErrorBoundary extends React.Component<ErrorBoundaryProps, ErrorBoundarySta
   }
 }
 
+const isChunkLoadError = (error?: Error): boolean => {
+  if (!error) return false;
+  return (
+    error.message?.includes('Failed to fetch dynamically imported module') ||
+    error.message?.includes('Importing a module script failed') ||
+    error.name === 'ChunkLoadError'
+  );
+};
+
 // Componente de fallback por defecto
-const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> = ({ 
-  error, 
-  resetError 
+const DefaultErrorFallback: React.FC<{ error?: Error; resetError: () => void }> = ({
+  error,
+  resetError
 }) => {
+  const chunkError = isChunkLoadError(error);
+
+  if (chunkError) {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
+        <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 transition-colors text-center">
+          <div className="mx-auto flex items-center justify-center h-12 w-12 rounded-full bg-yellow-100 mb-4">
+            <svg className="h-6 w-6 text-yellow-600" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+              <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M4 4v5h.582m15.356 2A8.001 8.001 0 004.582 9m0 0H9m11 11v-5h-.581m0 0a8.003 8.003 0 01-15.357-2m15.357 2H15" />
+            </svg>
+          </div>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-gray-100">Nueva versión disponible</h3>
+          <p className="mt-1 text-sm text-gray-500 dark:text-gray-400">
+            La aplicación se ha actualizado. Recarga la página para continuar.
+          </p>
+          <button
+            onClick={() => window.location.reload()}
+            className="mt-6 inline-flex items-center px-4 py-2 border border-transparent text-sm font-medium rounded-md shadow-sm text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+          >
+            Recargar página
+          </button>
+        </div>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen flex items-center justify-center bg-gray-50 dark:bg-gray-900 transition-colors">
       <div className="max-w-md w-full bg-white dark:bg-gray-800 shadow-lg rounded-lg p-6 transition-colors">

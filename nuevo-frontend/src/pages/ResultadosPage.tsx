@@ -1230,12 +1230,16 @@ const reportRef = useRef<HTMLDivElement>(null);
     setFeedbackError('');
     try {
 
-      const userId = user?.id;
-
-      if (!userId) {
-        setFeedbackError('usuario no identificado');
-        return;
-      }
+      const userId = user?.id || personal?.email || (() => {
+        const key = 'evalute-anon-id';
+        let id = sessionStorage.getItem(key) || localStorage.getItem(key);
+        if (!id) {
+          id = `anon-${Date.now()}-${Math.random().toString(36).slice(2)}`;
+          try { sessionStorage.setItem(key, id); } catch { /* ignore */ }
+          try { localStorage.setItem(key, id); } catch { /* ignore */ }
+        }
+        return id;
+      })();
 
 
       const res = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.IA_FEEDBACK), {
