@@ -17,13 +17,24 @@ from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 
 # Importaciones locales
 try:
-    from backend.cv_analyzer import extract_pdf_info, analyze_multimodal_report  # type: ignore
+    from backend.cv_analyzer import extract_pdf_info, analyze_multimodal_report, analyze_cv_with_ai  # type: ignore
     from backend.prompt_config import PromptConfig  # type: ignore
     from backend.new_report_schema import NewReportSchema, convert_old_format_to_new  # type: ignore
 except ImportError:
-    from cv_analyzer import extract_pdf_info, analyze_multimodal_report  # type: ignore
+    from cv_analyzer import extract_pdf_info, analyze_multimodal_report, analyze_cv_with_ai  # type: ignore
     from prompt_config import PromptConfig  # type: ignore
     from new_report_schema import NewReportSchema, convert_old_format_to_new  # type: ignore
+
+# Scoring pipeline (optional — works without it)
+_compute_cv_analysis = None
+try:
+    import sys as _sys, os as _os
+    _root = _os.path.dirname(_os.path.dirname(_os.path.abspath(__file__)))
+    if _root not in _sys.path:
+        _sys.path.insert(0, _root)
+    from app.cv_pipeline.scoring import compute_cv_analysis as _compute_cv_analysis  # type: ignore
+except Exception:
+    pass
 
 # Importar servicio PDF
 create_employability_pdf = None
@@ -362,6 +373,112 @@ def _send_feedback_email(data: dict) -> None:
         logger.info(f"Feedback email sent to {FEEDBACK_TO}")
     except Exception as e:
         logger.error(f"Error sending feedback email: {e}")
+
+
+import asyncio as _asyncio
+
+@app.post("/api/pdf/analyze-cv")
+async def analyze_cv_endpoint(cv_file: UploadFile = File(...)):
+    """
+    Dedicated CV analysis endpoint.
+    Extracts structure, contact, experience, education from PDF via Gemini
+    and returns CvAnalysis format expected by the frontend.
+    """
+    try:
+        pdf_bytes = await cv_file.read()
+        if not pdf_bytes:
+            raise HTTPException(status_code=400, detail="Empty file")
+
+        # Extract CV data via Gemini (uses gemini_lite inline data on Vercel)
+        cv_data = await _asyncio.to_thread(analyze_cv_with_ai, pdf_bytes)
+
+        if isinstance(cv_data, dict) and "error" in cv_data:
+            raise HTTPException(status_code=500, detail=cv_data["error"])
+
+        dp = cv_data.get("datos_personales") or {}
+        experiencia = cv_data.get("experiencia") or []
+        educacion = cv_data.get("educacion") or []
+        idiomas = cv_data.get("idiomas") or []
+        habilidades = cv_data.get("habilidades_detectadas") or []
+        resumen = cv_data.get("resumen_profesional") or ""
+
+        contact = {
+            "name": dp.get("nombre", ""),
+            "emails": [dp["email"]] if dp.get("email") else [],
+            "phones": [dp["telefono"]] if dp.get("telefono") else [],
+            "location": dp.get("ubicacion", ""),
+            "linkedin": dp.get("linkedin", ""),
+        }
+
+        # Compute structure scores
+        if _compute_cv_analysis:
+            cv_normalized = {
+                "experience": experiencia,
+                "education": educacion,
+                "languages": idiomas,
+                "skills": [h.get("herramienta", "") for h in habilidades if h.get("herramienta")],
+                "contact": {
+                    "emails": contact["emails"],
+                    "phones": contact["phones"],
+                    "location": contact["location"],
+                    "linkedin": contact["linkedin"],
+                },
+                "summary": bool(resumen),
+                "sections": len(experiencia) > 0,
+            }
+            scored = _compute_cv_analysis(cv_normalized)
+            dim = {d["id"]: d["score"] for d in scored.get("dimensions", [])}
+            # Map pipeline dimensions (1-5) to frontend score (0-100)
+            structure_score = dim.get("structure", 3) * 20
+            coherence_score = dim.get("experience", 3) * 20
+            key_info_score  = dim.get("contact", 3) * 20
+            clarity_score   = dim.get("education", 3) * 20
+            style_score     = dim.get("tools", 3) * 20
+        else:
+            # Heuristic fallback when scoring module unavailable
+            structure_score = 60 if resumen else 40
+            coherence_score = min(100, len(experiencia) * 20) or 40
+            key_info_score  = (60 if contact["emails"] else 0) + (20 if contact["phones"] else 0) + (20 if contact["location"] else 0)
+            clarity_score   = min(100, len(educacion) * 25) or 40
+            style_score     = min(100, len(habilidades) * 10) or 40
+
+        corrections = []
+        if not contact["emails"]:
+            corrections.append("Añade un email de contacto")
+        if not contact["phones"]:
+            corrections.append("Añade un teléfono de contacto")
+        if not resumen:
+            corrections.append("Añade un resumen/perfil profesional")
+        if not educacion:
+            corrections.append("Añade tu formación académica")
+
+        return {
+            "structure_score": structure_score,
+            "coherence_score": coherence_score,
+            "key_info_score": key_info_score,
+            "clarity_score": clarity_score,
+            "style_score": style_score,
+            "evidence": {
+                "structure": f"Secciones detectadas: experiencia, educación, habilidades{'  resumen' if resumen else ''}",
+                "coherence": f"{len(experiencia)} experiencia(s) laboral(es) detectada(s)",
+                "key_info": f"Contacto: {'email ✓' if contact['emails'] else 'email ✗'} · {'teléfono ✓' if contact['phones'] else 'teléfono ✗'} · {'ubicación ✓' if contact['location'] else 'ubicación ✗'}",
+                "clarity": f"{len(educacion)} formación(es) académica(s) detectada(s)",
+                "style": f"{len(habilidades)} herramienta(s)/habilidad(es) detectada(s)",
+            },
+            "corrections": corrections,
+            "reordering_suggestions": [],
+            "experience_detailed": experiencia,
+            "education_detailed": educacion,
+            "languages": idiomas,
+            "software": [{"name": h.get("herramienta"), "level": h.get("nivel")} for h in habilidades],
+            "contact": contact,
+        }
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error en /api/pdf/analyze-cv")
+        raise HTTPException(status_code=500, detail=str(e))
 
 
 @app.post("/api/informe-ia/feedback")
