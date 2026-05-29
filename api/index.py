@@ -42,10 +42,10 @@ app.add_middleware(
 
 # Attempt to load the full backend app (adds /api/analyze and more)
 _using_backend = False
-for _candidate_root in [
-    os.path.dirname(os.path.abspath(__file__)),          # same dir
-    os.path.dirname(os.path.dirname(os.path.abspath(__file__))),  # parent
-]:
+_backend_error = None
+_file_dir = os.path.dirname(os.path.abspath(__file__))
+_backend_search = [_file_dir, os.path.dirname(_file_dir)]
+for _candidate_root in _backend_search:
     if os.path.isdir(os.path.join(_candidate_root, "backend")):
         if _candidate_root not in sys.path:
             sys.path.insert(0, _candidate_root)
@@ -54,7 +54,9 @@ for _candidate_root in [
             app = _backend_app
             _using_backend = True
         except Exception as _be:
-            logger.warning(f"Backend import failed, using standalone mode: {_be}")
+            import traceback as _tb
+            _backend_error = f"{type(_be).__name__}: {_be}\n{_tb.format_exc()}"
+            logger.warning(f"Backend import failed: {_be}")
         break
 
 # Standalone fallback: feedback-only routes
@@ -91,6 +93,15 @@ if not _using_backend:
     @app.get("/api/health")
     async def health():
         return {"status": "ok", "mode": "standalone"}
+
+    @app.get("/api/debug/backend-error")
+    async def debug_backend_error():
+        return {
+            "backend_error": _backend_error,
+            "file": __file__,
+            "searched": _backend_search,
+            "sys_path": sys.path[:5],
+        }
 
     @app.post("/api/informe-ia/feedback")
     async def submit_feedback(request: Request):

@@ -24,9 +24,16 @@ except ImportError:
     pass
 
 try:
-    import google.generativeai as genai # type: ignore
+    import google.generativeai as genai  # type: ignore
 except ImportError:
-    genai = None
+    # Fallback to gemini_lite (no heavy grpcio/protobuf deps — works on Vercel)
+    try:
+        from backend import gemini_lite as genai  # type: ignore
+    except ImportError:
+        try:
+            import gemini_lite as genai  # type: ignore
+        except ImportError:
+            genai = None
 
 # Configurar logs
 logger = logging.getLogger(__name__)
@@ -44,6 +51,9 @@ if GEMINI_API_KEY and genai:
         logger.error(f"❌ Error configurando Gemini: {e}")
 else:
     logger.warning("⚠️ GEMINI_API_KEY no configurada o librería no instalada. El análisis no funcionará.")
+
+# Detect if we're using gemini_lite (no File API available)
+_has_file_api = genai is not None and hasattr(genai, "upload_file")
 
 
 def _safe_slice(text: Any, start: int, end: int) -> str:
@@ -106,7 +116,7 @@ async def extract_pdf_info(pdf_bytes: bytes) -> Dict[str, Any]:
 
 def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
     """
-    Sube el archivo PDF a Gemini usando la File API y ejecuta el prompt visual.
+    Analiza el PDF con Gemini (File API si disponible, inline data como fallback).
     """
     if not genai_configured or not genai:
         logger.error("Gemini no está configurado. Retornando error.")
@@ -116,20 +126,6 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
     uploaded_file = None
 
     try:
-        # 1. Crear archivo temporal para la subida
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-            tmp.write(pdf_bytes)
-            tmp_path = tmp.name
-        
-        logger.info(f"📄 Subiendo archivo temporal {tmp_path} a Gemini...")
-        
-        # 2. Subir archivo a Gemini
-        if genai:
-             uploaded_file = genai.upload_file(tmp_path, mime_type="application/pdf")
-             logger.info(f"✅ Archivo subido: {uploaded_file.uri}")
-        else:
-             raise ImportError("Gemini library not loaded")
-
         # 3. Construir el Prompt Visual Estricto
         system_instruction = (
             "Eres un experto reclutador técnico con visión artificial avanzada. "
@@ -196,32 +192,35 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
 
         # 4. Generar contenido
         model_name = "gemini-1.5-flash"
-        
-        if genai:
-            model = genai.GenerativeModel(
-                model_name=model_name,
-                system_instruction=system_instruction
-            )
-            
-            logger.info(f"🧠 Analizando documento con {model_name} y temperature=0.1...")
-            
-            generation_config = genai.types.GenerationConfig(
-                temperature=0.1,  
-                response_mime_type="application/json"
-            )
-            
-            response = model.generate_content(
-                [uploaded_file, prompt],
-                generation_config=generation_config
-            )
-            
-            # 5. Procesar respuesta
-            json_text = _normalize_ai_json_response(response.text)
-            data = json.loads(json_text)
-            
-            return data
+        model = genai.GenerativeModel(
+            model_name=model_name,
+            system_instruction=system_instruction
+        )
+
+        logger.info(f"🧠 Analizando documento con {model_name} y temperature=0.1...")
+        generation_config = genai.types.GenerationConfig(
+            temperature=0.1,
+            response_mime_type="application/json"
+        )
+
+        if _has_file_api:
+            # SDK completo: subir a File API y referenciar
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                tmp.write(pdf_bytes)
+                tmp_path = tmp.name
+            uploaded_file = genai.upload_file(tmp_path, mime_type="application/pdf")
+            logger.info(f"✅ Archivo subido via File API: {uploaded_file.uri}")
+            content_parts = [uploaded_file, prompt]
         else:
-             return {"error": "Gemini not loaded"}
+            # gemini_lite: inline data (base64) — sin File API
+            logger.info("📎 Usando inline PDF data (gemini_lite mode)")
+            content_parts = [{"mime_type": "application/pdf", "data": pdf_bytes}, prompt]
+
+        response = model.generate_content(content_parts, generation_config=generation_config)
+
+        # 5. Procesar respuesta
+        json_text = _normalize_ai_json_response(response.text)
+        return json.loads(json_text)
 
     except Exception as e:
         logger.exception(f"❌ Error crítico en análisis visual con Gemini: {e}")
@@ -232,21 +231,16 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
             "raw_text": "Error durante el análisis."
         }
     finally:
-        # Limpieza
         if tmp_path and os.path.exists(tmp_path):
             try:
                 os.remove(tmp_path)
             except OSError:
                 pass
-        
-        if uploaded_file and genai:
+        if uploaded_file and _has_file_api and genai:
             try:
                 genai.delete_file(uploaded_file.name)
-                logger.info(f"🗑️ Archivo remoto eliminado: {uploaded_file.name}")
-            except Exception as del_err:
-                logger.warning(f"No se pudo eliminar el archivo remoto: {del_err}")
-    
-    return {}
+            except Exception:
+                pass
 
 async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dict[str, Any]:
     """
@@ -255,50 +249,52 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dic
     """
     if not genai_configured or not genai:
         return {"error": "Servicio de IA no disponible"}
-    
+
     tmp_path = None
     uploaded_file = None
 
     try:
-        # 1. Temp File
-        with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
-            tmp.write(pdf_bytes)
-            tmp_path = tmp.name
-        
-        # 2. Upload
-        uploaded_file = genai.upload_file(tmp_path, mime_type="application/pdf")
-        logger.info(f"✅ Archivo subido para reporte: {uploaded_file.uri}")
-
-        # 3. Generate
         model = genai.GenerativeModel(
             model_name="gemini-1.5-flash",
             system_instruction="Eres un experto orientador laboral. Analiza el CV visualmente y genera el informe JSON estricto."
         )
-        
-        logger.info("🧠 Generando informe multimodal (Single-Shot)...")
-        response = await model.generate_content_async(
-            [uploaded_file, report_prompt],
-            generation_config=genai.types.GenerationConfig(
-                temperature=0.4,
-                response_mime_type="application/json"
-            )
+        generation_config = genai.types.GenerationConfig(
+            temperature=0.4,
+            response_mime_type="application/json"
         )
-        
-        # 4. Parse
+
+        if _has_file_api:
+            with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:
+                tmp.write(pdf_bytes)
+                tmp_path = tmp.name
+            uploaded_file = genai.upload_file(tmp_path, mime_type="application/pdf")
+            logger.info(f"✅ Archivo subido via File API: {uploaded_file.uri}")
+            content_parts = [uploaded_file, report_prompt]
+        else:
+            logger.info("📎 Usando inline PDF data para informe (gemini_lite mode)")
+            content_parts = [{"mime_type": "application/pdf", "data": pdf_bytes}, report_prompt]
+
+        logger.info("🧠 Generando informe multimodal (Single-Shot)...")
+        response = await model.generate_content_async(content_parts, generation_config=generation_config)
+
         json_text = _normalize_ai_json_response(response.text)
         return json.loads(json_text)
 
     except Exception as e:
         logger.exception(f"❌ Error multimodal: {e}")
         return {"error": str(e)}
-        
+
     finally:
         if tmp_path and os.path.exists(tmp_path):
-            try: os.remove(tmp_path)
-            except OSError: pass
-        if uploaded_file and genai:
-            try: genai.delete_file(uploaded_file.name)
-            except Exception: pass
+            try:
+                os.remove(tmp_path)
+            except OSError:
+                pass
+        if uploaded_file and _has_file_api and genai:
+            try:
+                genai.delete_file(uploaded_file.name)
+            except Exception:
+                pass
 
 # Backward compatibility functions
 def extract_contact_info_enhanced(text: str) -> Dict[str, str]:
