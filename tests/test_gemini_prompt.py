@@ -31,11 +31,11 @@ def test_prompt_generation():
     
     cv_data = {
         "contact": {"name": "Juan"},
-        "experience": ["Desarrollador Senior en TechCorp (2020-2023)"],
-        "education": ["Ingeniería Informática"],
-        "languages": [{"language": "Inglés", "level": "C1"}],
-        "software": ["Python", "Django"],
-        "profile": "Desarrollador backend experimentado."
+        "experiencia": [{"rol": "Desarrollador Senior", "empresa": "TechCorp", "fecha_inicio": "2020", "fecha_fin": "2023"}],
+        "educacion": [{"titulo": "Ingeniería Informática", "institucion": "UPM", "fecha_inicio": "2015", "fecha_fin": "2019"}],
+        "idiomas": [{"language": "Inglés", "level": "C1"}],
+        "habilidades_detectadas": ["Python", "Django"],
+        "resumen_profesional": "Desarrollador backend experimentado."
     }
     
     job_preferences_data = {
@@ -72,13 +72,14 @@ def test_prompt_generation():
         print("-" * 50)
         
         # Validation checks
-        assert "PROMPT MAESTRO" in prompt, "Missing title in prompt"
         assert "Juan Pérez" in prompt, "Candidate name missing"
         assert "Liderazgo" in prompt, "Soft skill missing"
+        assert "Desarrollador Senior" in prompt, "Experience missing"
         assert "Ingeniería Informática" in prompt, "Education missing"
-        assert "ESTRUCTURA OBLIGATORIA DEL INFORME" in prompt, "JSON structure instructions missing"
+        assert "Backend Developer" in prompt, "Preferred role missing"
+        assert "resumen_ejecutivo" in prompt, "JSON schema missing"
         
-        print("✅ Prompt structure validation passed.")
+        print("OK - Prompt structure validation passed.")
         
     except Exception as e:
         print(f"ERROR generating prompt: {e}")
