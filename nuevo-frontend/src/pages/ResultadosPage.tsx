@@ -1207,21 +1207,30 @@ const reportRef = useRef<HTMLDivElement>(null);
       alert('No se ha encontrado el contenido del informe para exportar.');
       return;
     }
-    document.documentElement.classList.add('pdf-light-export');
-    document.body.classList.add('pdf-light-export');
+    // Remove dark mode so brand colors render correctly in the PDF
+    const htmlEl = document.documentElement;
+    const wasDark = htmlEl.classList.contains('dark');
+    if (wasDark) htmlEl.classList.remove('dark');
     element.classList.add('pdf-light-export');
     try {
       await html2pdf().set({
-        margin: 0,
+        margin: [8, 6, 8, 6],
         filename: 'informe-empleabilidad.pdf',
         image: { type: 'jpeg', quality: 0.98 },
-        html2canvas: { scale: 2, useCORS: true, allowTaint: true },
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait' },
+        html2canvas: {
+          scale: 2,
+          useCORS: true,
+          allowTaint: true,
+          backgroundColor: '#ffffff',
+          logging: false,
+          // Force color rendering — prevents greyscale conversion
+          removeContainer: true,
+        },
+        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: false },
       }).from(element).save();
     } finally {
-      document.documentElement.classList.remove('pdf-light-export');
-      document.body.classList.remove('pdf-light-export');
       element.classList.remove('pdf-light-export');
+      if (wasDark) htmlEl.classList.add('dark');
     }
   };
 

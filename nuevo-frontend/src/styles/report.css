@@ -1415,83 +1415,59 @@
 .dark .skill-bar-score { color: #9ca3af; }
 
 /* =====================================================
-   PDF EXPORT — forzar modo claro solo al generar PDF
+   PDF EXPORT — preservar colores de marca, forzar
+   fondo blanco y revertir solo estilos dark-mode
    ===================================================== */
- .pdf-light-export {
-    background: #ffffff !important;
-    color: #111827 !important;
-  }
-  
-  .pdf-light-export * {
-    color: #111827 !important;
-  }
-  
-  .pdf-light-export .personal-data-item,
-  .pdf-light-export .cv-score-item,
-  .pdf-light-export .role-card {
-    background: #ffffff !important;
-    border-color: #e5e7eb !important;
-  }
-  
-  .pdf-light-export .personal-data-label,
-  .pdf-light-export .cv-score-label,
-  .pdf-light-export .role-card-meta,
-  .pdf-light-export .role-card-reason,
-  .pdf-light-export .skill-bar-score {
-    color: #6b7280 !important;
-  }
-  
-  .pdf-light-export .personal-data-value,
-  .pdf-light-export .role-card-name,
-  .pdf-light-export .skill-bar-label {
-    color: #1f2937 !important;
-  }
-  
-  .pdf-light-export .skill-bar-track {
-    background: #e5e7eb !important;
-  }
-  
-  .pdf-light-export .plan-phase.short {
-    background: #ECFDF5 !important;
-    border-color: #6EE7B7 !important;
-  }
-  
-  .pdf-light-export .plan-phase.medium {
-    background: #EFF6FF !important;
-    border-color: #93C5FD !important;
-  }
-  
-  .pdf-light-export .plan-phase.long {
-    background: #F5F3FF !important;
-    border-color: #C4B5FD !important;
-  }
-  
-  .pdf-light-export .plan-phase-list li {
-    color: #374151 !important;
-  }
-  
-  .pdf-light-export .final-message-box {
-    background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
-    border-color: #bbf7d0 !important;
-  }
-  
-  .pdf-light-export .final-message-box p {
-    color: #1f2937 !important;
-  }
-  
-  .pdf-light-export .bg-gray-800,
-  .pdf-light-export .bg-gray-900,
-  .pdf-light-export .bg-slate-800,
-  .pdf-light-export .bg-slate-900,
-  .pdf-light-export .bg-\[\#1e293b\],
-  .pdf-light-export .bg-\[\#0f172a\] {
-    background: #ffffff !important;
-  }
-  
-  .pdf-light-export .text-white,
-  .pdf-light-export .text-gray-100,
-  .pdf-light-export .text-gray-200,
-  .pdf-light-export .text-slate-100,
-  .pdf-light-export .text-slate-200 {
-    color: #111827 !important;
-  }
+
+/* Fondo blanco en el contenedor raíz */
+.pdf-light-export {
+  background: #ffffff !important;
+}
+
+/* Revertir únicamente los fondos oscuros del dark mode;
+   NO tocar text colors para preservar azules, verdes, etc. */
+.pdf-light-export .dark\:bg-gray-800,
+.pdf-light-export .dark\:bg-gray-900,
+.pdf-light-export .dark\:bg-slate-800,
+.pdf-light-export .bg-gray-800,
+.pdf-light-export .bg-gray-900,
+.pdf-light-export .bg-slate-800,
+.pdf-light-export .bg-slate-900,
+.pdf-light-export .bg-\[\#1e293b\],
+.pdf-light-export .bg-\[\#0f172a\] {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+/* Texto blanco sobre fondo oscuro → fondo se volvió blanco,
+   así que cambiamos el texto a oscuro */
+.pdf-light-export .bg-gray-800 *,
+.pdf-light-export .bg-gray-900 *,
+.pdf-light-export .bg-slate-800 *,
+.pdf-light-export .bg-slate-900 * {
+  color: #111827 !important;
+}
+
+/* Skill bar track */
+.pdf-light-export .skill-bar-track {
+  background: #e5e7eb !important;
+}
+
+/* Cards con fondo transparente/oscuro */
+.pdf-light-export .personal-data-item,
+.pdf-light-export .cv-score-item,
+.pdf-light-export .role-card {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Plan de acción — mantener colores de fondo pastel */
+.pdf-light-export .plan-phase.short  { background: #ECFDF5 !important; border-color: #6EE7B7 !important; }
+.pdf-light-export .plan-phase.medium { background: #EFF6FF !important; border-color: #93C5FD !important; }
+.pdf-light-export .plan-phase.long   { background: #F5F3FF !important; border-color: #C4B5FD !important; }
+
+/* Mensaje final — mantener degradado verde */
+.pdf-light-export .final-message-box {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  border-color: #bbf7d0 !important;
+}
