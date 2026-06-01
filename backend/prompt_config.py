@@ -31,7 +31,8 @@ class PromptConfig:
         """
         
         # 1. Preparar datos del Candidato y Preferencias
-        full_name = candidate_data.get("fullName", "Candidato")
+        raw_name = candidate_data.get("fullName", "")
+        full_name = raw_name if raw_name and raw_name not in ("Candidato", "Usuario") else ""
         
         # Preferencias obligatorias
         prefs = job_preferences_data or {}
@@ -107,39 +108,45 @@ class PromptConfig:
         """
 
         # Prompt Maestro
+        nombre_placeholder = (
+            "<NOMBRE COMPLETO DEL CANDIDATO - EXTRAER DEL CV ADJUNTO>"
+            if is_multimodal else (full_name or "<Nombre del candidato>")
+        )
+        candidato_label = nombre_placeholder if is_multimodal else (full_name or "el candidato")
+
         prompt = f"""
         # ROL: ORIENTADOR LABORAL EXPERTO (IA)
         Analiza el perfil del candidato para generar un informe de empleabilidad estratégica.
-        
+
         ## INPUTS
-        **CANDIDATO:** {full_name}
+        **CANDIDATO:** {candidato_label}
         **PREFERENCIA ROL:** {pref_role}
         **PREFERENCIA SECTOR:** {pref_sector}
         **MODALIDAD:** {pref_modality}
-        
+
         **RESULTADOS SOFT SKILLS (JUEGOS):**
         {soft_skills_text}
-        
+
         {cv_context_block}
-        
+
         **TEXTO RAW COMPLETO (Contexto Visual):**
         {str(full_raw_text)[:6000]}
-        
+
         ---
-        
+
         ## INSTRUCCIONES DE RAZONAMIENTO
         1. {cross_validation_instruction}
         2. {preference_instruction}
         3. **Estilo:** Profesional, motivador, empático pero realista. Idioma: Español (España).
-        
+
         ---
-        
+
         ## FORMATO DE SALIDA (JSON ESTRICTO)
         Debes devolver UNICAMENTE un objeto JSON que valide contra este esquema exacto (15 secciones).
         Si falta información, usa "No consta" o arrays vacíos, NO cortes el JSON.
-        
+
         {{
-          "datos_personales": {{ "nombre": "{full_name}", "ubicacion": "...", "contacto": "...", "discapacidad": "..." }},
+          "datos_personales": {{ "nombre": "{nombre_placeholder}", "email": "<email del CV o No consta>", "telefono": "<teléfono del CV o No consta>", "ubicacion": "<ciudad/país del CV>", "discapacidad": "No consta" }},
           "resumen_ejecutivo": "Texto narrativo potente (5-6 líneas). Resume quién es, sus soft skills clave, su viabilidad para el rol deseado ({pref_role}) y su valor diferencial.",
           "resumen_cv": "Resumen técnico de su trayectoria, formación y herramientas detectadas.",
           "analisis_foda": {{

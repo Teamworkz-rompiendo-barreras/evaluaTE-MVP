@@ -77,7 +77,86 @@ elif genai:
     genai.configure(api_key=GOOGLE_API_KEY)
 
 APP_TITLE = os.getenv("APP_TITLE", "EvaluaTE Backend")
-APP_VERSION = "2.1.0 - FormData Fix"
+APP_VERSION = "2.2.0 - New Report Format"
+
+
+def _map_gemini_to_new_format(raw: dict, soft_skills: list, completed_games: list) -> dict:
+    """Convierte el JSON en español que devuelve Gemini al formato NewReportSchema que espera el frontend."""
+    dp = raw.get("datos_personales") or {}
+    foda = raw.get("analisis_foda") or {}
+    plan = raw.get("plan_accion") or {}
+    kit = raw.get("kit_busqueda") or {}
+    roles = raw.get("roles_sugeridos") or []
+    frases = kit.get("frases_linkedin") or {}
+    pasos = plan.get("pasos") or []
+
+    name = str(dp.get("nombre") or "")
+    if not name or name in ("Candidato", "Usuario", "<NOMBRE>"):
+        name = "Usuario"
+
+    return {
+        "personal_data": {
+            "name": name,
+            "location": str(dp.get("ubicacion") or "No consta"),
+            "email": str(dp.get("email") or dp.get("contacto") or "No consta"),
+            "phone": str(dp.get("telefono") or "No especificado"),
+            "disability_certificate": str(dp.get("discapacidad") or ""),
+        },
+        "profile_summary": str(raw.get("resumen_ejecutivo") or ""),
+        "summary": str(raw.get("resumen_ejecutivo") or ""),
+        "cv_analysis_summary": str(raw.get("analisis_detallado_cv") or raw.get("resumen_cv") or ""),
+        "cv_details": {"experience": [], "education": [], "languages": [], "tools": []},
+        "strengths": list(foda.get("fortalezas_clave") or []),
+        "soft_skills": soft_skills,
+        "improvement_areas": [
+            {"area": str(a), "reason": "", "suggested_action": ""}
+            for a in (foda.get("areas_mejora") or [])
+            if a
+        ],
+        "cv_analysis": {
+            "structure_score": 0, "coherence_score": 0, "key_info_score": 0,
+            "clarity_score": 0, "style_score": 0,
+            "evidence": {"structure": "", "coherence": "", "key_info": "", "clarity": "", "style": ""},
+            "corrections": [], "reordering_suggestions": [],
+        },
+        "ideal_work_environment": ", ".join(str(e) for e in (raw.get("entornos_ideales") or [])),
+        "suggested_roles": [
+            {
+                "role": str(r.get("rol") or ""),
+                "reason": str(r.get("justificacion") or r.get("ajuste") or ""),
+                "seniority": "",
+                "remote_viable": False,
+            }
+            for r in roles if isinstance(r, dict)
+        ],
+        "action_plan": {
+            "short_term": pasos[:2],
+            "medium_term": pasos[2:4] if len(pasos) > 2 else [],
+            "long_term": pasos[4:] if len(pasos) > 4 else [],
+        },
+        "job_search_advice": {
+            "cv_optimization": [],
+            "letters_portfolio": [],
+            "recommended_platforms": list(plan.get("herramientas") or []),
+            "networking": [],
+            "interview_tips": [],
+        },
+        "useful_tools": {
+            "productivity": list(plan.get("herramientas") or []),
+            "job_search": [],
+            "learning": list(plan.get("lecturas") or []),
+            "accessibility": [],
+        },
+        "ready_phrases": {
+            "headline": str(frases.get("titular") or ""),
+            "about_me": str(frases.get("acerca_de") or ""),
+            "short_message": str(kit.get("mensaje_reclutador") or ""),
+        },
+        "employability_score": 0,
+        "completed_games": [str(g) for g in completed_games],
+        "final_message": str(raw.get("mensaje_final_azul") or raw.get("capitalizar_fortalezas") or ""),
+        "job_preferences": {},
+    }
 
 app = FastAPI(title=APP_TITLE, version=APP_VERSION)
 
@@ -275,7 +354,8 @@ async def analyze_computational_profile(
             except Exception as db_err:
                 logger.error(f"Error saving to Supabase: {db_err}")
 
-        return analysis_result
+        new_format = _map_gemini_to_new_format(analysis_result, soft_skills_data, completed_games_list)
+        return new_format
 
     except Exception as e:
         logger.exception("Error en /api/analyze")
