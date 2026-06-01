@@ -3,6 +3,9 @@ import logging
 import os
 import time
 from typing import Any, Dict, List, Optional
+from cv_analyzer import extract_text_from_pdf_bytes
+
+
 
 try:
     import google.generativeai as genai  # type: ignore
@@ -146,10 +149,17 @@ async def analyze_computational_profile(
 
         # 2. Leer y gestionar archivo PDF
         pdf_bytes = None
+        cv_text = ""
+
         if cv_file:
             pdf_bytes = await cv_file.read()
+
             logger.info("CV recibido:", cv_file.filename)
             logger.info("Tamaño del archivo:", len(pdf_bytes))
+
+            cv_text = extract_text_from_pdf_bytes(pdf_bytes)
+            logger.info(f"texto extraido del cv: {cv_text[:500]}")
+
             # A. Subir CV a Supabase (Backup)
             if pdf_bytes and supabase_client and user_id:
                 try:
@@ -212,8 +222,11 @@ async def analyze_computational_profile(
                 level=level,
                 completed_games=completed_games_list,
                 languages_data=[],
-                is_multimodal=True
+                full_raw_text=cv_text,
+                is_multimodal=False
             )
+
+
             analysis_result = await analyze_multimodal_report(pdf_bytes, prompt)
             
             if "error" in analysis_result:
