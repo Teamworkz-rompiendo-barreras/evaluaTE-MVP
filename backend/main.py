@@ -118,7 +118,15 @@ async def analyze_computational_profile(
     cv_file: Optional[UploadFile] = File(None),
     game_results: str = Form("{}"),
     preferences: str = Form("{}"),
+
 ):
+    print("usa api/analyze")
+
+    if cv_file:
+        print("cv recibido: ", cv_file.filename)
+    else: 
+        print("no recibido cv")
+
     """
     Endpoint principal para generar el informe de empleabilidad.
     Acepta FormData (game_results, preferences, cv_file).
@@ -140,6 +148,8 @@ async def analyze_computational_profile(
         pdf_bytes = None
         if cv_file:
             pdf_bytes = await cv_file.read()
+            logger.info("CV recibido:", cv_file.filename)
+            logger.info("Tamaño del archivo:", len(pdf_bytes))
             # A. Subir CV a Supabase (Backup)
             if pdf_bytes and supabase_client and user_id:
                 try:
