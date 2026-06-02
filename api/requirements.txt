@@ -6,4 +6,3 @@ python-dotenv==1.0.0
 python-multipart==0.0.20
 mangum
 requests
-reportlab>=4.0.0
