@@ -3,9 +3,6 @@ import logging
 import os
 import time
 from typing import Any, Dict, List, Optional
-from cv_analyzer import extract_text_from_pdf_bytes
-
-
 
 try:
     import google.generativeai as genai  # type: ignore

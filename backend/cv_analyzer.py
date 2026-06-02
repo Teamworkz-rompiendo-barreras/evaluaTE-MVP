@@ -14,7 +14,6 @@ import os
 import logging
 import json
 import tempfile
-import pdfplumber
 import time
 from typing import Dict, Any, Optional
 
