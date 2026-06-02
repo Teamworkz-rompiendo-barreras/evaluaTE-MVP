@@ -324,7 +324,7 @@ async def analyze_computational_profile(
                 is_multimodal=False
             )
             
-            model = genai.GenerativeModel("gemini-1.5-flash")
+            model = genai.GenerativeModel("gemini-flash-latest")
             response = await model.generate_content_async(
                 prompt, 
                 generation_config=genai.types.GenerationConfig(response_mime_type="application/json")

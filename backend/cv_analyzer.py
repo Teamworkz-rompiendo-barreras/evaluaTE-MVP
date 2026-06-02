@@ -192,7 +192,7 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
         """
 
         # 4. Generar contenido
-        model_name = "gemini-1.5-flash"
+        model_name = "gemini-flash-latest"
         model = genai.GenerativeModel(
             model_name=model_name,
             system_instruction=system_instruction
@@ -256,7 +256,7 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dic
 
     try:
         model = genai.GenerativeModel(
-            model_name="gemini-1.5-flash",
+            model_name="gemini-flash-latest",
             system_instruction="Eres un experto orientador laboral. Analiza el CV visualmente y genera el informe JSON estricto."
         )
         generation_config = genai.types.GenerationConfig(
