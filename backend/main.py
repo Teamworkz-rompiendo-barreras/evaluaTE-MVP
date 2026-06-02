@@ -234,13 +234,6 @@ async def analyze_computational_profile(
     preferences: str = Form("{}"),
 
 ):
-    print("usa api/analyze")
-
-    if cv_file:
-        print("cv recibido: ", cv_file.filename)
-    else: 
-        print("no recibido cv")
-
     """
     Endpoint principal para generar el informe de empleabilidad.
     Acepta FormData (game_results, preferences, cv_file).

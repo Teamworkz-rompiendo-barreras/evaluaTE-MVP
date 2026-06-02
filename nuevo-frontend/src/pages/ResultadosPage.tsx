@@ -355,16 +355,9 @@ const ResultadosPage: React.FC = () => {
       setLoadingIa(true);
       setErrorIa('');
 
-      // DEBUG: Agregar logs para entender el estado
-      console.log('🔍 DEBUG - Estado personal completo:', personal);
-      console.log('🔍 DEBUG - cvAnalysis del estado:', personal?.cvAnalysis);
-      console.log('🔍 DEBUG - cvFile del estado:', personal?.cvFile);
-      console.log('🔍 DEBUG - report del estado:', personal?.report);
-
       // Asegurar análisis del CV si existe un archivo subido pero no hay análisis
       if (personal?.cvFile && !personal?.cvAnalysis) {
         try {
-          console.log('🔍 DEBUG - Hay CV pero no análisis útil. Lanzando análisis automático...');
           const dataUrl = personal.cvFile.fileContent;
           const respBlob = await fetch(dataUrl);
           const blob = await respBlob.blob();
@@ -381,14 +374,11 @@ const ResultadosPage: React.FC = () => {
             const analysis = await analyzeRes.json();
             cvAnalysisPayload = analysis;
             dispatch(saveCvAnalysis(analysis));
-            console.log('✅ DEBUG - Análisis de CV guardado desde ResultadosPage');
             // Esperar a que Redux se actualice antes de continuar
             await new Promise(resolve => setTimeout(resolve, 120));
-          } else {
-            console.warn('⚠️ DEBUG - analyze-cv falló:', analyzeRes.status, analyzeRes.statusText);
           }
-        } catch (e) {
-          console.warn('⚠️ DEBUG - Error analizando CV automáticamente:', e);
+        } catch {
+          // Error silencioso — el informe se genera igualmente sin datos de CV pre-análisis
         }
       }
 
@@ -407,11 +397,6 @@ const ResultadosPage: React.FC = () => {
           String(cvName || '').trim() ||
           'Usuario';
         const validSoftSkills = validSoftSkillsPre;
-
-        // DEBUG: Log del requestBody antes de enviarlo
-        console.log('🔍 DEBUG - userFullName:', userFullName);
-        console.log('🔍 DEBUG - validSoftSkills:', validSoftSkills);
-        console.log('🔍 DEBUG - cvAnalysis antes del request:', cvAnalysis);
 
         // Si no hay softSkills, proporcionar datos básicos para que el informe se genere
         const normalizeLevel = (value: unknown): 'bajo' | 'medio' | 'alto' => {
@@ -614,14 +599,12 @@ const ResultadosPage: React.FC = () => {
             const res = await fetch(personal.cvFile.fileContent);
             const blob = await res.blob();
             formData.append("cv_file", blob, personal.cvFile.fileName || "cv.pdf");
-            console.log('📄 DEBUG - CV File appended to FormData');
-          } catch (e) {
-            console.warn('⚠️ DEBUG - Failed to process CV file for upload:', e);
+          } catch {
+            // CV file processing failed — report will be generated without CV
           }
         }
 
         const primaryUrl = buildApiUrl(API_CONFIG.ENDPOINTS.IA_REPORT);
-        console.log('🚀 DEBUG - Sending request to:', primaryUrl);
 
         // Prepare headers
         const headers: HeadersInit = {};
@@ -970,7 +953,6 @@ const ResultadosPage: React.FC = () => {
 
           const essentialFilled = normalized.summary && normalized.profile_summary && normalized.personal_data;
           if (!essentialFilled) {
-            console.warn('⚠️ Respuesta del backend con campos esenciales vacíos', normalized);
             setErrorIa('El informe recibido está incompleto. Intenta nuevamente.');
             setFinalPhrase('');
             return;
@@ -1226,6 +1208,8 @@ const reportRef = useRef<HTMLDivElement>(null);
           // Force color rendering — prevents greyscale conversion
           removeContainer: true,
         },
+        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+        // @ts-ignore — html2pdf types don't include compress
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: false },
       }).from(element).save();
     } finally {
