@@ -54,6 +54,7 @@ function DarkZoomWidget() {
     try { return Number(localStorage.getItem('ui-zoom') || 100); } catch { return 100 }
   });
   const [zoomOpen, setZoomOpen] = React.useState(false);
+  const [browserScale, setBrowserScale] = React.useState(1);
 
   React.useEffect(() => {
     try { localStorage.setItem('prefers-dark', dark ? '1' : '0'); } catch { /* ignore */ }
@@ -66,10 +67,28 @@ function DarkZoomWidget() {
     document.documentElement.style.fontSize = `${Math.max(80, Math.min(160, zoom))}%`;
   }, [zoom]);
 
+  React.useEffect(() => {
+    const baseDpr = window.devicePixelRatio || 1;
+  
+    const updateBrowserScale = () => {
+      const currentDpr = window.devicePixelRatio || 1;
+      const scale = baseDpr / currentDpr;
+      setBrowserScale(Math.min(1, scale));
+    };
+  
+    updateBrowserScale();
+  
+    window.addEventListener('resize', updateBrowserScale);
+  
+    return () => {
+      window.removeEventListener('resize', updateBrowserScale);
+    };
+  }, []);
+
   const S = {
-    wrap: { position: 'fixed', bottom: 16, right: 16, zIndex: 50, display: 'flex', alignItems: 'center', gap: 8, fontSize: 16 } as React.CSSProperties,
+    wrap: { position: 'fixed', bottom: 10, right: 10, zIndex: 50, display: 'flex', flexDirection: 'column', alignItems: 'flex-end', gap: 6, fontSize: 12, transform: `scale(${browserScale})`, transformOrigin: 'bottom right' } as React.CSSProperties,
     btn: (bg: string, border: string, color: string): React.CSSProperties => ({
-      width: 36, height: 36, borderRadius: '50%', background: bg, border: `1px solid ${border}`,
+      width: 30, height: 30, borderRadius: '50%', background: bg, border: `1px solid ${border}`,
       boxShadow: '0 1px 4px rgba(0,0,0,.15)', display: 'flex', alignItems: 'center',
       justifyContent: 'center', cursor: 'pointer', color, flexShrink: 0,
     }),
