@@ -307,29 +307,3 @@ def analyze_cv_structure_ai(cv_data: Dict[str, Any]) -> Dict[str, Any]:
         "observations": ["Análisis realizado mediante Ingesta Nativa Gemini"]
     }
 
-# Nueva función para extraer texto del PDF
-def extract_text_from_pdf_bytes(pdf_bytes: bytes) -> str:
-    """
-    Extrae texto de un PDF recibido en bytes.
-    Primero lo guarda temporalmente y luego usa pdfplumber para leer el texto.
-    """
-    temp_path = None
-
-    try:
-        with tempfile.NamedTemporaryFile(delete=False, suffix=".pdf") as tmp:
-            tmp.write(pdf_bytes)
-            temp_path = tmp.name
-
-        text = ""
-
-        with pdfplumber.open(temp_path) as pdf:
-            for page in pdf.pages:
-                page_text = page.extract_text()
-                if page_text:
-                    text += page_text + "\n"
-
-        return text.strip()
-
-    finally:
-        if temp_path and os.path.exists(temp_path):
-            os.remove(temp_path)

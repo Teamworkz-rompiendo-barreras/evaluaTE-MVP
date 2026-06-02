@@ -91,6 +91,41 @@ def _map_gemini_to_new_format(raw: dict, soft_skills: list, completed_games: lis
     if not name or name in ("Candidato", "Usuario", "<NOMBRE>"):
         name = "Usuario"
 
+    def _exp_item(e: dict) -> dict:
+        return {
+            "title": str(e.get("rol") or e.get("title") or ""),
+            "subtitle": str(e.get("empresa") or e.get("company") or ""),
+            "period": str(e.get("periodo") or e.get("period") or ""),
+            "detail": str(e.get("descripcion") or e.get("description") or ""),
+        }
+
+    def _edu_item(e: dict) -> dict:
+        return {
+            "title": str(e.get("titulo") or e.get("title") or e.get("degree") or ""),
+            "subtitle": str(e.get("institucion") or e.get("institution") or ""),
+            "period": str(e.get("periodo") or e.get("period") or ""),
+        }
+
+    def _lang_item(e: dict) -> dict:
+        return {
+            "title": str(e.get("idioma") or e.get("language") or e.get("name") or ""),
+            "level": str(e.get("nivel") or e.get("level") or ""),
+        }
+
+    def _tool_item(h) -> dict:
+        if isinstance(h, str):
+            return {"title": h}
+        if isinstance(h, dict):
+            return {"title": str(h.get("herramienta") or h.get("skill") or h.get("name") or "")}
+        return {"title": str(h)}
+
+    cv_details = {
+        "experience": [_exp_item(e) for e in (raw.get("experiencia") or []) if isinstance(e, dict) and (e.get("rol") or e.get("empresa"))],
+        "education": [_edu_item(e) for e in (raw.get("educacion") or []) if isinstance(e, dict) and (e.get("titulo") or e.get("institucion"))],
+        "languages": [_lang_item(e) for e in (raw.get("idiomas") or []) if isinstance(e, dict) and (e.get("idioma") or e.get("language"))],
+        "tools": [_tool_item(h) for h in (raw.get("habilidades") or []) if h],
+    }
+
     return {
         "personal_data": {
             "name": name,
@@ -102,7 +137,7 @@ def _map_gemini_to_new_format(raw: dict, soft_skills: list, completed_games: lis
         "profile_summary": str(raw.get("resumen_ejecutivo") or ""),
         "summary": str(raw.get("resumen_ejecutivo") or ""),
         "cv_analysis_summary": str(raw.get("analisis_detallado_cv") or raw.get("resumen_cv") or ""),
-        "cv_details": {"experience": [], "education": [], "languages": [], "tools": []},
+        "cv_details": cv_details,
         "strengths": list(foda.get("fortalezas_clave") or []),
         "soft_skills": soft_skills,
         "improvement_areas": [
@@ -225,16 +260,9 @@ async def analyze_computational_profile(
 
         # 2. Leer y gestionar archivo PDF
         pdf_bytes = None
-        cv_text = ""
 
         if cv_file:
             pdf_bytes = await cv_file.read()
-
-            logger.info("CV recibido:", cv_file.filename)
-            logger.info("Tamaño del archivo:", len(pdf_bytes))
-
-            cv_text = extract_text_from_pdf_bytes(pdf_bytes)
-            logger.info(f"texto extraido del cv: {cv_text[:500]}")
 
             # A. Subir CV a Supabase (Backup)
             if pdf_bytes and supabase_client and user_id:
@@ -298,7 +326,7 @@ async def analyze_computational_profile(
                 level=level,
                 completed_games=completed_games_list,
                 languages_data=[],
-                full_raw_text=cv_text,
+                full_raw_text="",
                 is_multimodal=False
             )
 

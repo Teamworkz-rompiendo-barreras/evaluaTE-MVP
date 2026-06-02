@@ -147,6 +147,16 @@ class PromptConfig:
 
         {{
           "datos_personales": {{ "nombre": "{nombre_placeholder}", "email": "<email del CV o No consta>", "telefono": "<teléfono del CV o No consta>", "ubicacion": "<ciudad/país del CV>", "discapacidad": "No consta" }},
+          "experiencia": [
+            {{ "rol": "<cargo>", "empresa": "<empresa>", "periodo": "<fecha inicio - fecha fin>", "descripcion": "<logros principales en 1 línea>" }}
+          ],
+          "educacion": [
+            {{ "titulo": "<titulación>", "institucion": "<centro>", "periodo": "<años>" }}
+          ],
+          "idiomas": [
+            {{ "idioma": "<nombre>", "nivel": "<nivel certificado o estimado>" }}
+          ],
+          "habilidades": ["<herramienta o tecnología 1>", "<herramienta 2>"],
           "resumen_ejecutivo": "Texto narrativo potente (5-6 líneas). Resume quién es, sus soft skills clave, su viabilidad para el rol deseado ({pref_role}) y su valor diferencial.",
           "resumen_cv": "Resumen técnico de su trayectoria, formación y herramientas detectadas.",
           "analisis_foda": {{
