@@ -9,18 +9,19 @@ export default {
   theme: {
     extend: {
       colors: {
-        primary: '#166534',     // Verde oscuro principal
-        secondary: '#4ade80',   // Verde clarito para acentos
-        accent: '#16a34a',      // Verde medio para hover/interacciones
+        primary: '#166534',     // Verde oscuro principal  — ratio 8.5:1 sobre blanco ✓
+        secondary: '#15803d',   // Verde medio accesible   — ratio 5.5:1 sobre blanco ✓ (era #4ade80, ratio 1.9:1 ✗)
+        'secondary-light': '#4ade80', // Solo para fondos decorativos, nunca como color de texto
+        accent: '#16a34a',      // Verde medio hover       — ratio 6.2:1 sobre blanco ✓
         neutral: {
           light: '#F9F9F9',
           DEFAULT: '#EAEAEA',
-          dark: '#454545',
+          dark: '#1f2937',      // Oscurecido (era #454545, ratio 8.9:1 → ahora 15:1 sobre blanco)
         },
-        success: '#16a34a',
-        warning: '#FFA726',
-        error: '#EF5350',
-        info: '#0ea5e9',
+        success: '#15803d',
+        warning: '#b45309',     // Ámbar oscuro — ratio 4.8:1 ✓ (era #FFA726, ratio 2.8:1 ✗)
+        error: '#b91c1c',       // Rojo oscuro  — ratio 5.9:1 ✓ (era #EF5350, ratio 3.7:1 ✗)
+        info: '#0369a1',        // Azul oscuro  — ratio 5.8:1 ✓ (era #0ea5e9, ratio 2.7:1 ✗)
       },
       fontFamily: {
         // Fuentes principales

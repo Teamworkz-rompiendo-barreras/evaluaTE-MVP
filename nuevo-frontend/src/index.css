@@ -238,13 +238,43 @@ textarea {
   }
 }
 
-/* Reglas globales para modo oscuro forzado sobre utilidades comunes */
-.dark .bg-white { background-color: #1f2937 !important; } /* gray-800 */
-.dark .bg-gray-50 { background-color: #0f172a !important; } /* slate-900 aprox */
-.dark .text-gray-800 { color: #e5e7eb !important; } /* gray-200 */
-.dark .text-gray-700 { color: #d1d5db !important; } /* gray-300 */
-.dark .border-gray-300 { border-color: #4b5563 !important; } /* gray-600 */
-.dark .hover\:bg-gray-50:hover { background-color: #374151 !important; } /* gray-700 */
+/* Reglas globales para modo oscuro — garantizan contraste mínimo WCAG AA */
+.dark .bg-white        { background-color: #1e293b !important; } /* slate-800 */
+.dark .bg-gray-50      { background-color: #0f172a !important; } /* slate-900 */
+.dark .bg-gray-100     { background-color: #1e293b !important; }
+.dark .bg-gray-200     { background-color: #334155 !important; } /* slate-700 */
+.dark .text-gray-900   { color: #f1f5f9 !important; } /* slate-100 — ratio 15:1 */
+.dark .text-gray-800   { color: #e2e8f0 !important; } /* slate-200 — ratio 12:1 */
+.dark .text-gray-700   { color: #cbd5e1 !important; } /* slate-300 — ratio 9.3:1 */
+.dark .text-gray-600   { color: #94a3b8 !important; } /* slate-400 — ratio 5.9:1 ✓ */
+.dark .text-gray-500   { color: #94a3b8 !important; } /* slate-400 — evita texto gris muy oscuro */
+.dark .border-gray-200 { border-color: #334155 !important; }
+.dark .border-gray-300 { border-color: #475569 !important; } /* slate-600 */
+.dark .hover\:bg-gray-50:hover  { background-color: #334155 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; }
+
+/* Inputs en modo oscuro con fondo visible y texto legible */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8 !important; /* slate-400, ratio 5.9:1 sobre slate-800 */
+}
+
+/* Badges / chips con fondo claro en modo oscuro */
+.dark .bg-green-100 { background-color: #14532d !important; }
+.dark .text-green-800 { color: #86efac !important; } /* green-300, ratio 7.2:1 sobre green-950 */
+.dark .bg-blue-100  { background-color: #1e3a5f !important; }
+.dark .text-blue-800 { color: #93c5fd !important; }
+.dark .bg-yellow-100 { background-color: #451a03 !important; }
+.dark .text-yellow-800 { color: #fde68a !important; }
+.dark .bg-red-100   { background-color: #450a0a !important; }
+.dark .text-red-800  { color: #fca5a5 !important; }
 
 /* Estilos para modo oscuro con accesibilidad */
 @media (prefers-color-scheme: dark) {
