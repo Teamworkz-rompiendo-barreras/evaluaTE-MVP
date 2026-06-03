@@ -1404,8 +1404,8 @@
 .dark .plan-phase-list li { color: #e5e7eb; }
 
 .dark .final-message-box {
-  background: linear-gradient(135deg, #14532d 0%, #064e3b 100%);
-  border-color: #15803d;
+  background: linear-gradient(135deg, #F2D680 0%, #f3d475 100%);
+  border-color: #FFE7A1;
 }
 
 .dark .final-message-box p { color: #e5e7eb; }
