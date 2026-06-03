@@ -1695,6 +1695,11 @@ const reportRef = useRef<HTMLDivElement>(null);
   }, []);
   const radarLabelColor = isDarkMode ? '#FFFFFF' : '#374151';
 
+  const radarMainColor = isDarkMode ? '#F2D680' : '#374BA6';
+  const radarBorderColor = isDarkMode ? '#F2D680' : '#374BA6';
+  const radarGridColor = isDarkMode ? 'rgba(242, 214, 128, 0.35)' : 'rgba(55, 75, 166, 0.25)';
+
+
   const hasAnyRadarValue = useMemo(() => {
     return Array.isArray(radarData) && radarData.some((item: any) => Number(item?.score) > 0);
   }, [radarData]);
@@ -1718,25 +1723,25 @@ const reportRef = useRef<HTMLDivElement>(null);
                   theme={{
                     // Asegurar legibilidad de etiquetas en ambos modos
                     text: { fill: radarLabelColor, fontSize: 12 },
-                    grid: { line: { stroke: '#6B7280', strokeWidth: 1 } },
+                    grid: { line: { stroke: radarGridColor, strokeWidth: 1 } },
                     axis: {
                       ticks: { text: { fill: radarLabelColor, fontSize: 12 } },
-                      domain: { line: { stroke: '#9CA3AF' } },
+                      domain: { line: { stroke: radarGridColor } },
                       legend: { text: { fill: radarLabelColor, fontSize: 12 } },
                     },
                     // Etiquetas del radar (nombres de habilidades)
                     labels: { text: { fill: radarLabelColor, fontSize: 12 } },
                     // Leyendas, en caso de usarse en el futuro
                     legends: { text: { fill: radarLabelColor, fontSize: 12 } },
-                    crosshair: { line: { stroke: '#F3F4F6' } },
+                    crosshair: { line: { stroke: radarGridColor } },
                   }}
-                  borderColor="#166534"
+                  borderColor={radarBorderColor}
                   gridLabelOffset={32}
                   dotSize={12}
-                  dotColor="#166534"
+                  dotColor={radarMainColor}
                   dotBorderWidth={2}
-                  dotBorderColor={{ theme: 'background' }}
-                  colors={['#16a34a']}
+                  dotBorderColor={radarBorderColor}}
+                  colors={[radarMainColor]}
                   fillOpacity={0.35}
                   blendMode="multiply"
                   animate={true}
