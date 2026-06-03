@@ -156,7 +156,7 @@ export default function RadarChart({ userScores, averageScores }) {
         dotColor={{ theme: 'background' }}
         dotBorderWidth={2}
         dotBorderColor={{ from: 'color' }}
-        colors={{ scheme: 'nivo' }}
+        colors={[isDark ? '#F2D680' : '#374BA6 ']}
         fillOpacity={0.25}
         blendMode="multiply"
         animate={true}
