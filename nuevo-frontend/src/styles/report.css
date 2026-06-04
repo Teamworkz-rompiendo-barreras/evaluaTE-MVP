@@ -1086,27 +1086,27 @@
 .improvement-card {
   background: #FFF7ED;
   border: 1px solid #fed7aa;
-  border-left: 4px solid #F59E0B;
+  border-left: 4px solid #8095F2;
   border-radius: 0.5rem;
   padding: 0.875rem 1.125rem;
 }
 
 .improvement-area {
   font-weight: 700;
-  color: #92400E;
+  color: #552202;
   font-size: 0.95rem;
   margin-bottom: 0.25rem;
 }
 
 .improvement-reason {
-  color: #78350F;
+  color: #b07959;
   font-size: 0.875rem;
   margin-bottom: 0.375rem;
   line-height: 1.5;
 }
 
 .improvement-action {
-  color: #166534;
+  color: #000000;
   font-size: 0.85rem;
   font-weight: 600;
 }
