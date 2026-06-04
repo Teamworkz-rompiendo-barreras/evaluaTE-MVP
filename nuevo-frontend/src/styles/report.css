@@ -1415,12 +1415,14 @@
 .dark .plan-phase.medium { background: rgba(128, 149, 242, 0.18); border-color: #000000; }
 .dark .plan-phase.long   { background: rgba(128, 149, 242, 0.18); border-color: #000000; }
 .dark .plan-phase-list li { color: #e5e7eb; }
-.dark .final-message-box {
-  background: linear-gradient(135deg, #F0E8D1 0%, #F0E8D1 100%);
-  border-color: #FFE7A1;
-}
 
-.dark .final-message-box p { color: #e5e7eb; }
+
+.dark .final-message-box {
+  background: linear-gradient(135deg, #FFE7A1 0%, #F2D680 100%) !important;
+  border: 1px solid #EFD177 !important;
+  color: #0D1321 !important;
+}
+.dark .final-message-box p { color: #1f2937; }
 
 .dark .skill-bar-label { color: #d1d5db; }
 .dark .skill-bar-track { background: #374151; }
