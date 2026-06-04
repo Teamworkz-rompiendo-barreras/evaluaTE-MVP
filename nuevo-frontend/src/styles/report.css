@@ -1411,11 +1411,10 @@
 .dark .role-card-name { color: #f3f4f6; }
 .dark .role-card-meta { color: #9ca3af; }
 
-.dark .plan-phase.short  { background: #064e3b; border-color: #065f46; }
-.dark .plan-phase.medium { background: #14532d; border-color: #15803d; }
-.dark .plan-phase.long   { background: #3b0764; border-color: #6d28d9; }
+.dark .plan-phase.short  { background: #c298e0; border-color: #000000; }
+.dark .plan-phase.medium { background: #bc9dd2; border-color: #000000; }
+.dark .plan-phase.long   { background: #bba5cb; border-color: #000000; }
 .dark .plan-phase-list li { color: #e5e7eb; }
-
 .dark .final-message-box {
   background: linear-gradient(135deg, #F0E8D1 0%, #F0E8D1 100%);
   border-color: #FFE7A1;
