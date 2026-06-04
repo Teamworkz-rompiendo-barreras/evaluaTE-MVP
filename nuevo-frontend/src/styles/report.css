@@ -1363,7 +1363,7 @@
    ===================================================== */
 
 .dark .report-portada {
-  background: linear-gradient(145deg, #f5db8c  0%, #efd177  60%, #ebc961 100%);
+  background: linear-gradient(145deg, #f5db8c  0%, #efd177  60%, #dab33e 100%);
   box-shadow: 0 12px 40px efd177(55, 75, 166, 0.35);
 }
 
