@@ -1058,9 +1058,9 @@
 }
 
 .strength-tag {
-  background: #f0fdf4;
-  color: #166534;
-  border: 1px solid #bbf7d0;
+  background: #F0E8D1;
+  color: #374BA6;
+  border: 1px solid #8095F2;
   border-radius: 2rem;
   padding: 0.35rem 1rem;
   font-size: 0.85rem;
@@ -1068,6 +1068,11 @@
   line-height: 1.4;
 }
 
+.dark .strength-tag {
+  background: #1F2937;
+  color: #F2D680;
+  border-color: #EFD177;
+}
 /* =====================================================
    ÁREAS DE MEJORA — CARDS
    ===================================================== */
