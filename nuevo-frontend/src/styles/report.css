@@ -1362,6 +1362,11 @@
    DARK MODE — overrides para nuevas clases
    ===================================================== */
 
+.dark .report-portada {
+  background: linear-gradient(145deg, #FFE7A1  0%, #F2D680  60%, #efd177 100%);
+  box-shadow: 0 12px 40px efd177(55, 75, 166, 0.35);
+}
+
 .dark .strength-tag {
   background: #14532d;
   color: #93c5fd;
