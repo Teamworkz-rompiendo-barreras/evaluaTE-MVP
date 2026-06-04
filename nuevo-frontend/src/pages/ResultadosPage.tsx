@@ -1670,7 +1670,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           disabled={!iaReport}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${!iaReport
             ? 'bg-white/20 text-white/50 cursor-not-allowed'
-            : 'bg-white text-[#166534] hover:bg-green-50'
+            : 'bg-white text-[#374BA6] hover:bg-[#F0E8D1] dark:bg-[#0D1321] dark:text-[#F2D680] dark:hover:bg-[#1F2937]'
             }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
