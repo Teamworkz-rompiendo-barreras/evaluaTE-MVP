@@ -2642,7 +2642,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           <label className="block mb-1 text-gray-900 dark:text-white">¿Algún comentario o sugerencia?</label>
           <textarea className="w-full border rounded p-2 mb-2 bg-white text-gray-900 border-gray-300 dark:bg-transparent dark:text-white dark:border-gray-500" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({ ...f, comment: e.target.value }))} />
           {feedbackError && <p className="text-red-400 mb-2">{feedbackError}</p>}
-           <button type="submit" className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Enviar feedback</button>
+           <button type="submit" className="bg-[#374BA6] text-white px-4 py-2 rounded hover:bg-[#5063BA] focus:outline-none focus:ring-4 focus:ring-[#8095F2]">Enviar feedback</button>
         </form>
       </div>
     )}
