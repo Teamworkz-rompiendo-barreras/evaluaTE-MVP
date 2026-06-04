@@ -1069,9 +1069,9 @@
 }
 
 .dark .strength-tag {
-  background: #1F2937;
-  color: #F2D680;
-  border-color: #EFD177;
+  background: #1F2937 !important;
+  color: #F2D680 !important;
+  border-color: #EFD177 !important;
 }
 /* =====================================================
    ÁREAS DE MEJORA — CARDS
