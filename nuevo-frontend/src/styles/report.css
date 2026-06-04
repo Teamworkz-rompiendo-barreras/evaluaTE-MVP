@@ -975,7 +975,7 @@
 .report-section-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #166534;
+  color: #374BA6 ;
   margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
@@ -1367,6 +1367,9 @@
   box-shadow: 0 12px 40px efd177(55, 75, 166, 0.35);
 }
 
+.dark .report-section-title {
+  color: #e5bd45 ;
+}
 .dark .strength-tag {
   background: #14532d;
   color: #93c5fd;
