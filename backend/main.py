@@ -373,6 +373,57 @@ async def analyze_computational_profile(
                 logger.error(f"Error saving to Supabase: {db_err}")
 
         new_format = _map_gemini_to_new_format(analysis_result, soft_skills_data, completed_games_list)
+
+        # Compute real CV structure scores (1-5 stars) from AI analysis result
+        try:
+            from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            raw_ai = analysis_result or {}
+            dp = raw_ai.get("datos_personales") or {}
+
+            # Build a text proxy for heuristic scoring
+            text_parts = [
+                str(raw_ai.get("resumen_profesional") or ""),
+                str(dp.get("email") or ""),
+                str(dp.get("telefono") or ""),
+                str(dp.get("ubicacion") or ""),
+            ]
+            for exp in (raw_ai.get("experiencia") or []):
+                if isinstance(exp, dict):
+                    text_parts.extend(str(v) for v in exp.values() if v)
+            for edu in (raw_ai.get("educacion") or []):
+                if isinstance(edu, dict):
+                    text_parts.extend(str(v) for v in edu.values() if v)
+            for skill in (raw_ai.get("habilidades_detectadas") or []):
+                if isinstance(skill, dict):
+                    text_parts.append(str(skill.get("herramienta") or ""))
+
+            cv_text = " ".join(filter(None, text_parts))
+
+            # Build sections dict using keys expected by compute_review_from_text_sections
+            exp_items = raw_ai.get("experiencia") or []
+            cv_sections = {k: v for k, v in {
+                "experience": [" ".join(str(v) for v in e.values() if v) if isinstance(e, dict) else str(e) for e in exp_items],
+                "education": raw_ai.get("educacion"),
+                "languages": raw_ai.get("idiomas"),
+                "contact": dp if any(dp.get(k) for k in ("email", "telefono", "nombre")) else None,
+                "profile": raw_ai.get("resumen_profesional"),
+                "skills": raw_ai.get("habilidades_detectadas"),
+            }.items() if v}
+
+            review = compute_review_from_text_sections(cv_text, cv_sections)
+            cv_scores = review_to_ui_diagnostico(review)
+
+            # Normalise key name: spelling_style_score → style_score
+            if "spelling_style_score" in cv_scores and "style_score" not in cv_scores:
+                cv_scores["style_score"] = cv_scores.pop("spelling_style_score")
+
+            if isinstance(new_format.get("cv_analysis"), dict):
+                keep = ("structure_score", "coherence_score", "key_info_score", "clarity_score",
+                        "style_score", "evidence", "corrections", "reordering_suggestions")
+                new_format["cv_analysis"].update({k: cv_scores[k] for k in keep if k in cv_scores})
+        except Exception as cv_err:
+            logger.warning(f"CV structure scoring skipped: {cv_err}")
+
         return new_format
 
     except Exception as e:
