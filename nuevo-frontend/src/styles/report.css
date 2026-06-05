@@ -1375,6 +1375,38 @@
 .dark .report-section-title {
   color: #e5bd45 ;
 }
+
+.dark .report-portada-avatar {
+  background: rgba(13, 19, 33, 0.08);
+  color: #0D1321;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+}
+
+.dark .report-portada-title {
+  color:#0D1321 ;
+}
+
+.dark .report-portada-name {
+  color: #0D1321;
+}
+
+.dark .report-portada-date {
+  color:rgba(13, 19, 33, 0.75);
+}
+
+.dark .report-portada-score {
+  background: rgba(13, 19, 33, 0.08);
+  border: 1.5px solid rgba(13, 19, 33, 0.35);
+}
+
+.dark .report-portada-score-label {
+  color: rgba(13, 19, 33, 0.75);
+ }
+
+.dark .report-portada-score-value {
+  color: #0D1321;
+}
 .dark .strength-tag {
   background: #14532d;
   color: #93c5fd;
