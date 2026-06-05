@@ -2157,8 +2157,10 @@ const reportRef = useRef<HTMLDivElement>(null);
             {(data.improvement_areas || []).map((it, idx) => (
               <div key={idx} className="improvement-card">
                 <div className="improvement-area">⚡ {it.area}</div>
-                <div className="improvement-reason">{it.reason}</div>
-                <div className="improvement-action">→ Acción: {it.suggested_action}</div>
+                <div className="improvement-reason"> {String(it.reason || '').split('-> Acción:')[0]} </div>
+                {(it.suggested_action || String(it.reason || '').includes('-> Acción:')) && (
+                  <div className="improvement-action"> → Acción: {it.suggested_action || String(it.reason || '').split('-> Acción:')[1]} </div>
+                )}
               </div>
             ))}
           </div>
