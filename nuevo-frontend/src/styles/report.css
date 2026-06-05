@@ -1376,6 +1376,10 @@
   color: #e5bd45 ;
 }
 
+.dark .report-portada-logo {
+  filter: brightness(0) saturate(100);
+}
+
 .dark .report-portada-avatar {
   background: rgba(13, 19, 33, 0.08);
   border-color: rgba(13, 19, 33, 0.45);
