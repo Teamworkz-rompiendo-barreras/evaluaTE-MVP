@@ -1378,9 +1378,8 @@
 
 .dark .report-portada-avatar {
   background: rgba(13, 19, 33, 0.08);
+  border-color: rgba(13, 19, 33, 0.45);
   color: #0D1321;
-  letter-spacing: 0.05em;
-  margin-bottom: 1.5rem;
 }
 
 .dark .report-portada-title {
