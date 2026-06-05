@@ -173,6 +173,21 @@ const ResultadosPage: React.FC = () => {
   const fetchSignatureRef = useRef<string>('');
   const isFetchingRef = useRef<boolean>(false);
   const fetchIaReportRef = useRef<() => Promise<void> | null>(null);
+  const reportCacheKey = `evaluate_report_v1_${user?.id || 'anon'}`;
+
+  // Restore cached report immediately so the page isn't blank on refresh
+  useEffect(() => {
+    if (info) return;
+    try {
+      const cached = sessionStorage.getItem(reportCacheKey);
+      if (!cached) return;
+      const { data, ts, sig } = JSON.parse(cached) as { data: NewReportSchema; ts: number; sig: string };
+      if (Date.now() - ts > 4 * 60 * 60 * 1000) { sessionStorage.removeItem(reportCacheKey); return; }
+      setInfo(data);
+      if (sig && !fetchSignatureRef.current) fetchSignatureRef.current = sig;
+    } catch { /* ignore corrupt cache */ }
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [reportCacheKey]);
   const [finalPhrase, setFinalPhrase] = useState<string>('');
   const resolvedJobPreferences = useMemo(
     () =>
@@ -328,20 +343,23 @@ const ResultadosPage: React.FC = () => {
           hasDisabilityCert: personalHasPreferences ? resolvedJobPreferences.hasDisabilityCert : undefined,
         },
         completedGames: [...completedGamesForRequest].map(gameId => String(gameId)).sort(),
-        cv: cvAnalysisPayload
+        // Use only the user-uploaded CV analysis (personal.cvAnalysis) for the signature,
+        // NOT the merged cvAnalysis that includes data from the generated report.
+        // This prevents a re-fetch loop when setInfo populates info.cv_analysis.
+        cv: personal?.cvAnalysis
           ? {
             scores: [
-              Number(cvAnalysisPayload.structure_score) || 0,
-              Number(cvAnalysisPayload.coherence_score) || 0,
-              Number(cvAnalysisPayload.key_info_score) || 0,
-              Number(cvAnalysisPayload.clarity_score) || 0,
-              Number(cvAnalysisPayload.style_score) || 0,
+              Number(personal.cvAnalysis.structure_score) || 0,
+              Number(personal.cvAnalysis.coherence_score) || 0,
+              Number(personal.cvAnalysis.key_info_score) || 0,
+              Number(personal.cvAnalysis.clarity_score) || 0,
+              Number(personal.cvAnalysis.style_score) || 0,
             ],
-            experience: Array.isArray((cvAnalysisPayload as any).experience_detailed)
-              ? (cvAnalysisPayload as any).experience_detailed.length
+            experience: Array.isArray((personal.cvAnalysis as any).experience_detailed)
+              ? (personal.cvAnalysis as any).experience_detailed.length
               : 0,
-            education: Array.isArray((cvAnalysisPayload as any).education_detailed)
-              ? (cvAnalysisPayload as any).education_detailed.length
+            education: Array.isArray((personal.cvAnalysis as any).education_detailed)
+              ? (personal.cvAnalysis as any).education_detailed.length
               : 0,
           }
           : null,
@@ -584,6 +602,33 @@ const ResultadosPage: React.FC = () => {
         // Datos de contacto normalizados
         // (emailFromCv y phoneFromCv eliminados por no usarse)
         const completedGamesDetailed = completedGamesForRequest.map((g) => String(g)).filter(Boolean);
+
+        // Try loading an existing saved report before regenerating (saves 30s+ AI call)
+        // Skip if: user just uploaded a new CV (they want a fresh report)
+        const hasNewCvUpload = Boolean(personal?.cvFile);
+        if (user?.id && !hasNewCvUpload && !info) {
+          try {
+            const latestRes = await fetch(buildApiUrl(API_CONFIG.ENDPOINTS.REPORT_LATEST), {
+              headers: { 'X-User-Id': user.id },
+              signal: AbortSignal.timeout(8000),
+            });
+            if (latestRes.ok) {
+              const latestData = await latestRes.json();
+              if (latestData?.profile_summary || latestData?.summary) {
+                const normalized = latestData as NewReportSchema;
+                setInfo(normalized);
+                try {
+                  sessionStorage.setItem(reportCacheKey, JSON.stringify({
+                    data: normalized, ts: Date.now(), sig: fetchSignatureRef.current,
+                  }));
+                } catch { /* storage full */ }
+                return;
+              }
+            }
+          } catch {
+            // Network error or no existing report — fall through to generation
+          }
+        }
 
         // Prepare data objects for JSON parts
         const gameResultsData = {
@@ -946,6 +991,11 @@ const ResultadosPage: React.FC = () => {
               normalized.cv_analysis = cvScores;
             }
             setInfo(normalized);
+            try {
+              sessionStorage.setItem(reportCacheKey, JSON.stringify({
+                data: normalized, ts: Date.now(), sig: fetchSignatureRef.current,
+              }));
+            } catch { /* storage full */ }
           } catch (error) {
             if (import.meta.env.MODE !== 'production') {
               // eslint-disable-next-line no-console

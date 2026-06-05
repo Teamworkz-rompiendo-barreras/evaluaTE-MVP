@@ -10,7 +10,8 @@ export const API_CONFIG = {
     IA_FEEDBACK: '/api/informe-ia/feedback',
     PDF_GENERATE: '/api/report/generate',
     PDF_ANALYZE: '/api/pdf/analyze-cv',  // CV structure analysis (structure_score, contact, etc.)
-    PDF_DOWNLOAD: '/api/report/generate'
+    PDF_DOWNLOAD: '/api/report/generate',
+    REPORT_LATEST: '/api/report/latest', // Load last saved report without regenerating
   }
 };
 

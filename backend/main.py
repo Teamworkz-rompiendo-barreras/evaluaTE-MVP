@@ -220,6 +220,92 @@ def health_check():
 
 
 # ──────────────────────────────────────────────────────────────────────
+# GET /api/report/latest — Carga el último informe generado para el usuario
+# ──────────────────────────────────────────────────────────────────────
+@app.get("/api/report/latest")
+async def get_latest_report(request: Request) -> Dict[str, Any]:
+    """
+    Devuelve el informe más reciente del usuario desde Supabase (sin regenerar).
+    Requiere cabecera X-User-Id.
+    """
+    user_id = request.headers.get("X-User-Id")
+    if not user_id:
+        raise HTTPException(status_code=400, detail="X-User-Id header required")
+    if not supabase_client:
+        raise HTTPException(status_code=503, detail="Database not available")
+    try:
+        res = (
+            supabase_client.table("employability_reports")
+            .select("report_json, employability_score, created_at")
+            .eq("user_id", user_id)
+            .order("created_at", desc=True)
+            .limit(1)
+            .execute()
+        )
+        rows = res.data or []
+        if not rows:
+            raise HTTPException(status_code=404, detail="No report found")
+
+        row = rows[0]
+        analysis_result = row.get("report_json") or {}
+        employability_score = row.get("employability_score") or 0
+
+        soft_skills_raw = analysis_result.get("soft_skills") or []
+        completed_games = analysis_result.get("completed_games") or []
+        new_format = _map_gemini_to_new_format(analysis_result, soft_skills_raw, completed_games)
+        new_format["employability_score"] = employability_score
+
+        # Re-compute CV scores (same logic as /api/analyze)
+        try:
+            try:
+                from backend.cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            except ImportError:
+                from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            raw_ai = analysis_result or {}
+            dp = raw_ai.get("datos_personales") or {}
+            text_parts = [
+                str(raw_ai.get("resumen_ejecutivo") or ""),
+                str(dp.get("email") or ""), str(dp.get("telefono") or ""), str(dp.get("ubicacion") or ""),
+            ]
+            for exp in (raw_ai.get("experiencia") or []):
+                if isinstance(exp, dict):
+                    text_parts.extend(str(v) for v in exp.values() if v)
+            for edu in (raw_ai.get("educacion") or []):
+                if isinstance(edu, dict):
+                    text_parts.extend(str(v) for v in edu.values() if v)
+            for skill in (raw_ai.get("habilidades") or raw_ai.get("habilidades_detectadas") or []):
+                text_parts.append(str(skill.get("herramienta") or skill) if isinstance(skill, dict) else str(skill))
+            cv_text = " ".join(filter(None, text_parts))
+            exp_items = raw_ai.get("experiencia") or []
+            cv_sections = {k: v for k, v in {
+                "experience": [" ".join(str(v) for v in e.values() if v) if isinstance(e, dict) else str(e) for e in exp_items],
+                "education": raw_ai.get("educacion"),
+                "languages": raw_ai.get("idiomas"),
+                "contact": dp if any(dp.get(k) for k in ("email", "telefono", "nombre")) else None,
+                "profile": raw_ai.get("resumen_ejecutivo"),
+                "skills": raw_ai.get("habilidades") or raw_ai.get("habilidades_detectadas"),
+            }.items() if v}
+            review = compute_review_from_text_sections(cv_text, cv_sections)
+            cv_scores = review_to_ui_diagnostico(review)
+            if "spelling_style_score" in cv_scores and "style_score" not in cv_scores:
+                cv_scores["style_score"] = cv_scores.pop("spelling_style_score")
+            if isinstance(new_format.get("cv_analysis"), dict):
+                keep = ("structure_score", "coherence_score", "key_info_score", "clarity_score",
+                        "style_score", "evidence", "corrections", "reordering_suggestions")
+                new_format["cv_analysis"].update({k: cv_scores[k] for k in keep if k in cv_scores})
+        except Exception as cv_err:
+            logger.warning(f"CV scoring skipped in GET /api/report/latest: {cv_err}")
+
+        return new_format
+
+    except HTTPException:
+        raise
+    except Exception as e:
+        logger.exception("Error in GET /api/report/latest")
+        raise HTTPException(status_code=500, detail=str(e))
+
+
+# ──────────────────────────────────────────────────────────────────────
 # ENDPOINT PRINCIPAL: /api/analyze
 # El frontend envía FormData con:
 #   - game_results  (JSON string)
