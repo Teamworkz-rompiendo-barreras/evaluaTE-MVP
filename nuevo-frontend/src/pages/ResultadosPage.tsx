@@ -1670,7 +1670,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           disabled={!iaReport}
           className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${!iaReport
             ? 'bg-white/20 text-white/50 cursor-not-allowed'
-            : 'bg-white text-[#166534] hover:bg-green-50'
+            : 'bg-white text-[#374BA6] hover:bg-[#F0E8D1] dark:bg-[#0D1321] dark:text-[#F2D680] dark:hover:bg-[#1F2937]'
             }`}
         >
           <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
@@ -2157,8 +2157,10 @@ const reportRef = useRef<HTMLDivElement>(null);
             {(data.improvement_areas || []).map((it, idx) => (
               <div key={idx} className="improvement-card">
                 <div className="improvement-area">⚡ {it.area}</div>
-                <div className="improvement-reason">{it.reason}</div>
-                <div className="improvement-action">→ Acción: {it.suggested_action}</div>
+                <div className="improvement-reason"> {String(it.reason || '').split('-> Acción:')[0]} </div>
+                {(it.suggested_action || String(it.reason || '').includes('-> Acción:')) && (
+                  <div className="improvement-action"> → Acción: {it.suggested_action || String(it.reason || '').split('-> Acción:')[1]} </div>
+                )}
               </div>
             ))}
           </div>
@@ -2574,7 +2576,7 @@ const reportRef = useRef<HTMLDivElement>(null);
              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-600 mb-4"></div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 animate-pulse">Generando tu Informe de Empleabilidad...</h3>
               <p className="text-gray-600 dark:text-gray-400 mt-2 text-center max-w-md">
-               La IA está analizando tu perfil, tus resultados de juego y tus preferencias para crear un plan personalizado.
+               El equipo de Teamworkz está analizando tu perfil, tus resultados de juego y tus preferencias para crear un plan personalizado.
                 Esto puede tardar unos segundos.
              </p>
             </div>
@@ -2630,7 +2632,7 @@ const reportRef = useRef<HTMLDivElement>(null);
           <label className="block mb-1 text-gray-900 dark:text-white">¿Algún comentario o sugerencia?</label>
           <textarea className="w-full border rounded p-2 mb-2 bg-white text-gray-900 border-gray-300 dark:bg-transparent dark:text-white dark:border-gray-500" rows={2} value={feedback.comment} onChange={e => setFeedback(f => ({ ...f, comment: e.target.value }))} />
           {feedbackError && <p className="text-red-400 mb-2">{feedbackError}</p>}
-           <button type="submit" className="bg-green-700 text-white px-4 py-2 rounded hover:bg-green-800">Enviar feedback</button>
+           <button type="submit" className="bg-[#374BA6] text-white px-4 py-2 rounded hover:bg-[#5063BA] focus:outline-none focus:ring-4 focus:ring-[#8095F2]">Enviar feedback</button>
         </form>
       </div>
     )}
