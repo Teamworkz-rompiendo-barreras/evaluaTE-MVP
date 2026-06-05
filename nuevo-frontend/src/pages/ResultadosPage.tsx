@@ -171,6 +171,7 @@ const ResultadosPage: React.FC = () => {
   const [loadingIa, setLoadingIa] = useState<boolean>(false);
   const [errorIa, setErrorIa] = useState<string>('');
   const fetchSignatureRef = useRef<string>('');
+  const isFetchingRef = useRef<boolean>(false);
   const fetchIaReportRef = useRef<() => Promise<void> | null>(null);
   const [finalPhrase, setFinalPhrase] = useState<string>('');
   const resolvedJobPreferences = useMemo(
@@ -303,6 +304,9 @@ const ResultadosPage: React.FC = () => {
     const hasMeaningfulData = hasSoftSkillsData || hasCvStructuredData || hasJobPreferenceData || hasCompletedGameData;
 
     const fetchIaReport = async () => {
+      // Guard: prevent concurrent fetches triggered by mid-flight state changes
+      if (isFetchingRef.current) return;
+
       if (!hasMeaningfulData) {
         if (import.meta.env.MODE !== 'production') {
           // eslint-disable-next-line no-console
@@ -351,6 +355,7 @@ const ResultadosPage: React.FC = () => {
         return;
       }
       fetchSignatureRef.current = signature;
+      isFetchingRef.current = true;
 
       setLoadingIa(true);
       setErrorIa('');
@@ -1113,6 +1118,7 @@ const ResultadosPage: React.FC = () => {
         }
       } finally {
         setLoadingIa(false);
+        isFetchingRef.current = false;
       }
     };
     fetchIaReportRef.current = fetchIaReport;
