@@ -376,13 +376,17 @@ async def analyze_computational_profile(
 
         # Compute real CV structure scores (1-5 stars) from AI analysis result
         try:
-            from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            try:
+                from backend.cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
+            except ImportError:
+                from cv_structure_analyzer import compute_review_from_text_sections, review_to_ui_diagnostico  # type: ignore
             raw_ai = analysis_result or {}
             dp = raw_ai.get("datos_personales") or {}
 
             # Build a text proxy for heuristic scoring
+            # Keys come from the AI prompt schema (Spanish): resumen_ejecutivo, habilidades (str list)
             text_parts = [
-                str(raw_ai.get("resumen_profesional") or ""),
+                str(raw_ai.get("resumen_ejecutivo") or ""),
                 str(dp.get("email") or ""),
                 str(dp.get("telefono") or ""),
                 str(dp.get("ubicacion") or ""),
@@ -393,9 +397,9 @@ async def analyze_computational_profile(
             for edu in (raw_ai.get("educacion") or []):
                 if isinstance(edu, dict):
                     text_parts.extend(str(v) for v in edu.values() if v)
-            for skill in (raw_ai.get("habilidades_detectadas") or []):
-                if isinstance(skill, dict):
-                    text_parts.append(str(skill.get("herramienta") or ""))
+            # habilidades is a plain string list in the AI output
+            for skill in (raw_ai.get("habilidades") or raw_ai.get("habilidades_detectadas") or []):
+                text_parts.append(str(skill.get("herramienta") or skill) if isinstance(skill, dict) else str(skill))
 
             cv_text = " ".join(filter(None, text_parts))
 
@@ -406,8 +410,8 @@ async def analyze_computational_profile(
                 "education": raw_ai.get("educacion"),
                 "languages": raw_ai.get("idiomas"),
                 "contact": dp if any(dp.get(k) for k in ("email", "telefono", "nombre")) else None,
-                "profile": raw_ai.get("resumen_profesional"),
-                "skills": raw_ai.get("habilidades_detectadas"),
+                "profile": raw_ai.get("resumen_ejecutivo"),
+                "skills": raw_ai.get("habilidades") or raw_ai.get("habilidades_detectadas"),
             }.items() if v}
 
             review = compute_review_from_text_sections(cv_text, cv_sections)
