@@ -2164,46 +2164,35 @@ const reportRef = useRef<HTMLDivElement>(null);
           </div>
         </section>
 
-        {cvx && (cvx.structure_score || cvx.clarity_score || cvx.coherence_score || cvx.key_info_score || cvx.style_score) && (
-          <section className="report-section print-page-break-inside-avoid">
-            <h2 className="report-section-title">Análisis del CV</h2>
+        <section className="report-section print-page-break-inside-avoid">
+            <h2 className="report-section-title">Análisis del CV (con puntuación 1–5 por apartado)</h2>
 
             <div className="cv-score-grid mb-4">
-              {cvx.structure_score != null && (
-                <div className="cv-score-item">
-                  <div className="cv-score-label">Formato</div>
-                  <div className="cv-score-stars">{formatStars(cvx.structure_score)}</div>
-                  <div className="cv-score-number">{cvx.structure_score}/5</div>
-                </div>
-              )}
-              {cvx.clarity_score != null && (
-                <div className="cv-score-item">
-                  <div className="cv-score-label">Claridad</div>
-                  <div className="cv-score-stars">{formatStars(cvx.clarity_score)}</div>
-                  <div className="cv-score-number">{cvx.clarity_score}/5</div>
-                </div>
-              )}
-              {cvx.coherence_score != null && (
-                <div className="cv-score-item">
-                  <div className="cv-score-label">Coherencia</div>
-                  <div className="cv-score-stars">{formatStars(cvx.coherence_score)}</div>
-                  <div className="cv-score-number">{cvx.coherence_score}/5</div>
-                </div>
-              )}
-              {cvx.key_info_score != null && (
-                <div className="cv-score-item">
-                  <div className="cv-score-label">Info. clave</div>
-                  <div className="cv-score-stars">{formatStars(cvx.key_info_score)}</div>
-                  <div className="cv-score-number">{cvx.key_info_score}/5</div>
-                </div>
-              )}
-              {cvx.style_score != null && (
-                <div className="cv-score-item">
-                  <div className="cv-score-label">Ortografía</div>
-                  <div className="cv-score-stars">{formatStars(cvx.style_score)}</div>
-                  <div className="cv-score-number">{cvx.style_score}/5</div>
-                </div>
-              )}
+              <div className="cv-score-item">
+                <div className="cv-score-label">Formato</div>
+                <div className="cv-score-stars">{formatStars(cvx.structure_score ?? 0)}</div>
+                <div className="cv-score-number">{cvx.structure_score ?? 0}/5</div>
+              </div>
+              <div className="cv-score-item">
+                <div className="cv-score-label">Claridad</div>
+                <div className="cv-score-stars">{formatStars(cvx.clarity_score ?? 0)}</div>
+                <div className="cv-score-number">{cvx.clarity_score ?? 0}/5</div>
+              </div>
+              <div className="cv-score-item">
+                <div className="cv-score-label">Coherencia</div>
+                <div className="cv-score-stars">{formatStars(cvx.coherence_score ?? 0)}</div>
+                <div className="cv-score-number">{cvx.coherence_score ?? 0}/5</div>
+              </div>
+              <div className="cv-score-item">
+                <div className="cv-score-label">Información clave</div>
+                <div className="cv-score-stars">{formatStars(cvx.key_info_score ?? 0)}</div>
+                <div className="cv-score-number">{cvx.key_info_score ?? 0}/5</div>
+              </div>
+              <div className="cv-score-item">
+                <div className="cv-score-label">Ortografía</div>
+                <div className="cv-score-stars">{formatStars(cvx.style_score ?? 0)}</div>
+                <div className="cv-score-number">{cvx.style_score ?? 0}/5</div>
+              </div>
             </div>
 
             {/* Observaciones del análisis */}
@@ -2254,7 +2243,6 @@ const reportRef = useRef<HTMLDivElement>(null);
               </div>
             )}
           </section>
-        )}
 
         <section className="report-section">
           <h2 className="report-section-title">Entornos de trabajo ideales</h2>
