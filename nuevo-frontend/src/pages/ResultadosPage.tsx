@@ -2586,7 +2586,7 @@ const reportRef = useRef<HTMLDivElement>(null);
              <div className="animate-spin rounded-full h-16 w-16 border-t-4 border-b-4 border-green-600 mb-4"></div>
               <h3 className="text-xl font-semibold text-gray-900 dark:text-gray-100 animate-pulse">Generando tu Informe de Empleabilidad...</h3>
               <p className="text-gray-600 dark:text-gray-400 mt-2 text-center max-w-md">
-               La IA está analizando tu perfil, tus resultados de juego y tus preferencias para crear un plan personalizado.
+               El equipo de Teamworkz está analizando tu perfil, tus resultados de juego y tus preferencias para crear un plan personalizado.
                 Esto puede tardar unos segundos.
              </p>
             </div>
