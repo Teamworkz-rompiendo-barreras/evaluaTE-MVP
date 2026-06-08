@@ -60,8 +60,8 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
             key={option.id}
             className={`option-card p-4 rounded-lg border-2 cursor-pointer transition-all duration-200 ${
               _selectedOption === option.id
-                ? 'border-blue-500 bg-blue-50 dark:bg-gray-100'
-                : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50'
+              ? 'border-blue-400 bg-blue-50 text-gray-900 dark:bg-slate-700 dark:text-white dark:border-blue-400'
+              : 'border-gray-300 hover:border-blue-300 hover:bg-gray-50 text-gray-900 dark:text-gray-100 dark:border-gray-600 dark:hover:bg-slate-700'
             } ${
               accessibility.contrastLevel === 'high'
                 ? 'bg-white border-black'
