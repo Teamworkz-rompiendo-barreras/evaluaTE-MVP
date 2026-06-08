@@ -40,7 +40,7 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
 
     setTimeout(() => {
       onComplete(optionId);
-    }, 2000);
+    }, 500);
   };
 
   const handleAudioPlay = (option: GameOption) => {
