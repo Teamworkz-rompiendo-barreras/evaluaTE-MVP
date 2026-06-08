@@ -79,40 +79,28 @@ const GameScenePage: React.FC = () => {
   }
 
   if (!currentScene) {
-    return (
-      <div className="flex items-center justify-center min-h-screen">
-        <div className="text-center">
-          <h2 className="text-2xl font-bold mb-4">¡Juego completado!</h2>
-          <p className="mb-4">Has terminado {currentGame.title}</p>
-          <button
-            onClick={() => navigate('/games')}
-            className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 mr-4"
-          >
-            Volver al menú
-          </button>
-
-          {/* Solo mostrar si TODOS los juegos están completados Y hay CV */}
-          {allGamesCompleted && hasCv && (
-            <button
-              onClick={() => navigate('/resultados')}
-              className="px-6 py-3 bg-green-600 text-white rounded-lg hover:bg-green-700"
-            >
-              Ver Informe de Empleabilidad
-            </button>
-          )}
-
-          {/* Si todos los juegos están completados pero NO hay CV, llevar a subir CV */}
-          {allGamesCompleted && !hasCv && (
+    if (allGamesCompleted && !hasCv) {
+      return (
+        <div className="flex items-center justify-center min-h-screen">
+          <div className="text-center">
+            <h2 className="text-2xl font-bold mb-4">¡Falta adjuntar el CV!</h2>
+  
+            <p className="mb-4">
+              Has completado todos los minijuegos. Para generar el informe de empleabilidad, necesitas adjuntar tu CV.
+            </p>
+  
             <button
               onClick={() => navigate('/upload-cv')}
               className="px-6 py-3 bg-[#374ba6] text-white rounded-lg hover:bg-[#2d3f96]"
             >
               Ir a adjuntar CV
             </button>
-          )}
+          </div>
         </div>
-      </div>
-    )
+      );
+    }
+  
+    return null;
   }
 
   return (
