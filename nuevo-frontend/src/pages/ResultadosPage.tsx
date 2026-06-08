@@ -1744,18 +1744,20 @@ const reportRef = useRef<HTMLDivElement>(null);
         )}
       </div>
 
-      <div className="report-portada-footer print-hidden">
-        <button
-          onClick={handleDownloadPdf}
-          disabled={!iaReport || isExportingPdf}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${!iaReport || isExportingPdf
-            ? 'bg-white/20 text-white/50 cursor-not-allowed'
-            : 'bg-white text-[#374BA6] hover:bg-[#F0E8D1] dark:bg-[#0D1321] dark:text-[#F2D680] dark:hover:bg-[#1F2937]'
-            }`}
-        >
-          Descargar Informe PDF
-        </button>
-      </div>
+      {!isExportingPdf && (
+        <div className="report-portada-footer print-hidden">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={!iaReport || isExportingPdf}
+           className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${!iaReport || isExportingPdf
+             ? 'bg-white/20 text-white/50 cursor-not-allowed'
+             : 'bg-white text-[#374BA6] hover:bg-[#F0E8D1] dark:bg-[#0D1321] dark:text-[#F2D680] dark:hover:bg-[#1F2937]'
+           }`}
+          >
+            Descargar Informe PDF
+          </button>
+        </div>
+      )} 
     </div>
   );
   // Color de etiquetas del radar según modo (claro/oscuro)
