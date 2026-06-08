@@ -32,9 +32,9 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
     // Si es la opción "volver-menu", primero ejecuta onComplete y luego navega
     if (optionId === 'volver-menu') {
       onComplete(optionId);
-      setTimeout(() => {
+      /*setTimeout(() => {
         navigate('/games');
-      }, 500); // Pequeño delay para asegurar que Redux se actualiza
+      }, 500); */// Pequeño delay para asegurar que Redux se actualiza
       return;
     }
 
