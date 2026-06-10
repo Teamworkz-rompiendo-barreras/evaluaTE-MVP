@@ -70,6 +70,22 @@ def _safe_slice(text: Any, start: int, end: int) -> str:
     except Exception:
         return ""
 
+def _generate_with_retry(model, content_parts, generation_config, max_retries: int = 1, base_delay: float = 1.0):
+    """Llama a generate_content con reintentos ante errores transitorios
+    (rate limit, timeouts, sobrecarga del modelo) para evitar que el usuario
+    tenga que recargar la página manualmente."""
+    last_exc: Optional[Exception] = None
+    for attempt in range(max_retries + 1):
+        try:
+            return model.generate_content(content_parts, generation_config=generation_config)
+        except Exception as e:
+            last_exc = e
+            if attempt < max_retries:
+                logger.warning(f"⚠️ Reintentando llamada a Gemini ({attempt + 1}/{max_retries}) tras error: {e}")
+                time.sleep(base_delay * (attempt + 1))
+    raise last_exc
+
+
 def _normalize_ai_json_response(content: str) -> str:
     """Limpia la respuesta de la IA para obtener solo el JSON válido."""
     if not isinstance(content, str):
@@ -216,7 +232,7 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
             logger.info("📎 Usando inline PDF data (gemini_lite mode)")
             content_parts = [{"mime_type": "application/pdf", "data": pdf_bytes}, prompt]
 
-        response = model.generate_content(content_parts, generation_config=generation_config)
+        response = _generate_with_retry(model, content_parts, generation_config)
 
         # 5. Procesar respuesta
         json_text = _normalize_ai_json_response(response.text)
