@@ -246,6 +246,11 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
             temperature=0.1,
             response_mime_type="application/json"
         )
+        if not _has_file_api:
+            # gemini_lite (Vercel): los modelos 2.5 reservan tokens de "thinking"
+            # del mismo presupuesto que la salida JSON. Lo desactivamos para no
+            # arriesgar truncar el JSON de respuesta.
+            generation_config.thinking_budget = 0
 
         if _has_file_api:
             # SDK completo: subir a File API y referenciar
@@ -301,8 +306,14 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dic
         system_instruction = "Eres un experto orientador laboral. Analiza el CV visualmente y genera el informe JSON estricto."
         generation_config = genai.types.GenerationConfig(
             temperature=0.4,
-            response_mime_type="application/json"
+            response_mime_type="application/json",
+            max_output_tokens=8192,
         )
+        if not _has_file_api:
+            # gemini_lite (Vercel): el informe es un JSON de 15 secciones; si el
+            # modelo gasta su presupuesto de salida en "thinking" interno, el JSON
+            # se trunca a mitad (MAX_TOKENS) y falla el json.loads -> 500.
+            generation_config.thinking_budget = 0
 
         if _has_file_api:
             with tempfile.NamedTemporaryFile(suffix=".pdf", delete=False) as tmp:

@@ -77,6 +77,11 @@ class GeminiLiteModel:
                 gc["maxOutputTokens"] = gen_config["max_output_tokens"]
             if gen_config.get("response_mime_type") is not None:
                 gc["responseMimeType"] = gen_config["response_mime_type"]
+            if gen_config.get("thinking_budget") is not None:
+                # Los modelos 2.5 reservan parte de maxOutputTokens para "thinking".
+                # Para extracción/formato JSON estructurado no lo necesitamos: si no
+                # se desactiva, el JSON puede truncarse (MAX_TOKENS) antes de cerrarse.
+                gc["thinkingConfig"] = {"thinkingBudget": gen_config["thinking_budget"]}
             if gc:
                 payload["generationConfig"] = gc
 
@@ -98,6 +103,12 @@ class GeminiLiteModel:
         content = first_candidate.get("content", {})
         for p in content.get("parts", []):
             text += p.get("text", "")
+
+        if not text.strip():
+            finish_reason = first_candidate.get("finishReason", "UNKNOWN")
+            raise Exception(
+                f"Gemini devolvió respuesta vacía (finishReason={finish_reason})"
+            )
 
         return GeminiLiteResponse(text=text)
 
@@ -127,16 +138,19 @@ class GeminiLiteConfig:
     """Replaces genai.types.GenerationConfig."""
 
     def __init__(self, temperature: float = 0.1, max_output_tokens: int = 8000,
-                 response_mime_type: str = "application/json"):
+                 response_mime_type: str = "application/json",
+                 thinking_budget: Optional[int] = None):
         self.temperature = temperature
         self.max_output_tokens = max_output_tokens
         self.response_mime_type = response_mime_type
+        self.thinking_budget = thinking_budget
 
     def to_dict(self) -> Dict[str, Any]:
         return {
             "temperature": self.temperature,
             "max_output_tokens": self.max_output_tokens,
             "response_mime_type": self.response_mime_type,
+            "thinking_budget": self.thinking_budget,
         }
 
     def get(self, key: str, default: Any = None) -> Any:

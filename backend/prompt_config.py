@@ -146,7 +146,7 @@ class PromptConfig:
         Si falta información, usa "No consta" o arrays vacíos, NO cortes el JSON.
 
         {{
-          "datos_personales": {{ "nombre": "{nombre_placeholder}", "email": "<email del CV o No consta>", "telefono": "<teléfono del CV o No consta>", "ubicacion": "<ciudad/país del CV>", "discapacidad": "No consta" }},
+          "datos_personales": {{ "nombre": "{nombre_placeholder}", "email": "<email del CV o No consta>", "telefono": "<teléfono del CV o No consta>", "ubicacion": "<ciudad/país del CV>", "discapacidad": "<SOLO 'Sí' si el CV indica EXPLÍCITAMENTE un certificado de discapacidad (ej. 'Certificado de discapacidad 33%'); en cualquier otro caso, incluso si se menciona inclusión/diversidad sin más, escribe 'No consta'>" }},
           "experiencia": [
             {{ "rol": "<cargo>", "empresa": "<empresa>", "periodo": "<fecha inicio - fecha fin>", "descripcion": "<logros principales en 1 línea>" }}
           ],
