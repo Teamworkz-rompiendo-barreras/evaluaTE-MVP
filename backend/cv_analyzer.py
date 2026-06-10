@@ -70,35 +70,53 @@ def _safe_slice(text: Any, start: int, end: int) -> str:
     except Exception:
         return ""
 
-def _generate_with_retry(model, content_parts, generation_config, max_retries: int = 2, base_delay: float = 1.5):
-    """Llama a generate_content con reintentos ante errores transitorios
-    (503 'modelo con alta demanda', rate limit, timeouts) para evitar que el
-    usuario tenga que recargar la página manualmente."""
+# El alias "-latest" recibe mucho tráfico global y es propenso a 503
+# "modelo con alta demanda". Si falla, probamos con un modelo pinned
+# como respaldo.
+FALLBACK_MODELS = ["gemini-flash-latest", "gemini-2.5-flash"]
+
+
+def _generate_with_fallback(content_parts, generation_config, system_instruction, model_names=None, retries_per_model: int = 1, base_delay: float = 1.5):
+    """Llama a generate_content probando varios modelos en orden, con
+    reintentos por modelo, ante errores transitorios (503 'alta demanda',
+    rate limit, timeouts) para evitar que el usuario tenga que recargar
+    la página manualmente."""
+    names = model_names or FALLBACK_MODELS
     last_exc: Optional[Exception] = None
-    for attempt in range(max_retries + 1):
-        try:
-            return model.generate_content(content_parts, generation_config=generation_config)
-        except Exception as e:
-            last_exc = e
-            if attempt < max_retries:
-                logger.warning(f"⚠️ Reintentando llamada a Gemini ({attempt + 1}/{max_retries}) tras error: {e}")
-                time.sleep(base_delay * (attempt + 1))
+    for idx, name in enumerate(names):
+        model = genai.GenerativeModel(model_name=name, system_instruction=system_instruction)
+        for attempt in range(retries_per_model + 1):
+            try:
+                if idx > 0 and attempt == 0:
+                    logger.warning(f"⚠️ Probando modelo de respaldo {name} tras fallo en {names[idx - 1]}")
+                return model.generate_content(content_parts, generation_config=generation_config)
+            except Exception as e:
+                last_exc = e
+                if attempt < retries_per_model:
+                    logger.warning(f"⚠️ Reintentando con {name} ({attempt + 1}/{retries_per_model}) tras error: {e}")
+                    time.sleep(base_delay * (attempt + 1))
     raise last_exc
 
 
-async def _generate_with_retry_async(model, content_parts, generation_config, max_retries: int = 1, base_delay: float = 2.0):
-    """Versión async de _generate_with_retry, usada para el informe completo
-    (llamada más larga, por eso con menos reintentos para no agotar el
-    timeout de la función serverless)."""
+async def _generate_with_fallback_async(content_parts, generation_config, system_instruction, model_names=None, retries_per_model: int = 0, base_delay: float = 1.5):
+    """Versión async de _generate_with_fallback, usada para el informe
+    completo (llamada más larga, por eso sin reintentos por modelo por
+    defecto, solo cambio de modelo, para no agotar el timeout de la
+    función serverless)."""
+    names = model_names or FALLBACK_MODELS
     last_exc: Optional[Exception] = None
-    for attempt in range(max_retries + 1):
-        try:
-            return await model.generate_content_async(content_parts, generation_config=generation_config)
-        except Exception as e:
-            last_exc = e
-            if attempt < max_retries:
-                logger.warning(f"⚠️ Reintentando llamada a Gemini ({attempt + 1}/{max_retries}) tras error: {e}")
-                await asyncio.sleep(base_delay * (attempt + 1))
+    for idx, name in enumerate(names):
+        model = genai.GenerativeModel(model_name=name, system_instruction=system_instruction)
+        for attempt in range(retries_per_model + 1):
+            try:
+                if idx > 0 and attempt == 0:
+                    logger.warning(f"⚠️ Probando modelo de respaldo {name} tras fallo en {names[idx - 1]}")
+                return await model.generate_content_async(content_parts, generation_config=generation_config)
+            except Exception as e:
+                last_exc = e
+                if attempt < retries_per_model:
+                    logger.warning(f"⚠️ Reintentando con {name} ({attempt + 1}/{retries_per_model}) tras error: {e}")
+                    await asyncio.sleep(base_delay * (attempt + 1))
     raise last_exc
 
 
@@ -223,13 +241,7 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
         """
 
         # 4. Generar contenido
-        model_name = "gemini-flash-latest"
-        model = genai.GenerativeModel(
-            model_name=model_name,
-            system_instruction=system_instruction
-        )
-
-        logger.info(f"🧠 Analizando documento con {model_name} y temperature=0.1...")
+        logger.info("🧠 Analizando documento con temperature=0.1...")
         generation_config = genai.types.GenerationConfig(
             temperature=0.1,
             response_mime_type="application/json"
@@ -248,7 +260,7 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
             logger.info("📎 Usando inline PDF data (gemini_lite mode)")
             content_parts = [{"mime_type": "application/pdf", "data": pdf_bytes}, prompt]
 
-        response = _generate_with_retry(model, content_parts, generation_config)
+        response = _generate_with_fallback(content_parts, generation_config, system_instruction)
 
         # 5. Procesar respuesta
         json_text = _normalize_ai_json_response(response.text)
@@ -286,10 +298,7 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dic
     uploaded_file = None
 
     try:
-        model = genai.GenerativeModel(
-            model_name="gemini-flash-latest",
-            system_instruction="Eres un experto orientador laboral. Analiza el CV visualmente y genera el informe JSON estricto."
-        )
+        system_instruction = "Eres un experto orientador laboral. Analiza el CV visualmente y genera el informe JSON estricto."
         generation_config = genai.types.GenerationConfig(
             temperature=0.4,
             response_mime_type="application/json"
@@ -307,7 +316,7 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dic
             content_parts = [{"mime_type": "application/pdf", "data": pdf_bytes}, report_prompt]
 
         logger.info("🧠 Generando informe multimodal (Single-Shot)...")
-        response = await _generate_with_retry_async(model, content_parts, generation_config)
+        response = await _generate_with_fallback_async(content_parts, generation_config, system_instruction)
 
         json_text = _normalize_ai_json_response(response.text)
         return json.loads(json_text)
