@@ -78,6 +78,14 @@ const GameScenePage: React.FC = () => {
     )
   }
 
+  // El juego ha terminado (no quedan escenas): volver automáticamente al menú,
+  // salvo que toque mostrar el aviso de "falta adjuntar CV".
+  useEffect(() => {
+    if (currentGame && !currentScene && !(allGamesCompleted && !hasCv)) {
+      navigate('/games');
+    }
+  }, [currentGame, currentScene, allGamesCompleted, hasCv, navigate]);
+
   if (!currentScene) {
     if (allGamesCompleted && !hasCv) {
       return (
