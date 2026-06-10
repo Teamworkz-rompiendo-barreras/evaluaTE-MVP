@@ -242,44 +242,34 @@ def compute_review_from_text_sections(text: str, sections: Dict[str, Any]) -> Di
     return out
 
 
-def analyze_cv_structure(path: str, lang_hint: str = "auto") -> Dict[str, Any]:
-    """Analiza un fichero PDF. Si PyMuPDF no está disponible, devuelve un
-    resultado neutro para no romper el flujo."""
-    text: str = ""
-    if fitz is not None:
+def _neutral_review(lang: str = "es") -> Dict[str, Any]:
+    """Resultado neutro (3 estrellas) cuando no se pudo extraer texto del PDF."""
+    return {
+        "name": "CVStructureReview",
+        "schema": {"type": "object"},
+        "strict": True,
+        "file_name": "",
+        "language": lang,
+        "scores": {
+            "format": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
+            "clarity": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
+            "coherence": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
+            "key_information": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
+            "spelling": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
+        },
+        "corrections": [],
+    }
+
+
+def _extract_text_and_sections(doc) -> Tuple[str, Dict[str, Any]]:
+    parts: List[str] = []
+    for p in doc:
         try:
-            doc = fitz.open(path)  # type: ignore[arg-type]
-            parts: List[str] = []
-            for p in doc:
-                try:
-                    parts.append(p.get_text() or "")
-                except Exception:
-                    continue
-            doc.close()
-            text = "\n".join(parts)
+            parts.append(p.get_text() or "")
         except Exception:
-            text = ""
+            continue
+    text = "\n".join(parts)
 
-    if not text:
-        # Devolver un resultado seguro con puntuaciones medias
-        lang = "es" if lang_hint == "auto" else lang_hint
-        base = {
-            "name": "CVStructureReview",
-            "schema": {"type": "object"},
-            "strict": True,
-            "file_name": path.split("/")[-1],
-            "language": lang,
-            "scores": {
-                "format": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
-                "clarity": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
-                "coherence": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
-                "key_information": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
-                "spelling": {"score": 60.0, "stars": 3, "explanation": "No se pudo extraer texto; puntuación por defecto."},
-            },
-        }
-        return base
-
-    # Secciones rudimentarias por encabezados, si están en el texto
     sections: Dict[str, Any] = {}
     for key, pat in SECTION_PATTERNS.items():
         if re.search(pat, text, re.IGNORECASE):
@@ -287,9 +277,93 @@ def analyze_cv_structure(path: str, lang_hint: str = "auto") -> Dict[str, Any]:
             m = re.search(rf"{pat}.*?(\n\s*\n|$)", text, re.IGNORECASE | re.DOTALL)
             if m:
                 sections[key] = m.group(0)
+    return text, sections
+
+
+def analyze_cv_structure(path: str, lang_hint: str = "auto") -> Dict[str, Any]:
+    """Analiza un fichero PDF. Si PyMuPDF no está disponible, devuelve un
+    resultado neutro para no romper el flujo."""
+    text: str = ""
+    sections: Dict[str, Any] = {}
+    if fitz is not None:
+        try:
+            doc = fitz.open(path)  # type: ignore[arg-type]
+            text, sections = _extract_text_and_sections(doc)
+            doc.close()
+        except Exception:
+            text = ""
+
+    if not text:
+        lang = "es" if lang_hint == "auto" else lang_hint
+        base = _neutral_review(lang)
+        base["file_name"] = path.split("/")[-1]
+        return base
+
     review = compute_review_from_text_sections(text, sections)
     review["file_name"] = path.split("/")[-1]
     return review
+
+
+# Patrones para extracción básica de datos de contacto sin IA
+EMAIL_RE = re.compile(r"[A-Za-z0-9._%+-]+@[A-Za-z0-9.-]+\.[A-Za-z]{2,}")
+LINKEDIN_RE = re.compile(r"(?:https?://)?(?:www\.)?linkedin\.com/in/[A-Za-z0-9_\-/%]+", re.IGNORECASE)
+PHONE_RE = re.compile(r"(?:\+\d{1,3}[\s.-]?)?\(?\d{2,3}\)?[\s.-]?\d{3}[\s.-]?\d{2,3}[\s.-]?\d{0,3}")
+
+
+def extract_contact_info(text: str) -> Dict[str, str]:
+    """Extrae nombre/email/teléfono/linkedin del texto plano del CV mediante
+    heurísticas simples (sin IA), para la vista previa de subida."""
+    text = text or ""
+
+    email_m = EMAIL_RE.search(text)
+    linkedin_m = LINKEDIN_RE.search(text)
+
+    phone = ""
+    for m in PHONE_RE.finditer(text):
+        digits = re.sub(r"\D", "", m.group(0))
+        if 9 <= len(digits) <= 12:
+            phone = m.group(0).strip()
+            break
+
+    name = ""
+    for line in text.splitlines():
+        line = line.strip()
+        if not line:
+            continue
+        if "@" in line or any(c.isdigit() for c in line):
+            continue
+        words = line.split()
+        if 1 < len(words) <= 5 and all(w[0].isupper() for w in words if w):
+            name = line
+        break
+
+    return {
+        "nombre": name,
+        "email": email_m.group(0) if email_m else "",
+        "telefono": phone,
+        "linkedin": linkedin_m.group(0) if linkedin_m else "",
+    }
+
+
+def analyze_cv_structure_from_bytes(pdf_bytes: bytes) -> Dict[str, Any]:
+    """Igual que analyze_cv_structure pero a partir de bytes en memoria.
+    Devuelve también el texto extraído y las secciones detectadas, para que
+    el llamador pueda extraer datos de contacto sin IA."""
+    text: str = ""
+    sections: Dict[str, Any] = {}
+    if fitz is not None:
+        try:
+            doc = fitz.open(stream=pdf_bytes, filetype="pdf")  # type: ignore[arg-type]
+            text, sections = _extract_text_and_sections(doc)
+            doc.close()
+        except Exception:
+            text = ""
+
+    if not text:
+        return {"review": _neutral_review(), "text": "", "sections": {}}
+
+    review = compute_review_from_text_sections(text, sections)
+    return {"review": review, "text": text, "sections": sections}
 
 
 def review_to_ui_diagnostico(review: Dict[str, Any]) -> Dict[str, Any]:

@@ -17,13 +17,23 @@ from fastapi.middleware.cors import CORSMiddleware  # type: ignore
 
 # Importaciones locales
 try:
-    from backend.cv_analyzer import extract_pdf_info, analyze_multimodal_report, analyze_cv_with_ai  # type: ignore
+    from backend.cv_analyzer import extract_pdf_info, analyze_multimodal_report  # type: ignore
     from backend.prompt_config import PromptConfig  # type: ignore
     from backend.new_report_schema import NewReportSchema, convert_old_format_to_new  # type: ignore
+    from backend.cv_structure_analyzer import (  # type: ignore
+        analyze_cv_structure_from_bytes,
+        extract_contact_info,
+        review_to_ui_diagnostico,
+    )
 except ImportError:
-    from cv_analyzer import extract_pdf_info, analyze_multimodal_report, analyze_cv_with_ai  # type: ignore
+    from cv_analyzer import extract_pdf_info, analyze_multimodal_report  # type: ignore
     from prompt_config import PromptConfig  # type: ignore
     from new_report_schema import NewReportSchema, convert_old_format_to_new  # type: ignore
+    from cv_structure_analyzer import (  # type: ignore
+        analyze_cv_structure_from_bytes,
+        extract_contact_info,
+        review_to_ui_diagnostico,
+    )
 
 # Scoring pipeline (optional — works without it)
 _compute_cv_analysis = None
@@ -643,96 +653,55 @@ import asyncio as _asyncio
 async def analyze_cv_endpoint(cv_file: UploadFile = File(...)):
     """
     Dedicated CV analysis endpoint.
-    Extracts structure, contact, experience, education from PDF via Gemini
-    and returns CvAnalysis format expected by the frontend.
+    Análisis estructural local (PyMuPDF + heurísticas), SIN llamar a Gemini,
+    para no consumir la cuota de IA en la vista previa de subida del CV.
+    El informe final (/api/analyze) sí usa IA para extraer experiencia,
+    educación, etc. en detalle.
     """
     try:
         pdf_bytes = await cv_file.read()
         if not pdf_bytes:
             raise HTTPException(status_code=400, detail="Empty file")
 
-        # Extract CV data via Gemini (uses gemini_lite inline data on Vercel)
-        cv_data = await _asyncio.to_thread(analyze_cv_with_ai, pdf_bytes)
+        result = await _asyncio.to_thread(analyze_cv_structure_from_bytes, pdf_bytes)
+        review = result["review"]
+        text = result["text"]
+        sections = result["sections"]
 
-        if isinstance(cv_data, dict) and "error" in cv_data:
-            raise HTTPException(status_code=500, detail=cv_data["error"])
-
-        dp = cv_data.get("datos_personales") or {}
-        experiencia = cv_data.get("experiencia") or []
-        educacion = cv_data.get("educacion") or []
-        idiomas = cv_data.get("idiomas") or []
-        habilidades = cv_data.get("habilidades_detectadas") or []
-        resumen = cv_data.get("resumen_profesional") or ""
+        diagnostico = review_to_ui_diagnostico(review)
+        contact_info = extract_contact_info(text)
 
         contact = {
-            "name": dp.get("nombre", ""),
-            "emails": [dp["email"]] if dp.get("email") else [],
-            "phones": [dp["telefono"]] if dp.get("telefono") else [],
-            "location": dp.get("ubicacion", ""),
-            "linkedin": dp.get("linkedin", ""),
+            "name": contact_info.get("nombre", ""),
+            "emails": [contact_info["email"]] if contact_info.get("email") else [],
+            "phones": [contact_info["telefono"]] if contact_info.get("telefono") else [],
+            "location": "",
+            "linkedin": contact_info.get("linkedin", ""),
         }
 
-        # Compute structure scores
-        if _compute_cv_analysis:
-            cv_normalized = {
-                "experience": experiencia,
-                "education": educacion,
-                "languages": idiomas,
-                "skills": [h.get("herramienta", "") for h in habilidades if h.get("herramienta")],
-                "contact": {
-                    "emails": contact["emails"],
-                    "phones": contact["phones"],
-                    "location": contact["location"],
-                    "linkedin": contact["linkedin"],
-                },
-                "summary": bool(resumen),
-                "sections": len(experiencia) > 0,
-            }
-            scored = _compute_cv_analysis(cv_normalized)
-            dim = {d["id"]: d["score"] for d in scored.get("dimensions", [])}
-            # Map pipeline dimensions (1-5) to frontend score (0-100)
-            structure_score = dim.get("structure", 3) * 20
-            coherence_score = dim.get("experience", 3) * 20
-            key_info_score  = dim.get("contact", 3) * 20
-            clarity_score   = dim.get("education", 3) * 20
-            style_score     = dim.get("tools", 3) * 20
-        else:
-            # Heuristic fallback when scoring module unavailable
-            structure_score = 60 if resumen else 40
-            coherence_score = min(100, len(experiencia) * 20) or 40
-            key_info_score  = (60 if contact["emails"] else 0) + (20 if contact["phones"] else 0) + (20 if contact["location"] else 0)
-            clarity_score   = min(100, len(educacion) * 25) or 40
-            style_score     = min(100, len(habilidades) * 10) or 40
-
-        corrections = []
+        corrections = list(diagnostico.get("corrections") or [])
         if not contact["emails"]:
             corrections.append("Añade un email de contacto")
         if not contact["phones"]:
             corrections.append("Añade un teléfono de contacto")
-        if not resumen:
+        if not sections.get("profile"):
             corrections.append("Añade un resumen/perfil profesional")
-        if not educacion:
+        if not sections.get("education"):
             corrections.append("Añade tu formación académica")
 
         return {
-            "structure_score": structure_score,
-            "coherence_score": coherence_score,
-            "key_info_score": key_info_score,
-            "clarity_score": clarity_score,
-            "style_score": style_score,
-            "evidence": {
-                "structure": f"Secciones detectadas: experiencia, educación, habilidades{'  resumen' if resumen else ''}",
-                "coherence": f"{len(experiencia)} experiencia(s) laboral(es) detectada(s)",
-                "key_info": f"Contacto: {'email ✓' if contact['emails'] else 'email ✗'} · {'teléfono ✓' if contact['phones'] else 'teléfono ✗'} · {'ubicación ✓' if contact['location'] else 'ubicación ✗'}",
-                "clarity": f"{len(educacion)} formación(es) académica(s) detectada(s)",
-                "style": f"{len(habilidades)} herramienta(s)/habilidad(es) detectada(s)",
-            },
+            "structure_score": diagnostico["structure_score"],
+            "coherence_score": diagnostico["coherence_score"],
+            "key_info_score": diagnostico["key_info_score"],
+            "clarity_score": diagnostico["clarity_score"],
+            "style_score": diagnostico["spelling_style_score"],
+            "evidence": diagnostico["evidence"],
             "corrections": corrections,
             "reordering_suggestions": [],
-            "experience_detailed": experiencia,
-            "education_detailed": educacion,
-            "languages": idiomas,
-            "software": [{"name": h.get("herramienta"), "level": h.get("nivel")} for h in habilidades],
+            "experience_detailed": [],
+            "education_detailed": [],
+            "languages": [],
+            "software": [],
             "contact": contact,
         }
 
