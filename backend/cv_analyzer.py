@@ -70,10 +70,10 @@ def _safe_slice(text: Any, start: int, end: int) -> str:
     except Exception:
         return ""
 
-def _generate_with_retry(model, content_parts, generation_config, max_retries: int = 1, base_delay: float = 1.0):
+def _generate_with_retry(model, content_parts, generation_config, max_retries: int = 2, base_delay: float = 1.5):
     """Llama a generate_content con reintentos ante errores transitorios
-    (rate limit, timeouts, sobrecarga del modelo) para evitar que el usuario
-    tenga que recargar la página manualmente."""
+    (503 'modelo con alta demanda', rate limit, timeouts) para evitar que el
+    usuario tenga que recargar la página manualmente."""
     last_exc: Optional[Exception] = None
     for attempt in range(max_retries + 1):
         try:
@@ -83,6 +83,22 @@ def _generate_with_retry(model, content_parts, generation_config, max_retries: i
             if attempt < max_retries:
                 logger.warning(f"⚠️ Reintentando llamada a Gemini ({attempt + 1}/{max_retries}) tras error: {e}")
                 time.sleep(base_delay * (attempt + 1))
+    raise last_exc
+
+
+async def _generate_with_retry_async(model, content_parts, generation_config, max_retries: int = 1, base_delay: float = 2.0):
+    """Versión async de _generate_with_retry, usada para el informe completo
+    (llamada más larga, por eso con menos reintentos para no agotar el
+    timeout de la función serverless)."""
+    last_exc: Optional[Exception] = None
+    for attempt in range(max_retries + 1):
+        try:
+            return await model.generate_content_async(content_parts, generation_config=generation_config)
+        except Exception as e:
+            last_exc = e
+            if attempt < max_retries:
+                logger.warning(f"⚠️ Reintentando llamada a Gemini ({attempt + 1}/{max_retries}) tras error: {e}")
+                await asyncio.sleep(base_delay * (attempt + 1))
     raise last_exc
 
 
@@ -291,7 +307,7 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dic
             content_parts = [{"mime_type": "application/pdf", "data": pdf_bytes}, report_prompt]
 
         logger.info("🧠 Generando informe multimodal (Single-Shot)...")
-        response = await model.generate_content_async(content_parts, generation_config=generation_config)
+        response = await _generate_with_retry_async(model, content_parts, generation_config)
 
         json_text = _normalize_ai_json_response(response.text)
         return json.loads(json_text)
