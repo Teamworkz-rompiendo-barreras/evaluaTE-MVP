@@ -120,6 +120,18 @@ async def _generate_with_fallback_async(content_parts, generation_config, system
     raise last_exc
 
 
+def _friendly_error_message(e: Exception) -> str:
+    """Convierte errores técnicos de Gemini en mensajes legibles para el usuario,
+    en vez de exponer el JSON crudo de la API (códigos 429/503, etc.)."""
+    text = str(e)
+    lower = text.lower()
+    if "429" in text or "resource_exhausted" in lower or "quota" in lower:
+        return "Hemos alcanzado el límite de peticiones a la IA en este momento. Inténtalo de nuevo en unos minutos."
+    if "503" in text or "unavailable" in lower or "overloaded" in lower:
+        return "El servicio de IA está saturado en este momento. Inténtalo de nuevo en unos minutos."
+    return "No se pudo completar el análisis con IA. Inténtalo de nuevo más tarde."
+
+
 def _normalize_ai_json_response(content: str) -> str:
     """Limpia la respuesta de la IA para obtener solo el JSON válido."""
     if not isinstance(content, str):
@@ -274,7 +286,7 @@ def analyze_cv_with_ai(pdf_bytes: bytes) -> Dict[str, Any]:
     except Exception as e:
         logger.exception(f"❌ Error crítico en análisis visual con Gemini: {e}")
         return {
-            "error": str(e),
+            "error": _friendly_error_message(e),
             "datos_personales": {},
             "experiencia": [],
             "raw_text": "Error durante el análisis."
@@ -334,7 +346,7 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str) -> Dic
 
     except Exception as e:
         logger.exception(f"❌ Error multimodal: {e}")
-        return {"error": str(e)}
+        return {"error": _friendly_error_message(e)}
 
     finally:
         if tmp_path and os.path.exists(tmp_path):
