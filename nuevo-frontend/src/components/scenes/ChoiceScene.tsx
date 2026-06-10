@@ -1,5 +1,4 @@
 import React, { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
 import { GameScene, GameOption } from '../../types/game';
 
 interface ChoiceSceneProps {
@@ -21,7 +20,6 @@ const ChoiceScene: React.FC<ChoiceSceneProps> = ({
   onComplete,
   accessibility
 }) => {
-  const navigate = useNavigate();
   const [_selectedOption, setSelectedOption] = useState<string | null>(null);
   const [showFeedback, setShowFeedback] = useState(false);
 
