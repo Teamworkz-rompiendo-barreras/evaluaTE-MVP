@@ -1263,18 +1263,30 @@ const ResultadosPage: React.FC = () => {
 const reportRef = useRef<HTMLDivElement>(null);
 
   const handleDownloadPdf = async () => {
-    const element = reportRef.current;
-    if (!element) {
-      alert('No se ha encontrado el contenido del informe para exportar.');
-      return;
-    }
-    // Remove dark mode so brand colors render correctly in the PDF
-    const htmlEl = document.documentElement;
-    const wasDark = htmlEl.classList.contains('dark');
-    if (wasDark) htmlEl.classList.remove('dark');
-    element.classList.add('pdf-light-export');
-    try {
-      await html2pdf().set({
+  const element = reportRef.current;
+
+  if (!element) {
+    alert('No se ha encontrado el contenido del informe para exportar.');
+    return;
+  }
+
+  // Oculta elementos que no deben salir en el PDF
+  setIsExportingPdf(true);
+
+  // Espera a que React actualice la pantalla antes de hacer la captura
+  await new Promise((resolve) => setTimeout(resolve, 150));
+
+  // Remove dark mode so brand colors render correctly in the PDF
+  const htmlEl = document.documentElement;
+  const wasDark = htmlEl.classList.contains('dark');
+
+  if (wasDark) htmlEl.classList.remove('dark');
+
+  element.classList.add('pdf-light-export');
+
+  try {
+    await html2pdf()
+      .set({
         margin: [8, 6, 8, 6],
         filename: 'informe-empleabilidad.pdf',
         image: { type: 'jpeg', quality: 0.98 },
@@ -1292,16 +1304,27 @@ const reportRef = useRef<HTMLDivElement>(null);
           scrollY: 0,
           windowWidth: document.documentElement.scrollWidth,
         },
-        // eslint-disable-next-line @typescript-eslint/ban-ts-comment
-        // @ts-ignore — html2pdf types don't include compress
-        jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: false },
+        jsPDF: {
+          unit: 'mm',
+          format: 'a4',
+          orientation: 'portrait',
+          // eslint-disable-next-line @typescript-eslint/ban-ts-comment
+          // @ts-ignore — html2pdf types don't include compress
+          compress: false,
+        },
         pagebreak: { mode: ['css', 'legacy'] },
-      }).from(element).save();
-    } finally {
-      element.classList.remove('pdf-light-export');
-      if (wasDark) htmlEl.classList.add('dark');
-    }
-  };
+      })
+      .from(element)
+      .save();
+  } finally {
+    element.classList.remove('pdf-light-export');
+
+    if (wasDark) htmlEl.classList.add('dark');
+
+    // Vuelve a mostrar el botón después de generar el PDF
+    setIsExportingPdf(false);
+  }
+};
 
   const handleFeedbackSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -1730,7 +1753,8 @@ const reportRef = useRef<HTMLDivElement>(null);
 
   // 1. Portada
   const initials = `${(report?.firstName || '?')[0]}${(report?.lastName || '?')[0]}`.toUpperCase();
-
+  const [isExportingPdf, setIsExportingPdf] = useState(false);
+  
   const portada = (
     <div className="report-portada pdf-no-break print-report-section">
       <div className="report-portada-header">
@@ -1749,21 +1773,20 @@ const reportRef = useRef<HTMLDivElement>(null);
         )}
       </div>
 
-      <div className="report-portada-footer print-hidden">
-        <button
-          onClick={handleDownloadPdf}
-          disabled={!iaReport}
-          className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${!iaReport
-            ? 'bg-white/20 text-white/50 cursor-not-allowed'
-            : 'bg-white text-[#374BA6] hover:bg-[#F0E8D1] dark:bg-[#0D1321] dark:text-[#F2D680] dark:hover:bg-[#1F2937]'
-            }`}
-        >
-          <svg className="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-            <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 10v6m0 0l-3-3m3 3l3-3m2 8H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-          </svg>
-          Descargar Informe PDF
-        </button>
-      </div>
+      {!isExportingPdf && (
+        <div className="report-portada-footer print-hidden">
+          <button
+            onClick={handleDownloadPdf}
+            disabled={!iaReport || isExportingPdf}
+           className={`px-6 py-3 rounded-lg font-semibold transition-colors flex items-center gap-2 ${!iaReport || isExportingPdf
+             ? 'bg-white/20 text-white/50 cursor-not-allowed'
+             : 'bg-white text-[#374BA6] hover:bg-[#F0E8D1] dark:bg-[#0D1321] dark:text-[#F2D680] dark:hover:bg-[#1F2937]'
+           }`}
+          >
+            Descargar Informe PDF
+          </button>
+        </div>
+      )} 
     </div>
   );
   // Color de etiquetas del radar según modo (claro/oscuro)
