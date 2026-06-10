@@ -111,7 +111,7 @@ const StarsGold: React.FC<{ n: CvStars }> = ({ n }) => {
 // Eliminado: indicador circular de porcentaje (ScoreBadge)
 
 const ResultadosPage: React.FC = () => {
-  const { user } = useAuth();
+  const { user, loading: authLoading } = useAuth();
   const dispatch = useDispatch();
   const personal = useAppSelector((state: RootState) => state.personal);
   const report = personal?.report;
@@ -280,6 +280,11 @@ const ResultadosPage: React.FC = () => {
 
   // Llamar al endpoint de IA al cargar la página (después de sincronizar datos)
   useEffect(() => {
+    // Esperar a que se resuelva la sesión de autenticación antes del primer fetch,
+    // para que el informe se solicite con el X-User-Id correcto desde el principio
+    // (evita tener que recargar la página para que el informe aparezca).
+    if (authLoading) return undefined;
+
     const personalJobPreferences = personal?.jobPreferences;
     const personalHasPreferences = Boolean(
       (typeof personalJobPreferences === 'string' && personalJobPreferences.trim().length > 0)
@@ -603,6 +608,90 @@ const ResultadosPage: React.FC = () => {
         // (emailFromCv y phoneFromCv eliminados por no usarse)
         const completedGamesDetailed = completedGamesForRequest.map((g) => String(g)).filter(Boolean);
 
+        // Construye la frase motivacional final (caja azul) a partir de un informe
+        // ya normalizado. Se usa tanto al generar un informe nuevo como al cargar
+        // uno existente desde /api/report/latest, para que la UI quede completa
+        // (iaReport, finalPhrase, etc.) sin necesidad de volver a llamar a la IA.
+        const buildFinalPhrase = (normalizedReport: NewReportSchema, fallbackName: string): string => {
+          const firstName = (String(normalizedReport.personal_data?.name || fallbackName).split(' ')[0] || 'Tu perfil').trim();
+          const normalize = (val: unknown): string => {
+            const n = String(val || '').toLowerCase().trim();
+            if (!n) return '';
+            if (/anal(í|i)tico/.test(n)) return 'pensamiento analítico';
+            if (/cr(í|i)tico/.test(n)) return 'pensamiento crítico';
+            if (/curiosidad|aprendizaje/.test(n)) return 'curiosidad y aprendizaje';
+            if (/resiliencia|flexibilidad/.test(n)) return 'resiliencia y flexibilidad';
+            if (/autoconciencia/.test(n)) return 'autoconciencia';
+            if (/influencia/.test(n)) return 'influencia social';
+            if (/decisiones/.test(n)) return 'toma de decisiones';
+            return String(val || 'fortalezas');
+          };
+          const sorted = [...(normalizedReport.soft_skills || [])].sort((a: any, b: any) => (b?.score ?? 0) - (a?.score ?? 0));
+          const s1 = normalize(sorted[0]?.skill);
+          const s2 = normalize(sorted[1]?.skill);
+          const normalizeMode = (value: unknown): 'remoto' | 'híbrido' | 'presencial' | '' => {
+            if (typeof value !== 'string') return '';
+            const raw = value.trim();
+            if (!raw) return '';
+            const lower = raw
+              .toLowerCase()
+              .normalize('NFD')
+              .replace(/[̀-ͯ]/g, '');
+            if (/(hibrid|mixt|combin|flexib|dual|semipresenc)/.test(lower)) return 'híbrido';
+            if (/(remot|teletrab|home\s*office|desde casa|work from home)/.test(lower)) return 'remoto';
+            if (/(presenc|oficina|onsite|en sitio|en-sitio|cara a cara|oficinas)/.test(lower)) return 'presencial';
+            return '';
+          };
+
+          const jobPreferences = (
+            (report?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
+            ((report as Record<string, unknown> | undefined)?.['job_preferences'] as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
+            (personal?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined)
+          );
+
+          const resolvedPersonalPrefs = resolvedJobPreferences;
+          const personalHasPrefs = personalHasPreferences || personal?.completed;
+          const normalizedWorkEnvironment = normalizeMode(normalizedReport?.ideal_work_environment);
+
+          const preferredMode =
+            normalizeMode(jobPreferences?.['workMode']) ||
+            normalizeMode(jobPreferences?.['work_mode']) ||
+            normalizeMode(jobPreferences?.['preferredMode']) ||
+            normalizeMode(jobPreferences?.['preferred_mode']) ||
+            normalizeMode(jobPreferences?.['mode']) ||
+            (personalHasPrefs ? normalizeMode(resolvedPersonalPrefs.workMode) : '') ||
+            normalizedWorkEnvironment;
+
+          const remotePref = (() => {
+            if (preferredMode === 'remoto') return 'el trabajo remoto';
+            if (preferredMode === 'híbrido') return 'los entornos híbridos';
+            if (preferredMode === 'presencial') return 'los entornos presenciales';
+            const remoteWork = jobPreferences?.['remoteWork'];
+            if (remoteWork === true) return 'el trabajo remoto';
+            return 'los entornos presenciales';
+          })();
+          const rolesArr = Array.isArray(normalizedReport?.suggested_roles) ? normalizedReport.suggested_roles : [];
+          const roleName = (r: any) => {
+            if (!r) return '';
+            if (typeof r === 'string') return r;
+            return r?.role || r?.name || r?.title || r?.label || r?.position || r?.jobTitle || '';
+          };
+          const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0, 2).join(' y ') || 'roles administrativos';
+          const improv = Array.isArray(normalizedReport?.improvement_areas) ? normalizedReport.improvement_areas : [];
+          const clean = (v: string) => String(v || '').replace(/\s*\((?:\d+%?|\d+\s*\/\s*\d+)\)\s*/g, '').trim();
+          const improvementAreas = improv
+            .map((a: any) => {
+              if (!a) return '';
+              if (typeof a === 'string') return clean(a);
+              return clean(a?.area || a?.name || '');
+            })
+            .filter(Boolean)
+            .slice(0, 2)
+            .join(' y ') || 'tus áreas de mejora';
+          const fortalezas = s1 && s2 ? `Aprovecha tu ${s1} y ${s2} para avanzar hacia tus objetivos profesionales.` : s1 ? `Aprovecha tu ${s1} para avanzar hacia tus objetivos profesionales.` : 'Aprovecha tus fortalezas para avanzar hacia tus objetivos profesionales.';
+          return `Este informe ha sido elaborado a partir de tus preferencias laborales, los resultados de los minijuegos y tu CV.\n\n${firstName}, tu perfil muestra una base sólida de habilidades y una clara orientación al crecimiento.\n\n${fortalezas} Además, ${remotePref} y ${roleHint} encajan con tus competencias. Continúa desarrollando ${improvementAreas} y mantén la motivación: tu potencial está en constante evolución.`;
+        };
+
         // Try loading an existing saved report before regenerating (saves 30s+ AI call)
         // Skip if: user just uploaded a new CV (they want a fresh report)
         const hasNewCvUpload = Boolean(personal?.cvFile);
@@ -617,6 +706,15 @@ const ResultadosPage: React.FC = () => {
               if (latestData?.profile_summary || latestData?.summary) {
                 const normalized = latestData as NewReportSchema;
                 setInfo(normalized);
+                // Generar también el markdown y la frase final a partir del informe
+                // cacheado: muchas partes de la UI (botón de PDF, secciones de
+                // corrección del CV, caja final) están condicionadas a `iaReport`
+                // y se quedaban vacías si solo se rellenaba `info`.
+                const cachedMarkdown = generateNewFormatReport(normalized);
+                setIaReport(cachedMarkdown);
+                const cachedScore = pickScore(normalized.employability_score);
+                if (cachedScore) setIaScore(cachedScore);
+                setFinalPhrase(buildFinalPhrase(normalized, normalized.personal_data?.name || userFullName));
                 try {
                   sessionStorage.setItem(reportCacheKey, JSON.stringify({
                     data: normalized, ts: Date.now(), sig: fetchSignatureRef.current,
@@ -1023,91 +1121,16 @@ const ResultadosPage: React.FC = () => {
           }
           // Frase motivacional final destacada (fuera del markdown principal)
           // Construimos SIEMPRE el mensaje final personalizado para la caja azul
-          const composed = ((): string => {
-            const firstName = (String(dp.name || candidateName).split(' ')[0] || 'Tu perfil').trim();
-            const normalize = (val: unknown): string => {
-              const n = String(val || '').toLowerCase().trim();
-              if (!n) return '';
-              if (/anal(í|i)tico/.test(n)) return 'pensamiento analítico';
-              if (/cr(í|i)tico/.test(n)) return 'pensamiento crítico';
-              if (/curiosidad|aprendizaje/.test(n)) return 'curiosidad y aprendizaje';
-              if (/resiliencia|flexibilidad/.test(n)) return 'resiliencia y flexibilidad';
-              if (/autoconciencia/.test(n)) return 'autoconciencia';
-              if (/influencia/.test(n)) return 'influencia social';
-              if (/decisiones/.test(n)) return 'toma de decisiones';
-              return String(val || 'fortalezas');
-            };
-            const sorted = [...(normalized.soft_skills || [])].sort((a: any, b: any) => (b?.score ?? 0) - (a?.score ?? 0));
-            const s1 = normalize(sorted[0]?.skill);
-            const s2 = normalize(sorted[1]?.skill);
-            const normalizeMode = (value: unknown): 'remoto' | 'híbrido' | 'presencial' | '' => {
-              if (typeof value !== 'string') return '';
-              const raw = value.trim();
-              if (!raw) return '';
-              const lower = raw
-                .toLowerCase()
-                .normalize('NFD')
-                .replace(/[\u0300-\u036f]/g, '');
-              if (/(hibrid|mixt|combin|flexib|dual|semipresenc)/.test(lower)) return 'híbrido';
-              if (/(remot|teletrab|home\s*office|desde casa|work from home)/.test(lower)) return 'remoto';
-              if (/(presenc|oficina|onsite|en sitio|en-sitio|cara a cara|oficinas)/.test(lower)) return 'presencial';
-              return '';
-            };
-
-            const jobPreferences = (
-              (report?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
-              ((report as Record<string, unknown> | undefined)?.['job_preferences'] as (Partial<JobPreference> & Record<string, unknown>) | undefined) ??
-              (personal?.jobPreferences as (Partial<JobPreference> & Record<string, unknown>) | undefined)
-            );
-
-            const resolvedPersonalPrefs = resolvedJobPreferences;
-
-            const personalHasPrefs = personalHasPreferences || personal?.completed;
-
-            const normalizedWorkEnvironment = normalizeMode(normalized?.ideal_work_environment);
-
-            const preferredMode =
-              normalizeMode(jobPreferences?.['workMode']) ||
-              normalizeMode(jobPreferences?.['work_mode']) ||
-              normalizeMode(jobPreferences?.['preferredMode']) ||
-              normalizeMode(jobPreferences?.['preferred_mode']) ||
-              normalizeMode(jobPreferences?.['mode']) ||
-              (personalHasPrefs ? normalizeMode(resolvedPersonalPrefs.workMode) : '') ||
-              normalizedWorkEnvironment;
-
-            const remotePref = (() => {
-              if (preferredMode === 'remoto') return 'el trabajo remoto';
-              if (preferredMode === 'híbrido') return 'los entornos híbridos';
-              if (preferredMode === 'presencial') return 'los entornos presenciales';
-              const remoteWork = jobPreferences?.['remoteWork'];
-              if (remoteWork === true) return 'el trabajo remoto';
-              return 'los entornos presenciales';
-            })();
-            const normalizedRoles = Array.isArray(normalized?.suggested_roles) ? normalized.suggested_roles : [];
-            const legacyRoles = Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : [];
-            const rolesArr = normalizedRoles.length > 0 ? normalizedRoles : legacyRoles;
-            const roleName = (r: any) => {
-              if (!r) return '';
-              if (typeof r === 'string') return r;
-              return r?.role || r?.name || r?.title || r?.label || r?.position || r?.jobTitle || '';
-            };
-            const roleHint = rolesArr.map(roleName).filter(Boolean).slice(0, 2).join(' y ') || 'roles administrativos';
-            const normalizedImprovements = Array.isArray(normalized?.improvement_areas) ? normalized.improvement_areas : [];
-            const legacyImprovements = Array.isArray((data as any)?.report?.improvement_areas) ? (data as any).report.improvement_areas : [];
-            const improv = normalizedImprovements.length > 0 ? normalizedImprovements : legacyImprovements;
-            const clean = (v: string) => String(v || '').replace(/\s*\((?:\d+%?|\d+\s*\/\s*\d+)\)\s*/g, '').trim();
-            const improvementAreas = improv
-              .map((a: any) => {
-                if (!a) return '';
-                if (typeof a === 'string') return clean(a);
-                return clean(a?.area || a?.name || '');
-              })
-              .filter(Boolean)
-              .slice(0, 2)
-              .join(' y ') || 'tus áreas de mejora';
-            const fortalezas = s1 && s2 ? `Aprovecha tu ${s1} y ${s2} para avanzar hacia tus objetivos profesionales.` : s1 ? `Aprovecha tu ${s1} para avanzar hacia tus objetivos profesionales.` : 'Aprovecha tus fortalezas para avanzar hacia tus objetivos profesionales.';
-            return `Este informe ha sido elaborado a partir de tus preferencias laborales, los resultados de los minijuegos y tu CV.\n\n${firstName}, tu perfil muestra una base sólida de habilidades y una clara orientación al crecimiento.\n\n${fortalezas} Además, ${remotePref} y ${roleHint} encajan con tus competencias. Continúa desarrollando ${improvementAreas} y mantén la motivación: tu potencial está en constante evolución.`;
-          })();
+          const phraseSource: NewReportSchema = {
+            ...normalized,
+            suggested_roles: (normalized.suggested_roles && normalized.suggested_roles.length > 0)
+              ? normalized.suggested_roles
+              : (Array.isArray((data as any)?.report?.suggested_roles) ? (data as any).report.suggested_roles : []),
+            improvement_areas: (normalized.improvement_areas && normalized.improvement_areas.length > 0)
+              ? normalized.improvement_areas
+              : (Array.isArray((data as any)?.report?.improvement_areas) ? (data as any).report.improvement_areas : []),
+          };
+          const composed = buildFinalPhrase(phraseSource, dp.name || candidateName);
           setFinalPhrase(composed);
           const employabilityScoreValue =
             typeof data?.employabilityScore === 'number'
@@ -1224,7 +1247,7 @@ const ResultadosPage: React.FC = () => {
     }
     fetchSignatureRef.current = '';
     return undefined;
-  }, [report?.jobPreferences, personal.softSkills, report?.softSkills, personal.jobPreferences, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId, dispatch]);
+  }, [report?.jobPreferences, personal.softSkills, report?.softSkills, personal.jobPreferences, cvAnalysis, game?.completedGames, report?.firstName, report?.lastName, report?.userId, user?.id, authLoading, dispatch]);
 
   const handleRetry = () => {
     if (loadingIa) return;
@@ -1263,10 +1286,16 @@ const reportRef = useRef<HTMLDivElement>(null);
           logging: false,
           // Force color rendering — prevents greyscale conversion
           removeContainer: true,
+          // Avoid capturing from the current scroll offset, which cuts off
+          // content above/below the visible viewport when the page is scrolled
+          scrollX: 0,
+          scrollY: 0,
+          windowWidth: document.documentElement.scrollWidth,
         },
         // eslint-disable-next-line @typescript-eslint/ban-ts-comment
         // @ts-ignore — html2pdf types don't include compress
         jsPDF: { unit: 'mm', format: 'a4', orientation: 'portrait', compress: false },
+        pagebreak: { mode: ['css', 'legacy'] },
       }).from(element).save();
     } finally {
       element.classList.remove('pdf-light-export');
@@ -2622,7 +2651,7 @@ const reportRef = useRef<HTMLDivElement>(null);
         {portada}
         {radar}
         
-        <div className="bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 print:bg-white print:shadow-none print:p-0">
+        <div className="pdf-content-wrapper bg-white rounded-lg shadow-md p-6 md:p-8 mb-8 print:bg-white print:shadow-none print:p-0">
           {/* Informe de la IA y formulario de feedback */}
           {/* Estado iaReport disponible para debug en desarrollo */}
 

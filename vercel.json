@@ -1,6 +1,11 @@
 {
   "buildCommand": "cd nuevo-frontend && npm install && npx vite build",
   "outputDirectory": "nuevo-frontend/dist",
+  "functions": {
+    "api/index.py": {
+      "maxDuration": 60
+    }
+  },
   "rewrites": [
     { "source": "/api/:path*", "destination": "/api/index.py" },
     { "source": "/(.*)", "destination": "/index.html" }

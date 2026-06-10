@@ -837,6 +837,16 @@
   page-break-inside: avoid;
 }
 
+/* El contenedor principal del informe agrupa TODO el contenido generado por la IA
+   y casi siempre ocupa varias páginas. Si se le aplica "avoid" (regla anterior),
+   html2pdf no puede mantenerlo en una sola página y termina recortando el
+   contenido que sobrepasa el salto de página. Permitimos que se divida con
+   normalidad; las tarjetas/secciones internas conservan su propio "avoid". */
+.pdf-export-area .rounded-lg.pdf-content-wrapper {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
 .pdf-export-area h1,
 .pdf-export-area h2,
 .pdf-export-area h3 {
