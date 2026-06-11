@@ -23,7 +23,7 @@ import { validateSoftSkills, filterValidSoftSkills } from '../utils/data-validat
 import { useDispatch } from 'react-redux';
 import { generateFinalReport, saveCvAnalysis, saveSoftSkills } from '../features/personal/personalSlice';
 import useCvRating from '../hooks/useCvRating';
-import { convertBackendResponseToNewFormat, generateNewFormatReport, type NewReportSchema, type PersonalData, type NormalizedJobPreferences, type UsefulTools } from '../config/reportConfig';
+import { convertBackendResponseToNewFormat, generateNewFormatReport, getPrettyGameName, type NewReportSchema, type PersonalData, type NormalizedJobPreferences, type UsefulTools } from '../config/reportConfig';
 import { useAuth } from '../context/AuthContext';
 import html2pdf from 'html2pdf.js'; 
 // (import duplicado eliminado)
@@ -1272,6 +1272,11 @@ const reportRef = useRef<HTMLDivElement>(null);
 
   // Oculta elementos que no deben salir en el PDF
   setIsExportingPdf(true);
+
+  // Si la página está desplazada, html2canvas calcula mal la posición del
+  // contenido (con scrollX/scrollY forzados a 0) y recorta la parte
+  // superior del informe. Volvemos al inicio antes de capturar.
+  window.scrollTo(0, 0);
 
   // Espera a que React actualice la pantalla antes de hacer la captura
   await new Promise((resolve) => setTimeout(resolve, 150));
@@ -2606,7 +2611,7 @@ const reportRef = useRef<HTMLDivElement>(null);
 
         <section className="report-section">
           <h2 className="report-section-title">Resultados de minijuegos</h2>
-          {renderList(data.completed_games as string[])}
+          {renderList(((data.completed_games as string[]) || []).map(getPrettyGameName))}
         </section>
 
         <section className="report-section">

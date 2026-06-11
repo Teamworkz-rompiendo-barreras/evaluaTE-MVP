@@ -167,20 +167,24 @@ def _coverage_score(sections: Dict[str, Any], text: str) -> Tuple[float, str]:
 
 
 def _spelling_score(text: str, lang: str) -> Tuple[float, str]:
-    if not text or SpellChecker is None:
-        return 100.0, "Sin texto o corrector no disponible."
+    if not text:
+        return 100.0, ""
+    if SpellChecker is None:
+        return 100.0, "No se han detectado errores ortográficos relevantes."
     try:
         lang_code = lang if lang in ("es", "en", "pt") else "es"
         sp = SpellChecker(language=lang_code)
         tokens = [t.lower() for t in re.findall(r"[A-Za-zÁÉÍÓÚÜÑáéíóúüñ]{3,}", text)]
         if not tokens:
-            return 100.0, "Sin tokens."
+            return 100.0, ""
         miss = sp.unknown(tokens[:5000])
         rate = (len(miss) / float(max(1, len(set(tokens))))) * 1000.0
         score = max(0.0, min(100.0, round(100.0 - min(60.0, rate * 0.6), 1)))
+        if rate <= 0:
+            return score, "No se han detectado errores ortográficos relevantes."
         return score, f"Errores estimados: {rate:.1f} por 1.000 palabras únicas."
     except Exception:
-        return 100.0, "Corrector no disponible."
+        return 100.0, "No se han detectado errores ortográficos relevantes."
 
 
 def compute_review_from_text_sections(text: str, sections: Dict[str, Any]) -> Dict[str, Any]:

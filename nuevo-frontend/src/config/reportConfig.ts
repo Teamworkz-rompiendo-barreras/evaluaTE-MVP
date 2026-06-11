@@ -890,23 +890,28 @@ export function convertBackendResponseToNewFormat(raw: unknown): NewReportSchema
   throw new Error('Formato de datos desconocido');
 }
 
-export function generateNewFormatReport(data: NewReportSchema): string {
-  // Mapeo legible para slugs de minijuegos → títulos en español
-  const gameNameMap: Record<string, string> = {
-    'decision-making': 'Toma de decisiones',
-    'analytical-thinking': 'Pensamiento analítico',
-    'creativity': 'Creatividad',
-    'social-influence': 'Influencia social',
-    'curiosity-learning': 'Curiosidad y aprendizaje',
-    'resilience-flexibility': 'Resiliencia y flexibilidad',
-    'self-awareness': 'Autoconciencia',
-    'empathy': 'Empatía',
-    'critical-thinking': 'Pensamiento crítico',
-    'leadership': 'Liderazgo',
-  };
+// Mapeo legible para slugs de minijuegos → títulos en español
+export const GAME_NAME_MAP: Record<string, string> = {
+  'decision-making': 'Toma de decisiones',
+  'analytical-thinking': 'Pensamiento analítico',
+  'creativity': 'Creatividad',
+  'social-influence': 'Influencia social',
+  'curiosity-learning': 'Curiosidad y aprendizaje',
+  'resilience-flexibility': 'Resiliencia y flexibilidad',
+  'self-awareness': 'Autoconciencia',
+  'empathy': 'Empatía',
+  'critical-thinking': 'Pensamiento crítico',
+  'leadership': 'Liderazgo',
+  'softskills-evaluated': 'Evaluación de habilidades blandas',
+};
 
+export function getPrettyGameName(g: string): string {
+  return GAME_NAME_MAP[g] ?? g.replace(/-/g, ' ');
+}
+
+export function generateNewFormatReport(data: NewReportSchema): string {
   const prettyGames = (data.completed_games || []).map((g) =>
-    gameNameMap[g] ?? g.replace(/-/g, ' ')
+    getPrettyGameName(g)
   );
   const radarData = data.soft_skills.map(s => ({ softskill: s.skill, score: s.score }));
   const prefs = data.job_preferences || {

@@ -170,10 +170,22 @@ class PromptConfig:
             {{ "rol": "Rol Alternativo 1", "ajuste": "...", "justificacion": "Basado en tus skills transferibles..." }}
           ],
           "plan_accion": {{
-            "pasos": ["Corto plazo: ...", "Medio plazo: ..."],
+            "pasos": [
+              "Corto plazo: <acción concreta para 0-1 mes>",
+              "Corto plazo: <segunda acción concreta para 0-1 mes>",
+              "Medio plazo: <acción concreta para 1-3 meses>",
+              "Medio plazo: <segunda acción concreta para 1-3 meses>",
+              "Largo plazo: <acción concreta para 3-6+ meses>",
+              "Largo plazo: <segunda acción concreta para 3-6+ meses>"
+            ],
             "herramientas": ["Trello", "LinkedIn", "Canva..."],
             "lecturas": ["Libro X", "Blog Y", "Curso Z"]
           }},
+          "optimizacion_cv": [
+            "<Sugerencia concreta 1 para mejorar el CV (formato, redacción, datos a añadir/quitar)>",
+            "<Sugerencia concreta 2>",
+            "<Sugerencia concreta 3>"
+          ],
           "capitalizar_fortalezas": "Consejo estratégico sobre cómo usar sus puntos fuertes (Juegos + CV) para conseguir el puesto de {pref_role}.",
           "kit_busqueda": {{
             "frases_linkedin": {{

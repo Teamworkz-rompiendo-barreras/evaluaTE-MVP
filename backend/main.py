@@ -96,6 +96,43 @@ def _map_gemini_to_new_format(raw: dict, soft_skills: list, completed_games: lis
     roles = raw.get("roles_sugeridos") or []
     frases = kit.get("frases_linkedin") or {}
     pasos = plan.get("pasos") or []
+    optimizacion_cv = list(raw.get("optimizacion_cv") or [])
+
+    def _split_pasos(items: list) -> dict:
+        """Agrupa los pasos del plan de acción por horizonte temporal.
+
+        Gemini suele etiquetar cada paso con un prefijo ("Corto plazo:",
+        "Medio plazo:", "Largo plazo:"). Si los prefijos no están presentes
+        (o solo se devuelven 2-4 pasos), se reparte la lista en tres bloques
+        para que "Largo plazo" no quede vacío.
+        """
+        short, medium, long_ = [], [], []
+        untagged = []
+        for p in items:
+            text = str(p).strip()
+            low = text.lower()
+            if low.startswith("corto plazo"):
+                short.append(text)
+            elif low.startswith(("medio plazo", "mediano plazo")):
+                medium.append(text)
+            elif low.startswith("largo plazo"):
+                long_.append(text)
+            else:
+                untagged.append(text)
+
+        if untagged:
+            n = len(untagged)
+            third = max(1, -(-n // 3))  # ceil(n/3)
+            if not short:
+                short = untagged[:third]
+                untagged = untagged[third:]
+            if not medium:
+                medium = untagged[:third]
+                untagged = untagged[third:]
+            if not long_:
+                long_ = untagged
+
+        return {"short_term": short, "medium_term": medium, "long_term": long_}
 
     name = str(dp.get("nombre") or "")
     if not name or name in ("Candidato", "Usuario", "<NOMBRE>"):
@@ -171,13 +208,9 @@ def _map_gemini_to_new_format(raw: dict, soft_skills: list, completed_games: lis
             }
             for r in roles if isinstance(r, dict)
         ],
-        "action_plan": {
-            "short_term": pasos[:2],
-            "medium_term": pasos[2:4] if len(pasos) > 2 else [],
-            "long_term": pasos[4:] if len(pasos) > 4 else [],
-        },
+        "action_plan": _split_pasos(pasos),
         "job_search_advice": {
-            "cv_optimization": [],
+            "cv_optimization": optimizacion_cv,
             "letters_portfolio": [],
             "recommended_platforms": list(plan.get("herramientas") or []),
             "networking": [],
