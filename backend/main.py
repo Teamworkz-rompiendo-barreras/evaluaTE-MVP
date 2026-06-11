@@ -134,6 +134,29 @@ def _map_gemini_to_new_format(raw: dict, soft_skills: list, completed_games: lis
 
         return {"short_term": short, "medium_term": medium, "long_term": long_}
 
+    # Fallback: si Gemini no rellena "optimizacion_cv" (campo nuevo, a veces
+    # omitido), reutilizamos las áreas de mejora del FODA como sugerencias.
+    if not optimizacion_cv:
+        optimizacion_cv = [str(a) for a in (foda.get("areas_mejora") or []) if a][:3]
+
+    # Fallback genérico si Gemini no devuelve "pasos" en absoluto
+    if not pasos:
+        pasos = [
+            "Corto plazo: Actualiza tu CV y perfil de LinkedIn con tus logros más recientes.",
+            "Corto plazo: Prepara una lista de empresas objetivo y empieza a enviar candidaturas.",
+            "Medio plazo: Refuerza tus habilidades técnicas o blandas con un curso corto.",
+            "Medio plazo: Amplía tu red de contactos profesionales (networking).",
+            "Largo plazo: Define un plan de desarrollo profesional a 6-12 meses.",
+            "Largo plazo: Evalúa periódicamente tus avances y ajusta tus objetivos.",
+        ]
+
+    herramientas = list(plan.get("herramientas") or [])
+    lecturas = list(plan.get("lecturas") or [])
+    if not herramientas:
+        herramientas = ["LinkedIn", "Trello", "Canva"]
+    if not lecturas:
+        lecturas = ["Blog de orientación laboral InfoJobs", "Podcast 'Aprendiendo de los mejores'"]
+
     name = str(dp.get("nombre") or "")
     if not name or name in ("Candidato", "Usuario", "<NOMBRE>"):
         name = "Usuario"
@@ -212,14 +235,14 @@ def _map_gemini_to_new_format(raw: dict, soft_skills: list, completed_games: lis
         "job_search_advice": {
             "cv_optimization": optimizacion_cv,
             "letters_portfolio": [],
-            "recommended_platforms": list(plan.get("herramientas") or []),
+            "recommended_platforms": herramientas,
             "networking": [],
             "interview_tips": [],
         },
         "useful_tools": {
-            "productivity": list(plan.get("herramientas") or []),
+            "productivity": herramientas,
             "job_search": [],
-            "learning": list(plan.get("lecturas") or []),
+            "learning": lecturas,
             "accessibility": [],
         },
         "ready_phrases": {
