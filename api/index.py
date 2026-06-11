@@ -10,6 +10,7 @@ from email.mime.multipart import MIMEMultipart
 from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
+import json
 logger = logging.getLogger(__name__)
 
 # SMTP / Supabase config
