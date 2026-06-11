@@ -30,6 +30,23 @@ if _supabase_url and _supabase_key:
     except Exception as _e:
         logger.warning(f"Supabase init failed: {_e}")
 
+#TiDB / MySQL config
+from sqlalchemy import create_engine, text
+
+database_engine = None
+_database_url = os.getenv("DATABASE_URL","")
+
+if _database_url:
+    try:
+        database_engine = create_engine(
+            _database_url,
+            pool_pre_ping=True,
+            poll_recycle=300
+        )
+        logger.info("TiDB/MySQL connection initialized")
+    except Exception as _e:
+        logger.warning(f"TiDB/MySQL init failed: {_e}")
+
 # app must be defined at module level for Vercel's static checker
 app = FastAPI(title="evaluaTE API")
 app.add_middleware(
