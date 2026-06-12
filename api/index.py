@@ -11,6 +11,7 @@ from fastapi import FastAPI, HTTPException, Request
 from fastapi.middleware.cors import CORSMiddleware
 
 import json
+
 logger = logging.getLogger(__name__)
 
 # SMTP / Supabase config
@@ -31,6 +32,7 @@ if _supabase_url and _supabase_key:
     except Exception as _e:
         logger.warning(f"Supabase init failed: {_e}")
 
+
 #TiDB / MySQL config
 from sqlalchemy import create_engine, text
 
@@ -47,6 +49,7 @@ if _database_url:
         logger.info("TiDB/MySQL connection initialized")
     except Exception as _e:
         logger.warning(f"TiDB/MySQL init failed: {_e}")
+
 
 # app must be defined at module level for Vercel's static checker
 app = FastAPI(title="evaluaTE API")
@@ -137,16 +140,34 @@ if not _using_backend:
             "user_data": body.get("userData", {}),
         }
 
-               if supabase_client:
+       """ if supabase_client:
             try:
                 supabase_client.table("feedback_ia").insert(record).execute()
             except Exception as _e:
-                logger.error(f"Supabase insert failed: {_e}")
+                logger.error(f"Supabase insert failed: {_e}")"""
+
+        if database_engine:
+            try:
+                with database_engine.begin() as conn:
+                    conn.execute(
+                        text("""
+                            INSERT INTO feedback_ia (id, rating, comment, user_data)
+                            VALUES (:id, :rating, :comment, :user_data)
+                        """),
+                        {
+                            "id": record.get("id"),
+                            "rating": record.get("rating"),
+                            "comment": record.get("comment"),
+                            "user_data": json.dumps(record.get("user_data", {}), ensure_ascii=False),
+                        }
+                    )
+            except Exception as _e:
+                logger.error(f"TiDB/MySQL insert failed: {_e}")
 
         _send_feedback_email(record)
         return {"ok": True, "id": record["id"]}
 
-    @app.get("/api/informe-ia/feedback/stats")
+    """@app.get("/api/informe-ia/feedback/stats")
     async def feedback_stats():
         if not supabase_client:
             return {"total_feedback": 0, "useful_feedback": 0, "not_useful_feedback": 0, "satisfaction_rate": 0, "recent_feedback": []}
@@ -170,4 +191,59 @@ if not _using_backend:
             }
         except Exception as _e:
             logger.error(f"Error fetching feedback stats: {_e}")
-            return {"total_feedback": 0, "useful_feedback": 0, "not_useful_feedback": 0, "satisfaction_rate": 0, "recent_feedback": []}
+            return {"total_feedback": 0, "useful_feedback": 0, "not_useful_feedback": 0, "satisfaction_rate": 0, "recent_feedback": []}"""
+
+    @app.get("/api/informe-ia/feedback/stats")
+    async def feedback_stats():
+        if not database_engine:
+            return {
+                "total_feedback": 0,
+                "useful_feedback": 0,
+                "not_useful_feedback": 0,
+                "satisfaction_rate": 0,
+                "recent_feedback": []
+            }
+
+        try:
+            with database_engine.connect() as conn:
+                result = conn.execute(
+                    text("""
+                        SELECT id, rating, comment, user_data, `timestamp`, created_at
+                        FROM feedback_ia
+                        ORDER BY `timestamp` DESC
+                        LIMIT 100
+                    """)
+                )
+
+                rows = []
+                for row in result:
+                    item = dict(row._mapping)
+
+                    if item.get("timestamp"):
+                        item["timestamp"] = item["timestamp"].isoformat()
+
+                    if item.get("created_at"):
+                        item["created_at"] = item["created_at"].isoformat()
+
+                    rows.append(item)
+
+            useful = [r for r in rows if r.get("rating") == "Útil"]
+            total = len(rows)
+
+            return {
+                "total_feedback": total,
+                "useful_feedback": len(useful),
+                "not_useful_feedback": total - len(useful),
+                "satisfaction_rate": round(len(useful) / total * 100, 1) if total else 0,
+                "recent_feedback": rows[:20],
+            }
+
+        except Exception as _e:
+            logger.error(f"Error fetching feedback stats from TiDB/MySQL: {_e}")
+            return {
+                "total_feedback": 0,
+                "useful_feedback": 0,
+                "not_useful_feedback": 0,
+                "satisfaction_rate": 0,
+                "recent_feedback": []
+            }
