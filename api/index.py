@@ -140,12 +140,6 @@ if not _using_backend:
             "user_data": body.get("userData", {}),
         }
 
-       """ if supabase_client:
-            try:
-                supabase_client.table("feedback_ia").insert(record).execute()
-            except Exception as _e:
-                logger.error(f"Supabase insert failed: {_e}")"""
-
         if database_engine:
             try:
                 with database_engine.begin() as conn:
@@ -166,32 +160,6 @@ if not _using_backend:
 
         _send_feedback_email(record)
         return {"ok": True, "id": record["id"]}
-
-    """@app.get("/api/informe-ia/feedback/stats")
-    async def feedback_stats():
-        if not supabase_client:
-            return {"total_feedback": 0, "useful_feedback": 0, "not_useful_feedback": 0, "satisfaction_rate": 0, "recent_feedback": []}
-        try:
-            res = (
-                supabase_client.table("feedback_ia")
-                .select("*")
-                .order("timestamp", desc=True)
-                .limit(100)
-                .execute()
-            )
-            rows = res.data or []
-            useful = [r for r in rows if r.get("rating") == "Útil"]
-            total = len(rows)
-            return {
-                "total_feedback": total,
-                "useful_feedback": len(useful),
-                "not_useful_feedback": total - len(useful),
-                "satisfaction_rate": round(len(useful) / total * 100, 1) if total else 0,
-                "recent_feedback": rows[:20],
-            }
-        except Exception as _e:
-            logger.error(f"Error fetching feedback stats: {_e}")
-            return {"total_feedback": 0, "useful_feedback": 0, "not_useful_feedback": 0, "satisfaction_rate": 0, "recent_feedback": []}"""
 
     @app.get("/api/informe-ia/feedback/stats")
     async def feedback_stats():
