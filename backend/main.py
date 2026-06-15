@@ -769,6 +769,21 @@ async def analyze_cv_endpoint(cv_file: UploadFile = File(...)):
         logger.exception("Error en /api/pdf/analyze-cv")
         raise HTTPException(status_code=500, detail=str(e))
 
+# --- TiDB / MySQL config ---
+database_engine = None
+_database_url = os.getenv("DATABASE_URL", "")
+
+if _database_url:
+    try:
+        database_engine = create_engine(
+            _database_url,
+            pool_pre_ping=True,
+            pool_recycle=300
+        )
+        logger.info("TiDB/MySQL connection initialized")
+    except Exception as _e:
+        logger.warning(f"TiDB/MySQL init failed: {_e}")
+
 
 @app.post("/api/informe-ia/feedback")
 async def submit_feedback(request: Request):
