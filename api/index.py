@@ -140,7 +140,12 @@ if not _using_backend:
             "user_data": body.get("userData", {}),
         }
 
-        if database_engine:
+        if not database_engine:
+            logger.error("DATABASE_URL no está configurada o database_engine es None")
+            raise HTTPException(
+                status_code=500,
+                detail="DATABASE_URL no está configurada o database_engine es None"
+            )
             try:
                 with database_engine.begin() as conn:
                     conn.execute(
@@ -157,9 +162,15 @@ if not _using_backend:
                     )
             except Exception as _e:
                 logger.error(f"TiDB/MySQL insert failed: {_e}")
-
-        _send_feedback_email(record)
-        return {"ok": True, "id": record["id"]}
+                raise HTTPException(
+                    status_code=500,
+                    detail=f"TiDB/MySQL insert failed: {_e}"
+                )
+            try:
+                _send_feedback_email(record)
+            except Exception as _e:
+                logger.error(f"TiDB/MySQL message failed: {_e}")
+            return {"ok": True, "id": record["id"]}
 
     @app.get("/api/informe-ia/feedback/stats")
     async def feedback_stats():
