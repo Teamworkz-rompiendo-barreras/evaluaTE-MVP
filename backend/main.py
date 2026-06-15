@@ -787,20 +787,46 @@ async def submit_feedback(request: Request):
         "user_data": body.get("userData", {}),
     }
 
-    # Guardar en Supabase
-    if supabase_client:
-        try:
-            supabase_client.table("feedback_ia").insert(record).execute()
-            logger.info(f"Feedback saved to Supabase: {record['id']}")
-        except Exception as e:
-            logger.error(f"Supabase insert failed (table may not exist): {e}")
+    # Guardar en TiDB/MySQL
+    if not database_engine:
+        logger.error("DATABASE_URL no está configurada o database_engine es None")
+        raise HTTPException(
+            status_code=500,
+            detail="DATABASE_URL no está configurada o database_engine es None"
+        )
+    try:
+        with database_engine.begin() as conn:
+            conn.execute(
+                text("""
+                    INSERT INTO feedback_ia (id, rating, comment, timestamp, user_data)
+                    VALUES (:id, :rating, :comment, :timestamp, :user_data)
+                """),
+                {
+                    "id": record["id"],
+                    "rating": record["rating"],
+                    "comment": record["comment"],
+                    "timestamp": record["timestamp"],
+                    "user_data": json.dumps(record["user_data"], ensure_ascii=False),
+                }
+            )
 
-    # Notificar por email
-    _send_feedback_email(record)
+        logger.info(f"Feedback saved to TiDB/MySQL: {record['id']}")
+
+    except Exception as e:
+        logger.error(f"TiDB/MySQL insert failed: {e}")
+        raise HTTPException(
+            status_code=500,
+            detail=f"TiDB/MySQL insert failed: {e}"
+        )
+
+    # Notificar por email sin romper el endpoint
+    try:
+        _send_feedback_email(record)
+    except Exception as e:
+        logger.error(f"Feedback email failed: {e}")
 
     logger.info(f"Feedback received: rating={record['rating']}")
     return {"ok": True, "id": record["id"]}
-
 
 @app.get("/api/informe-ia/feedback/stats")
 async def feedback_stats():
@@ -814,11 +840,32 @@ async def feedback_stats():
             "recent_feedback": [],
         }
     try:
-        res = supabase_client.table("feedback_ia").select("*").order("timestamp", desc=True).limit(100).execute()
-        rows = res.data or []
-        useful     = [r for r in rows if r.get("rating") == "Útil"]
+        with database_engine.connect() as conn:
+            result = conn.execute(
+                text("""
+                    SELECT id, rating, comment, timestamp, user_data, created_at
+                    FROM feedback_ia
+                    ORDER BY timestamp DESC
+                    LIMIT 100
+                """)
+            )
+
+            rows = []
+            for row in result:
+                item = dict(row._mapping)
+
+                if item.get("timestamp"):
+                    item["timestamp"] = item["timestamp"].isoformat()
+
+                if item.get("created_at"):
+                    item["created_at"] = item["created_at"].isoformat()
+
+                rows.append(item)
+
+        useful = [r for r in rows if r.get("rating") == "Útil"]
         not_useful = [r for r in rows if r.get("rating") != "Útil"]
-        total      = len(rows)
+        total = len(rows)
+
         return {
             "total_feedback": total,
             "useful_feedback": len(useful),
@@ -835,8 +882,6 @@ async def feedback_stats():
             "satisfaction_rate": 0,
             "recent_feedback": [],
         }
-
-
 if __name__ == "__main__":
     host = os.getenv("HOST", "0.0.0.0")
     port = int(os.getenv("PORT", "8080"))
