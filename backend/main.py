@@ -4,7 +4,7 @@ import os
 import time
 from typing import Any, Dict, List, Optional
 
-import sqlalchemy import create_engine, text
+from sqlalchemy import create_engine, text
 
 try:
     import google.generativeai as genai  # type: ignore
@@ -846,7 +846,7 @@ async def submit_feedback(request: Request):
 @app.get("/api/informe-ia/feedback/stats")
 async def feedback_stats():
     """Devuelve estadísticas de feedback para el dashboard."""
-    if not supabase_client:
+    if not database_engine:
         return {
             "total_feedback": 0,
             "useful_feedback": 0,
