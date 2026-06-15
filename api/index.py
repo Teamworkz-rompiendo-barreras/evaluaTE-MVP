@@ -146,31 +146,31 @@ if not _using_backend:
                 status_code=500,
                 detail="DATABASE_URL no está configurada o database_engine es None"
             )
-            try:
-                with database_engine.begin() as conn:
-                    conn.execute(
-                        text("""
-                            INSERT INTO feedback_ia (id, rating, comment, user_data)
-                            VALUES (:id, :rating, :comment, :user_data)
-                        """),
-                        {
-                            "id": record.get("id"),
-                            "rating": record.get("rating"),
-                            "comment": record.get("comment"),
-                            "user_data": json.dumps(record.get("user_data", {}), ensure_ascii=False),
-                        }
-                    )
-            except Exception as _e:
-                logger.error(f"TiDB/MySQL insert failed: {_e}")
-                raise HTTPException(
+        try:
+            with database_engine.begin() as conn:
+                conn.execute(
+                    text("""
+                        INSERT INTO feedback_ia (id, rating, comment, user_data)
+                        VALUES (:id, :rating, :comment, :user_data)
+                    """),
+                    {
+                        "id": record.get("id"),
+                        "rating": record.get("rating"),
+                        "comment": record.get("comment"),
+                        "user_data": json.dumps(record.get("user_data", {}), ensure_ascii=False),
+                    }
+                )
+        except Exception as _e:
+            logger.error(f"TiDB/MySQL insert failed: {_e}")
+            raise HTTPException(
                     status_code=500,
                     detail=f"TiDB/MySQL insert failed: {_e}"
-                )
-            try:
-                _send_feedback_email(record)
-            except Exception as _e:
-                logger.error(f"TiDB/MySQL message failed: {_e}")
-            return {"ok": True, "id": record["id"]}
+            )
+        try:
+            _send_feedback_email(record)
+        except Exception as _e:
+            logger.error(f"TiDB/MySQL message failed: {_e}")
+        return {"ok": True, "id": record["id"]}
 
     @app.get("/api/informe-ia/feedback/stats")
     async def feedback_stats():
