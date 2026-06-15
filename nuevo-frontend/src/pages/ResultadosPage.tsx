@@ -1363,7 +1363,7 @@ const reportRef = useRef<HTMLDivElement>(null);
       } else {
         const errorText = await res.text();
         console.error('Error feedback:', res.status, errorText);
-        setFeedbackError(`No se pudo enviar el feedback. ${res.status}`);
+        setFeedbackError(`No se pudo enviar el feedback. (${res.status})`);
       }
     } catch (error){
       console.error('error de conexion al enviar feedback:', console.error);

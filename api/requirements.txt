@@ -7,3 +7,5 @@ python-multipart==0.0.20
 mangum
 requests
 pyspellchecker
+sqlalchemy
+pymysql
