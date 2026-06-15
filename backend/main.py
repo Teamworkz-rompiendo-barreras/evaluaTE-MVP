@@ -4,6 +4,8 @@ import os
 import time
 from typing import Any, Dict, List, Optional
 
+import sqlalchemy import create_engine, text
+
 try:
     import google.generativeai as genai  # type: ignore
 except ImportError:
