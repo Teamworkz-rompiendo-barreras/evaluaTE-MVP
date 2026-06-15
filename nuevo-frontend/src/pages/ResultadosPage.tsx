@@ -1284,7 +1284,7 @@ const reportRef = useRef<HTMLDivElement>(null);
   // Remove dark mode so brand colors render correctly in the PDF
   const htmlEl = document.documentElement;
   const wasDark = htmlEl.classList.contains('dark');
-  const nombrePdf = `informe-empleabilidad-${personal?.firstName || 'usuario'}.pdf`;
+  const nombrePdf = `informe-empleabilidad-${personal?.firstName || 'usuario'}${personal?.lastName ? `-${personal.lastName}` : ''}.pdf`;
 
   if (wasDark) htmlEl.classList.remove('dark');
 
