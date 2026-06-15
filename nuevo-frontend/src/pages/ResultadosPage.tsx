@@ -1284,6 +1284,7 @@ const reportRef = useRef<HTMLDivElement>(null);
   // Remove dark mode so brand colors render correctly in the PDF
   const htmlEl = document.documentElement;
   const wasDark = htmlEl.classList.contains('dark');
+  const nombrePdf = `informe-empleabilidad-${personal?.firstName || 'usuario'}.pdf`;
 
   if (wasDark) htmlEl.classList.remove('dark');
 
@@ -1293,7 +1294,7 @@ const reportRef = useRef<HTMLDivElement>(null);
     await html2pdf()
       .set({
         margin: [8, 6, 8, 6],
-        filename: 'informe-empleabilidad.pdf',
+        filename: nombrePdf,
         image: { type: 'jpeg', quality: 0.98 },
         html2canvas: {
           scale: 2,
