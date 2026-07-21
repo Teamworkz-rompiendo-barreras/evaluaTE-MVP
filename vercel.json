@@ -1,0 +1,9 @@
+{
+  "version": 2,
+  "buildCommand": "cd nuevo-frontend && npm install && npm run build",
+  "outputDirectory": "nuevo-frontend/dist",
+  "cleanUrls": true,
+  "rewrites": [
+    { "source": "/(.*)", "destination": "/index.html" }
+  ]
+}

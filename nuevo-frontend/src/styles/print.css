@@ -1,0 +1,167 @@
+/* Estilos para impresión del informe de empleabilidad */
+
+/* Reglas de visibilidad base para pantalla */
+@media screen {
+  .screen-only { display: block !important; }
+  .print-only { display: none !important; }
+}
+
+@media print {
+  /* Asegurar fondo blanco y texto negro para todo el documento impreso */
+  html, body {
+    -webkit-print-color-adjust: exact;
+    print-color-adjust: exact;
+    background: #ffffff !important;
+    color: #000000 !important;
+  }
+  /* Alternar visibilidad en impresión */
+  .screen-only { display: none !important; }
+  .print-only { display: block !important; }
+  /* Ocultar elementos que no deben aparecer en la impresión */
+  .print-hidden {
+    display: none !important;
+  }
+  
+  /* Mostrar elementos que deben aparecer en la impresión */
+  .print-block {
+    display: block !important;
+  }
+  
+  /* Ajustes de layout para impresión */
+  .print-p-0 {
+    padding: 0 !important;
+  }
+  
+  .print-max-w-none {
+    max-width: none !important;
+  }
+  
+  /* Fondo blanco para impresión */
+  .print-bg-white {
+    background-color: white !important;
+  }
+  
+  /* Sin sombras en impresión */
+  .print-shadow-none {
+    box-shadow: none !important;
+  }
+  
+  /* Bordes simples para impresión */
+  .print-border {
+    border: 1px solid #ccc !important;
+  }
+  
+  /* Márgenes para impresión */
+  .print-mb-4 {
+    margin-bottom: 1rem !important;
+  }
+  
+  /* Control de saltos de página */
+  .print-page-break-before {
+    page-break-before: always;
+  }
+  
+  .print-page-break-after {
+    page-break-after: always;
+  }
+  
+  .print-page-break-inside-avoid {
+    page-break-inside: avoid;
+  }
+  
+  /* Ajustes específicos para el informe */
+  .print-report-container {
+    margin: 0 !important;
+    padding: 20px !important;
+    max-width: none !important;
+  }
+  
+  .print-report-section {
+    margin-bottom: 30px !important;
+    page-break-inside: avoid;
+  }
+  
+  .print-report-title {
+    font-size: 24px !important;
+    font-weight: bold !important;
+    margin-bottom: 20px !important;
+    color: #1e3a8a !important;
+  }
+  
+  .print-report-subtitle {
+    font-size: 18px !important;
+    font-weight: bold !important;
+    margin-bottom: 15px !important;
+    color: #1e3a8a !important;
+  }
+  
+  .print-report-text {
+    font-size: 12px !important;
+    line-height: 1.4 !important;
+    margin-bottom: 10px !important;
+  }
+  
+  .print-report-list {
+    margin-left: 20px !important;
+    margin-bottom: 15px !important;
+  }
+  
+  .print-report-list li {
+    margin-bottom: 5px !important;
+  }
+  
+  /* Tabla para impresión */
+  .print-table {
+    width: 100% !important;
+    border-collapse: collapse !important;
+    margin-bottom: 20px !important;
+  }
+  
+  .print-table th,
+  .print-table td {
+    border: 1px solid #ccc !important;
+    padding: 8px !important;
+    text-align: left !important;
+    font-size: 11px !important;
+  }
+  
+  .print-table th {
+    background-color: #f3f4f6 !important;
+    font-weight: bold !important;
+  }
+  
+  /* Gráfico para impresión */
+  .print-chart {
+    max-width: 100% !important;
+    height: auto !important;
+    margin: 20px 0 !important;
+  }
+  
+  /* Encabezado y pie de página */
+  @page {
+    margin: 20mm 15mm;
+    size: A4;
+  }
+  
+  /* Ocultar elementos de navegación y UI */
+  nav, 
+  header, 
+  footer,
+  .navbar,
+  .sidebar,
+  .menu,
+  button:not(.print-keep),
+  .btn,
+  .form-controls {
+    display: none !important;
+  }
+
+  /* Asegurar que la portada y secciones principales ocupan todo el ancho en impresión */
+  .professional-report, .report-content, .informe-empleabilidad {
+    box-shadow: none !important;
+    border: none !important;
+    padding: 0 !important;
+    max-width: none !important;
+    width: 100% !important;
+  }
+} 

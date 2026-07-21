@@ -1,0 +1,1532 @@
+/* Estilos específicos para el informe de empleabilidad con accesibilidad cognitiva */
+
+/* Contenedor principal del informe */
+.report-container {
+  max-width: 100%;
+  overflow-x: hidden;
+  word-wrap: break-word;
+  hyphens: auto;
+}
+
+/* Estilos específicos para el renderizado profesional con accesibilidad cognitiva */
+.professional-report {
+  font-family: 'Montserrat', 'OpenDyslexic', 'Verdana', 'Arial', 'Helvetica', system-ui, sans-serif;
+  line-height: 1.8; /* Espaciado de línea más amplio para mejor legibilidad */
+  color: #374151;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  /* Mejoras para accesibilidad cognitiva */
+  font-size: 1.125rem; /* Tamaño base más grande */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+  max-width: 65ch; /* Ancho máximo para mejor legibilidad */
+}
+
+/* Encabezados profesionales con accesibilidad cognitiva */
+.professional-report h1 {
+  font-size: clamp(1.75rem, 4vw, 2.5rem); /* Tamaño responsivo */
+  font-weight: 700;
+  color: #1f2937;
+  margin: 2.5rem 0 1.5rem 0;
+  padding-bottom: 0.75rem;
+  border-bottom: 3px solid #e5e7eb;
+  break-after: avoid;
+  letter-spacing: 0.03em; /* Espaciado de letras más amplio */
+  line-height: 1.4; /* Espaciado de línea más amplio */
+}
+
+.professional-report h2 {
+  font-size: clamp(1.5rem, 3vw, 2rem); /* Tamaño responsivo */
+  font-weight: 600;
+  color: #374151;
+  margin: 2rem 0 1.25rem 0;
+  break-after: avoid;
+  letter-spacing: 0.025em; /* Espaciado de letras aumentado */
+  line-height: 1.5; /* Espaciado de línea más amplio */
+}
+
+.professional-report h3 {
+  font-size: 1.5rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 1.75rem 0 1rem 0;
+  break-after: avoid;
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+  line-height: 1.5; /* Espaciado de línea más amplio */
+}
+
+.professional-report h4 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 1.5rem 0 0.75rem 0;
+  break-after: avoid;
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+  line-height: 1.5; /* Espaciado de línea más amplio */
+}
+
+/* Párrafos profesionales con accesibilidad cognitiva */
+.professional-report p {
+  margin-bottom: 1.5rem; /* Más espaciado entre párrafos */
+  text-align: justify;
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  max-width: 65ch; /* Ancho máximo para mejor legibilidad */
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  color: #374151;
+  font-size: 1.125rem; /* Tamaño más grande */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Listas profesionales con accesibilidad cognitiva */
+.professional-report ul,
+.professional-report ol {
+  margin: 1.5rem 0; /* Más espaciado */
+  padding-left: 2rem; /* Sangría más amplia */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+}
+
+.professional-report li {
+  margin-bottom: 1rem; /* Más espaciado entre elementos */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  text-align: left;
+  color: #374151;
+  font-size: 1.125rem; /* Tamaño más grande */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+.professional-report ul li {
+  list-style-type: disc;
+  color: #6b7280;
+}
+
+.professional-report ol li {
+  list-style-type: decimal;
+  color: #6b7280;
+}
+
+/* Corregir espaciado del primer bullet point en listas profesionales */
+.professional-report ul li:first-child,
+.professional-report ol li:first-child {
+  margin-top: 0 !important;
+}
+
+.professional-report ul li:not(:first-child),
+.professional-report ol li:not(:first-child) {
+  margin-top: 0.5rem !important;
+}
+
+/* Listas anidadas con accesibilidad cognitiva */
+.professional-report ul ul,
+.professional-report ol ol,
+.professional-report ul ol,
+.professional-report ol ul {
+  margin: 1rem 0; /* Más espaciado */
+  padding-left: 2rem; /* Sangría más amplia */
+}
+
+/* Corregir espaciado del primer bullet point en listas anidadas profesionales */
+.professional-report ul ul li:first-child,
+.professional-report ol ol li:first-child,
+.professional-report ul ol li:first-child,
+.professional-report ol ul li:first-child {
+  margin-top: 0 !important;
+}
+
+.professional-report ul ul li:not(:first-child),
+.professional-report ol ol li:not(:first-child),
+.professional-report ul ol li:not(:first-child),
+.professional-report ol ul li:not(:first-child) {
+  margin-top: 0.5rem !important;
+}
+
+/* Enlaces profesionales con accesibilidad cognitiva */
+.professional-report a {
+  color: #2563eb;
+  text-decoration: underline; /* Subrayado siempre visible */
+  text-underline-offset: 0.3em; /* Espaciado del subrayado */
+  text-decoration-thickness: 2px; /* Subrayado más grueso */
+  word-break: break-all;
+  transition: color 0.2s ease;
+  font-weight: 600; /* Peso de fuente más visible */
+}
+
+.professional-report a:hover {
+  color: #15803d;
+  text-decoration-thickness: 3px; /* Subrayado más grueso al hacer hover */
+}
+
+/* Código inline profesional con accesibilidad cognitiva */
+.professional-report code {
+  background-color: #f3f4f6;
+  padding: 0.375rem 0.75rem; /* Padding más generoso */
+  border-radius: 0.375rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 1rem; /* Tamaño más grande */
+  word-break: break-all;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  letter-spacing: 0.01em; /* Espaciado de letras ligeramente aumentado */
+}
+
+/* Bloques de código profesionales con accesibilidad cognitiva */
+.professional-report pre {
+  background-color: #f9fafb;
+  border: 2px solid #e5e7eb; /* Borde más grueso */
+  border-radius: 0.75rem;
+  padding: 2rem; /* Padding más generoso */
+  overflow-x: auto;
+  margin: 2rem 0; /* Más espaciado */
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 1rem; /* Tamaño más grande */
+  line-height: 1.7; /* Espaciado de línea más amplio */
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  letter-spacing: 0.01em; /* Espaciado de letras ligeramente aumentado */
+}
+
+.professional-report pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  color: #1f2937;
+}
+
+/* Citas profesionales con accesibilidad cognitiva */
+.professional-report blockquote {
+  border-left: 4px solid #3b82f6;
+  padding: 1.5rem 2rem; /* Padding más generoso */
+  margin: 2rem 0; /* Más espaciado */
+  font-style: italic;
+  color: #4b5563;
+  background-color: #eff6ff;
+  border-radius: 0 0.5rem 0.5rem 0;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  font-size: 1.125rem; /* Tamaño más grande */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Tablas profesionales con accesibilidad cognitiva */
+.professional-report table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 2rem 0; /* Más espaciado */
+  overflow-x: auto;
+  display: block;
+  box-shadow: 0 2px 4px 0 rgba(0, 0, 0, 0.1);
+  border-radius: 0.5rem;
+  border: 2px solid #e5e7eb; /* Borde más grueso */
+}
+
+.professional-report table th,
+.professional-report table td {
+  border: 2px solid #d1d5db; /* Bordes más gruesos */
+  padding: 1.25rem; /* Padding más generoso */
+  text-align: left;
+  vertical-align: top;
+  word-wrap: break-word;
+  max-width: 250px;
+  font-size: 1rem; /* Tamaño más grande */
+  line-height: 1.6; /* Espaciado de línea más amplio */
+}
+
+.professional-report table th {
+  background-color: #f8fafc;
+  font-weight: 700; /* Peso de fuente más visible */
+  color: #1f2937;
+  font-size: 1.125rem; /* Tamaño más grande */
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.professional-report table td {
+  color: #374151;
+  font-size: 1rem; /* Tamaño más grande */
+}
+
+/* Imágenes profesionales con accesibilidad cognitiva */
+.professional-report img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.75rem;
+  margin: 2rem 0; /* Más espaciado */
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1);
+  border: 2px solid #e5e7eb; /* Borde para mejor definición */
+}
+
+/* Separadores horizontales profesionales con accesibilidad cognitiva */
+.professional-report hr {
+  border: none;
+  border-top: 3px solid #e5e7eb; /* Línea más gruesa */
+  margin: 3rem 0; /* Más espaciado */
+  opacity: 0.8;
+}
+
+/* Texto resaltado profesional con accesibilidad cognitiva */
+.professional-report strong {
+  font-weight: 700; /* Peso de fuente más visible */
+  color: #1f2937;
+}
+
+.professional-report em {
+  font-style: italic;
+  color: #4b5563;
+}
+
+/* Estilos para el contenido del markdown con accesibilidad cognitiva */
+.report-content {
+  font-family: 'Montserrat', 'OpenDyslexic', 'Verdana', 'Arial', 'Helvetica', system-ui, sans-serif;
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  color: #374151;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  /* Mejoras para accesibilidad cognitiva */
+  font-size: 1.125rem; /* Tamaño base más grande */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+  max-width: 65ch; /* Ancho máximo para mejor legibilidad */
+}
+
+/* Encabezados con accesibilidad cognitiva */
+.report-content h1 {
+  font-size: clamp(1.5rem, 3vw, 2rem); /* Tamaño responsivo */
+  font-weight: 700;
+  color: #1f2937;
+  margin: 2rem 0 1rem 0;
+  padding-bottom: 0.5rem;
+  border-bottom: 2px solid #e5e7eb;
+  break-after: avoid;
+  letter-spacing: 0.025em; /* Espaciado de letras aumentado */
+  line-height: 1.5; /* Espaciado de línea más amplio */
+}
+
+.report-content h2 {
+  font-size: clamp(1.25rem, 2.5vw, 1.75rem); /* Tamaño responsivo */
+  font-weight: 600;
+  color: #374151;
+  margin: 1.5rem 0 1rem 0;
+  break-after: avoid;
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+  line-height: 1.5; /* Espaciado de línea más amplio */
+}
+
+.report-content h3 {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #4b5563;
+  margin: 1.25rem 0 0.75rem 0;
+  break-after: avoid;
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+  line-height: 1.5; /* Espaciado de línea más amplio */
+}
+
+.report-content h4 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  color: #6b7280;
+  margin: 1rem 0 0.5rem 0;
+  break-after: avoid;
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+  line-height: 1.5; /* Espaciado de línea más amplio */
+}
+
+/* Párrafos con accesibilidad cognitiva */
+.report-content p {
+  margin-bottom: 1.25rem; /* Más espaciado */
+  text-align: justify;
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  max-width: 65ch; /* Ancho máximo para mejor legibilidad */
+  font-size: 1.125rem; /* Tamaño más grande */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Listas con accesibilidad cognitiva */
+.report-content ul,
+.report-content ol {
+  margin: 1.25rem 0; /* Más espaciado */
+  padding-left: 1.75rem; /* Sangría más amplia */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+}
+
+.report-content li {
+  margin-bottom: 0.75rem; /* Más espaciado entre elementos */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  text-align: left;
+  font-size: 1.125rem; /* Tamaño más grande */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+.report-content ul li {
+  list-style-type: disc;
+}
+
+.report-content ol li {
+  list-style-type: decimal;
+}
+
+/* Corregir espaciado del primer bullet point en listas generales */
+.report-content ul li:first-child,
+.report-content ol li:first-child {
+  margin-top: 0 !important;
+}
+
+.report-content ul li:not(:first-child),
+.report-content ol li:not(:first-child) {
+  margin-top: 0.5rem !important;
+}
+
+/* Listas anidadas con accesibilidad cognitiva */
+.report-content ul ul,
+.report-content ol ol,
+.report-content ul ol,
+.report-content ol ul {
+  margin: 0.75rem 0; /* Más espaciado */
+  padding-left: 1.75rem; /* Sangría más amplia */
+}
+
+/* Corregir espaciado del primer bullet point en listas anidadas */
+.report-content ul ul li:first-child,
+.report-content ol ol li:first-child,
+.report-content ul ol li:first-child,
+.report-content ol ul li:first-child {
+  margin-top: 0 !important;
+}
+
+.report-content ul ul li:not(:first-child),
+.report-content ol ol li:not(:first-child),
+.report-content ul ol li:not(:first-child),
+.report-content ol ul li:not(:first-child) {
+  margin-top: 0.5rem !important;
+}
+
+/* Enlaces con accesibilidad cognitiva */
+.report-content a {
+  color: #2563eb;
+  text-decoration: underline; /* Subrayado siempre visible */
+  text-underline-offset: 0.3em; /* Espaciado del subrayado */
+  text-decoration-thickness: 2px; /* Subrayado más grueso */
+  word-break: break-all;
+  font-weight: 600; /* Peso de fuente más visible */
+}
+
+.report-content a:hover {
+  color: #15803d;
+  text-decoration-thickness: 3px; /* Subrayado más grueso al hacer hover */
+}
+
+/* Código inline con accesibilidad cognitiva */
+.report-content code {
+  background-color: #f3f4f6;
+  padding: 0.25rem 0.5rem;
+  border-radius: 0.25rem;
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 1rem; /* Tamaño más grande */
+  word-break: break-all;
+  color: #1f2937;
+  border: 1px solid #e5e7eb;
+  letter-spacing: 0.01em; /* Espaciado de letras ligeramente aumentado */
+}
+
+/* Bloques de código con accesibilidad cognitiva */
+.report-content pre {
+  background-color: #f9fafb;
+  border: 2px solid #e5e7eb; /* Borde más grueso */
+  border-radius: 0.5rem;
+  padding: 1.5rem; /* Padding más generoso */
+  overflow-x: auto;
+  margin: 1.5rem 0; /* Más espaciado */
+  font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', 'Consolas', monospace;
+  font-size: 1rem; /* Tamaño más grande */
+  line-height: 1.7; /* Espaciado de línea más amplio */
+  letter-spacing: 0.01em; /* Espaciado de letras ligeramente aumentado */
+}
+
+.report-content pre code {
+  background: none;
+  padding: 0;
+  border-radius: 0;
+  border: none;
+  color: #1f2937;
+}
+
+/* Citas con accesibilidad cognitiva */
+.report-content blockquote {
+  border-left: 4px solid #e5e7eb;
+  padding: 1.25rem 1.5rem; /* Padding más generoso */
+  margin: 1.5rem 0; /* Más espaciado */
+  font-style: italic;
+  color: #6b7280;
+  background-color: #f9fafb;
+  border-radius: 0 0.5rem 0.5rem 0;
+  font-size: 1.125rem; /* Tamaño más grande */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Tablas con accesibilidad cognitiva */
+.report-content table {
+  width: 100%;
+  border-collapse: collapse;
+  margin: 1.5rem 0; /* Más espaciado */
+  overflow-x: auto;
+  display: block;
+  border: 2px solid #e5e7eb; /* Borde más grueso */
+  border-radius: 0.5rem;
+}
+
+.report-content table th,
+.report-content table td {
+  border: 2px solid #d1d5db; /* Bordes más gruesos */
+  padding: 1rem; /* Padding más generoso */
+  text-align: left;
+  vertical-align: top;
+  word-wrap: break-word;
+  max-width: 200px;
+  font-size: 1rem; /* Tamaño más grande */
+  line-height: 1.6; /* Espaciado de línea más amplio */
+}
+
+.report-content table th {
+  background-color: #f9fafb;
+  font-weight: 700; /* Peso de fuente más visible */
+  color: #374151;
+  font-size: 1.125rem; /* Tamaño más grande */
+}
+
+/* Imágenes con accesibilidad cognitiva */
+.report-content img {
+  max-width: 100%;
+  height: auto;
+  border-radius: 0.5rem;
+  margin: 1.5rem 0; /* Más espaciado */
+  border: 2px solid #e5e7eb; /* Borde para mejor definición */
+}
+
+/* Separadores horizontales con accesibilidad cognitiva */
+.report-content hr {
+  border: none;
+  border-top: 2px solid #e5e7eb; /* Línea más gruesa */
+  margin: 2.5rem 0; /* Más espaciado */
+}
+
+/* Texto resaltado con accesibilidad cognitiva */
+.report-content strong {
+  font-weight: 700; /* Peso de fuente más visible */
+  color: #1f2937;
+}
+
+.report-content em {
+  font-style: italic;
+  color: #4b5563;
+}
+
+/* Contenedores especiales con accesibilidad cognitiva */
+.report-highlight {
+  background-color: #fef3c7;
+  border: 2px solid #f59e0b; /* Borde más grueso */
+  border-radius: 0.5rem;
+  padding: 1.5rem; /* Padding más generoso */
+  margin: 1.5rem 0; /* Más espaciado */
+  font-size: 1.125rem; /* Tamaño más grande */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+.report-warning {
+  background-color: #fef2f2;
+  border: 2px solid #ef4444; /* Borde más grueso */
+  border-radius: 0.5rem;
+  padding: 1.5rem; /* Padding más generoso */
+  margin: 1.5rem 0; /* Más espaciado */
+  font-size: 1.125rem; /* Tamaño más grande */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+.report-info {
+  background-color: #eff6ff;
+  border: 2px solid #3b82f6; /* Borde más grueso */
+  border-radius: 0.5rem;
+  padding: 1.5rem; /* Padding más generoso */
+  margin: 1.5rem 0; /* Más espaciado */
+  font-size: 1.125rem; /* Tamaño más grande */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Modo oscuro específico: mejorar contraste del cajón destacado */
+.dark .report-highlight {
+  background-color: #14532d !important; /* blue-800 */
+  border-color: #60a5fa !important;     /* blue-300 */
+  color: #ffffff !important;
+}
+
+/* Responsive design con accesibilidad cognitiva */
+@media (max-width: 768px) {
+  .report-content {
+    font-size: 1rem; /* Tamaño mínimo accesible */
+    line-height: 1.7; /* Espaciado de línea cómodo */
+  }
+  
+  .report-content h1 {
+    font-size: 1.5rem;
+  }
+  
+  .report-content h2 {
+    font-size: 1.375rem;
+  }
+  
+  .report-content h3 {
+    font-size: 1.25rem;
+  }
+  
+  .report-content ul,
+  .report-content ol {
+    padding-left: 1.5rem; /* Sangría ajustada */
+  }
+  
+  .report-content table {
+    font-size: 0.95rem; /* Tamaño mínimo accesible */
+  }
+  
+  .report-content table th,
+  .report-content table td {
+    padding: 0.75rem; /* Padding ajustado */
+    max-width: 150px;
+  }
+}
+
+@media (max-width: 480px) {
+  .report-content {
+    font-size: 1rem; /* Tamaño mínimo accesible */
+    line-height: 1.6; /* Espaciado de línea cómodo */
+  }
+  
+  .report-content h1 {
+    font-size: 1.375rem;
+  }
+  
+  .report-content h2 {
+    font-size: 1.25rem;
+  }
+  
+  .report-content h3 {
+    font-size: 1.125rem;
+  }
+  
+  .report-content ul,
+  .report-content ol {
+    padding-left: 1.25rem; /* Sangría ajustada */
+  }
+  
+  .report-content table {
+    font-size: 0.95rem; /* Tamaño mínimo accesible */
+  }
+  
+  .report-content table th,
+  .report-content table td {
+    padding: 0.5rem; /* Padding mínimo */
+    max-width: 120px;
+  }
+}
+
+/* Estilos para impresión con accesibilidad cognitiva */
+@media print {
+  .report-content {
+    font-size: 14pt; /* Tamaño mínimo accesible para impresión */
+    line-height: 1.6; /* Espaciado de línea cómodo */
+    color: #000;
+  }
+  
+  .report-content h1 {
+    font-size: 20pt; /* Tamaño mínimo accesible */
+    page-break-after: avoid;
+  }
+  
+  .report-content h2 {
+    font-size: 18pt; /* Tamaño mínimo accesible */
+    page-break-after: avoid;
+  }
+  
+  .report-content h3 {
+    font-size: 16pt; /* Tamaño mínimo accesible */
+    page-break-after: avoid;
+  }
+  
+  .report-content p {
+    margin-bottom: 1rem; /* Espaciado generoso */
+    text-align: justify;
+  }
+  
+  .report-content ul,
+  .report-content ol {
+    margin: 1rem 0; /* Espaciado generoso */
+  }
+  
+  .report-content li {
+    margin-bottom: 0.5rem; /* Espaciado entre elementos */
+  }
+  
+  .report-content table {
+    page-break-inside: avoid;
+  }
+  
+  .report-content table th,
+  .report-content table td {
+    padding: 0.75rem; /* Padding generoso */
+    font-size: 12pt; /* Tamaño mínimo accesible */
+  }
+  
+  /* Evitar cortes de palabras */
+  .report-content {
+    word-break: keep-all;
+    overflow-wrap: normal;
+    hyphens: none;
+  }
+  
+  /* Saltos de página */
+  .report-content h1,
+  .report-content h2 {
+    page-break-after: avoid;
+  }
+  
+  .report-content h3,
+  .report-content h4 {
+    page-break-after: avoid;
+  }
+  
+  .report-content p,
+  .report-content ul,
+  .report-content ol {
+    page-break-inside: avoid;
+  }
+}
+
+/* Estilos específicos para el contenedor del informe con accesibilidad cognitiva */
+.informe-empleabilidad {
+  background-color: #ffffff;
+  border-radius: 0.75rem;
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.1), 0 2px 4px -1px rgba(0, 0, 0, 0.06);
+  padding: 2.5rem; /* Padding más generoso */
+  margin-bottom: 2.5rem; /* Más espaciado */
+  overflow: hidden;
+  border: 2px solid #e5e7eb; /* Borde para mejor definición */
+}
+
+/* Mejoras para el texto largo con accesibilidad cognitiva */
+.informe-empleabilidad .report-content {
+  max-width: 100%;
+  overflow-wrap: break-word;
+  word-wrap: break-word;
+  word-break: break-word;
+  hyphens: auto;
+  font-size: 1.125rem; /* Tamaño más grande */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Ajustes para listas largas con accesibilidad cognitiva */
+.informe-empleabilidad .report-content ul li,
+.informe-empleabilidad .report-content ol li {
+  margin-bottom: 1rem; /* Más espaciado */
+  padding-left: 0.75rem; /* Sangría más amplia */
+  text-align: left;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  font-size: 1.125rem; /* Tamaño más grande */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Corregir espaciado del primer bullet point en listas del informe de empleabilidad */
+.informe-empleabilidad .report-content ul li:first-child,
+.informe-empleabilidad .report-content ol li:first-child {
+  margin-top: 0 !important;
+}
+
+.informe-empleabilidad .report-content ul li:not(:first-child),
+.informe-empleabilidad .report-content ol li:not(:first-child) {
+  margin-top: 1rem !important;
+}
+
+/* Mejoras para párrafos largos con accesibilidad cognitiva */
+.informe-empleabilidad .report-content p {
+  text-align: justify;
+  hyphens: auto;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 65ch; /* Ancho máximo para mejor legibilidad */
+  font-size: 1.125rem; /* Tamaño más grande */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+/* Ajustes para tablas responsivas con accesibilidad cognitiva */
+.informe-empleabilidad .report-content table {
+  min-width: 100%;
+  overflow-x: auto;
+  display: block;
+  border: 2px solid #e5e7eb; /* Borde más grueso */
+}
+
+.informe-empleabilidad .report-content table th,
+.informe-empleabilidad .report-content table td {
+  white-space: normal;
+  word-wrap: break-word;
+  overflow-wrap: break-word;
+  max-width: 200px;
+  font-size: 1rem; /* Tamaño más grande */
+  line-height: 1.6; /* Espaciado de línea más amplio */
+  padding: 1rem; /* Padding más generoso */
+}
+
+/* Modo oscuro: forzar el mismo esquema visual que en modo claro dentro del informe */
+.dark .informe-empleabilidad,
+.dark .informe-empleabilidad .report-content {
+  background-color: #374151 !important;
+  color: #374151 !important;
+}
+
+.dark .informe-empleabilidad .report-content h1 { color: #1f2937 !important; }
+.dark .informe-empleabilidad .report-content h2 { color: #374151 !important; }
+.dark .informe-empleabilidad .report-content h3 { color: #4b5563 !important; }
+.dark .informe-empleabilidad .report-content h4 { color: #6b7280 !important; }
+.dark .informe-empleabilidad .report-content p,
+.dark .informe-empleabilidad .report-content li,
+.dark .informe-empleabilidad .report-content td { color: #374151 !important; }
+.dark .informe-empleabilidad .report-content strong { color: #1f2937 !important; }
+.dark .informe-empleabilidad .report-content em { color: #1f2937 !important; }
+.dark .informe-empleabilidad .report-content a { color: #2563eb !important; }
+.dark .informe-empleabilidad .report-content code { background-color: #f3f4f6 !important; color: #1f2937 !important; border-color: #e5e7eb !important; }
+.dark .informe-empleabilidad .report-content pre { background-color: #f9fafb !important; border-color: #e5e7eb !important; }
+.dark .informe-empleabilidad .report-content table th,
+.dark .informe-empleabilidad .report-content table td { border-color: #d1d5db !important; color: #374151 !important; }
+.dark .informe-empleabilidad .report-content table th { background-color: #f8fafc !important; color: #1f2937 !important; }
+.dark .informe-empleabilidad blockquote { background-color: #eff6ff !important; color: #4b5563 !important; }
+
+/*PDF Area*/
+.pdf-export-area {
+  width: 100% !important;
+  max-width: none !important;
+  margin: 0 !important;
+  padding: 0 !important;
+  background: #ffffff;
+}
+
+.pdf-export-area > * {
+  width: 100% !important;
+  max-width: none !important;
+}
+
+.pdf-export-area * {
+  box-sizing: border-box;
+}
+
+.avoid-break,
+.pdf-no-break {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* Evitar fragmentos en secciones principales del PDF */
+.pdf-export-area .rounded-lg {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* El contenedor principal del informe agrupa TODO el contenido generado por la IA
+   y casi siempre ocupa varias páginas. Si se le aplica "avoid" (regla anterior),
+   html2pdf no puede mantenerlo en una sola página y termina recortando el
+   contenido que sobrepasa el salto de página. Permitimos que se divida con
+   normalidad; las tarjetas/secciones internas conservan su propio "avoid". */
+.pdf-export-area .rounded-lg.pdf-content-wrapper {
+  break-inside: auto;
+  page-break-inside: auto;
+}
+
+.pdf-export-area h1,
+.pdf-export-area h2,
+.pdf-export-area h3 {
+  break-after: avoid;
+  page-break-after: avoid;
+}
+
+.pdf-export-area li {
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+/* =====================================================
+   DISEÑO REDISEÑADO — PORTADA
+   ===================================================== */
+
+.report-portada {
+  background: linear-gradient(145deg, #8095F2  0%, #374BA6  60%, #1F2937 100%);
+  border-radius: 1rem;
+  overflow: hidden;
+  margin-bottom: 1.5rem;
+  box-shadow: 0 12px 40px rgba(55, 75, 166, 0.35);
+  break-inside: avoid;
+  page-break-inside: avoid;
+}
+
+.report-portada-header {
+  padding: 3rem 2.5rem 2.5rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  text-align: center;
+}
+
+.report-portada-logo {
+  width: 90px;
+  margin-bottom: 1.75rem;
+  filter: brightness(0) invert(1);
+  opacity: 0.92;
+}
+
+.report-portada-avatar {
+  width: 80px;
+  height: 80px;
+  border-radius: 50%;
+  background: rgba(255, 255, 255, 0.18);
+  border: 3px solid rgba(255, 255, 255, 0.45);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-size: 1.875rem;
+  font-weight: 700;
+  color: white;
+  letter-spacing: 0.05em;
+  margin-bottom: 1.5rem;
+}
+
+.report-portada-title {
+  font-size: 2rem;
+  font-weight: 800;
+  color: white;
+  letter-spacing: -0.01em;
+  margin-bottom: 0.5rem;
+  line-height: 1.2;
+}
+
+.report-portada-name {
+  font-size: 1.375rem;
+  font-weight: 600;
+  color: rgba(255, 255, 255, 0.9);
+  margin-bottom: 0.375rem;
+}
+
+.report-portada-date {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.9rem;
+  letter-spacing: 0.03em;
+}
+
+.report-portada-score {
+  background: rgba(255, 255, 255, 0.13);
+  border: 1.5px solid rgba(255, 255, 255, 0.3);
+  border-radius: 1.5rem;
+  padding: 0.875rem 2.25rem;
+  margin-top: 1.75rem;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 0.125rem;
+}
+
+.report-portada-score-label {
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+  color: rgba(255, 255, 255, 0.65);
+  font-weight: 600;
+}
+
+.report-portada-score-value {
+  font-size: 2.75rem;
+  font-weight: 800;
+  color: white;
+  line-height: 1;
+}
+
+.report-portada-score-unit {
+  font-size: 1.1rem;
+  font-weight: 400;
+  opacity: 0.7;
+  margin-left: 2px;
+}
+
+.report-portada-footer {
+  background: rgba(255, 255, 255, 0.07);
+  border-top: 1px solid rgba(255, 255, 255, 0.12);
+  padding: 1.25rem 2.5rem;
+  display: flex;
+  justify-content: center;
+}
+
+/* =====================================================
+   SECCIONES DEL INFORME
+   ===================================================== */
+
+.report-section {
+  padding-bottom: 2rem;
+  margin-bottom: 2rem;
+  border-bottom: 1px solid #f1f5f9;
+}
+
+.report-section:last-child {
+  border-bottom: none;
+}
+
+.report-section-title {
+  font-size: 1.2rem;
+  font-weight: 700;
+  color: #374BA6 ;
+  margin-bottom: 1.25rem;
+  display: flex;
+  align-items: center;
+  gap: 0.625rem;
+}
+
+.report-section-title::before {
+  content: '';
+  display: inline-block;
+  width: 4px;
+  height: 1.25em;
+  background: linear-gradient(180deg, #8095F2 , #6366f1);
+  border-radius: 2px;
+  flex-shrink: 0;
+}
+
+/* =====================================================
+   SKILL BARS (panel radar)
+   ===================================================== */
+
+.skill-bar-row {
+    display: flex;
+    flex-direction: column;
+    gap: 4px;
+    margin-bottom: 10px;
+    width: 100%;
+  }
+
+  .skill-bar-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: baseline;
+    gap: 12px;
+    width: 100%;
+  }
+
+  .skill-bar-label {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: unset;
+    line-height: 1.2;
+    font-size: 0.85rem;
+    font-weight: 600;
+  }
+
+
+.skill-bar-track {
+  width: 100%;
+  height: 7px;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.25);
+  overflow: hidden;
+}
+
+.skill-bar-fill {
+  height: 100%;
+  border-radius: 999px;
+}
+
+.skill-bar-fill.high   { background: linear-gradient(90deg, #10B981, #059669); }
+.skill-bar-fill.medium { background: linear-gradient(90deg, #F59E0B, #D97706); }
+.skill-bar-fill.low    { background: linear-gradient(90deg, #EF4444, #DC2626); }
+
+.skill-bar-score {
+  flex-shrink: 0;
+  white-space: nowrap;
+  text-align: right;
+  font-size: 0.8rem;
+  font-weight: 600;
+}
+
+/* =====================================================
+   FORTALEZAS — TAGS
+   ===================================================== */
+
+.strength-tags-grid {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+.strength-tag {
+  background: #F0E8D1;
+  color: #374BA6;
+  border: 1px solid #8095F2;
+  border-radius: 2rem;
+  padding: 0.35rem 1rem;
+  font-size: 0.85rem;
+  font-weight: 500;
+  line-height: 1.4;
+}
+
+.dark .strength-tag {
+  background: #1F2937 !important;
+  color: #F2D680 !important;
+  border-color: #EFD177 !important;
+}
+/* =====================================================
+   ÁREAS DE MEJORA — CARDS
+   ===================================================== */
+
+.improvement-cards {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.improvement-card {
+  background: #FFF7ED;
+  border: 1px solid #fed7aa;
+  border-left: 4px solid #8095F2;
+  border-radius: 0.5rem;
+  padding: 0.875rem 1.125rem;
+}
+
+.improvement-area {
+  font-weight: 700;
+  color: #552202;
+  font-size: 0.95rem;
+  margin-bottom: 0.25rem;
+}
+
+.improvement-reason {
+  color: #b07959;
+  font-size: 0.875rem;
+  margin-bottom: 0.375rem;
+  line-height: 1.5;
+}
+
+.improvement-action {
+  color: #000000;
+  font-size: 0.85rem;
+  font-weight: 600;
+}
+
+/* =====================================================
+   ANÁLISIS CV — PUNTUACIONES
+   ===================================================== */
+
+.cv-score-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(140px, 1fr));
+  gap: 0.75rem;
+  margin-bottom: 1.25rem;
+}
+
+.cv-score-item {
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.625rem;
+  padding: 0.875rem 0.75rem;
+  text-align: center;
+}
+
+.cv-score-label {
+  font-size: 0.7rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.07em;
+  color: #9ca3af;
+  margin-bottom: 0.5rem;
+}
+
+.cv-score-stars {
+  font-size: 1.2rem;
+  margin-bottom: 0.125rem;
+}
+
+.cv-score-number {
+  font-size: 0.7rem;
+  color: #d1d5db;
+}
+
+/* =====================================================
+   DATOS PERSONALES — GRID
+   ===================================================== */
+
+.personal-data-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
+  gap: 0.875rem;
+}
+
+.personal-data-item {
+  display: flex;
+  flex-direction: column;
+  gap: 0.125rem;
+  padding: 0.75rem 1rem;
+  background: #f9fafb;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.5rem;
+}
+
+.personal-data-label {
+  font-size: 0.65rem;
+  font-weight: 700;
+  text-transform: uppercase;
+  letter-spacing: 0.09em;
+  color: #9ca3af;
+}
+
+.personal-data-value {
+  font-size: 0.925rem;
+  color: #1f2937;
+  font-weight: 500;
+  word-break: break-word;
+}
+
+/* =====================================================
+   PLAN DE ACCIÓN — TIMELINE 3 COLUMNAS
+   ===================================================== */
+
+.plan-timeline {
+  display: grid;
+  grid-template-columns: repeat(3, 1fr);
+  gap: 1rem;
+}
+
+@media (max-width: 768px) {
+  .plan-timeline { grid-template-columns: 1fr; }
+}
+
+.plan-phase {
+  border-radius: 0.75rem;
+  padding: 1.25rem 1rem;
+  border: 1px solid;
+}
+
+.plan-phase.short  { background: #ECFDF5; border-color: #6EE7B7; }
+.plan-phase.medium { background: #EFF6FF; border-color: #93C5FD; }
+.plan-phase.long   { background: #F5F3FF; border-color: #C4B5FD; }
+
+.plan-phase-title {
+  font-weight: 700;
+  font-size: 0.775rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  margin-bottom: 0.875rem;
+  line-height: 1.3;
+}
+
+.plan-phase.short  .plan-phase-title { color: #059669; }
+.plan-phase.medium .plan-phase-title { color: #2563EB; }
+.plan-phase.long   .plan-phase-title { color: #7C3AED; }
+
+.plan-phase-list {
+  list-style: none;
+  padding: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+  gap: 0.5rem;
+}
+
+.plan-phase-list li {
+  font-size: 0.825rem;
+  color: #374151;
+  padding-left: 1.125rem;
+  position: relative;
+  line-height: 1.5;
+  margin-bottom: 0;
+  text-align: left;
+}
+
+.plan-phase-list li::before {
+  content: '→';
+  position: absolute;
+  left: 0;
+  font-weight: 700;
+}
+
+.plan-phase.short  .plan-phase-list li::before { color: #059669; }
+.plan-phase.medium .plan-phase-list li::before { color: #2563EB; }
+.plan-phase.long   .plan-phase-list li::before { color: #7C3AED; }
+
+/* =====================================================
+   ROLES — CARDS
+   ===================================================== */
+
+.roles-grid {
+  display: flex;
+  flex-direction: column;
+  gap: 0.75rem;
+}
+
+.role-card {
+  background: #fafafa;
+  border: 1px solid #e5e7eb;
+  border-radius: 0.625rem;
+  padding: 1rem 1.125rem;
+}
+
+.role-card-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-start;
+  gap: 0.75rem;
+  margin-bottom: 0.5rem;
+}
+
+.role-card-name {
+  font-weight: 700;
+  color: #1f2937;
+  font-size: 0.95rem;
+  line-height: 1.4;
+}
+
+.role-card-meta {
+  font-size: 0.775rem;
+  color: #6b7280;
+  margin-bottom: 0.5rem;
+}
+
+.role-card-badge {
+  font-size: 0.68rem;
+  font-weight: 700;
+  padding: 0.2rem 0.65rem;
+  border-radius: 1rem;
+  white-space: nowrap;
+  flex-shrink: 0;
+}
+
+.role-card-badge.high   { background: #DCFCE7; color: #15803D; }
+.role-card-badge.medium { background: #FEF3C7; color: #B45309; }
+.role-card-badge.low    { background: #F3F4F6; color: #6B7280; }
+
+.role-fit-bar {
+  height: 4px;
+  background: #e5e7eb;
+  border-radius: 2px;
+  margin-bottom: 0.625rem;
+  overflow: hidden;
+}
+
+.role-fit-fill {
+  height: 100%;
+  border-radius: 2px;
+  background: linear-gradient(90deg, #166534, #4ade80);
+}
+
+.role-card-reason {
+  font-size: 0.825rem;
+  color: #6b7280;
+  line-height: 1.5;
+  margin-bottom: 0.375rem;
+}
+
+.role-card-skills {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+  margin-top: 0.5rem;
+}
+
+.role-skill-tag {
+  font-size: 0.68rem;
+  background: #f0fdf4;
+  color: #166534;
+  padding: 0.1rem 0.5rem;
+  border-radius: 1rem;
+  border: 1px solid #bbf7d0;
+  font-weight: 500;
+}
+
+/* =====================================================
+   MENSAJE FINAL — CAJA DESTACADA
+   ===================================================== */
+
+.final-message-box {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%);
+  border: 2px solid #bbf7d0;
+  border-radius: 0.875rem;
+  padding: 1.75rem 2rem;
+}
+
+.final-message-box p {
+  color: #1f2937;
+  line-height: 1.8;
+  font-size: 1rem;
+  margin-bottom: 0.75rem;
+}
+
+.final-message-box p:last-child {
+  margin-bottom: 0;
+}
+
+
+/* =====================================================
+   DARK MODE — overrides para nuevas clases
+   ===================================================== */
+
+.dark .report-portada {
+  background: linear-gradient(145deg, #f5db8c  0%, #ebca68  60%, #dab33e 100%);
+  box-shadow: 0 12px 40px efd177(55, 75, 166, 0.35);
+}
+
+.dark .report-section-title {
+  color: #e5bd45 ;
+}
+
+.dark .report-portada-logo {
+  filter: brightness(0) saturate(100);
+}
+
+.dark .report-portada-avatar {
+  background: rgba(13, 19, 33, 0.08);
+  border-color: rgba(13, 19, 33, 0.45);
+  color: #0D1321;
+}
+
+.dark .report-portada-title {
+  color:#0D1321 ;
+}
+
+.dark .report-portada-name {
+  color: #0D1321;
+}
+
+.dark .report-portada-date {
+  color:rgba(13, 19, 33, 0.75);
+}
+
+.dark .report-portada-score {
+  background: rgba(13, 19, 33, 0.08);
+  border: 1.5px solid rgba(13, 19, 33, 0.35);
+}
+
+.dark .report-portada-score-label {
+  color: rgba(13, 19, 33, 0.75);
+ }
+
+.dark .report-portada-score-value {
+  color: #0D1321;
+}
+.dark .strength-tag {
+  background: #14532d;
+  color: #93c5fd;
+  border-color: #15803d;
+}
+
+.dark .improvement-card {
+  background: #4B5563;
+  border-color: #dab444;
+}
+
+.dark .improvement-area   { color: #fcd34d; }
+.dark .improvement-reason { color: #fde68a; }
+
+.dark .cv-score-item {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark .cv-score-label { color: #6b7280; }
+
+.dark .personal-data-item {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark .personal-data-value { color: #f3f4f6; }
+
+.dark .role-card {
+  background: #1f2937;
+  border-color: #374151;
+}
+
+.dark .role-card-name { color: #f3f4f6; }
+.dark .role-card-meta { color: #9ca3af; }
+
+.dark .plan-phase.short  { background: rgba(128, 149, 242, 0.18); border-color: #000000; }
+.dark .plan-phase.medium { background: rgba(128, 149, 242, 0.18); border-color: #000000; }
+.dark .plan-phase.long   { background: rgba(128, 149, 242, 0.18); border-color: #000000; }
+.dark .plan-phase-list li { color: #e5e7eb; }
+
+
+.dark .final-message-box {
+  background:  #a078009e 100% !important;
+  border: 1px solid #ffd969fb !important;
+  color: #0D1321 !important;
+}
+.dark .final-message-box p { color: #1f2937; }
+
+.dark .skill-bar-label { color: #d1d5db; }
+.dark .skill-bar-track { background: #374151; }
+.dark .skill-bar-score { color: #9ca3af; }
+
+/* =====================================================
+   PDF EXPORT — preservar colores de marca, forzar
+   fondo blanco y revertir solo estilos dark-mode
+   ===================================================== */
+
+/* Fondo blanco en el contenedor raíz */
+.pdf-light-export {
+  background: #ffffff !important;
+}
+
+/* Revertir únicamente los fondos oscuros del dark mode;
+   NO tocar text colors para preservar azules, verdes, etc. */
+.pdf-light-export .dark\:bg-gray-800,
+.pdf-light-export .dark\:bg-gray-900,
+.pdf-light-export .dark\:bg-slate-800,
+.pdf-light-export .bg-gray-800,
+.pdf-light-export .bg-gray-900,
+.pdf-light-export .bg-slate-800,
+.pdf-light-export .bg-slate-900,
+.pdf-light-export .bg-\[\#1e293b\],
+.pdf-light-export .bg-\[\#0f172a\] {
+  background: #ffffff !important;
+  color: #111827 !important;
+}
+
+/* Texto blanco sobre fondo oscuro → fondo se volvió blanco,
+   así que cambiamos el texto a oscuro */
+.pdf-light-export .bg-gray-800 *,
+.pdf-light-export .bg-gray-900 *,
+.pdf-light-export .bg-slate-800 *,
+.pdf-light-export .bg-slate-900 * {
+  color: #111827 !important;
+}
+
+/* Skill bar track */
+.pdf-light-export .skill-bar-track {
+  background: #e5e7eb !important;
+}
+
+/* Cards con fondo transparente/oscuro */
+.pdf-light-export .personal-data-item,
+.pdf-light-export .cv-score-item,
+.pdf-light-export .role-card {
+  background: #ffffff !important;
+  border-color: #e5e7eb !important;
+}
+
+/* Plan de acción — mantener colores de fondo pastel */
+.pdf-light-export .plan-phase.short  { background: #ECFDF5 !important; border-color: #6EE7B7 !important; }
+.pdf-light-export .plan-phase.medium { background: #EFF6FF !important; border-color: #93C5FD !important; }
+.pdf-light-export .plan-phase.long   { background: #F5F3FF !important; border-color: #C4B5FD !important; }
+
+/* Mensaje final — mantener degradado verde */
+.pdf-light-export .final-message-box {
+  background: linear-gradient(135deg, #f0fdf4 0%, #dcfce7 100%) !important;
+  border-color: #bbf7d0 !important;
+}

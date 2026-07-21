@@ -1,0 +1,50 @@
+{
+  "name": "nuevo-frontend",
+  "version": "2.3.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite",
+    "build": "tsc && vite build",
+    "preview": "vite preview",
+    "lint": "eslint . --ext ts,tsx --report-unused-disable-directives --max-warnings 0"
+  },
+  "dependencies": {
+    "@nivo/radar": "^0.99.0",
+    "@reduxjs/toolkit": "^2.8.2",
+    "@sentry/react": "^8.0.0",
+    "html2pdf.js": "^0.14.0",
+    "react": "^18.3.1",
+    "react-dom": "^18.3.1",
+    "react-hook-form": "^7.57.0",
+    "react-hot-toast": "^2.5.2",
+    "react-markdown": "^10.1.0",
+    "react-redux": "^9.2.0",
+    "react-router-dom": "^6.30.1",
+    "recharts": "^2.15.3",
+    "redux-persist": "^6.0.0",
+    "rehype-raw": "7.0.0",
+    "remark-gfm": "4.0.1"
+  },
+  "devDependencies": {
+    "@axe-core/playwright": "^4.12.1",
+    "@playwright/test": "^1.61.1",
+    "@types/node": "^26.0.1",
+    "@types/react": "^18.3.12",
+    "@types/react-dom": "^18.3.1",
+    "@vitejs/plugin-react": "^4.6.0",
+    "autoprefixer": "^10.4.21",
+    "cssnano": "^7.0.6",
+    "eslint-plugin-jsx-a11y": "^6.10.2",
+    "postcss": "^8.4.18",
+    "tailwindcss": "^3.4.17",
+    "typescript": "^5.1.6",
+    "vite": "^7.0.0"
+  },
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "allowScripts": {
+    "core-js@3.49.0": true
+  }
+}

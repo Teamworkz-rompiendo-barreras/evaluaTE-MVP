@@ -1,0 +1,38 @@
+# ==========================================
+# EVALUATE - BACKEND ONLY (PYTHON/FASTAPI)
+# ==========================================
+
+# Caché de ejecución de Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+
+# Entornos virtuales locales
+env/
+venv/
+ENV/
+*.bak/
+
+# Variables de entorno locales (Protección redundante)
+.env
+.env.*
+.venv
+
+# Testing y Cobertura de Código
+.pytest_cache/
+.hypothesis/
+.coverage
+.coverage.*
+htmlcov/
+*.cover
+
+# Logs del Servidor Uvicorn / Gunicorn
+logs/
+*.log
+*.pid
+
+# Datos temporales de análisis de CVs
+backend/uploads/*
+!backend/uploads/.gitkeep

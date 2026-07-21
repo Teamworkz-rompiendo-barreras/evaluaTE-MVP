@@ -1,0 +1,12 @@
+fastapi>=0.115.0
+uvicorn
+pydantic
+supabase>=2.0.0
+python-dotenv
+python-multipart
+mangum
+requests
+pyspellchecker
+sqlalchemy
+pymysql
+google-genai>=2.10.0

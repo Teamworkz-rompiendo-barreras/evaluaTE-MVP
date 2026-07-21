@@ -1,0 +1,299 @@
+/* Importar fuentes accesibles (se elimina import remoto por CSP). Usar fuentes locales/fallbacks. */
+
+/* src/index.css */
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* Estilos globales personalizados para accesibilidad cognitiva */
+
+html,
+body {
+  @apply font-sans text-neutral-dark bg-neutral-light antialiased dark:bg-gray-900 dark:text-gray-100;
+  /* Mejoras para accesibilidad cognitiva */
+  font-size: 16px; /* Tamaño base accesible */
+  line-height: 1.6; /* Espaciado de línea cómodo */
+  letter-spacing: 0.01em; /* Espaciado de letras ligeramente aumentado */
+}
+
+* {
+  @apply box-border;
+}
+
+/* Encabezados con mejor accesibilidad */
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
+  @apply font-bold;
+  /* Mejoras específicas para accesibilidad cognitiva */
+  line-height: 1.4; /* Espaciado más amplio para encabezados */
+  letter-spacing: 0.02em; /* Mayor espaciado de letras */
+  margin-bottom: 1rem; /* Espaciado consistente */
+}
+
+h1 {
+  @apply text-3xl md:text-4xl;
+  font-size: clamp(1.75rem, 4vw, 2.5rem); /* Tamaño responsivo */
+}
+
+h2 {
+  @apply text-2xl md:text-3xl;
+  font-size: clamp(1.5rem, 3vw, 2rem);
+}
+
+/* Párrafos con mejor legibilidad */
+p {
+  @apply mb-4;
+  /* Mejoras para accesibilidad cognitiva */
+  line-height: 1.7; /* Espaciado de línea más amplio */
+  /* Quitar límite global para evitar "cajones" con huecos. Aplicar límites solo en contenedores específicos */
+  text-align: justify; /* Texto justificado para mejor flujo */
+}
+
+/* En contenedores del informe profesional y cajas informativas, los párrafos deben ocupar todo el ancho */
+.professional-report p,
+.no-max-width p,
+.print-report-section p,
+.card p,
+.bg-blue-50 p {
+  max-width: none;
+}
+
+/* Enlaces con mejor accesibilidad */
+a {
+  @apply text-primary hover:text-secondary transition-colors;
+  cursor: pointer;
+  /* Mejoras para accesibilidad cognitiva */
+  text-decoration: underline; /* Subrayado siempre visible */
+  text-underline-offset: 0.2em; /* Espaciado del subrayado */
+  text-decoration-thickness: 2px; /* Subrayado más grueso */
+}
+
+/* Botones con mejor accesibilidad */
+button {
+  @apply rounded font-semibold focus:outline-none focus:ring-2 focus:ring-primary focus:ring-opacity-50;
+  /* Mejoras para accesibilidad cognitiva */
+  min-height: 44px; /* Tamaño mínimo para toque */
+  min-width: 44px; /* Tamaño mínimo para toque */
+  padding: 0.75rem 1.5rem; /* Padding más generoso */
+  font-size: 1rem; /* Tamaño de fuente accesible */
+}
+
+button:hover {
+  @apply shadow-md;
+  transform: translateY(-1px); /* Feedback visual sutil */
+}
+
+/* Campos de entrada con mejor accesibilidad */
+input,
+select,
+textarea {
+  @apply border border-gray-300 rounded px-3 py-2 w-full focus:outline-none focus:ring-2 focus:ring-primary focus:border-primary dark:bg-gray-800 dark:border-gray-600 dark:text-gray-100;
+  /* Mejoras para accesibilidad cognitiva */
+  font-size: 1rem; /* Tamaño de fuente accesible */
+  line-height: 1.5; /* Espaciado de línea cómodo */
+  min-height: 44px; /* Altura mínima para toque */
+  padding: 0.75rem 1rem; /* Padding más generoso */
+}
+
+/* Contenedores con mejor accesibilidad */
+.container {
+  @apply max-w-5xl mx-auto px-4;
+  /* Mejoras para accesibilidad cognitiva */
+  max-width: 1200px; /* Ancho máximo para evitar líneas muy largas */
+}
+
+.card {
+  @apply bg-white p-6 rounded-lg shadow-md dark:bg-gray-800 dark:border-gray-600;
+  /* Mejoras para accesibilidad cognitiva */
+  border: 2px solid transparent; /* Borde para mejor definición */
+  transition: border-color 0.2s ease; /* Transición suave */
+}
+
+.card:hover {
+  border-color: #e5e7eb; /* Borde visible al hacer hover */
+}
+
+.card-header {
+  @apply text-xl font-semibold mb-4;
+  /* Mejoras para accesibilidad cognitiva */
+  color: #1f2937; /* Color más oscuro para mejor contraste */
+  border-bottom: 2px solid #e5e7eb; /* Separador visual */
+  padding-bottom: 0.5rem; /* Espaciado adicional */
+}
+
+.card-body {
+  @apply space-y-4;
+  /* Mejoras para accesibilidad cognitiva */
+  line-height: 1.7; /* Espaciado de línea más amplio */
+}
+
+/* Clases de utilidad para accesibilidad */
+.bg-primary {
+  background-color: #374BA6;
+}
+
+.text-primary {
+  color: #374BA6;
+}
+
+.bg-secondary {
+  background-color: #F2D680;
+}
+
+.text-secondary {
+  color: #F2D680;
+}
+
+.btn-primary {
+  @apply bg-primary text-white hover:bg-[#2d3f96] active:bg-[#2a3b8c];
+  /* Mejoras para accesibilidad cognitiva */
+  font-weight: 600; /* Peso de fuente más visible */
+  text-transform: none; /* Sin transformación de texto */
+}
+
+.btn-secondary {
+  @apply bg-secondary text-black hover:bg-[#eac65a] active:bg-[#dbc74d];
+  /* Mejoras para accesibilidad cognitiva */
+  font-weight: 600; /* Peso de fuente más visible */
+  text-transform: none; /* Sin transformación de texto */
+}
+
+.rounded {
+  @apply rounded-lg;
+}
+
+.shadow {
+  @apply shadow-lg;
+}
+
+/* Estilos específicos para accesibilidad cognitiva */
+.text-accessible {
+  font-family: 'OpenDyslexic', 'Verdana', 'Arial', 'Helvetica', system-ui, sans-serif;
+  font-size: 1.125rem; /* Tamaño ligeramente mayor */
+  line-height: 1.8; /* Espaciado de línea más amplio */
+  letter-spacing: 0.02em; /* Espaciado de letras aumentado */
+}
+
+.text-dyslexic-friendly {
+  font-family: 'OpenDyslexic', 'Comic Sans MS', 'Verdana', 'Arial', sans-serif;
+  font-size: 1.125rem;
+  line-height: 1.8;
+  letter-spacing: 0.03em; /* Espaciado de letras más amplio */
+}
+
+/* Scrollbar personalizado para accesibilidad */
+::-webkit-scrollbar {
+  width: 12px; /* Scrollbar más ancho */
+}
+
+::-webkit-scrollbar-track {
+  @apply bg-gray-100;
+  border-radius: 6px; /* Bordes redondeados */
+}
+
+::-webkit-scrollbar-thumb {
+  @apply bg-primary rounded-full;
+  border: 2px solid #f3f4f6; /* Borde para mejor definición */
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background-color: #2d3f96; /* Color más oscuro al hacer hover */
+}
+
+/* Estilos para modo de alto contraste */
+.high-contrast {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+}
+
+.high-contrast * {
+  background-color: #000000 !important;
+  color: #ffffff !important;
+  border-color: #ffffff !important;
+}
+
+.high-contrast a {
+  color: #ffff00 !important; /* Amarillo para enlaces */
+  text-decoration: underline !important;
+}
+
+.high-contrast button {
+  background-color: #ffffff !important;
+  color: #000000 !important;
+  border: 2px solid #ffffff !important;
+}
+
+/* Estilos para reducir movimiento (prefers-reduced-motion) */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+  }
+}
+
+/* Reglas globales para modo oscuro — garantizan contraste mínimo WCAG AA */
+.dark .bg-white        { background-color: #1e293b !important; } /* slate-800 */
+.dark .bg-gray-50      { background-color: #0f172a !important; } /* slate-900 */
+.dark .bg-gray-100     { background-color: #1e293b !important; }
+.dark .bg-gray-200     { background-color: #334155 !important; } /* slate-700 */
+.dark .text-gray-900   { color: #f1f5f9 !important; } /* slate-100 — ratio 15:1 */
+.dark .text-gray-800   { color: #e2e8f0 !important; } /* slate-200 — ratio 12:1 */
+.dark .text-gray-700   { color: #cbd5e1 !important; } /* slate-300 — ratio 9.3:1 */
+.dark .text-gray-600   { color: #94a3b8 !important; } /* slate-400 — ratio 5.9:1 ✓ */
+.dark .text-gray-500   { color: #94a3b8 !important; } /* slate-400 — evita texto gris muy oscuro */
+.dark .border-gray-200 { border-color: #334155 !important; }
+.dark .border-gray-300 { border-color: #475569 !important; } /* slate-600 */
+.dark .hover\:bg-gray-50:hover  { background-color: #334155 !important; }
+.dark .hover\:bg-gray-100:hover { background-color: #334155 !important; }
+
+/* Inputs en modo oscuro con fondo visible y texto legible */
+.dark input,
+.dark select,
+.dark textarea {
+  background-color: #1e293b !important;
+  border-color: #475569 !important;
+  color: #f1f5f9 !important;
+}
+.dark input::placeholder,
+.dark textarea::placeholder {
+  color: #94a3b8 !important; /* slate-400, ratio 5.9:1 sobre slate-800 */
+}
+
+/* Badges / chips con fondo claro en modo oscuro */
+.dark .bg-green-100 { background-color: #14532d !important; }
+.dark .text-green-800 { color: #86efac !important; } /* green-300, ratio 7.2:1 sobre green-950 */
+.dark .bg-blue-100  { background-color: #1e3a5f !important; }
+.dark .text-blue-800 { color: #93c5fd !important; }
+.dark .bg-yellow-100 { background-color: #451a03 !important; }
+.dark .text-yellow-800 { color: #fde68a !important; }
+.dark .bg-red-100   { background-color: #450a0a !important; }
+.dark .text-red-800  { color: #fca5a5 !important; }
+
+/* Estilos para modo oscuro con accesibilidad */
+@media (prefers-color-scheme: dark) {
+  html,
+  body {
+    background-color: #1f2937;
+    color: #f9fafb;
+  }
+  
+  .card {
+    background-color: #374151;
+    border-color: #4b5563;
+  }
+  
+  input,
+  select,
+  textarea {
+    background-color: #374151;
+    border-color: #4b5563;
+    color: #f9fafb;
+  }
+}
