@@ -12,6 +12,7 @@ const __dirname = dirname(__filename)
 export default defineConfig({
   plugins: [react()],
   base: '/',
+  envPrefix: 'VITE_',
   server: {
     port: 3005,
     open: true,
