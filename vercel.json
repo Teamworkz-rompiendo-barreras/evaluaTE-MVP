@@ -1,7 +1,6 @@
 {
   "buildCommand": "cd nuevo-frontend && npm install && npm run build",
   "outputDirectory": "nuevo-frontend/dist",
-  "public": false,
   "github": {
     "enabled": true,
     "autoAlias": true,

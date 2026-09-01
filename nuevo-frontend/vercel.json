@@ -3,7 +3,6 @@
   "version": 2,
   "buildCommand": "npm run build",
   "outputDirectory": "dist",
-  "public": false,
   "cleanUrls": true,
   "trailingSlash": false,
   "headers": [
