@@ -1,3 +1,10 @@
+# Exclude backend and all Python-related files
+backend/
+api/
+tests/
+*.py
+*.pyc
+
 # Exclude ALL virtual environments everywhere
 **/venv*/
 **/venv311*/
@@ -11,13 +18,13 @@
 **/__pycache__/
 **/.pytest_cache/
 **/.cache/
-*.pyc
-
-# Exclude ALL node_modules
-**/node_modules/
 
 # Exclude IDE and Git
 .vscode/
+.git/
+
+# Only include nuevo-frontend for Vercel build
+!nuevo-frontend/
 .idea/
 .git/
 

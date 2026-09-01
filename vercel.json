@@ -1,0 +1,8 @@
+{
+  "buildCommand": "cd nuevo-frontend && npm install && npm run build",
+  "outputDirectory": "nuevo-frontend/dist",
+  "env": {
+    "VITE_API_BASE_URL": "@vite-api-base-url"
+  },
+  "envPrefix": "VITE_"
+}
