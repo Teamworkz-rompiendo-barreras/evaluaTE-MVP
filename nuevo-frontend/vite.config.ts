@@ -42,8 +42,6 @@ export default defineConfig({
           redux: ['@reduxjs/toolkit', 'react-redux', 'redux-persist'],
           charts: ['@nivo/radar', 'recharts'],
           sentry: ['@sentry/react'],
-          pdf: ['html2pdf.js'],
-          supabase: ['@supabase/supabase-js'],
           forms: ['react-hook-form', 'react-hot-toast'],
           markdown: ['react-markdown', 'rehype-raw', 'remark-gfm'],
         }

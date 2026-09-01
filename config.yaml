@@ -1,0 +1,22 @@
+model_list:
+  - model_name: motor-evaluate
+    litellm_params:
+      model: gemini/gemini-1.5-flash
+      api_key: os.environ/GEMINI_KEY_1
+      tpm_fallback: motor-evaluate-backup  # Si hay error 429, salta a la clave secundaria
+      
+  - model_name: motor-evaluate-backup
+    litellm_params:
+      model: gemini/gemini-1.5-flash
+      api_key: os.environ/GEMINI_KEY_2
+      tpm_fallback: motor-evaluate-groq    # Si la segunda clave también falla, salta a Groq
+
+  - model_name: motor-evaluate-groq
+    litellm_params:
+      model: groq/llama-3.3-70b-versatile
+      api_key: os.environ/GROQ_API_KEY
+
+router_settings:
+  routing_strategy: usage-based-routing
+  num_retries: 3
+  fallbacks: [{"motor-evaluate": ["motor-evaluate-backup", "motor-evaluate-groq"]}]

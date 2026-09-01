@@ -23,6 +23,7 @@ export interface PersonalState {
   lastName: string;
   email: string;
   whatsapp: string;
+  dataConsent?: boolean;
 
   jobPreferences: string | JobPreference;
   workMode?: 'remoto' | 'presencial' | 'híbrido';
@@ -30,6 +31,7 @@ export interface PersonalState {
   startDate?: 'inmediata' | '15_días' | '1_mes' | 'más_de_1_mes';
   willingToRelocate: boolean;
   hasDisabilityCert: boolean;
+  gdprConsent?: boolean;
 
   cvFile: { fileName: string; fileContent: string } | null;
   /**
@@ -58,6 +60,8 @@ const initialState: PersonalState = {
   lastName: '',
   email: '',
   whatsapp: '',
+  dataConsent: false,
+  gdprConsent: false,
 
   jobPreferences: '',
   workMode: 'remoto',
@@ -103,13 +107,16 @@ export const personalSlice = createSlice({
     saveContact(
       state,
       action: PayloadAction<
-        Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'>
+        Pick<PersonalState, 'firstName' | 'lastName' | 'email' | 'whatsapp'> & { dataConsent?: boolean }
       >
     ) {
       state.firstName = action.payload.firstName;
       state.lastName = action.payload.lastName;
       state.email = action.payload.email;
       state.whatsapp = action.payload.whatsapp;
+      if (typeof action.payload.dataConsent === 'boolean') {
+        state.dataConsent = action.payload.dataConsent;
+      }
       state.unlockedGames = Math.max(state.unlockedGames, 1);
       // Solo marcamos como completado si también hay preferencias laborales
       state.completed = Boolean(
@@ -127,7 +134,7 @@ export const personalSlice = createSlice({
       action: PayloadAction<
         Pick<
           PersonalState,
-          'jobPreferences' | 'workMode' | 'availability' | 'startDate' | 'willingToRelocate' | 'hasDisabilityCert'
+          'jobPreferences' | 'workMode' | 'availability' | 'startDate' | 'willingToRelocate' | 'hasDisabilityCert' | 'gdprConsent'
         >
       >
     ) {
@@ -139,6 +146,9 @@ export const personalSlice = createSlice({
       state.startDate = payload.startDate;
       state.willingToRelocate = payload.willingToRelocate;
       state.hasDisabilityCert = payload.hasDisabilityCert;
+      if (typeof payload.gdprConsent === 'boolean') {
+        state.gdprConsent = payload.gdprConsent;
+      }
       // completed solo si hay datos de contacto Y preferencias (más robusto)
       state.completed = Boolean(
         state.firstName && state.lastName &&

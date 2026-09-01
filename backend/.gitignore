@@ -6,6 +6,7 @@ yarn-error.log*
 
 # Build outputs
 dist/
+dist-ssr/
 build/
 *.tsbuildinfo
 
@@ -69,7 +70,6 @@ jspm_packages/
 
 # Nuxt.js build / generate output
 .nuxt
-dist
 
 # Gatsby files
 .cache/
@@ -120,7 +120,6 @@ coverage.xml
 *.pot
 
 # Django stuff:
-*.log
 local_settings.py
 db.sqlite3
 
@@ -150,13 +149,7 @@ celerybeat-schedule
 *.sage.py
 
 # Environments
-.env
 .venv
-env/
-venv/
-ENV/
-env.bak/
-venv.bak/
 
 # Spyder project settings
 .spyderproject
@@ -177,10 +170,6 @@ dmypy.json
 .deployment
 deploy/
 
-# Uploads (mantener estructura pero no archivos)
-uploads/*
-!uploads/.gitkeep
-
 # IDE
 .vscode/
 .idea/
@@ -191,3 +180,25 @@ uploads/*
 # OS
 .DS_Store
 Thumbs.db 
+
+# =======================================================
+# EVALÚATE SAAS - ESPECÍFICOS DEL PROYECTO Y SEGURIDAD B2B
+# =======================================================
+
+# 1. Privacidad GDPR y Volcados de IA
+debug_json_crudo.txt
+*.pdf
+*.docx
+
+# 2. Uploads (mantener estructura pero no archivos de prueba)
+uploads/*
+!uploads/.gitkeep
+
+# 3. Configuraciones locales de Proxy/IA
+litellm_config.yaml
+litellm_config*.yaml
+
+# 4. Artefactos de Testing E2E y Accesibilidad (Playwright)
+playwright-report/
+test-results/
+blob-report/

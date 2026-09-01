@@ -1,118 +1,111 @@
-from typing import List, Optional, Any, Dict
+# backend/new_report_schema.py
 from pydantic import BaseModel, Field
 
+# --- FASE 1: ARQUITECTURA COGNITIVA (RAZONAMIENTO OCULTO) ---
+class DiagnosticoInternoOculto(BaseModel):
+    objetivo_real: str = Field(description="Análisis crudo de lo que busca el candidato.")
+    nivel_empleabilidad_real: str = Field(description="Evaluación realista de su situación actual en el mercado.")
+    fortalezas_clave: list[str] = Field(description="Fortalezas probadas con evidencia en el CV o juegos.")
+    riesgos_y_bloqueos: list[str] = Field(description="Motivos reales por los que podrían descartar su perfil.")
+    lagunas_formativas: list[str] = Field(description="Qué no sabe hacer y necesita aprender urgentemente.")
+    viabilidad_objetivo: str = Field(description="¿Es viable su objetivo en la modalidad deseada? Si no, justifica el pivote digital sectorial.")
+    hipotesis_profesional: str = Field(description="Modelo mental final que guiará TODO el informe. Única fuente de verdad.")
+
+# --- COMPONENTES BASE ---
 class DatosPersonales(BaseModel):
+    Nombre: str
+    Ubicacion: str
+    Email: str
+    Telefono: str
+    LinkedIn: str
+
+class ValoracionesCV(BaseModel):
+    formato: int = Field(ge=1, le=5)
+    claridad: int = Field(ge=1, le=5)
+    coherencia: int = Field(ge=1, le=5)
+    info_clave: int = Field(ge=1, le=5)
+    ortografia: int = Field(ge=1, le=5)
+
+class AnalisisCV(BaseModel):
+    resumen: str = Field(description="Diagnóstico implacable y analítico sobre la calidad del documento. Mínimo 5 líneas.")
+    experiencia: list[str]
+    formacion: list[str]
+    idiomas: list[str]
+    software: list[str]
+    valoraciones: ValoracionesCV
+    puntos_fuertes: list[str] = Field(description="Array de puntos fuertes reales del CV.")
+    aspectos_mejorar: list[str] = Field(description="Cita textualmente errores ortográficos o carencias críticas detectadas.")
+    ats_compatibilidad: int = Field(ge=0, le=100)
+    ats_explicacion: str
+
+class CompetenciaDetalle(BaseModel):
     nombre: str
-    ubicacion: str
-    contacto: Optional[str] = None
-    email: Optional[str] = None
-    telefono: Optional[str] = None
-    discapacidad: Optional[str] = None
-    linkedin: Optional[str] = None
+    puntuacion: int = Field(ge=0, le=100)
+    nivel: str
+    explicacion: str = Field(description="Análisis de 3 líneas. Qué significa, cómo se manifiesta en el trabajo y qué valor aporta.")
 
-class AnalisisFODA(BaseModel):
-    fortalezas_clave: List[str]
-    areas_mejora: List[str]
+class CategoriaCompetencias(BaseModel):
+    categoria: str
+    competencias: list[CompetenciaDetalle]
 
-class RolSugerido(BaseModel):
-    rol: str
-    ajuste: str
-    justificacion: str
+class Fortaleza(BaseModel):
+    nombre: str = Field(description="Ej: 'TOMA DE DECISIONES EFECTIVA'")
+    explicacion_practica: str = Field(description="Justifica la fortaleza integrando sus puntuaciones altas de los juegos con experiencia del CV.")
+
+class AreaMejora(BaseModel):
+    nombre: str = Field(description="Ej: 'CURIOSIDAD Y APRENDIZAJE'")
+    porque_afecta: str = Field(description="Explicación clínica de cómo esta carencia bloquea su objetivo profesional. Mínimo 3 líneas.")
+    como_mejorar: str = Field(description="OBLIGATORIO usar exactamente el texto 'PLAN DE CAPACITACIÓN INMEDIATA:'.")
+    acciones_concretas: list[str] = Field(description="Array de 3 acciones formativas inmediatas y específicas.")
+
+class ResultadoJuego(BaseModel):
+    juego: str
+    que_mide: str = Field(description="Obligatorio iniciar con: 'DIMENSIÓN: [Explicación en mayúsculas de lo que mide]'.")
+    resultado: str = Field(description="Puntuación o métrica cruda.")
+    interpretacion: str = Field(description="Obligatorio iniciar con: 'Mapeo Psicométrico: [Análisis conductual profundo]'. Mínimo 4 líneas.")
+    aplicacion_entrevista: str = Field(description="Obligatorio iniciar con: 'Transferencia a Entrevista: [Ejemplo práctico de defensa]'.")
+
+class RolRecomendado(BaseModel):
+    titulo: str = Field(description="Rol viable. Si el objetivo es imposible, propón alternativas viables (Pivote).")
+    nivel: str = Field(description="Ej: 'Mid-level', 'Senior'")
+    modalidad: str = Field(description="Ej: 'Remoto', 'Presencial'")
+    por_que_encaja: str = Field(description="OBLIGATORIO comenzar con 'Justificación de encaje temporal: '. Explica por qué encaja.")
+    demanda_laboral: str = Field(description="Indica exclusivamente: 'ALTA', 'MEDIA-ALTA', 'MEDIA' o 'BAJA'. PROHIBIDO SALARIOS.")
 
 class PlanAccion(BaseModel):
-    pasos: List[str]
-    herramientas: List[str]
-    lecturas: List[str]
+    dias_30: list[str] = Field(description="Array de 3 acciones críticas urgentes. Incluir optimización de CV y envío activo de candidaturas.")
+    dias_60: list[str] = Field(description="Array de 3 acciones de tracción (Certificaciones, networking).")
+    dias_90: list[str] = Field(description="Array de 3 acciones de consolidación (Entrevistas, simulacros).")
 
-class KitBusqueda(BaseModel):
-    frases_linkedin: Dict[str, str]
-    mensaje_reclutador: str
+class HerramientaRecomendada(BaseModel):
+    nombre: str = Field(description="Ej: 'LinkedIn Learning / Coursera' o CRMs reales.")
+    para_que_sirve: str = Field(description="Explicación específica de cómo esta herramienta soluciona un problema.")
 
-class NewReportSchema(BaseModel):
-    # Campos obligatorios del Schema P0 (Español)
+class RecursoAdicional(BaseModel):
+    nombre: str = Field(description="Nombre exacto de un CURSO o CERTIFICACIÓN real.")
+    tipo: str = Field(description="Obligatorio usar SOLO: 'FORMACIÓN HABILITANTE', 'DESARROLLO DE HABILIDAD ESPECÍFICA' o 'FORMACIÓN COMPLEMENTARIA'.")
+    descripcion: str = Field(description="Justificación profunda de por qué necesita este recurso basándose en sus lagunas.")
+
+# --- FASE 3: CHUNKS PARA MAP-REDUCE ---
+class Chunk1Base(BaseModel):
     datos_personales: DatosPersonales
-    resumen_ejecutivo: str
-    resumen_cv: str
-    analisis_foda: AnalisisFODA
-    analisis_detallado_cv: str
-    entornos_ideales: List[str]
-    roles_sugeridos: List[RolSugerido]
+    resumen_ejecutivo: str = Field(description="Análisis premium detallado. Mínimo 100 palabras. Si el objetivo remoto inicial es inviable, justificar pivote aquí.")
+    puntuacion_global: int = Field(ge=0, le=100)
+    interpretacion_global: str = Field(description="Evaluación conectada directamente a su viabilidad de mercado. Mínimo 5 líneas.")
+    analisis_cv: AnalisisCV
+
+class Chunk2Competencias(BaseModel):
+    perfil_competencias: list[CategoriaCompetencias]
+    fortalezas_principales: list[Fortaleza]
+    areas_mejora: list[AreaMejora]
+    resultados_juegos: list[ResultadoJuego]
+
+class Chunk3Accion(BaseModel):
+    entornos_ideales: list[str] = Field(description="Array de 4 descripciones de cultura empresarial y modalidad de trabajo ideal.")
+    roles_recomendados: list[RolRecomendado]
     plan_accion: PlanAccion
-    capitalizar_fortalezas: str
-    kit_busqueda: KitBusqueda
-    mensaje_final_azul: str
-    
-    # Campos opcionales / legacy que main.py podría inyectar
-    employability_score: Optional[int] = 0
-    level: Optional[str] = "medio"
-    soft_skills: Optional[List[Dict[str, Any]]] = []
-    
-    # Permite campos extra si la IA alucina alguno menor, para no romper
-    class Config:
-        extra = "ignore"
-
-
-def convert_old_format_to_new(data: Dict[str, Any]) -> Dict[str, Any]:
-    """Normaliza el JSON del informe IA al formato que espera NewReportSchema."""
-    def _str(v, default=""):
-        return str(v) if v else default
-
-    def _list(v, default=None):
-        return v if isinstance(v, list) else (default or [])
-
-    def _dict(v, default=None):
-        return v if isinstance(v, dict) else (default or {})
-
-    dp_raw = _dict(data.get("datos_personales"))
-    datos_personales = {
-        "nombre": _str(dp_raw.get("nombre") or dp_raw.get("name"), "Candidato"),
-        "ubicacion": _str(dp_raw.get("ubicacion") or dp_raw.get("location")),
-        "contacto": _str(dp_raw.get("contacto") or dp_raw.get("email")),
-        "email": _str(dp_raw.get("email")),
-        "telefono": _str(dp_raw.get("telefono") or dp_raw.get("phone")),
-        "linkedin": _str(dp_raw.get("linkedin")),
-    }
-
-    foda_raw = _dict(data.get("analisis_foda"))
-    analisis_foda = {
-        "fortalezas_clave": _list(foda_raw.get("fortalezas_clave") or foda_raw.get("fortalezas"), ["No evaluado"]),
-        "areas_mejora": _list(foda_raw.get("areas_mejora") or foda_raw.get("debilidades"), ["No evaluado"]),
-    }
-
-    plan_raw = _dict(data.get("plan_accion"))
-    plan_accion = {
-        "pasos": _list(plan_raw.get("pasos"), ["Revisar el informe"]),
-        "herramientas": _list(plan_raw.get("herramientas"), []),
-        "lecturas": _list(plan_raw.get("lecturas"), []),
-    }
-
-    kit_raw = _dict(data.get("kit_busqueda"))
-    kit_busqueda = {
-        "frases_linkedin": _dict(kit_raw.get("frases_linkedin"), {}),
-        "mensaje_reclutador": _str(kit_raw.get("mensaje_reclutador")),
-    }
-
-    roles_raw = _list(data.get("roles_sugeridos"))
-    roles_sugeridos = [
-        {
-            "rol": _str(r.get("rol") if isinstance(r, dict) else ""),
-            "ajuste": _str(r.get("ajuste") if isinstance(r, dict) else ""),
-            "justificacion": _str(r.get("justificacion") if isinstance(r, dict) else ""),
-        }
-        for r in roles_raw
-    ] or [{"rol": "No especificado", "ajuste": "medio", "justificacion": ""}]
-
-    return {
-        **data,
-        "datos_personales": datos_personales,
-        "resumen_ejecutivo": _str(data.get("resumen_ejecutivo")),
-        "resumen_cv": _str(data.get("resumen_cv") or data.get("resumen_profesional")),
-        "analisis_foda": analisis_foda,
-        "analisis_detallado_cv": _str(data.get("analisis_detallado_cv") or data.get("analisis_cv")),
-        "entornos_ideales": _list(data.get("entornos_ideales"), []),
-        "roles_sugeridos": roles_sugeridos,
-        "plan_accion": plan_accion,
-        "capitalizar_fortalezas": _str(data.get("capitalizar_fortalezas")),
-        "kit_busqueda": kit_busqueda,
-        "mensaje_final_azul": _str(data.get("mensaje_final_azul")),
-    }
+    estrategia_busqueda: list[str] = Field(description="Array de 5 tácticas específicas y desarrolladas (Networking, Portfolio, etc).")
+    herramientas_recomendadas: list[HerramientaRecomendada]
+    recomendaciones_personalizadas: list[str] = Field(description="Ajustes inmediatos. Array de 5 acciones contundentes.")
+    recursos_adicionales: list[RecursoAdicional]
+    mensaje_final: str = Field(description="Veredicto de consultoría formal, analítico y profesional. Inspira confianza pero sé realista.")
