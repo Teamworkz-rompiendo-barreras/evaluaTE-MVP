@@ -236,7 +236,7 @@ export default function ResultadosPage() {
       setErrorIa('');
       
       try {
-        const envBaseUrl = API_CONFIG.BASE_URL || 'http://localhost:8080';
+        const envBaseUrl = API_CONFIG.BASE_URL ?? 'http://localhost:8080';
         const baseUrl = envBaseUrl.replace(/\/$/, '');
 
         setLoadingMessage('Estableciendo conexión encriptada...');
@@ -306,45 +306,15 @@ export default function ResultadosPage() {
             throw new Error(errorData.detail || `Error de infraestructura (${response.status})`);
         }
 
-        const enqueueData = await response.json();
-        const jobId = enqueueData.job_id;
+        const resultData = await response.json();
 
-        if (!jobId) throw new Error('El servidor no devolvió un identificador de tarea válido.');
-
-        setLoadingMessage('Evaluación en curso. Este análisis es profundo y puede tardar entre 1 y 3 minutos. Por favor, no cierre esta ventana...');
-
-        const pollStatus = async () => {
-            try {
-                const statusRes = await fetch(`${baseUrl}/api/report/status/${jobId}`, {
-                    headers: { 'Authorization': `Bearer ${token}` }
-                });
-
-                if (statusRes.status === 401) throw new Error('La sesión de consulta ha caducado por inactividad.');
-                if (!statusRes.ok) {
-                    const errorData = await statusRes.json().catch(() => ({}));
-                    throw new Error(errorData.detail || 'Error de red al consultar el estado del informe.');
-                }
-
-                const statusData = await statusRes.json();
-
-                if (statusData.status === 'completado') {
-                    setReportData(statusData.report as AdvancedReport);
-                    setLoadingIa(false);
-                    isFetchingRef.current = false;
-                } else if (statusData.status === 'error') {
-                    throw new Error(statusData.error || 'Fallo crítico en el motor asíncrono.');
-                } else {
-                    if (statusData.progress) setLoadingMessage(statusData.progress);
-                    setTimeout(pollStatus, 3000);
-                }
-            } catch (err: any) {
-                setErrorIa(err.message || 'Pérdida de conexión durante la espera.');
-                setLoadingIa(false);
-                isFetchingRef.current = false;
-            }
-        };
-
-        setTimeout(pollStatus, 3000);
+        if (resultData.status === 'completado') {
+            setReportData(resultData.report as AdvancedReport);
+            setLoadingIa(false);
+            isFetchingRef.current = false;
+        } else {
+            throw new Error(resultData.error || 'El servidor no devolvió un informe válido.');
+        }
 
       } catch (err: any) {
         setErrorIa(err.message || 'Error crítico al orquestar el análisis.');
@@ -358,17 +328,16 @@ export default function ResultadosPage() {
   }, [initialData, authLoading, retryCount]);
 
   const handleDownloadPdf = async () => {
-    const element = reportRef.current;
-    if (!element) return;
-    
+    if (!reportData) return;
+
     setIsExportingPdf(true);
     setPdfGenerationMessage('Generando PDF... Este proceso puede tardar unos segundos.');
     setPdfExportError('');
     
     let currentToken = sessionToken;
-    const envBaseUrl = API_CONFIG.BASE_URL || 'http://localhost:8080';
+    const envBaseUrl = API_CONFIG.BASE_URL ?? 'http://localhost:8080';
     const baseUrl = envBaseUrl.replace(/\/$/, '');
-    
+
     if (!currentToken) {
         try {
             const authRes = await fetch(`${baseUrl}/api/auth/guest-token`, { method: 'POST' });
@@ -383,19 +352,14 @@ export default function ResultadosPage() {
         }
     }
 
-    const htmlEl = document.documentElement;
-    const wasDark = htmlEl.classList.contains('dark');
-    if (wasDark) htmlEl.classList.remove('dark');
-    
     try {
-      const htmlContent = element.outerHTML;
       const response = await fetch(`${baseUrl}/api/export-pdf`, {
         method: 'POST',
-        headers: { 
-            'Content-Type': 'application/json', 
-            'Authorization': `Bearer ${currentToken}` 
+        headers: {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${currentToken}`
         },
-        body: JSON.stringify({ html_content: htmlContent })
+        body: JSON.stringify({ report: reportData, candidate_name: candidateName })
       });
 
       if (response.status === 401) throw new Error('Sesión de exportación caducada.');
@@ -418,7 +382,6 @@ export default function ResultadosPage() {
       console.error("Fallo exportación PDF:", error);
       setPdfExportError(`Error de seguridad o conectividad: ${error.message || 'No se pudo generar el documento.'}`);
     } finally {
-      if (wasDark) htmlEl.classList.add('dark');
       setIsExportingPdf(false);
       setPdfGenerationMessage('Documento listo para descarga.');
     }
@@ -432,7 +395,7 @@ export default function ResultadosPage() {
         return;
     }
     try {
-      const envBaseUrl = API_CONFIG.BASE_URL || 'http://localhost:8080';
+      const envBaseUrl = API_CONFIG.BASE_URL ?? 'http://localhost:8080';
       const baseUrl = envBaseUrl.replace(/\/$/, '');
       const res = await fetch(`${baseUrl}/api/informe-ia/feedback`, {
         method: 'POST',

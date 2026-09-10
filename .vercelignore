@@ -1,9 +1,5 @@
-# Exclude backend and all Python-related files
-backend/
-api/
+# backend/ and api/ ARE needed now (Python serverless functions) - do not exclude them.
 tests/
-*.py
-*.pyc
 
 # Exclude ALL virtual environments everywhere
 **/venv*/
@@ -22,11 +18,7 @@ tests/
 # Exclude IDE and Git
 .vscode/
 .git/
-
-# Only include nuevo-frontend for Vercel build
-!nuevo-frontend/
 .idea/
-.git/
 
 # Exclude Local Env
 .env*
@@ -34,15 +26,12 @@ tests/
 
 # Exclude documentation and samples
 backend/cv_samples/
-tests/
 scripts/
 *.md
 !README.md
 
 # Exclude large binary/temp files
-# Exclude large binary/temp files
 *.pdf
-# Exclude specific large json files but allow config files
 cv_output.json
 *.zip
 *.tar.gz

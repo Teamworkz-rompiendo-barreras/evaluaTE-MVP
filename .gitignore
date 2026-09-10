@@ -65,3 +65,5 @@ backend/.env*
 backend/*.env
 *.env.backup
 *.env.save
+
+.vercel

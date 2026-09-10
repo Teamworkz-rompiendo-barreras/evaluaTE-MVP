@@ -27,7 +27,7 @@ export const sendProfileAnalysis = async (formData: FormData, userId: string): P
   // 150 segundos para absorber latencia de LLM y backoffs del servidor
   const timeoutId = setTimeout(() => controller.abort(), 150000);
 
-  const envBaseUrl = API_CONFIG.BASE_URL || 'http://localhost:8080';
+  const envBaseUrl = API_CONFIG.BASE_URL ?? 'http://localhost:8080';
   const baseUrl = envBaseUrl.replace(/\/$/, '');
   const url = `${baseUrl}${API_CONFIG.ENDPOINTS.IA_REPORT}`;
 
