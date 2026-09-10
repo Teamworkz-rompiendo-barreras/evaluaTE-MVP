@@ -1,20 +1,42 @@
 {
   "buildCommand": "cd nuevo-frontend && npm install && npm run build",
   "outputDirectory": "nuevo-frontend/dist",
+  "installCommand": "cd nuevo-frontend && npm install",
+  "framework": "vite",
+  "cleanUrls": true,
+  "trailingSlash": false,
   "github": {
     "enabled": true,
     "autoAlias": true,
     "autoJobCancelation": true
   },
-  "installCommand": "cd nuevo-frontend && npm install",
-  "framework": "vite",
   "functions": {
     "api/index.py": {
       "maxDuration": 60
     }
   },
+  "headers": [
+    {
+      "source": "/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=3600, s-maxage=3600" },
+        { "key": "X-Content-Type-Options", "value": "nosniff" },
+        { "key": "X-Frame-Options", "value": "DENY" },
+        { "key": "X-XSS-Protection", "value": "1; mode=block" }
+      ]
+    },
+    {
+      "source": "/assets/(.*)",
+      "headers": [
+        { "key": "Cache-Control", "value": "public, max-age=31536000, immutable" }
+      ]
+    }
+  ],
   "rewrites": [
-    { "source": "/api/:path*", "destination": "/api/index" }
+    { "source": "/api/:path*", "destination": "/api/index" },
+    { "source": "/(.*)", "destination": "/index.html" }
+  ],
+  "redirects": [
+    { "source": "/index.html", "destination": "/", "permanent": true }
   ]
 }
-
