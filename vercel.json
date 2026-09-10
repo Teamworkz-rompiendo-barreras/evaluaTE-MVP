@@ -3,8 +3,6 @@
   "outputDirectory": "nuevo-frontend/dist",
   "installCommand": "cd nuevo-frontend && npm install",
   "framework": "vite",
-  "cleanUrls": true,
-  "trailingSlash": false,
   "github": {
     "enabled": true,
     "autoAlias": true,
