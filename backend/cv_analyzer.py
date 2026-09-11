@@ -52,6 +52,15 @@ RATE_LIMIT_BACKOFF_SECONDS = (0.25, 0.75)
 MAX_RETRIES_PER_MODEL = 1
 STAGGER_DELAY_SECONDS = (0.0, 0.5, 1.0)
 
+# La función de Vercel tiene un techo duro de 60s (maxDuration en vercel.json,
+# también el máximo del plan Hobby). Sin límites propios, la rotación de
+# claves/modelos de Gemini podía superarlo y Vercel mataba la invocación a
+# medio procesar (FUNCTION_INVOCATION_TIMEOUT), sin dar oportunidad de
+# responder un error controlado. Estos topes fuerzan a devolver un error
+# manejable bastante antes de esos 60s.
+GEMINI_CALL_TIMEOUT_SECONDS = 20
+AI_ANALYSIS_TIMEOUT_SECONDS = 45
+
 
 def _short_key(key: str | None) -> str:
     if not key:
@@ -279,10 +288,13 @@ async def _generate_chunk_async(
                         max_output_tokens=8192
                     )
                     
-                    response = await client.aio.models.generate_content(
-                        model=model_name,
-                        contents=content_parts,
-                        config=config
+                    response = await asyncio.wait_for(
+                        client.aio.models.generate_content(
+                            model=model_name,
+                            contents=content_parts,
+                            config=config
+                        ),
+                        timeout=GEMINI_CALL_TIMEOUT_SECONDS
                     )
                     
                     if hasattr(response, 'parsed') and response.parsed is not None:
@@ -350,8 +362,8 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str, api_ke
         types.Part.from_bytes(data=pdf_bytes, mime_type="application/pdf"),
         report_prompt
     ]
-    
-    try:
+
+    async def _run_map_reduce() -> Dict[str, Any]:
         # FASE 1: Construcción del Modelo Mental (Scratchpad)
         logger.info("[Fase 1] Generando Diagnóstico Interno Oculto (Cadena de Pensamiento)...")
         diagnostico_crudo = await _generate_chunk_async(
@@ -361,18 +373,18 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str, api_ke
             chunk_name="DiagnosticoMental",
             api_key=api_key
         )
-        
+
         # FASE 2: Inyección de la Fuente de la Verdad a los Chunks Paralelos
         diagnostico_str = json.dumps(diagnostico_crudo, ensure_ascii=False)
         logger.info("[Fase 1] Diagnóstico completado. Inyectando como fuente de la verdad innegociable.")
-        
+
         system_instruction_chunks = (
-            system_instruction_base + 
+            system_instruction_base +
             "\n\n### DIAGNÓSTICO MAESTRO DEL CANDIDATO (FUENTE DE LA VERDAD OBLIGATORIA) ###\n"
             "Utiliza ESTRICTAMENTE este análisis previo para redactar tu sección. No lo contradigas en ningún punto:\n"
             f"{diagnostico_str}"
         )
-        
+
         # FASE 3: Generación Concurrente Escalonada (Staggered Starts)
         logger.info("[Fase 2] Disparando Chunks Concurrentes...")
         res_base, res_comp, res_acc = await asyncio.gather(
@@ -380,15 +392,22 @@ async def analyze_multimodal_report(pdf_bytes: bytes, report_prompt: str, api_ke
             _generate_chunk_with_delay(STAGGER_DELAY_SECONDS[1], content_parts, system_instruction_chunks, Chunk2Competencias, "Chunk_Competencias", api_key),
             _generate_chunk_with_delay(STAGGER_DELAY_SECONDS[2], content_parts, system_instruction_chunks, Chunk3Accion, "Chunk_Accion", api_key)
         )
-        
+
         # FASE 4: Ensamblaje y Privacidad
         # "diagnostico_interno_oculto" se queda atrás por diseño, jamás cruza al frontend
         informe_completo = {**res_base, **res_comp, **res_acc}
-        informe_validado = _enforce_business_rules(informe_completo)
-        
+        return _enforce_business_rules(informe_completo)
+
+    try:
+        informe_validado = await asyncio.wait_for(_run_map_reduce(), timeout=AI_ANALYSIS_TIMEOUT_SECONDS)
         logger.info("Generación de informe B2B completada y ensamblada con éxito.")
         return informe_validado
-        
+
+    except asyncio.TimeoutError:
+        logger.error(f"Orquestación Map-Reduce cancelada tras superar el presupuesto de {AI_ANALYSIS_TIMEOUT_SECONDS}s.")
+        return {
+            "error": "El análisis está tardando más de lo esperado. Por favor, reinténtalo en unos minutos."
+        }
     except Exception as e:
         logger.exception(f"Fallo en la orquestación Map-Reduce: {e}")
         return {
