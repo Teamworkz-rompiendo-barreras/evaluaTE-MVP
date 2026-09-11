@@ -48,8 +48,13 @@ except ImportError:
 logger = logging.getLogger(__name__)
 genai_configured = genai is not None
 
-RATE_LIMIT_BACKOFF_SECONDS = (0.25, 0.75)
-MAX_RETRIES_PER_MODEL = 1
+# 0.25-0.75s era un backoff inútil contra un 429 real de Gemini (cuota
+# por minuto): la petición vuelve a chocar con la misma ventana de cuota
+# casi al instante. Con un único modelo viable (ver más abajo) ya no tiene
+# sentido "gastar" el reintento rotando a otro modelo, así que se le da
+# un backoff real y un intento extra.
+RATE_LIMIT_BACKOFF_SECONDS = (2.0, 5.0)
+MAX_RETRIES_PER_MODEL = 2
 STAGGER_DELAY_SECONDS = (0.0, 0.5, 1.0)
 
 # La función de Vercel tiene un techo duro de 60s (maxDuration en vercel.json,
@@ -73,15 +78,17 @@ def _short_key(key: str | None) -> str:
         return "(sin-key)"
     return f"{key[:8]}...{key[-4:]}" if len(key) > 12 else key[:8]
 
-# gemini-1.5-pro ya no existe en la API v1beta ("404 NOT_FOUND... not found
-# for API version v1beta, or is not supported for generateContent",
-# confirmado en producción el 2026-09-11). Al no haber GROQ_API_KEY
-# configurada como último recurso, llegar a este modelo en la rotación de
-# fallback significaba fallo total garantizado del análisis.
+# gemini-1.5-pro, gemini-2.0-flash y gemini-1.5-flash devuelven los tres
+# "404 NOT_FOUND... not found for API version v1beta, or is not supported
+# for generateContent" contra la clave/proyecto de Gemini configurados
+# aquí (confirmado en producción el 2026-09-11, tres peticiones reales).
+# gemini-2.5-flash es el único modelo que responde (200 OK, o 429 si hay
+# cuota agotada, pero nunca 404). Sin GROQ_API_KEY configurada como último
+# recurso, mantener modelos muertos en la rotación solo gastaba tiempo del
+# presupuesto de AI_ANALYSIS_TIMEOUT_SECONDS sin ninguna posibilidad real
+# de éxito.
 SUPPORTED_GEMINI_MODELS = [
     "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
 ]
 
 
@@ -95,14 +102,12 @@ def _sanitize_model_name(model_name: str | None) -> str | None:
 
 
 _primary_model = _sanitize_model_name(os.getenv("GEMINI_PRIMARY_MODEL", "gemini-2.5-flash")) or "gemini-2.5-flash"
-_preview_model = _sanitize_model_name(os.getenv("GEMINI_PREVIEW_MODEL")) or "gemini-2.0-flash"
+_preview_model = _sanitize_model_name(os.getenv("GEMINI_PREVIEW_MODEL")) or "gemini-2.5-flash"
 
 fallback_candidates = [
     _primary_model,
     _preview_model,
     "gemini-2.5-flash",
-    "gemini-2.0-flash",
-    "gemini-1.5-flash",
 ]
 FALLBACK_MODELS = []
 for model_name in fallback_candidates:
@@ -111,7 +116,7 @@ for model_name in fallback_candidates:
         FALLBACK_MODELS.append(cleaned)
 
 if not FALLBACK_MODELS:
-    FALLBACK_MODELS = ["gemini-2.5-flash", "gemini-2.0-flash", "gemini-1.5-flash"]
+    FALLBACK_MODELS = ["gemini-2.5-flash"]
 
 if os.getenv("GEMINI_PREVIEW_MODEL") and _sanitize_model_name(os.getenv("GEMINI_PREVIEW_MODEL")) is None:
     logger.warning(
