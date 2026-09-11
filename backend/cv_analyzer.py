@@ -58,8 +58,14 @@ STAGGER_DELAY_SECONDS = (0.0, 0.5, 1.0)
 # medio procesar (FUNCTION_INVOCATION_TIMEOUT), sin dar oportunidad de
 # responder un error controlado. Estos topes fuerzan a devolver un error
 # manejable bastante antes de esos 60s.
-GEMINI_CALL_TIMEOUT_SECONDS = 20
-AI_ANALYSIS_TIMEOUT_SECONDS = 45
+#
+# GEMINI_CALL_TIMEOUT_SECONDS solo debe cortar una llamada realmente colgada,
+# no una que va lenta pero progresando: Chunk_Accion (el schema con más
+# campos/listas anidadas) tarda con normalidad más que Chunk_Base o
+# Chunk_Competencias, así que necesita margen de sobra en vez de un tope
+# ajustado. El backstop real de los 60s es AI_ANALYSIS_TIMEOUT_SECONDS.
+GEMINI_CALL_TIMEOUT_SECONDS = 40
+AI_ANALYSIS_TIMEOUT_SECONDS = 52
 
 
 def _short_key(key: str | None) -> str:
