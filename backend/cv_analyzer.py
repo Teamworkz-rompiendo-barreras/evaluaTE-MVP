@@ -73,11 +73,15 @@ def _short_key(key: str | None) -> str:
         return "(sin-key)"
     return f"{key[:8]}...{key[-4:]}" if len(key) > 12 else key[:8]
 
+# gemini-1.5-pro ya no existe en la API v1beta ("404 NOT_FOUND... not found
+# for API version v1beta, or is not supported for generateContent",
+# confirmado en producción el 2026-09-11). Al no haber GROQ_API_KEY
+# configurada como último recurso, llegar a este modelo en la rotación de
+# fallback significaba fallo total garantizado del análisis.
 SUPPORTED_GEMINI_MODELS = [
     "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-1.5-flash",
-    "gemini-1.5-pro",
 ]
 
 
@@ -99,7 +103,6 @@ fallback_candidates = [
     "gemini-2.5-flash",
     "gemini-2.0-flash",
     "gemini-1.5-flash",
-    "gemini-1.5-pro",
 ]
 FALLBACK_MODELS = []
 for model_name in fallback_candidates:
