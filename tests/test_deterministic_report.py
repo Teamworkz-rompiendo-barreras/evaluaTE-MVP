@@ -147,6 +147,38 @@ def test_never_crashes_on_empty_or_corrupt_pdf():
         assert 0 <= report["puntuacion_global"] <= 100
 
 
+def test_flags_incoherent_remote_preference_for_on_site_only_profession():
+    """Regresion: un usuario real (Ester, Teamworkz) reporto que el motor
+    "ni siquiera se daba cuenta" de que pedir trabajo remoto para
+    'maquilladora' es imposible -- el informe debe señalar la incoherencia
+    en vez de repetirla sin más, y nunca dejar fugar campos internos como
+    'coherencia_notas' en la estructura final."""
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [{"skill": "Atencion al detalle", "score": 75, "level": "Alto"}]},
+        prefs_data={"areas": ["Maquilladora"], "workMode": "remoto"},
+        employability_score=65,
+        candidate_name="Laura",
+    )
+    assert "coherencia_notas" not in report
+    assert "presencial" in report["entornos_ideales"][0].lower()
+    assert any(r["modalidad"] == "Presencial" for r in report["roles_recomendados"])
+    assert any(r["modalidad"] == "Remoto" for r in report["roles_recomendados"])
+    assert "remoto" in report["recomendaciones_personalizadas"][0].lower()
+
+
+def test_does_not_flag_coherent_remote_preference():
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [{"skill": "Organizacion", "score": 70, "level": "Alto"}]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "remoto"},
+        employability_score=65,
+        candidate_name="Laura",
+    )
+    assert "Aviso:" not in report["entornos_ideales"][0]
+    assert all(r["modalidad"] != "Presencial" for r in report["roles_recomendados"])
+
+
 def test_plan_accion_has_three_items_per_horizon():
     report = generate_deterministic_report(
         pdf_bytes=_build_sample_pdf(),

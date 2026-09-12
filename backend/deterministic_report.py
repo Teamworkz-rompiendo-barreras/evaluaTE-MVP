@@ -78,6 +78,28 @@ WORK_MODE_TEXT = {
     "hibrido": "un esquema híbrido que combine trabajo presencial y remoto según la tarea",
 }
 
+# Oficios/áreas que por su propia naturaleza requieren presencia física (trato
+# directo con personas, manipulación de materiales/herramientas, uso de
+# instalaciones concretas) -- si el candidato pide "remoto" para uno de estos,
+# el informe debe señalar la incoherencia en vez de repetirla sin más. Lista
+# no exhaustiva centrada en los sectores habituales de los candidatos de
+# Teamworkz (no pretende cubrir cualquier profesión posible).
+ON_SITE_ONLY_KEYWORDS = [
+    "maquilla", "peluquer", "estetic", "manicur", "pedicur", "barber", "masaj",
+    "fisioterap", "enfermer", "auxiliar de enfermer", "medicin", "odontolog",
+    "farmac", "cocin", "camarer", "hosteler", "limpieza", "conductor",
+    "conduccion", "transporte", "repart", "logistic", "almacen", "mozo de almacen",
+    "construccion", "electricist", "fontaner", "mecanic", "jardiner",
+    "seguridad", "vigilante", "dependient", "comercio", "cajer",
+    "cuidado de personas", "cuidador", "geriatr", "peluqueria canina",
+    "restauracion", "panader", "carnicer", "peix", "reposicion",
+]
+
+
+def _requires_on_site_presence(area: str) -> bool:
+    a = area.lower()
+    return any(kw in a for kw in ON_SITE_ONLY_KEYWORDS)
+
 
 def _detect_languages(text: str) -> List[str]:
     if not text:
@@ -313,10 +335,33 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int) -> Dict[str
     needs = [n for n in (job_prefs.get("needs") or []) if isinstance(n, str) and n.strip()]
     work_mode = str(job_prefs.get("workMode") or job_prefs.get("work_mode") or "").lower()
 
-    entornos_ideales = [
-        f"Puestos dentro de {areas[0]}, alineados con el interés declarado por el candidato.",
-        WORK_MODE_TEXT.get(work_mode, "un entorno de trabajo flexible que se pueda adaptar según necesidad").capitalize(),
-    ]
+    # Detecta si el candidato ha pedido "remoto" para un oficio que, por su
+    # propia naturaleza, no se puede ejercer en remoto (ver ON_SITE_ONLY_KEYWORDS).
+    # El informe debe SEÑALAR esa incoherencia en vez de repetirla sin más --
+    # es exactamente el tipo de error que hace que un informe automático
+    # parezca que "no se entera" de lo que ha dicho el candidato.
+    wants_remote = work_mode.startswith("remot")
+    conflict_areas = [a for a in areas if wants_remote and _requires_on_site_presence(a)]
+    coherencia_notas: List[str] = []
+
+    entornos_ideales: List[str] = []
+    if conflict_areas:
+        area_txt = " y ".join(conflict_areas)
+        aviso = (
+            f"Aviso: {area_txt} es un oficio que requiere presencia física (trato directo con clientes o "
+            "pacientes, manipulación de materiales o herramientas, uso de instalaciones concretas). El "
+            "teletrabajo al 100% no es viable en la inmensa mayoría de sus puestos, aunque se haya indicado "
+            "como preferencia -- se ajusta la modalidad a presencial (o híbrida solo para tareas administrativas) "
+            "para que el resto del informe sea realista."
+        )
+        entornos_ideales.append(aviso)
+        entornos_ideales.append(f"Puestos presenciales dentro de {areas[0]}, en un centro de trabajo físico.")
+        coherencia_notas.append(aviso)
+    else:
+        entornos_ideales.append(f"Puestos dentro de {areas[0]}, alineados con el interés declarado por el candidato.")
+        entornos_ideales.append(
+            WORK_MODE_TEXT.get(work_mode, "un entorno de trabajo flexible que se pueda adaptar según necesidad").capitalize()
+        )
     if needs:
         entornos_ideales.append("Entornos que contemplen: " + "; ".join(needs[:3]) + ".")
     entornos_ideales.append(
@@ -325,17 +370,40 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int) -> Dict[str
 
     roles_recomendados = []
     for area in areas[:2]:
+        on_site_only = wants_remote and _requires_on_site_presence(area)
         demanda = "ALTA" if puntuacion_global >= 70 else "MEDIA"
+        modalidad = "Presencial" if on_site_only else (work_mode.capitalize() if work_mode else "A definir según la oferta")
+        por_que_encaja = (
+            f"Justificación de encaje temporal: el candidato ha mostrado interés explícito en {area} y una "
+            f"puntuación global de empleabilidad de {puntuacion_global}/100 en la evaluación de EvalúaTE, "
+            "un punto de partida razonable para posiciones de entrada en este ámbito."
+        )
+        if on_site_only:
+            por_que_encaja += (
+                f" Se indicó preferencia por trabajo remoto, pero {area.lower()} requiere presencia física en la "
+                "mayoría de sus puestos; la modalidad se ajusta a presencial para reflejar la realidad del sector."
+            )
         roles_recomendados.append({
             "titulo": f"Perfil junior/operativo en {area}",
             "nivel": "Junior" if puntuacion_global < 70 else "Mid-level",
-            "modalidad": work_mode.capitalize() if work_mode else "A definir según la oferta",
-            "por_que_encaja": (
-                f"Justificación de encaje temporal: el candidato ha mostrado interés explícito en {area} y una "
-                f"puntuación global de empleabilidad de {puntuacion_global}/100 en la evaluación de EvalúaTE, "
-                "un punto de partida razonable para posiciones de entrada en este ámbito."
-            ),
+            "modalidad": modalidad,
+            "por_que_encaja": por_que_encaja,
             "demanda_laboral": demanda,
+        })
+
+    if conflict_areas:
+        pivot_area = conflict_areas[0]
+        roles_recomendados.append({
+            "titulo": f"Alternativa 100% remota relacionada: formación/venta online en {pivot_area}",
+            "nivel": "Junior",
+            "modalidad": "Remoto",
+            "por_que_encaja": (
+                "Justificación de encaje temporal: si el trabajo remoto es un requisito imprescindible para el "
+                f"candidato, una alternativa realista dentro del mismo sector es formar a otras personas, vender "
+                f"productos relacionados o crear contenido sobre {pivot_area.lower()} de forma online, en vez de "
+                "ejercer el oficio de forma presencial, que es lo que exige la mayoría de sus puestos."
+            ),
+            "demanda_laboral": "MEDIA",
         })
 
     dias_30 = [
@@ -375,6 +443,13 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int) -> Dict[str
         "Mantener actualizado el CV con logros concretos y medibles a medida que se generen.",
         "Pedir apoyo a Teamworkz u otras entidades de intermediación si el proceso se estanca más de 4-6 semanas.",
     ]
+    if conflict_areas:
+        recomendaciones_personalizadas.insert(
+            0,
+            f"Revisar la preferencia de trabajo remoto para {conflict_areas[0]}: en la práctica casi todos los "
+            "puestos de este sector exigen presencia física, así que conviene abrirse a presencial o híbrido "
+            "para no descartar oportunidades reales por esta condición.",
+        )
 
     recursos_adicionales = [
         {
@@ -405,7 +480,7 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int) -> Dict[str
     )
 
     return {
-        "entornos_ideales": entornos_ideales[:4],
+        "entornos_ideales": entornos_ideales[:5],
         "roles_recomendados": roles_recomendados,
         "plan_accion": {"dias_30": dias_30, "dias_60": dias_60, "dias_90": dias_90},
         "estrategia_busqueda": estrategia_busqueda,
@@ -413,6 +488,7 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int) -> Dict[str
         "recomendaciones_personalizadas": recomendaciones_personalizadas,
         "recursos_adicionales": recursos_adicionales,
         "mensaje_final": mensaje_final,
+        "coherencia_notas": coherencia_notas,
     }
 
 
@@ -474,8 +550,23 @@ def generate_deterministic_report(
         "y las preferencias laborales indicadas, para ofrecer una fotografía objetiva y reproducible del "
         "perfil evaluado, sin depender de servicios externos de inteligencia artificial."
     )
+    detected_tools = [t for t in analisis_cv.get("software", []) if "No se detectaron" not in t]
+    top_skill = competencias_info["perfil_competencias"][0]["competencias"][0] if competencias_info["perfil_competencias"] else None
+    extra_bits = []
+    if detected_tools:
+        extra_bits.append(f"en el CV se identificaron herramientas como {', '.join(detected_tools[:3])}")
+    if top_skill:
+        extra_bits.append(
+            f"en los minijuegos destaca especialmente {top_skill['nombre'].lower()} ({top_skill['puntuacion']}/100)"
+        )
+    if extra_bits:
+        joined = " y ".join(extra_bits)
+        resumen_ejecutivo += " " + joined[:1].upper() + joined[1:] + "."
 
     accion = _build_accion(job_prefs, puntuacion_global)
+    coherencia_notas = accion.pop("coherencia_notas", [])
+    if coherencia_notas:
+        resumen_ejecutivo += " " + " ".join(coherencia_notas)
 
     report = {
         "datos_personales": datos_personales,
