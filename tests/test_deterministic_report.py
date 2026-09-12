@@ -249,6 +249,22 @@ def test_pivot_roles_and_tools_are_specific_to_the_sector():
     assert any("Perfect Corp" in h or "YouCam" in h for h in herramientas)
 
 
+def test_cv_resumen_does_not_duplicate_puntos_fuertes_sentences():
+    """El resumen del analisis de CV debe ser una sintesis de alto nivel,
+    no repetir literalmente las mismas frases que 'puntos_fuertes'/
+    'aspectos_mejorar' (bug real: sonaba a copia-pega)."""
+    report = generate_deterministic_report(
+        pdf_bytes=_build_sample_pdf(),
+        games_data=_sample_games_data(),
+        prefs_data=_sample_prefs_data(),
+        employability_score=72,
+        candidate_name="Juan Perez",
+    )
+    resumen = report["analisis_cv"]["resumen"]
+    for frase in report["analisis_cv"]["puntos_fuertes"] + report["analisis_cv"]["aspectos_mejorar"]:
+        assert frase not in resumen, f"Frase duplicada entre resumen y bullets: {frase[:60]}"
+
+
 def test_plan_accion_has_three_items_per_horizon():
     report = generate_deterministic_report(
         pdf_bytes=_build_sample_pdf(),

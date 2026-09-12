@@ -139,9 +139,9 @@ PIVOT_FAMILIES: List[Dict[str, Any]] = [
         "match": ["maquilla", "peluquer", "estetic", "manicur", "pedicur", "barber", "masaj", "peluqueria canina"],
         "roles": [
             ("Consultor/a de Belleza y Estética Virtual (Beauty Advisor Online)",
-             "combinando tu empatía y tu experiencia de trato directo con clientes para asesorar sobre productos y rutinas de belleza a distancia, en vez de aplicar el servicio de forma física."),
+             "combinando su empatía y su experiencia de trato directo con clientes para asesorar sobre productos y rutinas de belleza a distancia, en vez de aplicar el servicio de forma física."),
             ("Customer Experience Specialist en E-Commerce de Cosmética/Estética",
-             "capitalizando tu experiencia de atención al público para optimizar el soporte técnico y comercial de una tienda online del sector."),
+             "capitalizando su experiencia de atención al público para optimizar el soporte técnico y comercial de una tienda online del sector."),
         ],
         "tools": [
             ("Perfect Corp / YouCam (realidad aumentada)", "Plataforma de probadores virtuales de maquillaje y cosmética para asesorar a clientes sobre tonos y acabados a distancia."),
@@ -153,9 +153,9 @@ PIVOT_FAMILIES: List[Dict[str, Any]] = [
                   "cuidado de personas", "cuidador", "geriatr"],
         "roles": [
             ("Teleoperador/a de Asesoramiento en Salud y Bienestar",
-             "aprovechando tus conocimientos del sector sanitario/asistencial para orientar a pacientes o familias por teléfono o chat, sin ejecutar el cuidado físico directo."),
+             "aprovechando sus conocimientos del sector sanitario/asistencial para orientar a pacientes o familias por teléfono o chat, sin ejecutar el cuidado físico directo."),
             ("Gestor/a de Citas y Atención al Paciente (Centro Sanitario)",
-             "aplicando tu conocimiento del sector para coordinar agendas, resolver dudas y dar soporte administrativo a pacientes de forma remota."),
+             "aplicando su conocimiento del sector para coordinar agendas, resolver dudas y dar soporte administrativo a pacientes de forma remota."),
         ],
         "tools": [
             ("Doctoralia / software de gestión de citas médicas", "Herramienta habitual para coordinar agendas y comunicación con pacientes en remoto."),
@@ -166,7 +166,7 @@ PIVOT_FAMILIES: List[Dict[str, Any]] = [
         "match": ["cocin", "camarer", "hosteler", "panader", "carnicer", "peix", "restauracion"],
         "roles": [
             ("Gestor/a de Reservas y Atención al Cliente Online (Hostelería)",
-             "aplicando tu experiencia de trato directo con clientes a la gestión de reservas, reseñas y atención por redes/chat de un negocio de hostelería."),
+             "aplicando su experiencia de trato directo con clientes a la gestión de reservas, reseñas y atención por redes/chat de un negocio de hostelería."),
             ("Community Manager / Gestor/a de Pedidos Online para Restauración",
              "aprovechando el conocimiento real del sector para gestionar redes sociales, pedidos a domicilio y reputación online de un negocio de hostelería."),
         ],
@@ -179,7 +179,7 @@ PIVOT_FAMILIES: List[Dict[str, Any]] = [
         "match": ["limpieza"],
         "roles": [
             ("Coordinador/a de Equipos de Limpieza (gestión remota de turnos)",
-             "aplicando tu conocimiento real del oficio para planificar turnos, controlar incidencias y coordinar equipos desde una oficina o en remoto, sin ejecutar el servicio tú misma/o."),
+             "aplicando su conocimiento real del oficio para planificar turnos, controlar incidencias y coordinar equipos desde una oficina o en remoto, sin ejecutar el servicio de forma directa."),
             ("Atención al Cliente en Empresa de Servicios de Limpieza",
              "resolviendo incidencias, presupuestos y reclamaciones de clientes por teléfono o chat, apoyándote en el conocimiento directo del servicio."),
         ],
@@ -193,7 +193,7 @@ PIVOT_FAMILIES: List[Dict[str, Any]] = [
                   "mozo de almacen", "reposicion"],
         "roles": [
             ("Coordinador/a de Operaciones y Atención al Cliente en Logística",
-             "aplicando tu conocimiento real de la operativa de almacén/reparto para coordinar rutas, incidencias y comunicación con clientes desde una posición de gestión, no de ejecución física."),
+             "aplicando su conocimiento real de la operativa de almacén/reparto para coordinar rutas, incidencias y comunicación con clientes desde una posición de gestión, no de ejecución física."),
             ("Gestor/a de Inventario y Soporte de E-Commerce",
              "aprovechando la experiencia práctica en almacén para dar soporte remoto a la gestión de stock, pedidos e incidencias de una tienda online."),
         ],
@@ -591,6 +591,48 @@ def _tier_label(score: int) -> str:
     return "Bajo"
 
 
+# Narrativa profesional por dimensión del CV, en vez de exponer directamente
+# la evidencia heurística en crudo (p.ej. "ratio viñetas/frases: 1.00",
+# "densidad ~40 palabras/página") -- esos números sirven para CALCULAR la
+# puntuación, pero mostrárselos tal cual a la persona usuaria suena a
+# depuración interna, no a un informe profesional. Solo el nivel "medio"
+# necesita un matiz suave; alto/bajo son afirmaciones con más carácter.
+CV_DIMENSION_NARRATIVE = {
+    "formato": {
+        "alto": "El documento presenta una estructura visual ordenada, con secciones bien diferenciadas y un uso adecuado de viñetas, lo que facilita una lectura rápida por parte de quien selecciona personal.",
+        "medio": "La estructura del documento es funcional, aunque un uso más consistente de encabezados y viñetas ayudaría a que se lea de un vistazo.",
+        "bajo": "El documento tiene una estructura poco diferenciada, con pocas secciones claramente encabezadas, lo que dificulta una lectura rápida en un primer filtro de candidaturas.",
+    },
+    "claridad": {
+        "alto": "La redacción es clara y directa, con frases de longitud adecuada y buen uso de viñetas para transmitir la información de forma escaneable.",
+        "medio": "La redacción es comprensible, aunque algunas frases podrían acortarse o fragmentarse más para facilitar una lectura rápida.",
+        "bajo": "La redacción tiende a frases largas y poco fragmentadas, lo que puede dificultar una lectura rápida en un primer filtro de candidaturas.",
+    },
+    "coherencia": {
+        "alto": "El orden cronológico de la experiencia es coherente y fácil de seguir de principio a fin.",
+        "medio": "El orden cronológico de la experiencia es mayormente coherente, con algún salto puntual que convendría revisar.",
+        "bajo": "El orden cronológico de la experiencia presenta saltos o inconsistencias que conviene revisar antes de enviar el CV a un proceso de selección.",
+    },
+    "info_clave": {
+        "alto": "El documento cubre de forma completa la información clave esperada en un CV profesional: datos de contacto, experiencia y formación.",
+        "medio": "El documento cubre la mayor parte de la información clave esperada, aunque algún dato (contacto, formación o idiomas) podría estar más completo.",
+        "bajo": "Faltan datos clave esperados en un CV profesional (contacto completo, formación o idiomas), lo que puede penalizar el filtro inicial de un lector automático (ATS) o de una persona reclutadora.",
+    },
+    "ortografia": {
+        "alto": "No se han detectado errores ortográficos relevantes en el documento.",
+        "medio": "No se han detectado errores ortográficos graves, aunque conviene una última revisión antes de enviarlo.",
+        "bajo": "Se han detectado posibles erratas o inconsistencias que conviene revisar antes de enviar el CV a un proceso de selección.",
+    },
+}
+
+def _stars_tier(stars: int) -> str:
+    if stars >= 4:
+        return "alto"
+    if stars == 3:
+        return "medio"
+    return "bajo"
+
+
 def _build_analisis_cv(review: Dict[str, Any], text: str, sections: Dict[str, Any]) -> Dict[str, Any]:
     scores = review.get("scores", {}) or {}
     fmt = scores.get("format", {}) or {}
@@ -607,37 +649,62 @@ def _build_analisis_cv(review: Dict[str, Any], text: str, sections: Dict[str, An
         "ortografia": int(spe.get("stars", 3) or 3),
     }
 
-    dim_labels = {
-        "formato": ("estructura y formato", fmt),
-        "claridad": ("claridad de redacción", cla),
-        "coherencia": ("coherencia cronológica", coh),
-        "info_clave": ("información clave aportada", key),
-        "ortografia": ("ortografía y estilo", spe),
-    }
-
     puntos_fuertes: List[str] = []
     aspectos_mejorar: List[str] = []
-    for dim, (label, data) in dim_labels.items():
+    for dim in ("formato", "claridad", "coherencia", "info_clave", "ortografia"):
         stars = valoraciones[dim]
-        expl = str(data.get("explanation") or "").strip()
-        if stars >= 4:
-            puntos_fuertes.append(f"Buen nivel de {label}. {expl}".strip())
-        elif stars <= 2:
-            aspectos_mejorar.append(f"Necesita reforzar {label}. {expl}".strip())
+        tier = _stars_tier(stars)
+        narrativa = CV_DIMENSION_NARRATIVE[dim][tier]
+        if tier == "alto":
+            puntos_fuertes.append(narrativa)
+        elif tier == "bajo":
+            aspectos_mejorar.append(narrativa)
 
     typos = _detect_typos(text)
     if typos:
         aspectos_mejorar.append(
-            "Erratas tipográficas detectadas en nombres de herramientas o software: " + "; ".join(typos) + "."
+            "Se detectan erratas tipográficas en nombres de herramientas o software: " + "; ".join(typos) + "."
         )
 
     if not puntos_fuertes:
         puntos_fuertes.append(
-            "El CV cubre la información básica esperada para un primer diagnóstico automático."
+            "El CV cubre la información básica esperada para un primer diagnóstico, sin destacar especialmente en ninguna dimensión concreta."
         )
     if not aspectos_mejorar:
         aspectos_mejorar.append(
             "No se han detectado carencias críticas en el análisis automático; aun así, una revisión manual siempre suma."
+        )
+
+    # El resumen es una síntesis de ALTO NIVEL, distinta de los bullets de
+    # "Puntos fuertes"/"Aspectos a mejorar" que van justo debajo -- repetir
+    # las mismas frases en ambos sitios (como hacía la version anterior) se
+    # lee como un copia-pega, no como un informe redactado con cuidado.
+    avg_stars = sum(valoraciones.values()) / len(valoraciones)
+    n_altos = sum(1 for v in valoraciones.values() if v >= 4)
+    n_bajos = sum(1 for v in valoraciones.values() if v <= 2)
+    if avg_stars >= 4:
+        resumen = (
+            "El CV presenta, en conjunto, una calidad estructural sólida: cubre bien la mayoría de las dimensiones "
+            "evaluadas (formato, claridad, coherencia, información clave y ortografía). El detalle y la evidencia "
+            "de cada dimensión se desarrollan a continuación."
+        )
+    elif n_bajos >= 2:
+        resumen = (
+            "El CV presenta carencias estructurales relevantes en varias dimensiones a la vez, lo que puede "
+            "penalizarlo tanto en un primer filtro automático como en la lectura de una persona reclutadora. "
+            "Conviene priorizar su revisión antes de enviarlo a procesos de selección; el detalle se desarrolla "
+            "a continuación."
+        )
+    elif n_altos and n_bajos:
+        resumen = (
+            "El CV combina puntos claramente sólidos con al menos una carencia relevante que conviene corregir "
+            "antes de enviarlo a procesos de selección. El detalle y la evidencia de cada dimensión se desarrollan "
+            "a continuación."
+        )
+    else:
+        resumen = (
+            "El CV tiene una calidad estructural correcta y homogénea en conjunto, sin puntos especialmente "
+            "débiles ni especialmente destacados. El detalle de cada dimensión se desarrolla a continuación."
         )
 
     experiencia = _lines_from_section(sections, "experience") or [
@@ -652,19 +719,28 @@ def _build_analisis_cv(review: Dict[str, Any], text: str, sections: Dict[str, An
     ats_score = int(round((fmt.get("score", 60) or 60) * 0.4 + (key.get("score", 60) or 60) * 0.6))
     ats_score = max(0, min(100, ats_score))
     email_found = bool(re.search(r"[\w.+-]+@[\w-]+\.[A-Za-z]{2,}", text or ""))
-    ats_explicacion = (
-        "Compatibilidad estimada con lectores automáticos (ATS) a partir de la cobertura de secciones "
-        f"({'contacto detectado en el documento' if email_found else 'sin contacto claro detectado en el documento'}) "
-        "y del formato general. Es una estimación heurística basada en reglas, no una lectura semántica del contenido."
-    )
+    if ats_score >= 75:
+        ats_explicacion = (
+            "El documento está razonablemente bien preparado para superar un primer filtro automático (ATS): "
+            "cubre las secciones y los datos de contacto esperados, con un formato que no debería generar "
+            "problemas de lectura para este tipo de sistemas."
+        )
+    elif ats_score >= 50:
+        contacto_txt = "el contacto es detectable" if email_found else "no se detecta con claridad un email de contacto"
+        ats_explicacion = (
+            f"El documento tiene una compatibilidad razonable con lectores automáticos (ATS): {contacto_txt}, "
+            "aunque podría beneficiarse de reforzar las secciones menos cubiertas para mejorar el filtro inicial."
+        )
+    else:
+        ats_explicacion = (
+            "El documento tiene una compatibilidad baja con lectores automáticos (ATS): "
+            + ("faltan datos de contacto claramente detectables y " if not email_found else "")
+            + "la cobertura de secciones clave es limitada, lo que puede hacer que quede fuera de un primer filtro "
+            "automático antes de que lo revise una persona."
+        )
 
     return {
-        "resumen": (
-            "Análisis automático (sin IA) generado a partir de la estructura del documento: "
-            f"formato {valoraciones['formato']}/5, claridad {valoraciones['claridad']}/5, "
-            f"coherencia {valoraciones['coherencia']}/5, información clave {valoraciones['info_clave']}/5 "
-            f"y ortografía {valoraciones['ortografia']}/5."
-        ),
+        "resumen": resumen,
         "experiencia": experiencia,
         "formacion": formacion,
         "idiomas": idiomas,
@@ -824,7 +900,7 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
         entornos_ideales.append(f"Puestos presenciales dentro de {areas[0]}, en un centro de trabajo físico.")
         coherencia_notas.append(aviso)
     else:
-        entornos_ideales.append(f"Puestos dentro de {areas[0]}, alineados con el interés declarado por el candidato.")
+        entornos_ideales.append(f"Puestos dentro de {areas[0]}, alineados con el interés declarado por la persona candidata.")
         entornos_ideales.append(
             WORK_MODE_TEXT.get(work_mode, "un entorno de trabajo flexible que se pueda adaptar según necesidad").capitalize()
         )
@@ -839,10 +915,16 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
         on_site_only = wants_remote and _requires_on_site_presence(area)
         demanda = "ALTA" if puntuacion_global >= 70 else "MEDIA"
         modalidad = "Presencial" if on_site_only else (work_mode.capitalize() if work_mode else "A definir según la oferta")
+        nivel = "Junior" if puntuacion_global < 70 else "Mid-level"
+        encaje_nivel = (
+            "un punto de partida razonable para posiciones de entrada en este ámbito"
+            if nivel == "Junior" else
+            "un perfil ya consolidado para posiciones con cierta autonomía en este ámbito, no solo de entrada"
+        )
         por_que_encaja = (
-            f"Justificación de encaje temporal: el candidato ha mostrado interés explícito en {area} y una "
+            f"Justificación de encaje temporal: la persona candidata ha mostrado interés explícito en {area} y una "
             f"puntuación global de empleabilidad de {puntuacion_global}/100 en la evaluación de EvalúaTE, "
-            "un punto de partida razonable para posiciones de entrada en este ámbito."
+            f"{encaje_nivel}."
         )
         if on_site_only:
             por_que_encaja += (
@@ -850,8 +932,8 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
                 "mayoría de sus puestos; la modalidad se ajusta a presencial para reflejar la realidad del sector."
             )
         roles_recomendados.append({
-            "titulo": f"Perfil junior/operativo en {area}",
-            "nivel": "Junior" if puntuacion_global < 70 else "Mid-level",
+            "titulo": f"Especialista en {area}" if nivel == "Mid-level" else f"Auxiliar/Especialista Junior en {area}",
+            "nivel": nivel,
             "modalidad": modalidad,
             "por_que_encaja": por_que_encaja,
             "demanda_laboral": demanda,
@@ -909,7 +991,7 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
         ] + herramientas_recomendadas
 
     recomendaciones_personalizadas = [
-        f"Enfocar la búsqueda inicial en {areas[0]}, donde el candidato ha mostrado mayor interés.",
+        f"Enfocar la búsqueda inicial en {areas[0]}, donde la persona candidata ha mostrado mayor interés.",
         "Apoyarse en las fortalezas detectadas en la evaluación al preparar entrevistas.",
         "Trabajar de forma activa, aunque progresiva, las áreas de mejora señaladas en este informe.",
         "Mantener actualizado el CV con logros concretos y medibles a medida que se generen.",
@@ -927,7 +1009,7 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
         {
             "nombre": f"Formación online gratuita relacionada con {areas[0]}",
             "tipo": "FORMACIÓN HABILITANTE",
-            "descripcion": f"Refuerza la empleabilidad en {areas[0]}, el área de mayor interés declarada por el candidato.",
+            "descripcion": f"Refuerza la empleabilidad en {areas[0]}, el área de mayor interés declarada por la persona candidata.",
         },
         {
             "nombre": "Curso corto de preparación de entrevistas de trabajo",
@@ -943,18 +1025,17 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
     else:
         nivel_txt = "un punto de partida que requiere trabajo constante"
 
-    fortaleza_txt = ""
     if top_fortalezas:
         top = top_fortalezas[0]
-        fortaleza_txt = f" Apalancando tu resultado en {top['nombre'].lower()} ({top['puntuacion']}/100), "
+        apalancando_txt = f"apalancando tu resultado en {top['nombre'].lower()} ({top['puntuacion']}/100)"
     else:
-        fortaleza_txt = " Apoyándote en las fortalezas detectadas en la evaluación, "
+        apalancando_txt = "apoyándote en las fortalezas detectadas en la evaluación"
 
     if pivot:
         mensaje_final = (
             f"El objetivo inicial de ejercer {conflict_areas[0].lower()} en modalidad 100% remota presenta una "
             "incompatibilidad real con la forma en que se ejerce ese oficio hoy. Sin embargo, tu perfil tiene una "
-            f"vía de pivote concreta:{fortaleza_txt}puedes posicionarte en roles de asesoramiento, atención al "
+            f"vía de pivote concreta: {apalancando_txt}, puedes posicionarte en roles de asesoramiento, atención al "
             f"cliente o gestión online dentro del mismo sector, en vez de en la ejecución física del oficio. "
             f"Con una puntuación global de {puntuacion_global}/100, el perfil evaluado muestra {nivel_txt}. "
             "Este informe se ha generado de forma 100% automática, sin intervención de un modelo de IA generativa, "
@@ -962,10 +1043,11 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
         )
     else:
         mensaje_final = (
-            f"Con una puntuación global de {puntuacion_global}/100, el perfil evaluado muestra {nivel_txt}."
-            f"{fortaleza_txt}usa las fortalezas señaladas como argumento en tus candidaturas y trabaja las áreas "
-            "de mejora de forma constante: la empleabilidad es un proceso, no un veredicto único. Este informe se "
-            "ha generado de forma 100% automática, sin intervención de un modelo de IA generativa, a partir de tus "
+            f"Con una puntuación global de {puntuacion_global}/100, el perfil evaluado muestra {nivel_txt}. "
+            f"Úsalo como punto de partida: {apalancando_txt}, tienes un argumento sólido que llevar a tus "
+            "candidaturas, y trabajando las áreas de mejora señaladas de forma constante puedes seguir subiendo esa "
+            "puntuación con el tiempo. La empleabilidad es un proceso, no un veredicto único. Este informe se ha "
+            "generado de forma 100% automática, sin intervención de un modelo de IA generativa, a partir de tus "
             "respuestas, tus resultados en los minijuegos y un análisis heurístico de tu CV."
         )
 
@@ -1029,18 +1111,6 @@ def generate_deterministic_report(
         puntuacion_global = 60
     puntuacion_global = max(0, min(100, puntuacion_global))
 
-    interpretacion_global = (
-        f"Puntuación global de {puntuacion_global}/100, calculada a partir del promedio de las competencias "
-        "evaluadas en los minijuegos (ver detalle en 'Resultados de las Evaluaciones'). Es un indicador "
-        "orientativo, no un veredicto definitivo sobre la empleabilidad del candidato."
-    )
-    resumen_ejecutivo = (
-        f"Informe generado automáticamente (sin IA generativa) para {datos_personales['Nombre']}. "
-        "Combina el análisis heurístico del CV aportado con los resultados de los minijuegos de EvalúaTE "
-        "y las preferencias laborales indicadas, para ofrecer una fotografía objetiva y reproducible del "
-        "perfil evaluado, sin depender de servicios externos de inteligencia artificial."
-    )
-    detected_tools = [t for t in analisis_cv.get("software", []) if "No se detectaron" not in t]
     ranked_skills = sorted(
         (
             {"nombre": str(s.get("skill") or "").strip(), "puntuacion": int(round(float(s.get("score", 0) or 0)))}
@@ -1049,6 +1119,48 @@ def generate_deterministic_report(
         key=lambda c: c["puntuacion"], reverse=True,
     )
     top_skill = ranked_skills[0] if ranked_skills else None
+    weakest_skill = ranked_skills[-1] if len(ranked_skills) > 1 else None
+
+    accion = _build_accion(job_prefs, puntuacion_global, top_fortalezas=ranked_skills[:2])
+    coherencia_notas = accion.pop("coherencia_notas", [])
+
+    # interpretacion_global: una valoración estratégica real (nivel + por qué
+    # + apoyo/riesgo principal), no una nota metodológica de "cómo se calculó
+    # el número" -- es lo primero que se lee del informe y debe leerse como
+    # el veredicto de un/a consultor/a, no como un pie de página técnico.
+    if puntuacion_global >= 75:
+        nivel_interpretacion = "un nivel de empleabilidad alto"
+    elif puntuacion_global >= 55:
+        nivel_interpretacion = "un nivel de empleabilidad medio, con recorrido claro de mejora"
+    else:
+        nivel_interpretacion = "un nivel de empleabilidad inicial que requiere trabajo activo antes de una búsqueda intensiva"
+
+    interpretacion_parts = [f"La puntuación global de {puntuacion_global}/100 sitúa el perfil en {nivel_interpretacion}."]
+    if coherencia_notas:
+        interpretacion_parts.append(
+            "Ese resultado está condicionado por un desajuste real entre la preferencia de modalidad de trabajo "
+            "indicada y el oficio elegido, que se detalla en el resumen ejecutivo y se corrige a lo largo del informe."
+        )
+    if top_skill and weakest_skill:
+        interpretacion_parts.append(
+            f"Su resultado en {top_skill['nombre'].lower()} ({top_skill['puntuacion']}/100) es el activo más sólido "
+            f"sobre el que construir la búsqueda, mientras que {weakest_skill['nombre'].lower()} "
+            f"({weakest_skill['puntuacion']}/100) es la brecha más urgente a trabajar antes de que se convierta en "
+            "un motivo real de descarte en procesos de selección exigentes."
+        )
+    interpretacion_parts.append(
+        "Es un indicador orientativo basado en reglas objetivas, no un veredicto definitivo y cerrado sobre la "
+        "empleabilidad de la persona."
+    )
+    interpretacion_global = " ".join(interpretacion_parts)
+
+    resumen_ejecutivo = (
+        f"Informe generado automáticamente (sin IA generativa) para {datos_personales['Nombre']}. "
+        "Combina el análisis heurístico del CV aportado con los resultados de los minijuegos de EvalúaTE "
+        "y las preferencias laborales indicadas, para ofrecer una fotografía objetiva y reproducible del "
+        "perfil evaluado, sin depender de servicios externos de inteligencia artificial."
+    )
+    detected_tools = [t for t in analisis_cv.get("software", []) if "No se detectaron" not in t]
     extra_bits = []
     if detected_tools:
         extra_bits.append(f"en el CV se identificaron herramientas como {', '.join(detected_tools[:3])}")
@@ -1060,8 +1172,6 @@ def generate_deterministic_report(
         joined = " y ".join(extra_bits)
         resumen_ejecutivo += " " + joined[:1].upper() + joined[1:] + "."
 
-    accion = _build_accion(job_prefs, puntuacion_global, top_fortalezas=ranked_skills[:2])
-    coherencia_notas = accion.pop("coherencia_notas", [])
     if coherencia_notas:
         resumen_ejecutivo += " " + " ".join(coherencia_notas)
 
