@@ -179,6 +179,76 @@ def test_does_not_flag_coherent_remote_preference():
     assert all(r["modalidad"] != "Presencial" for r in report["roles_recomendados"])
 
 
+def test_competencias_get_rich_specific_content_and_categories():
+    """Las 10 competencias fijas de los minijuegos (games.ts) deben usar el
+    banco de contenido especifico (COMPETENCY_CONTENT), no la plantilla
+    generica, y agruparse por categoria psicometrica."""
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [
+            {"skill": "Empatía", "score": 90, "level": "Alto"},
+            {"skill": "Autoconciencia", "score": 32, "level": "Bajo"},
+        ]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "presencial"},
+        employability_score=70,
+        candidate_name="Test",
+    )
+    categorias = {cat["categoria"] for cat in report["perfil_competencias"]}
+    assert "Competencias Interpersonales y Sociales" in categorias
+    assert "Competencias Intrapersonales y Adaptativas" in categorias
+    empatia = next(
+        c for cat in report["perfil_competencias"] for c in cat["competencias"] if c["nombre"] == "Empatía"
+    )
+    assert "sensibilidad interpersonal" in empatia["explicacion"].lower()
+    # No debe usar la plantilla generica de respaldo para una habilidad conocida
+    assert "obtiene un resultado" not in empatia["explicacion"].lower()
+
+
+def test_area_mejora_text_has_no_double_period():
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [{"skill": "Autoconciencia", "score": 20, "level": "Bajo"}]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "presencial"},
+        employability_score=60,
+        candidate_name="Test",
+    )
+    assert ".." not in report["areas_mejora"][0]["porque_afecta"]
+
+
+def test_cv_typos_are_cited_specifically():
+    buf = BytesIO()
+    c = canvas.Canvas(buf)
+    c.drawString(50, 800, "HABILIDADES: Photoshop, Ilustrator, InDesing")
+    c.save()
+    report = generate_deterministic_report(
+        pdf_bytes=buf.getvalue(),
+        games_data={"softSkills": [{"skill": "Creatividad", "score": 60, "level": "Medio"}]},
+        prefs_data={"areas": ["Diseño"], "workMode": "presencial"},
+        employability_score=60,
+        candidate_name="Test",
+    )
+    aspectos = " ".join(report["analisis_cv"]["aspectos_mejorar"])
+    assert "InDesign" in aspectos
+    assert "Illustrator" in aspectos
+
+
+def test_pivot_roles_and_tools_are_specific_to_the_sector():
+    """El pivote de un oficio presencial concreto debe dar roles y
+    herramientas especificas del sector (no un unico rol generico de
+    'formacion/venta online')."""
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [{"skill": "Empatía", "score": 80, "level": "Alto"}]},
+        prefs_data={"areas": ["Maquilladora"], "workMode": "remoto"},
+        employability_score=70,
+        candidate_name="Test",
+    )
+    titulos = [r["titulo"] for r in report["roles_recomendados"]]
+    assert any("Belleza" in t or "Beauty" in t or "Cosmética" in t or "Estética" in t for t in titulos)
+    herramientas = [h["nombre"] for h in report["herramientas_recomendadas"]]
+    assert any("Perfect Corp" in h or "YouCam" in h for h in herramientas)
+
+
 def test_plan_accion_has_three_items_per_horizon():
     report = generate_deterministic_report(
         pdf_bytes=_build_sample_pdf(),
