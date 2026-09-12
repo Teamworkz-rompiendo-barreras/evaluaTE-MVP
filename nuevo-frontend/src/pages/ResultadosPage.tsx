@@ -87,7 +87,7 @@ const StarsGold: React.FC<{ n: any }> = ({ n }) => {
   const empty = "★".repeat(5 - safeN);
   return (
     <span role="img" aria-label={`${safeN} de 5 estrellas`} className="inline-flex tracking-widest">
-      <span className="text-[#374BA6] font-bold text-lg" aria-hidden="true">{filled}</span>
+      <span className="text-[#166534] font-bold text-lg" aria-hidden="true">{filled}</span>
       <span className="text-slate-400 font-bold text-lg" aria-hidden="true">{empty}</span>
     </span>
   );
@@ -422,7 +422,7 @@ export default function ResultadosPage() {
   if (loadingIa && !reportData) {
     return (
       <div className="flex flex-col items-center justify-center min-h-screen bg-white dark:bg-slate-900 px-4">
-        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#374BA6] dark:border-blue-400"></div>
+        <div className="animate-spin rounded-full h-12 w-12 border-t-4 border-b-4 border-[#166534] dark:border-green-400"></div>
         {/* WCAG 2.2 AA (4.1.3): aria-live="polite" dinámico para lecturas asíncronas */}
         <div className="text-center mt-6" aria-live="polite" aria-atomic="true" role="status">
           <h2 className="text-xl font-bold text-gray-900 dark:text-white">{loadingMessage}</h2>
@@ -463,7 +463,7 @@ export default function ResultadosPage() {
         >
           <div className="bg-white dark:bg-slate-800 text-gray-900 dark:text-white rounded-lg shadow-lg p-6 max-w-xl w-full flex items-center gap-4">
             <div className="flex-shrink-0">
-              <div className="animate-spin h-8 w-8 border-4 border-blue-600 border-t-transparent rounded-full" aria-hidden="true"></div>
+              <div className="animate-spin h-8 w-8 border-4 border-green-600 border-t-transparent rounded-full" aria-hidden="true"></div>
             </div>
             <div className="flex-1">
               <p className="text-lg font-semibold">Generando tu documento PDF…</p>
@@ -472,7 +472,7 @@ export default function ResultadosPage() {
               <div className="mt-4" aria-hidden={exportEta === null}>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-3 overflow-hidden">
                   <div
-                    className="h-3 bg-blue-600 dark:bg-blue-400 transition-all"
+                    className="h-3 bg-green-600 dark:bg-green-400 transition-all"
                     style={{ width: `${exportProgress}%` }}
                     role="progressbar"
                     aria-valuemin={0}
@@ -494,13 +494,13 @@ export default function ResultadosPage() {
       )}
       <div ref={reportRef} id="reporte-analisis" className="max-w-[210mm] mx-auto bg-white dark:bg-slate-800 print:shadow-none shadow-xl border border-gray-200/60 dark:border-slate-700 overflow-hidden w-full print:border-gray-200">
         
-        <header className="bg-[#374BA6] dark:bg-slate-950 text-white p-16 flex flex-col items-center justify-center text-center relative print:bg-[#374BA6] print:h-[290mm]">
+        <header className="bg-[#166534] dark:bg-slate-950 text-white p-16 flex flex-col items-center justify-center text-center relative print:bg-[#166534] print:h-[290mm]">
           <img src={logo} alt="Teamworkz - Rompiendo Barreras" className="h-16 mb-12 brightness-0 invert" aria-hidden="true" />
           <h1 className="text-5xl font-black tracking-tight mb-6 leading-tight text-white">Informe Profesional<br/>de Empleabilidad</h1>
-          <h2 className="text-md uppercase tracking-[0.4em] font-bold text-blue-200 mb-4">EvalúaTE</h2>
-          <p className="text-lg text-blue-100 font-medium mb-20">Consultoría de Talento Corporativo y Estrategia Laboral</p>
+          <h2 className="text-md uppercase tracking-[0.4em] font-bold text-green-200 mb-4">EvalúaTE</h2>
+          <p className="text-lg text-green-100 font-medium mb-20">Consultoría de Talento Corporativo y Estrategia Laboral</p>
           <div className="bg-white/10 dark:bg-slate-800/80 backdrop-blur-md px-12 py-6 rounded-xl border border-white/10 w-full max-w-md">
-            <p className="text-sm text-blue-200 font-semibold mb-1">{new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
+            <p className="text-sm text-green-200 font-semibold mb-1">{new Date().toLocaleDateString('es-ES', { year: 'numeric', month: 'long', day: 'numeric' })}</p>
             <h2 className="text-3xl font-bold tracking-tight text-white">{candidateName}</h2>
           </div>
         </header>
@@ -510,7 +510,7 @@ export default function ResultadosPage() {
         <main className="p-12 space-y-12 print:p-10">
           <section aria-labelledby="indice-global" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
             <div className="flex flex-col items-center bg-gray-50 dark:bg-slate-900 rounded-xl p-8 border border-gray-200/50 dark:border-slate-600">
-              <span id="indice-global" className="text-xs font-bold uppercase tracking-wider text-[#374BA6] dark:text-blue-300 block mb-2">Índice Global</span>
+              <span id="indice-global" className="text-xs font-bold uppercase tracking-wider text-[#166534] dark:text-green-300 block mb-2">Índice Global</span>
               <div className="text-6xl font-black text-gray-900 dark:text-white tabular-nums mb-4" aria-label={`Puntuación de empleabilidad: ${reportData.puntuacion_global || 0} de 100`}>
                 {reportData.puntuacion_global || 0}<span className="text-2xl text-gray-600 dark:text-slate-300 font-normal" aria-hidden="true">/100</span>
               </div>
@@ -521,14 +521,14 @@ export default function ResultadosPage() {
           </section>
 
           <section aria-labelledby="resumen-ejecutivo" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="resumen-ejecutivo" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/10">1. Resumen Ejecutivo</h2>
+            <h2 id="resumen-ejecutivo" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/10">1. Resumen Ejecutivo</h2>
             <p className="text-sm leading-relaxed text-gray-700 dark:text-slate-100 text-justify font-medium">
               {formatText(reportData.resumen_ejecutivo)}
             </p>
           </section>
 
           <section aria-labelledby="perfil-personal" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="perfil-personal" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/10">2. Perfil Personal</h2>
+            <h2 id="perfil-personal" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/10">2. Perfil Personal</h2>
             <div className="flex flex-wrap gap-4">
               {Object.entries(displayPersonalData).map(([key, value]) => (
                 <div key={key} className="flex-1 min-w-[150px] bg-gray-50/80 dark:bg-slate-900 p-3 rounded border border-gray-100 dark:border-slate-600">
@@ -542,7 +542,7 @@ export default function ResultadosPage() {
           <div className="html2pdf__page-break"></div>
 
           <section aria-labelledby="perfil-competencias" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="perfil-competencias" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-6 uppercase tracking-wider border-b border-[#374BA6]/10">3. Perfil de Competencias</h2>
+            <h2 id="perfil-competencias" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-6 uppercase tracking-wider border-b border-[#166534]/10">3. Perfil de Competencias</h2>
             <div style={{ width: '600px', height: '480px', margin: '0 auto', display: 'block', position: 'relative' }} className="nivo-radar-wrapper bg-white dark:bg-slate-900 mb-8 border border-gray-50 dark:border-slate-600 rounded-xl" aria-hidden="true">
               <style dangerouslySetInnerHTML={{__html: `
                 .dark .nivo-radar-wrapper text { fill: #ffffff !important; font-weight: 700 !important; font-size: 11px !important; }
@@ -562,13 +562,13 @@ export default function ResultadosPage() {
                     text: { fill: 'var(--radar-text-color, #1e293b)', fontSize: 10, fontWeight: 700 },
                     grid: { line: { stroke: 'var(--radar-grid-color, #cbd5e1)', strokeWidth: 1, strokeDasharray: "3 3" } }
                   }}
-                  borderColor="#374BA6"
+                  borderColor="#166534"
                   gridLabelOffset={22}
                   dotSize={8}
                   dotColor="#ffffff"
                   dotBorderWidth={3}
-                  dotBorderColor="#374BA6"
-                  colors={["#374BA6"]}
+                  dotBorderColor="#166534"
+                  colors={["#166534"]}
                   fillOpacity={0.2}
                   animate={false}
                   isInteractive={false}
@@ -598,16 +598,16 @@ export default function ResultadosPage() {
             <div className="flex flex-col space-y-8 mt-6 w-full">
               {safeArray(reportData.perfil_competencias).map((grupo, idx) => (
                 <div key={idx} className="break-inside-avoid w-full">
-                  <h3 className="text-xs font-bold text-gray-600 dark:text-slate-300 uppercase tracking-widest mb-4 border-l-4 border-[#374BA6] pl-2 bg-gray-50/50 dark:bg-slate-900 py-1.5">{formatText(grupo.categoria)}</h3>
+                  <h3 className="text-xs font-bold text-gray-600 dark:text-slate-300 uppercase tracking-widest mb-4 border-l-4 border-[#166534] pl-2 bg-gray-50/50 dark:bg-slate-900 py-1.5">{formatText(grupo.categoria)}</h3>
                   <div className="flex flex-col space-y-5 w-full">
                     {safeArray(grupo.competencias).map((comp, cIdx) => (
                       <div key={cIdx} className="border-b border-gray-50 dark:border-slate-700 pb-3 last:border-0 w-full">
                         <div className="flex justify-between items-end mb-1">
                           <span className="text-sm font-bold text-gray-800 dark:text-white">{formatText(comp.nombre)}</span>
-                          <span className="text-[10px] font-black text-[#374BA6] dark:text-slate-900 bg-blue-50 dark:bg-blue-200 px-2 py-0.5 rounded">{comp.puntuacion || 0}/100</span>
+                          <span className="text-[10px] font-black text-[#166534] dark:text-slate-900 bg-green-50 dark:bg-green-200 px-2 py-0.5 rounded">{comp.puntuacion || 0}/100</span>
                         </div>
                         <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1.5 mb-2" aria-hidden="true">
-                          <div className="bg-[#374BA6] dark:bg-blue-400 h-1.5 rounded-full" style={{ width: `${comp.puntuacion || 0}%` }}></div>
+                          <div className="bg-[#166534] dark:bg-green-400 h-1.5 rounded-full" style={{ width: `${comp.puntuacion || 0}%` }}></div>
                         </div>
                         <p className="text-xs text-gray-700 dark:text-slate-100 leading-relaxed text-justify">{formatText(comp.explicacion)}</p>
                       </div>
@@ -653,13 +653,13 @@ export default function ResultadosPage() {
           <div className="html2pdf__page-break"></div>
 
           <section aria-labelledby="analisis-cv" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="analisis-cv" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-6 uppercase tracking-wider border-b border-[#374BA6]/10">6. Análisis Profesional del CV</h2>
+            <h2 id="analisis-cv" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-6 uppercase tracking-wider border-b border-[#166534]/10">6. Análisis Profesional del CV</h2>
             <div className="flex flex-col items-center gap-4 mb-8 bg-gray-50 dark:bg-slate-900 p-6 rounded-xl border border-gray-100 dark:border-slate-600 w-full">
               <div className="flex flex-col items-center justify-center w-full max-w-[200px] bg-white dark:bg-slate-800 p-4 rounded-lg border border-gray-200/60 dark:border-slate-600">
                 <span className="text-[10px] font-bold text-gray-600 dark:text-slate-300 uppercase tracking-widest text-center">ATS MATCH</span>
-                <div className="text-4xl font-black text-[#374BA6] dark:text-blue-300 my-1">{reportData.analisis_cv?.ats_compatibilidad || 0}%</div>
+                <div className="text-4xl font-black text-[#166534] dark:text-green-300 my-1">{reportData.analisis_cv?.ats_compatibilidad || 0}%</div>
                 <div className="w-full bg-gray-200 dark:bg-slate-700 rounded-full h-1.5" aria-hidden="true">
-                  <div className="h-1.5 rounded-full bg-[#374BA6] dark:bg-blue-400" style={{ width: `${reportData.analisis_cv?.ats_compatibilidad || 0}%` }}></div>
+                  <div className="h-1.5 rounded-full bg-[#166534] dark:bg-green-400" style={{ width: `${reportData.analisis_cv?.ats_compatibilidad || 0}%` }}></div>
                 </div>
               </div>
               <p className="text-sm text-gray-700 dark:text-slate-100 italic border-l-4 border-gray-400 dark:border-slate-500 pl-4 text-justify mt-2">"{formatText(reportData.analisis_cv?.resumen)}"</p>
@@ -703,18 +703,18 @@ export default function ResultadosPage() {
           </section>
 
           <section aria-labelledby="entornos-ideales" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="entornos-ideales" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/20 dark:border-slate-600">7. Entornos Ideales</h2>
+            <h2 id="entornos-ideales" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/20 dark:border-slate-600">7. Entornos Ideales</h2>
             <ul className="space-y-3 bg-gray-50/80 dark:bg-slate-900 p-5 rounded-lg border border-gray-200 dark:border-slate-600 w-full">
               {safeArray(reportData.entornos_ideales).map((e, idx) => (
                 <li key={idx} className="flex gap-3 text-sm text-gray-800 dark:text-slate-100 leading-relaxed text-justify">
-                  <span className="text-[#374BA6] dark:text-blue-300 shrink-0 mt-0.5" aria-hidden="true">▪</span> <span>{formatText(e)}</span>
+                  <span className="text-[#166534] dark:text-green-300 shrink-0 mt-0.5" aria-hidden="true">▪</span> <span>{formatText(e)}</span>
                 </li>
               ))}
             </ul>
           </section>
 
           <section aria-labelledby="roles-recomendados" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="roles-recomendados" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/20 dark:border-slate-600">8. Roles Recomendados de Transición</h2>
+            <h2 id="roles-recomendados" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/20 dark:border-slate-600">8. Roles Recomendados de Transición</h2>
             <div className="flex flex-col space-y-5 w-full">
               {safeArray(reportData.roles_recomendados).map((rol, idx) => (
                 <div key={idx} className="bg-white dark:bg-slate-800 border p-5 rounded-lg border-gray-200/80 dark:border-slate-600 shadow-sm w-full">
@@ -722,7 +722,7 @@ export default function ResultadosPage() {
                     <h3 className="text-base font-bold text-gray-800 dark:text-white">{formatText(rol.titulo)}</h3>
                   </div>
                   <div className="flex gap-2 mb-3">
-                    <span className="bg-blue-100 dark:bg-blue-200 text-blue-800 dark:text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded">{formatText(rol.nivel)}</span>
+                    <span className="bg-green-100 dark:bg-green-200 text-green-800 dark:text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded">{formatText(rol.nivel)}</span>
                     <span className="bg-purple-100 dark:bg-purple-200 text-purple-800 dark:text-slate-900 text-[10px] font-bold px-2 py-0.5 rounded">{formatText(rol.modalidad)}</span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-slate-100 text-justify"><strong className="text-gray-900 dark:text-white">Justificación de encaje temporal:</strong> {formatText(rol.por_que_encaja)}</p>
@@ -735,29 +735,29 @@ export default function ResultadosPage() {
           <div className="html2pdf__page-break"></div>
 
           <section aria-labelledby="plan-accion" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="plan-accion" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-6 uppercase tracking-wider border-b border-[#374BA6]/20 dark:border-slate-600">9. Plan de Acción de Capacitación</h2>
+            <h2 id="plan-accion" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-6 uppercase tracking-wider border-b border-[#166534]/20 dark:border-slate-600">9. Plan de Acción de Capacitación</h2>
             <div className="flex flex-col space-y-6 w-full">
               <div className="bg-white dark:bg-slate-900 border rounded-lg overflow-hidden border-gray-200 dark:border-slate-600 w-full">
-                <div className="bg-blue-950 dark:bg-slate-950 text-white px-5 py-3 font-bold uppercase tracking-wider text-sm border-b dark:border-slate-700">Fase 1: Primeros 30 Días</div>
+                <div className="bg-green-950 dark:bg-slate-950 text-white px-5 py-3 font-bold uppercase tracking-wider text-sm border-b dark:border-slate-700">Fase 1: Primeros 30 Días</div>
                 <ul className="p-5 space-y-3">
                   {safeArray(reportData.plan_accion?.dias_30).map((a, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-gray-800 dark:text-slate-100"><span className="text-blue-700 dark:text-blue-300 font-bold shrink-0" aria-hidden="true">✓</span> <span className="text-justify">{formatText(a)}</span></li>
+                    <li key={i} className="flex gap-3 text-sm text-gray-800 dark:text-slate-100"><span className="text-green-700 dark:text-green-300 font-bold shrink-0" aria-hidden="true">✓</span> <span className="text-justify">{formatText(a)}</span></li>
                   ))}
                 </ul>
               </div>
               <div className="bg-white dark:bg-slate-900 border rounded-lg overflow-hidden border-gray-200 dark:border-slate-600 w-full">
-                <div className="bg-blue-800 dark:bg-slate-950 text-white px-5 py-3 font-bold uppercase tracking-wider text-sm border-b dark:border-slate-700">Fase 2: Días 31 a 60</div>
+                <div className="bg-green-800 dark:bg-slate-950 text-white px-5 py-3 font-bold uppercase tracking-wider text-sm border-b dark:border-slate-700">Fase 2: Días 31 a 60</div>
                 <ul className="p-5 space-y-3">
                   {safeArray(reportData.plan_accion?.dias_60).map((a, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-gray-800 dark:text-slate-100"><span className="text-blue-600 dark:text-blue-300 font-bold shrink-0" aria-hidden="true">✓</span> <span className="text-justify">{formatText(a)}</span></li>
+                    <li key={i} className="flex gap-3 text-sm text-gray-800 dark:text-slate-100"><span className="text-green-600 dark:text-green-300 font-bold shrink-0" aria-hidden="true">✓</span> <span className="text-justify">{formatText(a)}</span></li>
                   ))}
                 </ul>
               </div>
               <div className="bg-white dark:bg-slate-900 border rounded-lg overflow-hidden border-gray-200 dark:border-slate-600 w-full">
-                <div className="bg-blue-600 dark:bg-slate-950 text-white px-5 py-3 font-bold uppercase tracking-wider text-sm border-b dark:border-slate-700">Fase 3: Días 61 a 90</div>
+                <div className="bg-green-600 dark:bg-slate-950 text-white px-5 py-3 font-bold uppercase tracking-wider text-sm border-b dark:border-slate-700">Fase 3: Días 61 a 90</div>
                 <ul className="p-5 space-y-3">
                   {safeArray(reportData.plan_accion?.dias_90).map((a, i) => (
-                    <li key={i} className="flex gap-3 text-sm text-gray-800 dark:text-slate-100"><span className="text-blue-500 dark:text-blue-300 font-bold shrink-0" aria-hidden="true">✓</span> <span className="text-justify">{formatText(a)}</span></li>
+                    <li key={i} className="flex gap-3 text-sm text-gray-800 dark:text-slate-100"><span className="text-green-500 dark:text-green-300 font-bold shrink-0" aria-hidden="true">✓</span> <span className="text-justify">{formatText(a)}</span></li>
                   ))}
                 </ul>
               </div>
@@ -765,7 +765,7 @@ export default function ResultadosPage() {
           </section>
 
           <section aria-labelledby="estrategia-busqueda" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="estrategia-busqueda" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/20 dark:border-slate-600">10. Estrategia de Búsqueda</h2>
+            <h2 id="estrategia-busqueda" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/20 dark:border-slate-600">10. Estrategia de Búsqueda</h2>
             <div className="flex flex-col space-y-3 w-full">
               {safeArray(reportData.estrategia_busqueda).map((est, i) => (
                 <div key={i} className="text-sm text-gray-800 dark:text-slate-100 p-4 bg-gray-50 dark:bg-slate-900 border border-gray-200 dark:border-slate-600 rounded-lg text-justify">
@@ -776,7 +776,7 @@ export default function ResultadosPage() {
           </section>
 
           <section aria-labelledby="herramientas-recomendadas" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="herramientas-recomendadas" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/20 dark:border-slate-600">11. Herramientas Recomendadas</h2>
+            <h2 id="herramientas-recomendadas" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/20 dark:border-slate-600">11. Herramientas Recomendadas</h2>
             <div className="flex flex-col space-y-3 w-full">
               {safeArray(reportData.herramientas_recomendadas).map((tool, i) => (
                 <div key={i} className="flex flex-col bg-white dark:bg-slate-900 border p-4 rounded-lg border-gray-200 dark:border-slate-600 shadow-sm w-full">
@@ -791,16 +791,16 @@ export default function ResultadosPage() {
 
           {safeArray(reportData.resultados_juegos).length > 0 && (
             <section aria-labelledby="insights-juegos" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-              <h2 id="insights-juegos" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/20 dark:border-slate-600">12. Insights de los Minijuegos</h2>
+              <h2 id="insights-juegos" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/20 dark:border-slate-600">12. Insights de los Minijuegos</h2>
               <div className="flex flex-col space-y-5 w-full">
                 {safeArray(reportData.resultados_juegos).map((juego, idx) => (
                   <div key={idx} className="bg-white dark:bg-slate-900 border p-5 rounded-lg border-gray-200 dark:border-slate-600 shadow-sm relative overflow-hidden break-inside-avoid w-full">
-                    <div className="absolute top-0 left-0 w-1.5 h-full bg-[#374BA6] dark:bg-blue-400"></div>
+                    <div className="absolute top-0 left-0 w-1.5 h-full bg-[#166534] dark:bg-green-400"></div>
                     <h3 className="text-base font-bold text-gray-900 dark:text-white mb-1 pl-2">{formatText(formatGameName(juego.juego))}</h3>
                     <p className="text-[10px] font-bold text-gray-600 dark:text-slate-300 uppercase tracking-wider mb-3 pl-2">DIMENSIÓN: {formatText(juego.que_mide)}</p>
                     <p className="text-sm text-gray-800 dark:text-slate-100 mb-4 leading-relaxed text-justify pl-2"><strong>Mapeo Psicométrico:</strong> {formatText(juego.interpretacion)}</p>
-                    <div className="bg-blue-50/50 dark:bg-slate-800 p-4 rounded text-sm text-blue-950 dark:text-slate-100 border border-blue-200/60 dark:border-slate-600 ml-2">
-                      <strong className="block mb-1 text-[#374BA6] dark:text-blue-300 font-bold">Transferencia a Entrevista:</strong> <span className="text-justify block">{formatText(juego.aplicacion_entrevista)}</span>
+                    <div className="bg-green-50/50 dark:bg-slate-800 p-4 rounded text-sm text-green-950 dark:text-slate-100 border border-green-200/60 dark:border-slate-600 ml-2">
+                      <strong className="block mb-1 text-[#166534] dark:text-green-300 font-bold">Transferencia a Entrevista:</strong> <span className="text-justify block">{formatText(juego.aplicacion_entrevista)}</span>
                     </div>
                   </div>
                 ))}
@@ -809,24 +809,24 @@ export default function ResultadosPage() {
           )}
 
           <section aria-labelledby="ajustes-inmediatos" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="ajustes-inmediatos" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/20 dark:border-slate-600">13. Ajustes Inmediatos</h2>
+            <h2 id="ajustes-inmediatos" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/20 dark:border-slate-600">13. Ajustes Inmediatos</h2>
             <ul className="flex flex-col space-y-3 w-full">
               {safeArray(reportData.recomendaciones_personalizadas).map((rec, i) => (
                 <li key={i} className="flex gap-3 text-sm text-gray-800 dark:text-slate-100 bg-gray-50 dark:bg-slate-900 p-4 rounded border border-gray-200 dark:border-slate-600 text-justify">
-                  <span className="text-[#374BA6] dark:text-blue-300 font-bold shrink-0 mt-0.5" aria-hidden="true">▪</span> <span>{formatText(rec)}</span>
+                  <span className="text-[#166534] dark:text-green-300 font-bold shrink-0 mt-0.5" aria-hidden="true">▪</span> <span>{formatText(rec)}</span>
                 </li>
               ))}
             </ul>
           </section>
 
           <section aria-labelledby="recursos-formativos" className="break-inside-avoid border-b pb-8 border-gray-100 dark:border-slate-600">
-            <h2 id="recursos-formativos" className="text-lg font-bold text-[#374BA6] dark:text-blue-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#374BA6]/20 dark:border-slate-600">14. Recursos Formativos Recomendados</h2>
+            <h2 id="recursos-formativos" className="text-lg font-bold text-[#166534] dark:text-green-300 pb-2 mb-4 uppercase tracking-wider border-b border-[#166534]/20 dark:border-slate-600">14. Recursos Formativos Recomendados</h2>
             <div className="flex flex-col space-y-4 w-full">
               {safeArray(reportData.recursos_adicionales).map((rec, i) => (
                 <div key={i} className="bg-white dark:bg-slate-900 border p-5 rounded-lg border-gray-200 dark:border-slate-600 shadow-sm w-full">
                   <div className="flex justify-between items-center mb-2">
                     <span className="text-sm font-bold text-gray-900 dark:text-white">{formatText(rec.nombre)}</span>
-                    <span className="text-[10px] font-black uppercase tracking-wider bg-blue-100 dark:bg-blue-200 px-2 py-0.5 rounded text-[#374BA6] dark:text-slate-900 whitespace-nowrap">{formatText(rec.tipo)}</span>
+                    <span className="text-[10px] font-black uppercase tracking-wider bg-green-100 dark:bg-green-200 px-2 py-0.5 rounded text-[#166534] dark:text-slate-900 whitespace-nowrap">{formatText(rec.tipo)}</span>
                   </div>
                   <p className="text-sm text-gray-700 dark:text-slate-100 leading-relaxed text-justify">{formatText(rec.descripcion)}</p>
                 </div>
@@ -834,8 +834,8 @@ export default function ResultadosPage() {
             </div>
           </section>
 
-          <section aria-labelledby="veredicto" className="break-inside-avoid bg-[#374BA6] dark:bg-slate-950 text-white p-10 rounded-xl text-center shadow border dark:border-slate-700">
-            <h2 id="veredicto" className="text-xl font-bold text-blue-200 mb-4 uppercase tracking-widest">Veredicto de Orientación</h2>
+          <section aria-labelledby="veredicto" className="break-inside-avoid bg-[#166534] dark:bg-slate-950 text-white p-10 rounded-xl text-center shadow border dark:border-slate-700">
+            <h2 id="veredicto" className="text-xl font-bold text-green-200 mb-4 uppercase tracking-widest">Veredicto de Orientación</h2>
             <p className="text-base font-medium leading-relaxed italic max-w-3xl mx-auto text-justify dark:text-slate-100">
               "{formatText(reportData.mensaje_final)}"
             </p>
@@ -851,26 +851,26 @@ export default function ResultadosPage() {
               <fieldset className="mb-5 flex flex-col items-center gap-4 w-full">
                 <legend className="text-sm font-bold text-center w-full mb-4 text-gray-700 dark:text-white uppercase tracking-widest">Tu Feedback nos ayuda a mejorar</legend>
                 <div className="flex justify-center gap-4 w-full">
-                  <label className="flex items-center gap-2 cursor-pointer bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-950 px-5 py-3 rounded-lg border border-gray-200 dark:border-slate-600 focus-within:ring-2 focus-within:ring-[#374BA6] transition-colors">
-                    <input type="radio" name="rating" value="útil" required onChange={(e) => setFeedback({ ...feedback, rating: e.target.value })} className="w-5 h-5 text-[#374BA6] focus:ring-0 dark:bg-slate-800 border-gray-300 dark:border-slate-500" />
+                  <label className="flex items-center gap-2 cursor-pointer bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-950 px-5 py-3 rounded-lg border border-gray-200 dark:border-slate-600 focus-within:ring-2 focus-within:ring-[#166534] transition-colors">
+                    <input type="radio" name="rating" value="útil" required onChange={(e) => setFeedback({ ...feedback, rating: e.target.value })} className="w-5 h-5 text-[#166534] focus:ring-0 dark:bg-slate-800 border-gray-300 dark:border-slate-500" />
                     <span className="text-sm font-bold text-gray-800 dark:text-slate-100">Informe de alto valor</span>
                   </label>
-                  <label className="flex items-center gap-2 cursor-pointer bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-950 px-5 py-3 rounded-lg border border-gray-200 dark:border-slate-600 focus-within:ring-2 focus-within:ring-[#374BA6] transition-colors">
-                    <input type="radio" name="rating" value="no útil" required onChange={(e) => setFeedback({ ...feedback, rating: e.target.value })} className="w-5 h-5 text-[#374BA6] focus:ring-0 dark:bg-slate-800 border-gray-300 dark:border-slate-500" />
+                  <label className="flex items-center gap-2 cursor-pointer bg-gray-50 dark:bg-slate-900 hover:bg-gray-100 dark:hover:bg-slate-950 px-5 py-3 rounded-lg border border-gray-200 dark:border-slate-600 focus-within:ring-2 focus-within:ring-[#166534] transition-colors">
+                    <input type="radio" name="rating" value="no útil" required onChange={(e) => setFeedback({ ...feedback, rating: e.target.value })} className="w-5 h-5 text-[#166534] focus:ring-0 dark:bg-slate-800 border-gray-300 dark:border-slate-500" />
                     <span className="text-sm font-bold text-gray-800 dark:text-slate-100">Necesita ajustes</span>
                   </label>
                 </div>
               </fieldset>
               <textarea 
                 placeholder="Indica qué métrica o redacción consideras mejorable..." 
-                className="w-full p-4 border border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-300 rounded-lg mb-4 text-sm focus:ring-2 focus:ring-[#374BA6] focus:outline-none transition-shadow"
+                className="w-full p-4 border border-gray-300 dark:border-slate-500 bg-white dark:bg-slate-900 text-gray-900 dark:text-white placeholder-gray-500 dark:placeholder-slate-300 rounded-lg mb-4 text-sm focus:ring-2 focus:ring-[#166534] focus:outline-none transition-shadow"
                 onChange={(e) => setFeedback({ ...feedback, comment: e.target.value })}
                 aria-label="Comentarios del analista"
               />
               <div aria-live="polite" className="w-full">
                 {feedbackError && <p className="text-sm text-red-700 dark:text-red-300 font-bold mb-3 text-center">{feedbackError}</p>}
               </div>
-              <button type="submit" className="w-full bg-gray-900 hover:bg-black dark:bg-blue-600 dark:hover:bg-blue-700 text-white text-sm font-bold py-3 rounded-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
+              <button type="submit" className="w-full bg-gray-900 hover:bg-black dark:bg-green-600 dark:hover:bg-green-700 text-white text-sm font-bold py-3 rounded-lg transition-colors focus:ring-2 focus:ring-offset-2 focus:ring-gray-900">
                 Enviar Feedback
               </button>
             </form>
@@ -892,9 +892,9 @@ export default function ResultadosPage() {
                 role="status"
                 aria-live="polite"
                 aria-atomic="true"
-                className="mb-4 flex items-center justify-center gap-3 rounded-lg border border-blue-200 bg-blue-50 px-4 py-3 text-sm font-semibold text-blue-800 dark:border-blue-700 dark:bg-slate-900 dark:text-blue-200"
+                className="mb-4 flex items-center justify-center gap-3 rounded-lg border border-green-200 bg-green-50 px-4 py-3 text-sm font-semibold text-green-800 dark:border-green-700 dark:bg-slate-900 dark:text-green-200"
               >
-                <div className="animate-spin h-4 w-4 border-2 border-blue-700 border-t-transparent rounded-full dark:border-blue-300 dark:border-t-transparent" aria-hidden="true"></div>
+                <div className="animate-spin h-4 w-4 border-2 border-green-700 border-t-transparent rounded-full dark:border-green-300 dark:border-t-transparent" aria-hidden="true"></div>
                 {pdfGenerationMessage}
               </div>
             )}
@@ -904,7 +904,7 @@ export default function ResultadosPage() {
               disabled={isExportingPdf}
               aria-busy={isExportingPdf}
               aria-live="polite"
-              className="bg-[#374BA6] dark:bg-blue-600 hover:bg-blue-800 dark:hover:bg-blue-700 text-white font-bold py-4 px-10 rounded-lg transition-colors text-base flex items-center justify-center mx-auto gap-3 focus:ring-4 focus:ring-blue-200 disabled:opacity-50"
+              className="bg-[#166534] dark:bg-green-600 hover:bg-green-800 dark:hover:bg-green-700 text-white font-bold py-4 px-10 rounded-lg transition-colors text-base flex items-center justify-center mx-auto gap-3 focus:ring-4 focus:ring-green-200 disabled:opacity-50"
             >
               {isExportingPdf ? (
                 <>
