@@ -46,9 +46,14 @@ _styles.add(ParagraphStyle(name="BulletBody", parent=_styles["Normal"], leading=
 
 
 def _p(text: Any, style: str = "Body"):
-    """Paragraph seguro: castea a str y escapa nada especial ya viene de JSON de IA (texto plano)."""
+    """Paragraph seguro: castea a str y escapa el contenido (viene de JSON de
+    IA o del motor determinista, texto plano de terceros). Las llamadas de
+    este módulo insertan `<b>...</b>` a propósito para negrita (ver más abajo)
+    -- se restauran esas dos etiquetas exactas tras el escapado para que
+    reportlab las interprete, sin dejar de escapar cualquier otro `<`/`>`."""
     safe_text = "" if text is None else str(text)
     safe_text = safe_text.replace("&", "&amp;").replace("<", "&lt;").replace(">", "&gt;")
+    safe_text = safe_text.replace("&lt;b&gt;", "<b>").replace("&lt;/b&gt;", "</b>")
     return Paragraph(safe_text, _styles[style])
 
 
