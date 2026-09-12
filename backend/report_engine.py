@@ -20,12 +20,21 @@ try:
     from backend.cv_analyzer import extract_pdf_info, analyze_multimodal_report
     from backend.prompt_config import PromptConfig
     from backend.pii_masking import mask_pii_data
+    from backend.deterministic_report import generate_deterministic_report
 except ImportError:
     from cv_analyzer import extract_pdf_info, analyze_multimodal_report
     from prompt_config import PromptConfig
     from pii_masking import mask_pii_data
+    from deterministic_report import generate_deterministic_report
 
 logger = logging.getLogger("report_engine")
+
+# Por defecto el informe se genera SOLO con automatización determinista (sin
+# IA generativa): no depende de cuotas ni disponibilidad de Gemini/terceros,
+# y responde al instante. Poner ENABLE_AI_REPORT=true reactiva el intento de
+# IA como primera opción (con el motor determinista como respaldo si falla).
+def _ai_report_enabled() -> bool:
+    return (os.getenv("ENABLE_AI_REPORT") or "").strip().lower() in ("1", "true", "yes", "on")
 
 
 async def run_employability_analysis(
@@ -44,38 +53,56 @@ async def run_employability_analysis(
     Equivalente síncrono de `procesar_informe_ia` (antiguo worker de ARQ).
     """
     try:
-        try:
-            extracted = await extract_pdf_info(pdf_bytes)
-            cv_text = extracted.get("raw_text", "")
-            cv_text_anon = mask_pii_data(cv_text, candidate_name)
-        except Exception as parse_err:
-            logger.error(f"Error PDF Parsing: {parse_err}")
-            return {"status": "error", "error": "El documento PDF está corrupto."}
+        analysis_result = None
+        used_ai = False
 
-        try:
-            prompt = PromptConfig.get_employability_report_prompt(
-                candidate_data={"fullName": "el candidato"},
-                soft_skills_data=games_data.get("softSkills", []),
-                cv_data={"raw_text": cv_text_anon},
-                job_preferences_data=prefs_data,
-                employability_score=employability_score,
-                level=level,
-                completed_games=games_data.get("completedGames", []),
-                languages_data=[],
-                is_multimodal=False,
-                lowest_skills_str=lowest_skills_str,
-            )
+        if _ai_report_enabled():
+            try:
+                extracted = await extract_pdf_info(pdf_bytes)
+                cv_text = extracted.get("raw_text", "")
+                cv_text_anon = mask_pii_data(cv_text, candidate_name)
 
-            api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
-            analysis_result = await analyze_multimodal_report(pdf_bytes, prompt, api_key=api_key)
+                prompt = PromptConfig.get_employability_report_prompt(
+                    candidate_data={"fullName": "el candidato"},
+                    soft_skills_data=games_data.get("softSkills", []),
+                    cv_data={"raw_text": cv_text_anon},
+                    job_preferences_data=prefs_data,
+                    employability_score=employability_score,
+                    level=level,
+                    completed_games=games_data.get("completedGames", []),
+                    languages_data=[],
+                    is_multimodal=False,
+                    lowest_skills_str=lowest_skills_str,
+                )
 
-            if not isinstance(analysis_result, dict) or "error" in analysis_result:
-                err_msg = analysis_result.get("error", "Fallo en inferencia de IA.")
-                return {"status": "error", "error": err_msg}
+                api_key = os.getenv("GEMINI_API_KEY") or os.getenv("GOOGLE_API_KEY")
+                ai_result = await analyze_multimodal_report(pdf_bytes, prompt, api_key=api_key)
 
-        except Exception as ai_err:
-            logger.exception(f"Fallo IA: {ai_err}")
-            return {"status": "error", "error": "Motores de análisis no disponibles."}
+                if isinstance(ai_result, dict) and "error" not in ai_result:
+                    analysis_result = ai_result
+                    used_ai = True
+                else:
+                    logger.warning(
+                        f"IA no disponible ({(ai_result or {}).get('error') if isinstance(ai_result, dict) else ai_result}); "
+                        "generando informe con el motor determinista (sin IA)."
+                    )
+            except Exception as ai_err:
+                logger.warning(f"Fallo IA, se usa el motor determinista (sin IA): {ai_err}")
+
+        if analysis_result is None:
+            try:
+                analysis_result = generate_deterministic_report(
+                    pdf_bytes=pdf_bytes,
+                    games_data=games_data,
+                    prefs_data=prefs_data,
+                    employability_score=employability_score,
+                    candidate_name=candidate_name,
+                )
+            except Exception as det_err:
+                logger.exception(f"Fallo crítico en el motor determinista: {det_err}")
+                return {"status": "error", "error": "Error interno crítico."}
+
+        logger.info(f"Informe generado con motor {'IA (Gemini)' if used_ai else 'determinista (sin IA)'} para {user_id}")
 
         # PERSISTENCIA TRANSACCIONAL ESTRICTA (Soft-Fail DB)
         if database_engine:

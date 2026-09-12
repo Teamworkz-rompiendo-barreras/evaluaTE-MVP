@@ -33,6 +33,14 @@ try:
 except Exception:  # pragma: no cover
     fitz = None  # type: ignore
 
+# PyMuPDF (fitz) no está instalado en el runtime serverless de Vercel (pesa
+# demasiado para el límite de tamaño de la función). pypdf es puro Python,
+# ligero, y es el extractor real usado en producción.
+try:
+    from pypdf import PdfReader  # type: ignore
+except Exception:  # pragma: no cover
+    PdfReader = None  # type: ignore
+
 try:
     from spellchecker import SpellChecker  # type: ignore
 except Exception:  # pragma: no cover
@@ -265,6 +273,29 @@ def _neutral_review(lang: str = "es") -> Dict[str, Any]:
     }
 
 
+def sections_from_text(text: str) -> Dict[str, Any]:
+    """Detecta bloques de sección (experiencia, educación, ...) en texto plano
+    ya extraído. Separado de la extracción del PDF para poder reutilizarse
+    con cualquier backend de extracción (PyMuPDF, pypdf, ...).
+
+    El patrón se ancla al INICIO de línea (`^\\s*{pat}`) en vez de buscarlo en
+    cualquier parte del texto: un CV real dice a menudo "Perfil con
+    experiencia en ventas..." en el resumen, mucho antes del encabezado real
+    "EXPERIENCIA" -- sin anclar, ese uso de la palabra dentro de una frase se
+    confundía con el encabezado de sección y arrastraba contenido de otras
+    secciones."""
+    sections: Dict[str, Any] = {}
+    for key, pat in SECTION_PATTERNS.items():
+        header_re = re.compile(rf"^\s*{pat}\b", re.IGNORECASE | re.MULTILINE)
+        m = header_re.search(text)
+        if not m:
+            continue
+        rest = text[m.end():]
+        end_m = re.search(r"\n\s*\n", rest)
+        sections[key] = m.group(0) + (rest[:end_m.start()] if end_m else rest)
+    return sections
+
+
 def _extract_text_and_sections(doc) -> Tuple[str, Dict[str, Any]]:
     parts: List[str] = []
     for p in doc:
@@ -273,37 +304,30 @@ def _extract_text_and_sections(doc) -> Tuple[str, Dict[str, Any]]:
         except Exception:
             continue
     text = "\n".join(parts)
+    return text, sections_from_text(text)
 
-    sections: Dict[str, Any] = {}
-    for key, pat in SECTION_PATTERNS.items():
-        if re.search(pat, text, re.IGNORECASE):
-            # Extraer un bloque sencillo desde el encabezado hasta el siguiente salto doble
-            m = re.search(rf"{pat}.*?(\n\s*\n|$)", text, re.IGNORECASE | re.DOTALL)
-            if m:
-                sections[key] = m.group(0)
-    return text, sections
+
+def _extract_text_pypdf(pdf_bytes: bytes) -> str:
+    """Extractor de texto puro-Python (sin dependencias binarias pesadas),
+    el único disponible en el runtime serverless de Vercel."""
+    if PdfReader is None:
+        return ""
+    try:
+        import io
+        reader = PdfReader(io.BytesIO(pdf_bytes))
+        return "\n".join((page.extract_text() or "") for page in reader.pages)
+    except Exception:
+        return ""
 
 
 def analyze_cv_structure(path: str, lang_hint: str = "auto") -> Dict[str, Any]:
-    """Analiza un fichero PDF. Si PyMuPDF no está disponible, devuelve un
-    resultado neutro para no romper el flujo."""
-    text: str = ""
-    sections: Dict[str, Any] = {}
-    if fitz is not None:
-        try:
-            doc = fitz.open(path)  # type: ignore[arg-type]
-            text, sections = _extract_text_and_sections(doc)
-            doc.close()
-        except Exception:
-            text = ""
+    """Analiza un fichero PDF. Si no se puede extraer texto (ni con PyMuPDF
+    ni con pypdf), devuelve un resultado neutro para no romper el flujo."""
+    with open(path, "rb") as f:
+        pdf_bytes = f.read()
 
-    if not text:
-        lang = "es" if lang_hint == "auto" else lang_hint
-        base = _neutral_review(lang)
-        base["file_name"] = path.split("/")[-1]
-        return base
-
-    review = compute_review_from_text_sections(text, sections)
+    result = analyze_cv_structure_from_bytes(pdf_bytes, lang_hint=lang_hint)
+    review = result["review"]
     review["file_name"] = path.split("/")[-1]
     return review
 
@@ -349,10 +373,14 @@ def extract_contact_info(text: str) -> Dict[str, str]:
     }
 
 
-def analyze_cv_structure_from_bytes(pdf_bytes: bytes) -> Dict[str, Any]:
+def analyze_cv_structure_from_bytes(pdf_bytes: bytes, lang_hint: str = "auto") -> Dict[str, Any]:
     """Igual que analyze_cv_structure pero a partir de bytes en memoria.
     Devuelve también el texto extraído y las secciones detectadas, para que
-    el llamador pueda extraer datos de contacto sin IA."""
+    el llamador pueda extraer datos de contacto sin IA.
+
+    Intenta PyMuPDF primero (mejor fidelidad si está instalado, p.ej. en
+    local); si no está disponible usa pypdf (puro Python, el que sí viaja
+    al deploy serverless de Vercel)."""
     text: str = ""
     sections: Dict[str, Any] = {}
     if fitz is not None:
@@ -364,7 +392,13 @@ def analyze_cv_structure_from_bytes(pdf_bytes: bytes) -> Dict[str, Any]:
             text = ""
 
     if not text:
-        return {"review": _neutral_review(), "text": "", "sections": {}}
+        text = _extract_text_pypdf(pdf_bytes)
+        if text:
+            sections = sections_from_text(text)
+
+    if not text:
+        lang = "es" if lang_hint == "auto" else lang_hint
+        return {"review": _neutral_review(lang), "text": "", "sections": {}}
 
     review = compute_review_from_text_sections(text, sections)
     return {"review": review, "text": text, "sections": sections}
