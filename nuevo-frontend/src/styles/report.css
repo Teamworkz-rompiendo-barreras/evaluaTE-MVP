@@ -864,12 +864,11 @@
    ===================================================== */
 
 .report-portada {
-  /* Verde de marca (mismos tonos que primary/secondary en tailwind.config.js) */
-  background: linear-gradient(145deg, #16a34a 0%, #166534 60%, #052e16 100%);
+  background: linear-gradient(145deg, #8095F2  0%, #374BA6  60%, #1F2937 100%);
   border-radius: 1rem;
   overflow: hidden;
   margin-bottom: 1.5rem;
-  box-shadow: 0 12px 40px rgba(22, 101, 52, 0.35);
+  box-shadow: 0 12px 40px rgba(55, 75, 166, 0.35);
   break-inside: avoid;
   page-break-inside: avoid;
 }
@@ -986,7 +985,7 @@
 .report-section-title {
   font-size: 1.2rem;
   font-weight: 700;
-  color: #166534;
+  color: #374BA6 ;
   margin-bottom: 1.25rem;
   display: flex;
   align-items: center;
@@ -998,7 +997,7 @@
   display: inline-block;
   width: 4px;
   height: 1.25em;
-  background: linear-gradient(180deg, #16a34a, #15803d);
+  background: linear-gradient(180deg, #8095F2 , #6366f1);
   border-radius: 2px;
   flex-shrink: 0;
 }
@@ -1069,9 +1068,9 @@
 }
 
 .strength-tag {
-  background: #dcfce7;
-  color: #166534;
-  border: 1px solid #86efac;
+  background: #F0E8D1;
+  color: #374BA6;
+  border: 1px solid #8095F2;
   border-radius: 2rem;
   padding: 0.35rem 1rem;
   font-size: 0.85rem;
@@ -1079,6 +1078,11 @@
   line-height: 1.4;
 }
 
+.dark .strength-tag {
+  background: #1F2937 !important;
+  color: #F2D680 !important;
+  border-color: #EFD177 !important;
+}
 /* =====================================================
    ÁREAS DE MEJORA — CARDS
    ===================================================== */
@@ -1092,7 +1096,7 @@
 .improvement-card {
   background: #FFF7ED;
   border: 1px solid #fed7aa;
-  border-left: 4px solid #b45309;
+  border-left: 4px solid #8095F2;
   border-radius: 0.5rem;
   padding: 0.875rem 1.125rem;
 }
@@ -1373,33 +1377,58 @@
    DARK MODE — overrides para nuevas clases
    ===================================================== */
 
-/* La portada es una banda de color de marca con texto blanco -- ese
-   contraste (blanco sobre verde oscuro) funciona igual en claro y oscuro,
-   así que en modo oscuro solo se profundiza un poco el degradado; el resto
-   de estilos base (.report-portada-title, -name, -avatar, -score-value...)
-   ya son blancos y no necesitan overrides aparte. */
 .dark .report-portada {
-  background: linear-gradient(145deg, #15803d 0%, #14532d 60%, #052e16 100%);
-  box-shadow: 0 12px 40px rgba(5, 46, 22, 0.45);
-}
-
-.dark .report-portada-logo {
-  filter: brightness(0) invert(1);
+  background: linear-gradient(145deg, #f5db8c  0%, #ebca68  60%, #dab33e 100%);
+  box-shadow: 0 12px 40px efd177(55, 75, 166, 0.35);
 }
 
 .dark .report-section-title {
-  color: #4ade80;
+  color: #e5bd45 ;
 }
 
+.dark .report-portada-logo {
+  filter: brightness(0) saturate(100);
+}
+
+.dark .report-portada-avatar {
+  background: rgba(13, 19, 33, 0.08);
+  border-color: rgba(13, 19, 33, 0.45);
+  color: #0D1321;
+}
+
+.dark .report-portada-title {
+  color:#0D1321 ;
+}
+
+.dark .report-portada-name {
+  color: #0D1321;
+}
+
+.dark .report-portada-date {
+  color:rgba(13, 19, 33, 0.75);
+}
+
+.dark .report-portada-score {
+  background: rgba(13, 19, 33, 0.08);
+  border: 1.5px solid rgba(13, 19, 33, 0.35);
+}
+
+.dark .report-portada-score-label {
+  color: rgba(13, 19, 33, 0.75);
+ }
+
+.dark .report-portada-score-value {
+  color: #0D1321;
+}
 .dark .strength-tag {
   background: #14532d;
-  color: #86efac;
+  color: #93c5fd;
   border-color: #15803d;
 }
 
 .dark .improvement-card {
   background: #4B5563;
-  border-color: #d97706;
+  border-color: #dab444;
 }
 
 .dark .improvement-area   { color: #fcd34d; }
@@ -1427,24 +1456,18 @@
 .dark .role-card-name { color: #f3f4f6; }
 .dark .role-card-meta { color: #9ca3af; }
 
-.dark .plan-phase.short  { background: rgba(16, 185, 129, 0.15); border-color: #059669; }
-.dark .plan-phase.medium { background: rgba(59, 130, 246, 0.15); border-color: #2563eb; }
-.dark .plan-phase.long   { background: rgba(139, 92, 246, 0.15); border-color: #7c3aed; }
+.dark .plan-phase.short  { background: rgba(128, 149, 242, 0.18); border-color: #000000; }
+.dark .plan-phase.medium { background: rgba(128, 149, 242, 0.18); border-color: #000000; }
+.dark .plan-phase.long   { background: rgba(128, 149, 242, 0.18); border-color: #000000; }
 .dark .plan-phase-list li { color: #e5e7eb; }
 
-.dark .plan-phase.short  .plan-phase-title { color: #34d399; }
-.dark .plan-phase.medium .plan-phase-title { color: #60a5fa; }
-.dark .plan-phase.long   .plan-phase-title { color: #a78bfa; }
-.dark .plan-phase.short  .plan-phase-list li::before { color: #34d399; }
-.dark .plan-phase.medium .plan-phase-list li::before { color: #60a5fa; }
-.dark .plan-phase.long   .plan-phase-list li::before { color: #a78bfa; }
 
 .dark .final-message-box {
-  background: rgba(22, 163, 74, 0.15) !important;
-  border: 1px solid #16a34a !important;
-  color: #f0fdf4 !important;
+  background:  #a078009e 100% !important;
+  border: 1px solid #ffd969fb !important;
+  color: #0D1321 !important;
 }
-.dark .final-message-box p { color: #f0fdf4; }
+.dark .final-message-box p { color: #1f2937; }
 
 .dark .skill-bar-label { color: #d1d5db; }
 .dark .skill-bar-track { background: #374151; }

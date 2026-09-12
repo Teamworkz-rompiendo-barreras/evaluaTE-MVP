@@ -41,20 +41,19 @@ from reportlab.platypus import (
 logger = logging.getLogger(__name__)
 router = APIRouter()
 
-# --- Paleta de marca (idéntica a tailwind.config.js) ---------------------
+# --- Paleta de marca (azul EvalúaTE, la misma que usa ResultadosPage.tsx) --
 # reportlab's mini-XML de <font color="..."> exige "#RRGGBB" o un nombre --
 # Color.hexval() devuelve "0x..." y rompe el parseo, así que se guardan
 # también las cadenas hex tal cual para usarlas dentro de <font>.
-PRIMARY_HEX = "#166534"      # Verde oscuro principal -- 8.5:1 sobre blanco
-SECONDARY_HEX = "#15803d"    # Verde medio -- 5.5:1 sobre blanco
-ACCENT_HEX = "#16a34a"       # Verde medio hover -- 6.2:1 sobre blanco
+PRIMARY_HEX = "#374BA6"      # Azul principal (igual que ResultadosPage.tsx)
+SECONDARY_HEX = "#2d3f96"    # Azul oscuro (hover de btn-primary en index.css)
+ACCENT_HEX = "#2a3b8c"       # Azul más oscuro (active de btn-primary en index.css)
 WARNING_HEX = "#b45309"      # 4.8:1 sobre blanco
 ERROR_HEX = "#b91c1c"        # 5.9:1 sobre blanco
 INFO_HEX = "#0369a1"         # 5.8:1 sobre blanco
 
 PRIMARY = colors.HexColor(PRIMARY_HEX)
 SECONDARY = colors.HexColor(SECONDARY_HEX)
-SECONDARY_LIGHT = colors.HexColor("#4ade80")  # Solo decorativo, nunca como texto
 ACCENT = colors.HexColor(ACCENT_HEX)
 NEUTRAL_LIGHT = colors.HexColor("#F9F9F9")
 NEUTRAL = colors.HexColor("#EAEAEA")
@@ -109,8 +108,12 @@ _styles.add(ParagraphStyle(
     name="BulletBody", parent=_styles["Normal"], leading=13, fontSize=10,
 ))
 _styles.add(ParagraphStyle(
-    name="FinalMessage", parent=_styles["Normal"], textColor=NEUTRAL_DARK, fontSize=11,
-    leading=17, alignment=TA_LEFT,
+    name="FinalMessage", parent=_styles["Normal"], textColor=WHITE, fontSize=11.5,
+    leading=17, alignment=TA_LEFT, fontName="Helvetica-BoldOblique",
+))
+_styles.add(ParagraphStyle(
+    name="FinalMessageTitle", parent=_styles["Normal"], textColor=WHITE, fontSize=13.5,
+    leading=16, fontName="Helvetica-Bold",
 ))
 _styles.add(ParagraphStyle(
     name="FooterText", parent=_styles["Normal"], textColor=colors.HexColor("#6b7280"), fontSize=8,
@@ -500,9 +503,11 @@ def build_report_pdf(report: dict, candidate_name: str = "Candidato") -> bytes:
 
     if report.get("mensaje_final"):
         story.append(PageBreak())
-        story.append(_section_title("Mensaje Final"))
-        story.append(_card([_p(report["mensaje_final"], "FinalMessage")],
-                            bg=colors.HexColor("#f0fdf4"), border=colors.HexColor("#bbf7d0"), border_left=PRIMARY))
+        story.append(_card(
+            [_p("VEREDICTO DE ORIENTACIÓN", "FinalMessageTitle"), Spacer(1, 8),
+             _p(report["mensaje_final"], "FinalMessage")],
+            bg=PRIMARY, border=PRIMARY,
+        ))
 
     doc.build(story, onFirstPage=_footer, onLaterPages=_footer)
     return buffer.getvalue()

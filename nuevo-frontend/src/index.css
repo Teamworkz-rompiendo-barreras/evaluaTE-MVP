@@ -138,19 +138,19 @@ textarea {
    Tailwind genera a partir del theme, dando lugar a colores inconsistentes
    según qué regla ganara la cascada. */
 .bg-primary {
-  background-color: #166534;
+  background-color: #374BA6;
 }
 
 .text-primary {
-  color: #166534;
+  color: #374BA6;
 }
 
 .bg-secondary {
-  background-color: #15803d;
+  background-color: #F2D680;
 }
 
 .text-secondary {
-  color: #15803d;
+  color: #F2D680;
 }
 
 .btn-primary {
