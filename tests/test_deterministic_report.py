@@ -265,6 +265,85 @@ def test_cv_resumen_does_not_duplicate_puntos_fuertes_sentences():
         assert frase not in resumen, f"Frase duplicada entre resumen y bullets: {frase[:60]}"
 
 
+def test_nivel_badge_matches_explanation_text_tier():
+    """Bug real reportado por un usuario: el badge de nivel (Alto/Medio/Bajo)
+    y el texto explicativo usaban umbrales DISTINTOS, pudiendo mostrar
+    'Bajo' junto a un texto que describe un comportamiento adecuado/medio.
+    Ambos deben salir siempre de la misma clasificación."""
+    # Puntuacion elegida a proposito para caer en umbrales distintos segun
+    # el bug antiguo (nivel mostrado con 80/55, contenido con 70/40): 72
+    # daba nivel mostrado "Medio" pero contenido de nivel "alto".
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [{"skill": "Resiliencia y Flexibilidad", "score": 72, "level": "Bajo"}]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "presencial"},
+        employability_score=60,
+        candidate_name="Test",
+    )
+    comp = report["perfil_competencias"][0]["competencias"][0]
+    assert comp["nivel"] == "Alto"  # 72 >= 70 -> tier "alto" con los umbrales unificados
+    resultado = report["resultados_juegos"][0]
+    assert "(Alto)" in resultado["resultado"]
+    assert "alto" in resultado["interpretacion"].lower()
+    assert "adecuada" not in comp["explicacion"].lower()  # ese es el texto de nivel "medio", no debe colarse
+
+
+def test_resultados_juegos_does_not_repeat_perfil_competencias_paragraph():
+    """Bug real: 'Mapeo Psicometrico' repetia literalmente el mismo parrafo
+    que 'Perfil de Competencias' para cada habilidad."""
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [{"skill": "Empatía", "score": 90, "level": "Alto"}]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "presencial"},
+        employability_score=70,
+        candidate_name="Test",
+    )
+    explicacion = report["perfil_competencias"][0]["competencias"][0]["explicacion"]
+    interpretacion = report["resultados_juegos"][0]["interpretacion"]
+    assert explicacion not in interpretacion
+    assert interpretacion.count("DIMENSIÓN") <= 1
+
+
+def test_recursos_adicionales_cite_real_named_platforms():
+    """El usuario pidio que los recursos formativos digan CUALES (nombre,
+    plataforma/enlace), no un generico 'formacion online relacionada'."""
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [{"skill": "Empatía", "score": 70, "level": "Alto"}]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "presencial"},
+        employability_score=70,
+        candidate_name="Test",
+    )
+    todo = " ".join(r["nombre"] + " " + r["descripcion"] for r in report["recursos_adicionales"])
+    assert any(p in todo for p in ("coursera.org", "activate.withgoogle.com", "edx.org"))
+    assert "fundaciononce.es" in todo or "sepe.es" in todo
+
+
+def test_entrevista_uses_star_structure_and_real_cv_anchor_when_available():
+    buf = BytesIO()
+    c = canvas.Canvas(buf)
+    c.drawString(50, 800, "EXPERIENCIA")
+    c.drawString(50, 780, "Gerente en Asociacion Barco Aberto, 2018-2021")
+    c.save()
+    report = generate_deterministic_report(
+        pdf_bytes=buf.getvalue(),
+        games_data={"softSkills": [
+            {"skill": "Liderazgo", "score": 90, "level": "Alto"},
+            {"skill": "Creatividad", "score": 50, "level": "Medio"},
+        ]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "presencial"},
+        employability_score=70,
+        candidate_name="Test",
+    )
+    top = next(r for r in report["resultados_juegos"] if r["juego"] == "Liderazgo")
+    assert "STAR" in top["aplicacion_entrevista"]
+    assert "Barco Aberto" in top["aplicacion_entrevista"] or "gerente" in top["aplicacion_entrevista"].lower()
+    # Todo el cuerpo del informe va en 3a persona/impersonal (el tuteo se
+    # reserva solo para el veredicto final) -- regresion real: el anclaje
+    # de CV se escribio en tuteo ("tu etapa") rompiendo esa consistencia.
+    assert "tu etapa" not in top["aplicacion_entrevista"]
+
+
 def test_plan_accion_has_three_items_per_horizon():
     report = generate_deterministic_report(
         pdf_bytes=_build_sample_pdf(),

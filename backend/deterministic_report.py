@@ -528,6 +528,9 @@ def _tier_key(score: int) -> str:
     return "bajo"
 
 
+_TIER_DISPLAY = {"alto": "Alto", "medio": "Medio", "bajo": "Bajo"}
+
+
 def _detect_languages(text: str) -> List[str]:
     if not text:
         return []
@@ -581,14 +584,6 @@ def _lines_from_section(sections: Dict[str, Any], key: str, limit: int = 6) -> L
             break
         lines.append(clean)
     return lines[:limit]
-
-
-def _tier_label(score: int) -> str:
-    if score >= 80:
-        return "Alto"
-    if score >= 55:
-        return "Medio"
-    return "Bajo"
 
 
 # Narrativa profesional por dimensión del CV, en vez de exponer directamente
@@ -775,7 +770,28 @@ def _generic_competency_content(nombre: str, tier: str) -> Dict[str, Any]:
     }
 
 
-def _build_competencias(soft_skills: List[Dict[str, Any]]) -> Dict[str, Any]:
+# Detecta un "Puesto en Empresa" limpio en una línea de experiencia del CV
+# (formato habitual: "Gerente en Asociación X, 2018-2021") para poder anclar
+# la sugerencia de entrevista de la competencia mejor puntuada a un dato
+# REAL de la persona, en vez de quedarse siempre en un ejemplo genérico.
+# Deliberadamente conservador: si no encaja con este patrón concreto, no se
+# usa nada (mejor generico que inventar una relación forzada o incorrecta).
+_ROLE_AT_COMPANY_RE = re.compile(r"^([A-Za-zÁÉÍÓÚÜÑáéíóúüñ][\w\s/áéíóúüñÁÉÍÓÚÜÑ]{2,50}?)\s+en\s+([A-Za-zÁÉÍÓÚÜÑ][\w\s.,&/áéíóúüñÁÉÍÓÚÜÑ]{2,50}?)(?:,\s*\d|\s*\(|$)")
+
+
+def _extract_role_at_company(experiencia_lines: List[str]) -> str | None:
+    for line in experiencia_lines or []:
+        clean = line.strip(" -•\t")
+        m = _ROLE_AT_COMPANY_RE.match(clean)
+        if not m:
+            continue
+        rol, empresa = m.group(1).strip(), m.group(2).strip()
+        if rol and empresa:
+            return f"su etapa como {rol.lower()} en {empresa}"
+    return None
+
+
+def _build_competencias(soft_skills: List[Dict[str, Any]], experiencia_lines: List[str] | None = None) -> Dict[str, Any]:
     competencias = []
     for s in soft_skills:
         nombre = str(s.get("skill") or "Competencia").strip()
@@ -785,8 +801,14 @@ def _build_competencias(soft_skills: List[Dict[str, Any]]) -> Dict[str, Any]:
         except (TypeError, ValueError):
             score = 0
         score = max(0, min(100, score))
-        nivel = str(s.get("level") or _tier_label(score)).capitalize()
+        # El nivel mostrado ("Alto/Medio/Bajo") y el contenido explicativo
+        # DEBEN salir de la MISMA clasificación -- antes el nivel mostrado
+        # podia venir tal cual del frontend (con su propio criterio interno)
+        # mientras el texto se elegia con otro umbral distinto, lo que podia
+        # producir un nivel "Bajo" acompañado de un texto que describe un
+        # comportamiento "adecuado"/medio. Bug real reportado por un usuario.
         tier = _tier_key(score)
+        nivel = _TIER_DISPLAY[tier]
         content = COMPETENCY_CONTENT.get(key)
         tier_content = (content or {}).get(tier) or _generic_competency_content(nombre, tier)
         que_mide = (content or {}).get("que_mide") or f"Capacidad evaluada mediante escenarios simulados dentro de EvalúaTE relacionados con {nombre.lower()}."
@@ -824,6 +846,17 @@ def _build_competencias(soft_skills: List[Dict[str, Any]]) -> Dict[str, Any]:
     fuertes = [c for c in ranked if c["puntuacion"] >= 70][:2] or ranked[:1]
     debiles = [c for c in ranked if c["puntuacion"] < 60][-2:] or ranked[-1:]
 
+    # Personaliza la sugerencia de entrevista de la competencia MEJOR
+    # puntuada con un anclaje real del CV, cuando se puede detectar con
+    # confianza -- el resto de competencias conserva el texto genérico del
+    # banco de contenido (mejor genérico que forzar una relación incorrecta).
+    anchor = _extract_role_at_company(experiencia_lines)
+    if ranked and anchor:
+        ranked[0]["_entrevista"] = (
+            f"Puede anclar este resultado en {anchor}, describiendo una situación concreta de esa etapa donde "
+            f"haya demostrado {ranked[0]['nombre'].lower()}."
+        )
+
     fortalezas_principales = [
         {
             "nombre": f"{c['nombre'].upper()} SOBRESALIENTE" if c["puntuacion"] >= 85 else c["nombre"].upper(),
@@ -857,8 +890,20 @@ def _build_competencias(soft_skills: List[Dict[str, Any]]) -> Dict[str, Any]:
             "juego": c["nombre"],
             "que_mide": f"DIMENSIÓN: {c['_que_mide']}",
             "resultado": f"{c['puntuacion']}/100 ({c['nivel']})",
-            "interpretacion": f"Mapeo Psicométrico: {c['explicacion']}",
-            "aplicacion_entrevista": f"Transferencia a Entrevista: {c['_entrevista'] or 'puede argumentar este resultado citando ejemplos concretos de su experiencia.'}",
+            # No repite el párrafo de "Perfil de Competencias" (bug real
+            # reportado: el mismo texto aparecía dos veces en el informe) --
+            # aquí se confirma el patrón de comportamiento durante la
+            # dinámica y se remite al detalle ya explicado más arriba.
+            "interpretacion": (
+                f"Mapeo Psicométrico: un resultado de {c['puntuacion']}/100 confirma un patrón de comportamiento "
+                f"de nivel {c['nivel'].lower()} en esta dimensión durante la dinámica evaluada, coherente con el "
+                "detalle y las implicaciones prácticas descritas en el apartado 'Perfil de Competencias'."
+            ),
+            "aplicacion_entrevista": (
+                f"Transferencia a Entrevista: {c['_entrevista'] or 'puede argumentar este resultado citando ejemplos concretos de su experiencia.'} "
+                "Estructura la respuesta en formato STAR (Situación, Tarea, Acción, Resultado) para que sea clara, "
+                "concreta y fácil de seguir para quien entrevista."
+            ),
         }
         for c in competencias
     ]
@@ -1005,18 +1050,51 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
             "para no descartar oportunidades reales por esta condición.",
         )
 
-    recursos_adicionales = [
-        {
-            "nombre": f"Formación online gratuita relacionada con {areas[0]}",
-            "tipo": "FORMACIÓN HABILITANTE",
-            "descripcion": f"Refuerza la empleabilidad en {areas[0]}, el área de mayor interés declarada por la persona candidata.",
-        },
-        {
-            "nombre": "Curso corto de preparación de entrevistas de trabajo",
-            "tipo": "DESARROLLO DE HABILIDAD ESPECÍFICA",
-            "descripcion": "Ayuda a transformar los resultados de este informe en argumentos sólidos durante un proceso de selección.",
-        },
-    ]
+    # Recursos con NOMBRE y plataforma real (no un genérico "formación
+    # online relacionada con X") -- se citan solo plataformas reales y bien
+    # conocidas por su dominio raíz, sin inventar un curso o URL concretos
+    # que no se pueda verificar que existan.
+    if pivot:
+        recursos_adicionales = [
+            {
+                "nombre": "Formación en atención al cliente digital y venta online (Coursera, edX o Google Actívate)",
+                "tipo": "FORMACIÓN HABILITANTE",
+                "descripcion": (
+                    f"Refuerza las competencias necesarias para el pivote remoto propuesto en {areas[0].lower()}: "
+                    "atención al cliente, venta consultiva y herramientas digitales. Coursera (coursera.org), "
+                    "edX (edx.org) y Google Actívate (activate.withgoogle.com) ofrecen formación gratuita y con "
+                    "certificado en estas áreas."
+                ),
+            },
+        ]
+    else:
+        recursos_adicionales = [
+            {
+                "nombre": f"Formación digital gratuita aplicable a {areas[0]} (Google Actívate y Coursera)",
+                "tipo": "FORMACIÓN HABILITANTE",
+                "descripcion": (
+                    "Google Actívate (activate.withgoogle.com) y Coursera (coursera.org) ofrecen formación online "
+                    f"gratuita y con certificado en habilidades digitales transferibles a {areas[0].lower()}."
+                ),
+            },
+        ]
+    recursos_adicionales.append({
+        "nombre": "Orientación laboral y bolsa de empleo de Fundación ONCE / Fundación Universia",
+        "tipo": "FORMACIÓN COMPLEMENTARIA",
+        "descripcion": (
+            "Fundación ONCE (fundaciononce.es) y Fundación Universia (fundacionuniversia.net) ofrecen orientación "
+            "laboral gratuita y una bolsa de empleo específica para personas con discapacidad."
+        ),
+    })
+    recursos_adicionales.append({
+        "nombre": "Simulacro de entrevista con el SEPE o con Teamworkz",
+        "tipo": "DESARROLLO DE HABILIDAD ESPECÍFICA",
+        "descripcion": (
+            "El Servicio Público de Empleo Estatal (sepe.es) y el propio equipo de Teamworkz ofrecen orientación "
+            "laboral y simulacros de entrevista gratuitos; puede ayudar a transformar los resultados de este "
+            "informe en argumentos sólidos durante un proceso de selección real."
+        ),
+    })
 
     if puntuacion_global >= 70:
         nivel_txt = "un nivel de empleabilidad sólido"
@@ -1103,7 +1181,7 @@ def generate_deterministic_report(
     }
 
     analisis_cv = _build_analisis_cv(review, text, sections)
-    competencias_info = _build_competencias(soft_skills)
+    competencias_info = _build_competencias(soft_skills, experiencia_lines=analisis_cv.get("experiencia"))
 
     try:
         puntuacion_global = int(employability_score)
