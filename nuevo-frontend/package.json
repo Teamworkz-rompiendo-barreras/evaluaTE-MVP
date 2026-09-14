@@ -28,6 +28,7 @@
   },
   "devDependencies": {
     "@axe-core/puppeteer": "^4.12.1",
+    "puppeteer": "25.4.0",
     "@types/node": "^26.1.1",
     "@types/react": "^19.2.14",
     "@types/react-dom": "^19.2.3",
