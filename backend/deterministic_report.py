@@ -531,6 +531,22 @@ def _tier_key(score: int) -> str:
 _TIER_DISPLAY = {"alto": "Alto", "medio": "Medio", "bajo": "Bajo"}
 
 
+def _puntuacion_global_tier(score: int) -> str:
+    """Clasificación ÚNICA de `puntuacion_global` (70/45), reutilizada en TODO
+    punto del informe que describe el nivel de empleabilidad global o decide
+    "Junior" vs "Mid-level" para un rol recomendado. Antes existían cuatro
+    umbrales distintos (70, 60, 70/45, 75/55) repartidos entre el mensaje
+    final, la interpretación global y los roles recomendados: la misma
+    puntuación podía leerse como "sólido" en una frase y "medio, con
+    recorrido de mejora" en otra, o como "Junior" en el rol principal y
+    "Mid-level" en el rol de pivote, dentro del mismo informe."""
+    if score >= 70:
+        return "alto"
+    if score >= 45:
+        return "medio"
+    return "bajo"
+
+
 def _detect_languages(text: str) -> List[str]:
     if not text:
         return []
@@ -843,8 +859,27 @@ def _build_competencias(soft_skills: List[Dict[str, Any]], experiencia_lines: Li
     ]
 
     ranked = sorted(competencias, key=lambda c: c["puntuacion"], reverse=True)
-    fuertes = [c for c in ranked if c["puntuacion"] >= 70][:2] or ranked[:1]
-    debiles = [c for c in ranked if c["puntuacion"] < 60][-2:] or ranked[-1:]
+    # IMPORTANTE: seleccionar fortalezas/áreas de mejora por el MISMO "tier"
+    # que ya determina el texto de cada competencia (_tier_key), no por
+    # umbrales ad-hoc distintos (70/60) -- si no, una competencia "Medio"
+    # (con una explicación tranquila en "Perfil de Competencias") podía
+    # terminar TAMBIÉN en "Áreas de Mejora" con un "PLAN DE CAPACITACIÓN
+    # INMEDIATA" alarmista, o en "Fortalezas Principales" calificada de
+    # "resultado destacado" sin serlo realmente. Bug real de coherencia.
+    alto_tier = [c for c in ranked if _tier_key(c["puntuacion"]) == "alto"]
+    bajo_tier = sorted((c for c in ranked if _tier_key(c["puntuacion"]) == "bajo"), key=lambda c: c["puntuacion"])
+    fuertes = alto_tier[:2]
+    debiles = bajo_tier[:2]
+    # Si NINGUNA competencia alcanza el tier "alto"/"bajo" (perfil homogéneo
+    # en "Medio"), se sigue mostrando la mejor/peor relativa para no dejar
+    # las secciones vacías, pero con un texto que no finge un nivel que no
+    # existe -- ver fuertes_es_fallback/debiles_es_fallback más abajo.
+    fuertes_es_fallback = not fuertes
+    debiles_es_fallback = not debiles
+    if not fuertes:
+        fuertes = ranked[:1]
+    if not debiles:
+        debiles = ranked[-1:]
 
     # Personaliza la sugerencia de entrevista de la competencia MEJOR
     # puntuada con un anclaje real del CV, cuando se puede detectar con
@@ -857,33 +892,57 @@ def _build_competencias(soft_skills: List[Dict[str, Any]], experiencia_lines: Li
             f"haya demostrado {ranked[0]['nombre'].lower()}."
         )
 
-    fortalezas_principales = [
-        {
-            "nombre": f"{c['nombre'].upper()} SOBRESALIENTE" if c["puntuacion"] >= 85 else c["nombre"].upper(),
-            "explicacion_practica": (
-                f"La evaluación revela un resultado destacado ({c['puntuacion']}/100) en {c['nombre'].lower()}, "
-                f"lo cual valida que {c['_fortaleza'] or 'es un punto fuerte real del perfil'}"
-            ),
-        }
-        for c in fuertes
-    ]
+    fortalezas_principales = []
+    for c in fuertes:
+        if fuertes_es_fallback:
+            fortalezas_principales.append({
+                "nombre": c["nombre"].upper(),
+                "explicacion_practica": (
+                    "Aunque ninguna competencia evaluada alcanza todavía un nivel claramente alto, el resultado "
+                    f"comparativamente más sólido del perfil es {c['nombre'].lower()} ({c['puntuacion']}/100). "
+                    "Conviene seguir reforzándolo mientras se trabajan el resto de competencias."
+                ),
+            })
+        else:
+            fortalezas_principales.append({
+                "nombre": f"{c['nombre'].upper()} SOBRESALIENTE" if c["puntuacion"] >= 85 else c["nombre"].upper(),
+                "explicacion_practica": (
+                    f"La evaluación revela un resultado destacado ({c['puntuacion']}/100) en {c['nombre'].lower()}, "
+                    f"lo cual valida que {c['_fortaleza'] or 'es un punto fuerte real del perfil'}"
+                ),
+            })
 
-    areas_mejora = [
-        {
-            "nombre": c["nombre"].upper(),
-            "porque_afecta": (
-                f"La puntuación de {c['puntuacion']}/100 en {c['nombre'].lower()} "
-                f"{(c['_porque_afecta'] or 'indica un margen de mejora real que conviene trabajar de forma activa').rstrip('.')}."
-            ),
-            "como_mejorar": "PLAN DE CAPACITACIÓN INMEDIATA:",
-            "acciones_concretas": c["_acciones"] or [
-                f"Buscar un curso corto o recurso gratuito centrado específicamente en {c['nombre'].lower()}.",
-                "Practicar la competencia en situaciones reales o simuladas al menos una vez por semana.",
-                "Pedir feedback explícito sobre esta competencia a un mentor, formador o responsable de Teamworkz.",
-            ],
-        }
-        for c in debiles
-    ]
+    areas_mejora = []
+    for c in debiles:
+        if debiles_es_fallback:
+            areas_mejora.append({
+                "nombre": c["nombre"].upper(),
+                "porque_afecta": (
+                    f"La puntuación de {c['puntuacion']}/100 en {c['nombre'].lower()} es, dentro de un perfil por lo "
+                    "demás equilibrado, el resultado comparativamente más bajo. No es un motivo de alarma, pero "
+                    "reforzarlo puede terminar de redondear el perfil."
+                ),
+                "como_mejorar": "SUGERENCIA DE REFUERZO CONTINUO:",
+                "acciones_concretas": c["_acciones"] or [
+                    f"Buscar un curso corto o recurso gratuito centrado específicamente en {c['nombre'].lower()}.",
+                    "Practicar la competencia en situaciones reales o simuladas al menos una vez por semana.",
+                    "Pedir feedback explícito sobre esta competencia a un mentor, formador o responsable de Teamworkz.",
+                ],
+            })
+        else:
+            areas_mejora.append({
+                "nombre": c["nombre"].upper(),
+                "porque_afecta": (
+                    f"La puntuación de {c['puntuacion']}/100 en {c['nombre'].lower()} "
+                    f"{(c['_porque_afecta'] or 'indica un margen de mejora real que conviene trabajar de forma activa').rstrip('.')}."
+                ),
+                "como_mejorar": "PLAN DE CAPACITACIÓN INMEDIATA:",
+                "acciones_concretas": c["_acciones"] or [
+                    f"Buscar un curso corto o recurso gratuito centrado específicamente en {c['nombre'].lower()}.",
+                    "Practicar la competencia en situaciones reales o simuladas al menos una vez por semana.",
+                    "Pedir feedback explícito sobre esta competencia a un mentor, formador o responsable de Teamworkz.",
+                ],
+            })
 
     resultados_juegos = [
         {
@@ -958,9 +1017,16 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
     roles_recomendados = []
     for area in areas[:2]:
         on_site_only = wants_remote and _requires_on_site_presence(area)
-        demanda = "ALTA" if puntuacion_global >= 70 else "MEDIA"
+        # La demanda laboral es un hecho del MERCADO (cuántas ofertas hay en
+        # ese sector), no una propiedad del candidato -- no depende de
+        # `puntuacion_global` (eso mide la empleabilidad de la persona, no
+        # la demanda del sector). Antes se conflaban ambos conceptos: un
+        # candidato con puntuación alta veía "Demanda laboral: ALTA" para
+        # CUALQUIER área, aunque fuera un sector realmente con poca demanda.
+        # Sin datos reales de mercado, se usa un valor neutro y honesto.
+        demanda = "MEDIA"
         modalidad = "Presencial" if on_site_only else (work_mode.capitalize() if work_mode else "A definir según la oferta")
-        nivel = "Junior" if puntuacion_global < 70 else "Mid-level"
+        nivel = "Mid-level" if _puntuacion_global_tier(puntuacion_global) == "alto" else "Junior"
         encaje_nivel = (
             "un punto de partida razonable para posiciones de entrada en este ámbito"
             if nivel == "Junior" else
@@ -991,14 +1057,19 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
         for titulo, motivo in pivot["roles"]:
             roles_recomendados.append({
                 "titulo": titulo,
-                "nivel": "Mid-level" if puntuacion_global >= 60 else "Junior",
+                "nivel": "Mid-level" if _puntuacion_global_tier(puntuacion_global) == "alto" else "Junior",
                 "modalidad": "Remoto",
                 "por_que_encaja": (
                     "Justificación de encaje temporal: dado que el trabajo 100% remoto en "
                     f"{pivot_area.lower()} no es viable de forma presencial, este pivote permite mantener el objetivo "
                     f"de trabajar en remoto {motivo}"
                 ),
-                "demanda_laboral": "MEDIA-ALTA" if puntuacion_global >= 60 else "MEDIA",
+                # Idem: no depende de la puntuación del candidato. Se marca
+                # "MEDIA-ALTA" de forma fija porque la atención al cliente y
+                # la gestión de e-commerce en remoto son, en general, perfiles
+                # con demanda real en el mercado actual -- no por la
+                # puntuación de esta persona en concreto.
+                "demanda_laboral": "MEDIA-ALTA",
             })
 
     dias_30 = [
@@ -1096,9 +1167,10 @@ def _build_accion(job_prefs: Dict[str, Any], puntuacion_global: int, top_fortale
         ),
     })
 
-    if puntuacion_global >= 70:
+    _pg_tier = _puntuacion_global_tier(puntuacion_global)
+    if _pg_tier == "alto":
         nivel_txt = "un nivel de empleabilidad sólido"
-    elif puntuacion_global >= 45:
+    elif _pg_tier == "medio":
         nivel_txt = "un nivel de empleabilidad en desarrollo"
     else:
         nivel_txt = "un punto de partida que requiere trabajo constante"
@@ -1198,17 +1270,32 @@ def generate_deterministic_report(
     )
     top_skill = ranked_skills[0] if ranked_skills else None
     weakest_skill = ranked_skills[-1] if len(ranked_skills) > 1 else None
+    # No basta con "es el más alto"/"es el más bajo" -- hay que comprobar si
+    # ese resultado es REALMENTE bueno/malo en términos absolutos (mismo
+    # _tier_key que ya clasifica el resto del informe) antes de usar un
+    # lenguaje de "activo sólido"/"brecha urgente y motivo de descarte".
+    # Si todas las competencias son altas, la más baja de todas sigue
+    # siendo un tier "alto" y NO es una brecha urgente; si todas son bajas,
+    # la más alta NO es un argumento sólido para una candidatura. Bug real
+    # de coherencia: antes se usaba ese lenguaje siempre, sin comprobar el
+    # nivel real de la puntuación.
+    top_is_strength = bool(top_skill) and _tier_key(top_skill["puntuacion"]) == "alto"
+    weakest_is_concern = bool(weakest_skill) and _tier_key(weakest_skill["puntuacion"]) == "bajo"
 
-    accion = _build_accion(job_prefs, puntuacion_global, top_fortalezas=ranked_skills[:2])
+    accion = _build_accion(
+        job_prefs, puntuacion_global,
+        top_fortalezas=ranked_skills[:2] if top_is_strength else [],
+    )
     coherencia_notas = accion.pop("coherencia_notas", [])
 
     # interpretacion_global: una valoración estratégica real (nivel + por qué
     # + apoyo/riesgo principal), no una nota metodológica de "cómo se calculó
     # el número" -- es lo primero que se lee del informe y debe leerse como
     # el veredicto de un/a consultor/a, no como un pie de página técnico.
-    if puntuacion_global >= 75:
+    _pg_tier_global = _puntuacion_global_tier(puntuacion_global)
+    if _pg_tier_global == "alto":
         nivel_interpretacion = "un nivel de empleabilidad alto"
-    elif puntuacion_global >= 55:
+    elif _pg_tier_global == "medio":
         nivel_interpretacion = "un nivel de empleabilidad medio, con recorrido claro de mejora"
     else:
         nivel_interpretacion = "un nivel de empleabilidad inicial que requiere trabajo activo antes de una búsqueda intensiva"
@@ -1219,12 +1306,29 @@ def generate_deterministic_report(
             "Ese resultado está condicionado por un desajuste real entre la preferencia de modalidad de trabajo "
             "indicada y el oficio elegido, que se detalla en el resumen ejecutivo y se corrige a lo largo del informe."
         )
-    if top_skill and weakest_skill:
+    if top_is_strength and weakest_is_concern:
         interpretacion_parts.append(
             f"Su resultado en {top_skill['nombre'].lower()} ({top_skill['puntuacion']}/100) es el activo más sólido "
             f"sobre el que construir la búsqueda, mientras que {weakest_skill['nombre'].lower()} "
             f"({weakest_skill['puntuacion']}/100) es la brecha más urgente a trabajar antes de que se convierta en "
             "un motivo real de descarte en procesos de selección exigentes."
+        )
+    elif top_is_strength:
+        interpretacion_parts.append(
+            f"Su resultado en {top_skill['nombre'].lower()} ({top_skill['puntuacion']}/100) es el activo más sólido "
+            "sobre el que construir la búsqueda, con el resto de competencias evaluadas en un nivel razonablemente "
+            "equilibrado."
+        )
+    elif weakest_is_concern:
+        interpretacion_parts.append(
+            f"{weakest_skill['nombre'].capitalize()} ({weakest_skill['puntuacion']}/100) es la brecha más urgente a "
+            "trabajar antes de que se convierta en un motivo real de descarte en procesos de selección exigentes."
+        )
+    elif top_skill:
+        interpretacion_parts.append(
+            "Ninguna competencia evaluada destaca todavía de forma clara: el resultado comparativamente más alto es "
+            f"{top_skill['nombre'].lower()} ({top_skill['puntuacion']}/100), un punto de partida razonable sobre el "
+            "que seguir construyendo con la práctica."
         )
     interpretacion_parts.append(
         "Es un indicador orientativo basado en reglas objetivas, no un veredicto definitivo y cerrado sobre la "
@@ -1243,9 +1347,15 @@ def generate_deterministic_report(
     if detected_tools:
         extra_bits.append(f"en el CV se identificaron herramientas como {', '.join(detected_tools[:3])}")
     if top_skill:
-        extra_bits.append(
-            f"en los minijuegos destaca especialmente {top_skill['nombre'].lower()} ({top_skill['puntuacion']}/100)"
-        )
+        if top_is_strength:
+            extra_bits.append(
+                f"en los minijuegos destaca especialmente {top_skill['nombre'].lower()} ({top_skill['puntuacion']}/100)"
+            )
+        else:
+            extra_bits.append(
+                f"en los minijuegos el resultado más alto es {top_skill['nombre'].lower()} "
+                f"({top_skill['puntuacion']}/100), con margen de mejora en el conjunto de competencias evaluadas"
+            )
     if extra_bits:
         joined = " y ".join(extra_bits)
         resumen_ejecutivo += " " + joined[:1].upper() + joined[1:] + "."

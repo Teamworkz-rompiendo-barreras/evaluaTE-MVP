@@ -344,6 +344,76 @@ def test_entrevista_uses_star_structure_and_real_cv_anchor_when_available():
     assert "tu etapa" not in top["aplicacion_entrevista"]
 
 
+def test_does_not_overclaim_strength_when_all_skills_are_mediocre():
+    """Si NINGUNA competencia llega a tier 'alto' (todas 'medio'), el
+    informe no debe llamar 'resultado destacado' ni 'activo solido' a la
+    mejor del lote, ni 'apalancar' un argumento de candidatura sobre ella."""
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [
+            {"skill": "Empatía", "score": 65, "level": "Medio"},
+            {"skill": "Liderazgo", "score": 50, "level": "Medio"},
+            {"skill": "Creatividad", "score": 58, "level": "Medio"},
+        ]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "presencial"},
+        employability_score=60,
+        candidate_name="Test",
+    )
+    assert "destaca todavía de forma clara" in report["interpretacion_global"] or "resultado comparativamente más alto" in report["interpretacion_global"]
+    assert "activo más sólido" not in report["interpretacion_global"]
+    assert "resultado destacado" not in report["fortalezas_principales"][0]["explicacion_practica"]
+    assert "apalancando tu resultado" not in report["mensaje_final"]
+
+
+def test_does_not_overclaim_urgency_when_all_skills_are_strong():
+    """Si TODAS las competencias son tier 'alto', la mas baja del lote
+    (que sigue siendo alta en terminos absolutos) no debe describirse como
+    'brecha urgente' ni 'motivo real de descarte', ni recibir un 'PLAN DE
+    CAPACITACION INMEDIATA' alarmista."""
+    report = generate_deterministic_report(
+        pdf_bytes=b"",
+        games_data={"softSkills": [
+            {"skill": "Empatía", "score": 95, "level": "Alto"},
+            {"skill": "Liderazgo", "score": 80, "level": "Alto"},
+            {"skill": "Creatividad", "score": 88, "level": "Alto"},
+        ]},
+        prefs_data={"areas": ["Atencion al cliente"], "workMode": "presencial"},
+        employability_score=90,
+        candidate_name="Test",
+    )
+    assert "brecha más urgente" not in report["interpretacion_global"]
+    assert "motivo real de descarte" not in report["interpretacion_global"]
+    assert report["areas_mejora"][0]["como_mejorar"] != "PLAN DE CAPACITACIÓN INMEDIATA:"
+
+
+def test_demanda_laboral_is_independent_of_candidate_score():
+    """La demanda laboral es un hecho del mercado, no de la puntuacion del
+    candidato -- no debe variar solo porque puntuacion_global es alta."""
+    prefs = {"areas": ["Atencion al cliente"], "workMode": "presencial"}
+    games = {"softSkills": [{"skill": "Empatía", "score": 70, "level": "Alto"}]}
+    r_bajo = generate_deterministic_report(b"", games, prefs, 30, "Test")
+    r_alto = generate_deterministic_report(b"", games, prefs, 95, "Test")
+    assert r_bajo["roles_recomendados"][0]["demanda_laboral"] == r_alto["roles_recomendados"][0]["demanda_laboral"]
+
+
+def test_puntuacion_global_nivel_is_consistent_across_report():
+    """El "nivel" (Junior/Mid-level) de CADA rol recomendado -- tanto el
+    principal como los de pivote -- y las frases sobre el nivel de
+    empleabilidad global (interpretacion_global, mensaje_final) deben usar
+    el MISMO umbral sobre puntuacion_global. Antes existian 4 umbrales
+    distintos (70, 60, 70/45, 75/55): una puntuacion de 65 daba "Junior" en
+    el rol principal pero "Mid-level" en el rol de pivote, y "solido" en el
+    mensaje final pero "medio" en la interpretacion global."""
+    prefs = {"areas": ["Peluqueria"], "workMode": "remoto"}
+    games = {"softSkills": [{"skill": "Empatía", "score": 65, "level": "Medio"}]}
+    report = generate_deterministic_report(b"", games, prefs, 65, "Test")
+    niveles = {r["nivel"] for r in report["roles_recomendados"]}
+    assert len(niveles) == 1, f"niveles inconsistentes entre roles: {niveles}"
+    assert "medio" in report["interpretacion_global"]
+    assert "sólido" not in report["mensaje_final"]
+    assert "en desarrollo" in report["mensaje_final"]
+
+
 def test_plan_accion_has_three_items_per_horizon():
     report = generate_deterministic_report(
         pdf_bytes=_build_sample_pdf(),
